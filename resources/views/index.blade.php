@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InvestaPremier WealthOS</title>
+    <style>
+        :root {
+            --bg: #f7fafc;
+            --white: #ffffff;
+            --text: #0f172a;
+            --muted: #475569;
+            --line: #e2e8f0;
+            --dark: #0b1324;
+            --soft: #f8fafc;
+            --accent: #0f766e;
+            --gold: #c9a227;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        body {
+            margin: 0;
+            font-family: Inter, Segoe UI, Arial, sans-serif;
+            background: linear-gradient(180deg, #f8fbfd 0%, #ffffff 50%, #f8fbfd 100%);
+            color: var(--text)
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px
+        }
+
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            background: rgba(255, 255, 255, .88);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(226, 232, 240, .8)
+        }
+
+        .nav-inner {
+            height: 78px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700
+        }
+
+        .brand-mark {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            background: var(--dark);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, .15)
+        }
+
+        .brand small {
+            display: block;
+            color: #64748b;
+            font-weight: 500;
+            margin-top: 2px
+        }
+
+        .menu {
+            display: flex;
+            gap: 28px;
+            color: #475569;
+            font-size: 14px
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 20px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            font-weight: 600
+        }
+
+        .btn.primary {
+            background: var(--dark);
+            color: #fff;
+            border-color: var(--dark)
+        }
+
+        .btn.ghost {
+            background: #fff
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden
+        }
+
+        .hero:before,
+        .hero:after {
+            content: "";
+            position: absolute;
+            border-radius: 999px;
+            filter: blur(80px);
+            opacity: .35;
+            pointer-events: none
+        }
+
+        .hero:before {
+            width: 380px;
+            height: 380px;
+            right: -120px;
+            top: -80px;
+            background: #14b8a6
+        }
+
+        .hero:after {
+            width: 320px;
+            height: 320px;
+            left: -100px;
+            top: 0;
+            background: #f59e0b
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.05fr .95fr;
+            gap: 40px;
+            align-items: center;
+            padding: 72px 0 56px;
+            position: relative
+        }
+
+        .eyebrow {
+            display: inline-block;
+            padding: 8px 14px;
+            border-radius: 999px;
+            border: 1px solid #dbe3ea;
+            background: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: .02em
+        }
+
+        h1 {
+            font-size: clamp(38px, 6vw, 66px);
+            line-height: 1.05;
+            margin: 20px 0 0;
+            letter-spacing: -.03em
+        }
+
+        .lead {
+            font-size: 20px;
+            line-height: 1.7;
+            color: #475569;
+            max-width: 760px;
+            margin-top: 22px
+        }
+
+        .hero-cta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 28px
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-top: 34px
+        }
+
+        .stat {
+            background: rgba(255, 255, 255, .95);
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            padding: 18px;
+            box-shadow: 0 6px 20px rgba(15, 23, 42, .04)
+        }
+
+        .stat b {
+            font-size: 22px;
+            display: block;
+            margin-bottom: 6px
+        }
+
+        .dashboard-wrap {
+            position: relative
+        }
+
+        .dashboard-glow {
+            position: absolute;
+            inset: -25px;
+            background: linear-gradient(90deg, rgba(20, 184, 166, .18), rgba(34, 197, 94, .08), rgba(245, 158, 11, .18));
+            filter: blur(36px);
+            border-radius: 42px
+        }
+
+        .dashboard {
+            position: relative;
+            background: rgba(255, 255, 255, .96);
+            border: 1px solid rgba(226, 232, 240, .9);
+            border-radius: 32px;
+            overflow: hidden;
+            box-shadow: 0 28px 60px rgba(15, 23, 42, .12)
+        }
+
+        .dash-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--line)
+        }
+
+        .tag {
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: #f1f5f9;
+            color: #0f172a;
+            font-size: 12px;
+            font-weight: 700
+        }
+
+        .dash-body {
+            padding: 22px
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 14px;
+            margin-top: 14px
+        }
+
+        .grid-3b {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-top: 14px
+        }
+
+        .card {
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            background: #fff;
+            padding: 18px
+        }
+
+        .soft {
+            background: #f8fafc
+        }
+
+        .metric-title,
+        .sub {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: #64748b
+        }
+
+        .metric-val {
+            font-size: 26px;
+            font-weight: 800;
+            margin-top: 8px
+        }
+
+        .chart-row {
+            margin-top: 14px
+        }
+
+        .bar-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            margin-bottom: 6px;
+            color: #334155
+        }
+
+        .bar {
+            height: 10px;
+            background: #e2e8f0;
+            border-radius: 999px;
+            overflow: hidden
+        }
+
+        .fill {
+            height: 100%;
+            background: #0f172a;
+            border-radius: 999px
+        }
+
+        .prog .fill {
+            background: var(--accent)
+        }
+
+        .section {
+            padding: 86px 0
+        }
+
+        .section-alt {
+            background: #fff;
+            border-top: 1px solid var(--line);
+            border-bottom: 1px solid var(--line)
+        }
+
+        .section-dark {
+            background: var(--dark);
+            color: #fff
+        }
+
+        .section-title {
+            max-width: 760px
+        }
+
+        .section-title .label {
+            display: inline-block;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: #fff;
+            border: 1px solid var(--line);
+            font-size: 12px;
+            font-weight: 700
+        }
+
+        .section-dark .label {
+            background: rgba(255, 255, 255, .08);
+            border-color: rgba(255, 255, 255, .15)
+        }
+
+        .section-title h2 {
+            font-size: clamp(30px, 4vw, 46px);
+            line-height: 1.12;
+            margin: 16px 0 0;
+            letter-spacing: -.02em
+        }
+
+        .section-title p {
+            font-size: 18px;
+            line-height: 1.8;
+            color: #64748b;
+            margin: 16px 0 0
+        }
+
+        .section-dark .section-title p {
+            color: #cbd5e1
+        }
+
+        .modules {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 12px
+        }
+
+        .module-chip {
+            border: 1px solid var(--line);
+            background: #fff;
+            border-radius: 20px;
+            padding: 16px 12px;
+            text-align: center;
+            font-size: 14px;
+            color: #334155
+        }
+
+        .feature-grid,
+        .persona-grid,
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+            margin-top: 34px
+        }
+
+        .persona-grid {
+            grid-template-columns: repeat(4, 1fr)
+        }
+
+        .steps-grid {
+            grid-template-columns: repeat(4, 1fr)
+        }
+
+        .feature,
+        .persona,
+        .step {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 28px;
+            padding: 24px;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, .04)
+        }
+
+        .section-dark .feature {
+            background: rgba(255, 255, 255, .05);
+            border-color: rgba(255, 255, 255, .1);
+            box-shadow: none
+        }
+
+        .icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 18px;
+            display: grid;
+            place-items: center;
+            background: var(--dark);
+            color: #fff;
+            font-weight: 800;
+            margin-bottom: 18px
+        }
+
+        .section-dark .icon {
+            background: rgba(255, 255, 255, .1)
+        }
+
+        .feature h3,
+        .persona h3,
+        .step h3 {
+            margin: 0 0 10px;
+            font-size: 22px
+        }
+
+        .feature p,
+        .persona p,
+        .step p {
+            margin: 0;
+            color: #64748b;
+            line-height: 1.75
+        }
+
+        .section-dark .feature p {
+            color: #cbd5e1
+        }
+
+        .dark-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 36px
+        }
+
+        .dark-list {
+            margin-top: 28px
+        }
+
+        .list-item {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 14px;
+            color: #e2e8f0;
+            line-height: 1.7
+        }
+
+        .tick {
+            width: 22px;
+            height: 22px;
+            border-radius: 999px;
+            background: rgba(20, 184, 166, .18);
+            display: grid;
+            place-items: center;
+            color: #5eead4;
+            font-weight: 800;
+            flex: none;
+            margin-top: 3px
+        }
+
+        .security-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px
+        }
+
+        .security-card {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 28px;
+            padding: 22px
+        }
+
+        .cta {
+            border-radius: 36px;
+            background: var(--dark);
+            color: #fff;
+            padding: 42px;
+            box-shadow: 0 30px 60px rgba(15, 23, 42, .18)
+        }
+
+        .cta-grid {
+            display: grid;
+            grid-template-columns: 1.4fr .6fr;
+            gap: 24px;
+            align-items: center
+        }
+
+        footer {
+            border-top: 1px solid var(--line);
+            background: #fff
+        }
+
+        .footer-inner {
+            padding: 34px 0;
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            align-items: flex-start
+        }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            color: #64748b;
+            font-size: 14px
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            z-index: 40
+        }
+        .hamburger span {
+            display: block;
+            width: 22px;
+            height: 2px;
+            background: var(--text);
+            border-radius: 999px;
+            transition: .3s
+        }
+        .hamburger-active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px)
+        }
+        .hamburger-active span:nth-child(2) {
+            opacity: 0
+        }
+        .hamburger-active span:nth-child(3) {
+            transform: rotate(-45deg) translate(5px, -5px)
+        }
+        .menu-mobile-actions {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            padding: 20px 0 0;
+            border-top: 1px solid var(--line);
+            margin-top: 12px
+        }
+
+        @media (max-width:1100px) {
+
+            .hero-grid,
+            .dark-grid,
+            .cta-grid,
+            .security-grid,
+            .grid-3 {
+                grid-template-columns: 1fr
+            }
+
+            .stats,
+            .modules,
+            .persona-grid,
+            .steps-grid,
+            .grid-4,
+            .grid-3b,
+            .feature-grid {
+                grid-template-columns: repeat(2, 1fr)
+            }
+
+            /* Sembunyikan dashboard mockup di tablet/mobile, terlalu kompleks */
+            .dashboard-wrap {
+                display: none
+            }
+
+            .hero-grid {
+                grid-template-columns: 1fr
+            }
+
+            .hamburger {
+                display: flex
+            }
+
+            .menu {
+                position: fixed;
+                inset: 0;
+                z-index: 30;
+                background: rgba(255,255,255,.98);
+                backdrop-filter: blur(20px);
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 24px;
+                font-size: 18px;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity .3s
+            }
+            .menu-open {
+                opacity: 1;
+                pointer-events: auto
+            }
+            .menu-mobile-actions {
+                display: flex
+            }
+            .actions {
+                display: none
+            }
+
+            .section {
+                padding: 56px 0
+            }
+
+            .dark-grid .feature-grid {
+                grid-template-columns: repeat(2, 1fr) !important
+            }
+        }
+
+        @media (max-width:760px) {
+            .container {
+                padding: 0 16px
+            }
+
+            .stats,
+            .modules,
+            .persona-grid,
+            .steps-grid,
+            .grid-4,
+            .grid-3b,
+            .feature-grid {
+                grid-template-columns: repeat(2, 1fr)
+            }
+
+            .hero-grid {
+                padding: 48px 0 34px
+            }
+
+            .lead {
+                font-size: 17px
+            }
+
+            .footer-inner {
+                flex-direction: column
+            }
+
+            .actions .btn.ghost {
+                display: none
+            }
+
+            .section {
+                padding: 48px 0
+            }
+
+            .section-title h2 {
+                font-size: 26px
+            }
+
+            .section-title p {
+                font-size: 16px
+            }
+        }
+
+        @media (max-width:480px) {
+            h1 {
+                font-size: 30px
+            }
+
+            .stats,
+            .modules,
+            .persona-grid,
+            .steps-grid,
+            .grid-4,
+            .grid-3b,
+            .feature-grid {
+                grid-template-columns: 1fr
+            }
+
+            .stat b {
+                font-size: 18px
+            }
+
+            .cta {
+                padding: 28px 20px
+            }
+
+            .cta-grid {
+                grid-template-columns: 1fr
+            }
+
+            .module-chip {
+                font-size: 12px;
+                padding: 12px 8px
+            }
+
+            .hero-cta {
+                flex-direction: column
+            }
+
+            .hero-cta .btn {
+                text-align: center;
+                justify-content: center
+            }
+
+            .feature h3,
+            .persona h3,
+            .step h3 {
+                font-size: 18px
+            }
+
+            .dark-grid .feature-grid {
+                grid-template-columns: 1fr !important
+            }
+        }
+    </style>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>[x-cloak]{display:none!important}</style>
+</head>
+
+<body x-data="{ mobileMenu: false }">
+    <header class="nav">
+        <div class="container nav-inner">
+            <div class="brand">
+                <div class="brand-mark">✦</div>
+                <div>InvestaPremier<small>WealthOS</small></div>
+            </div>
+            <nav class="menu" :class="{ 'menu-open': mobileMenu }">
+                <a href="#fitur" @@click="mobileMenu = false">Fitur</a>
+                <a href="#modul" @@click="mobileMenu = false">Modul</a>
+                <a href="#untuk-siapa" @@click="mobileMenu = false">Untuk Siapa</a>
+                <a href="#alur" @@click="mobileMenu = false">Alur</a>
+                <a href="#keamanan" @@click="mobileMenu = false">Keamanan</a>
+                <div class="menu-mobile-actions">
+                    <a class="btn ghost" href="{{ route('login') }}">Login</a>
+                    <a class="btn primary" href="{{ route('register') }}">Daftar</a>
+                    <a class="btn ghost" href="{{ route('index.presentation') }}">Lihat Presentasi</a>
+                </div>
+            </nav>
+            <div class="actions">
+                <a class="btn ghost" href="{{ route('login') }}">Login</a>
+                <a class="btn primary" href="{{ route('register') }}">Daftar</a>
+                <a class="btn ghost" href="{{ route('index.presentation') }}">Lihat Presentasi</a>
+            </div>
+            <button @@click="mobileMenu = !mobileMenu" class="hamburger" :class="{ 'hamburger-active': mobileMenu }" aria-label="Menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="container hero-grid">
+            <div>
+                <span class="eyebrow">Private Wealth Advisory Platform</span>
+                <h1>One Family,<br>One Financial Cockpit.</h1>
+                <p class="lead">Kelola portofolio, proteksi, pendidikan, legacy, pajak, dan review advisor dalam satu
+                    platform yang elegan, aman, dan terstruktur untuk nasabah prioritas dan private.</p>
+                <div class="hero-cta">
+                    <a class="btn primary" href="{{ route('register') }}">Mulai Sekarang</a>
+                    <a class="btn ghost" href="investapremier-wealthos-presentation-mockup.html">View Product Tour</a>
+                </div>
+                <div class="stats">
+                    <div class="stat"><b>All-in-one</b><span>360° wealth visibility</span></div>
+                    <div class="stat"><b>Multi-goal</b><span>Family financial goals</span></div>
+                    <div class="stat"><b>Structured</b><span>Advisor workflow</span></div>
+                    <div class="stat"><b>Auditable</b><span>Document governance</span></div>
+                </div>
+            </div>
+            <div class="dashboard-wrap">
+                <div class="dashboard-glow"></div>
+                <div class="dashboard">
+                    <div class="dash-head">
+                        <div>
+                            <div style="font-size:13px;color:#64748b">InvestaPremier WealthOS</div>
+                            <div style="font-weight:800;font-size:20px">Family Financial Cockpit</div>
+                        </div>
+                        <div class="tag">Private Advisory</div>
+                    </div>
+                    <div class="dash-body">
+                        <div class="grid-4">
+                            <div class="card soft">
+                                <div class="metric-title">Net Worth</div>
+                                <div class="metric-val">Rp 18,5 M</div>
+                            </div>
+                            <div class="card soft">
+                                <div class="metric-title">Investable Assets</div>
+                                <div class="metric-val">Rp 11,2 M</div>
+                            </div>
+                            <div class="card soft">
+                                <div class="metric-title">Liquidity</div>
+                                <div class="metric-val">Rp 1,4 M</div>
+                            </div>
+                            <div class="card soft">
+                                <div class="metric-title">Next Review</div>
+                                <div class="metric-val">24 Mar 2026</div>
+                            </div>
+                        </div>
+                        <div class="grid-3">
+                            <div class="card">
+                                <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
+                                    <div>
+                                        <div style="font-weight:700">Asset Allocation</div>
+                                        <div class="sub"
+                                            style="text-transform:none;letter-spacing:0;color:#64748b;margin-top:4px">
+                                            Tampilan portofolio keluarga per kategori aset</div>
+                                    </div>
+                                    <div style="font-size:24px">◔</div>
+                                </div>
+                                <div class="chart-row">
+                                    <div class="bar-meta"><span>Saham</span><span>30%</span></div>
+                                    <div class="bar">
+                                        <div class="fill" style="width:30%"></div>
+                                    </div>
+                                </div>
+                                <div class="chart-row">
+                                    <div class="bar-meta"><span>Obligasi</span><span>25%</span></div>
+                                    <div class="bar">
+                                        <div class="fill" style="width:25%"></div>
+                                    </div>
+                                </div>
+                                <div class="chart-row">
+                                    <div class="bar-meta"><span>Reksa Dana</span><span>20%</span></div>
+                                    <div class="bar">
+                                        <div class="fill" style="width:20%"></div>
+                                    </div>
+                                </div>
+                                <div class="chart-row">
+                                    <div class="bar-meta"><span>Kas</span><span>10%</span></div>
+                                    <div class="bar">
+                                        <div class="fill" style="width:10%"></div>
+                                    </div>
+                                </div>
+                                <div class="chart-row">
+                                    <div class="bar-meta"><span>Properti & lainnya</span><span>15%</span></div>
+                                    <div class="bar">
+                                        <div class="fill" style="width:15%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div style="font-weight:700">Goal Progress</div>
+                                <div class="sub"
+                                    style="text-transform:none;letter-spacing:0;color:#64748b;margin-top:4px">Status
+                                    tujuan utama keluarga</div>
+                                <div class="chart-row prog">
+                                    <div class="bar-meta"><span>Pendidikan Anak</span><span>72%</span></div>
+                                    <div class="bar">
+                                        <div class="fill" style="width:72%"></div>
+                                    </div>
+                                </div>
+                                <div class="chart-row prog">
+                                    <div class="bar-meta"><span>Pensiun</span><span>54%</span></div>
+                                    <div class="bar">
+                                        <div class="fill" style="width:54%"></div>
+                                    </div>
+                                </div>
+                                <div class="chart-row prog">
+                                    <div class="bar-meta"><span>Legacy Fund</span><span>38%</span></div>
+                                    <div class="bar">
+                                        <div class="fill" style="width:38%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid-3b">
+                            <div class="card">
+                                <div style="font-weight:700">Alert Center</div>
+                                <div style="margin-top:14px;color:#475569;line-height:1.8">• Goal pendidikan kurang Rp
+                                    250 juta<br>• 2 dokumen perlu diperbarui<br>• Premi asuransi jatuh tempo minggu ini
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div style="font-weight:700">Advisor Notes</div>
+                                <div style="margin-top:14px;color:#475569;line-height:1.8">Review ulang alokasi
+                                    obligasi, tambah proteksi kesehatan, dan periksa dokumen legacy keluarga.</div>
+                            </div>
+                            <div class="card">
+                                <div style="font-weight:700">Quick Actions</div>
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
+                                    <div class="tag" style="text-align:center">Tambah Aset</div>
+                                    <div class="tag" style="text-align:center">Tambah Goal</div>
+                                    <div class="tag" style="text-align:center">Upload Dokumen</div>
+                                    <div class="tag" style="text-align:center">Jadwalkan Review</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section-alt">
+        <div class="container" style="padding-top:24px;padding-bottom:24px">
+            <div class="modules">
+                <div class="module-chip">Wealth Overview</div>
+                <div class="module-chip">Asset Allocation</div>
+                <div class="module-chip">Goal Funding Gap</div>
+                <div class="module-chip">Insurance Tracking</div>
+                <div class="module-chip">Legacy Readiness</div>
+                <div class="module-chip">Tax Reminder</div>
+                <div class="module-chip">Advisor Collaboration</div>
+                <div class="module-chip">Review & Reporting</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="fitur" class="section">
+        <div class="container">
+            <div class="section-title"><span class="label">Fitur Utama</span>
+                <h2>Dirancang untuk advisory premium, bukan sekadar aplikasi investasi.</h2>
+                <p>Landing page ini menampilkan pendekatan wealth advisory yang menyeluruh: investasi, proteksi, family
+                    planning, administrasi, dan kolaborasi advisor dalam satu ekosistem digital.</p>
+            </div>
+            <div class="feature-grid">
+                <div class="feature">
+                    <div class="icon">◔</div>
+                    <h3>Portfolio Command Center</h3>
+                    <p>Lihat seluruh aset, alokasi, likuiditas, dan progres investasi keluarga dalam satu dashboard
+                        premium.</p>
+                </div>
+                <div class="feature">
+                    <div class="icon">🎓</div>
+                    <h3>Goal Planner</h3>
+                    <p>Rencanakan pendidikan, pensiun, rumah, legacy fund, dan kebutuhan keluarga dengan target yang
+                        terukur.</p>
+                </div>
+                <div class="feature">
+                    <div class="icon">❤</div>
+                    <h3>Protection Hub</h3>
+                    <p>Kelola polis, beneficiary, premi, serta gap proteksi untuk menjaga stabilitas finansial keluarga.
+                    </p>
+                </div>
+                <div class="feature">
+                    <div class="icon">🏛</div>
+                    <h3>Legacy & Estate Desk</h3>
+                    <p>Susun peta beneficiary, asset ownership, dan checklist warisan agar transisi kekayaan lebih
+                        tertata.</p>
+                </div>
+                <div class="feature">
+                    <div class="icon">🧾</div>
+                    <h3>Tax & Compliance Desk</h3>
+                    <p>Pantau kalender pajak, dokumen pendukung, dan daftar tindak lanjut administratif keluarga.</p>
+                </div>
+                <div class="feature">
+                    <div class="icon">🔒</div>
+                    <h3>Secure Document Vault</h3>
+                    <p>Simpan dokumen investasi, asuransi, pajak, dan legal dengan akses berbasis peran dan jejak audit.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="modul" class="section section-dark">
+        <div class="container">
+            <div class="section-title"><span class="label">Modul Platform</span>
+                <h2>Semua kebutuhan financial planning keluarga dalam satu sistem.</h2>
+                <p>WealthOS menggabungkan command center investasi dengan goal planning, insurance review, legacy
+                    readiness, tax reminder, dan workspace advisory yang bisa dipakai secara berkelanjutan.</p>
+            </div>
+            <div class="dark-grid">
+                <div>
+                    <div class="dark-list">
+                        <div class="list-item">
+                            <div class="tick">✓</div>
+                            <div>Portfolio 360 dan net worth keluarga</div>
+                        </div>
+                        <div class="list-item">
+                            <div class="tick">✓</div>
+                            <div>Goal-based planning untuk pendidikan, pensiun, legacy, dan likuiditas</div>
+                        </div>
+                        <div class="list-item">
+                            <div class="tick">✓</div>
+                            <div>Tracking polis, beneficiary, dan gap proteksi</div>
+                        </div>
+                        <div class="list-item">
+                            <div class="tick">✓</div>
+                            <div>Checklist dokumen pajak, legal, dan estate planning</div>
+                        </div>
+                        <div class="list-item">
+                            <div class="tick">✓</div>
+                            <div>Review meeting, recommendation flow, dan task tracking</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="feature-grid" style="margin-top:0;grid-template-columns:repeat(2,1fr)">
+                    <div class="feature">
+                        <div class="icon">💼</div>
+                        <h3>Investment & Allocation</h3>
+                        <p>Memantau komposisi aset, likuiditas, dan status portofolio keluarga.</p>
+                    </div>
+                    <div class="feature">
+                        <div class="icon">🎓</div>
+                        <h3>Education & Retirement Goals</h3>
+                        <p>Target-based planning yang terukur dan mudah ditinjau berkala.</p>
+                    </div>
+                    <div class="feature">
+                        <div class="icon">❤</div>
+                        <h3>Insurance & Protection</h3>
+                        <p>Ringkasan polis, beneficiary, dan kebutuhan proteksi keluarga.</p>
+                    </div>
+                    <div class="feature">
+                        <div class="icon">👪</div>
+                        <h3>Legacy & Estate Desk</h3>
+                        <p>Checklist, peta aset, dan kesiapan transisi kekayaan keluarga.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="untuk-siapa" class="section">
+        <div class="container">
+            <div class="section-title"><span class="label">Untuk Siapa</span>
+                <h2>Cocok untuk nasabah premium dan ekosistem advisory modern.</h2>
+                <p>Halaman ini memposisikan produk sebagai solusi untuk berbagai model layanan wealth advisory, dari
+                    nasabah prioritas perorangan hingga boutique advisory firm.</p>
+            </div>
+            <div class="persona-grid">
+                <div class="persona">
+                    <h3>Nasabah Prioritas</h3>
+                    <p>Untuk keluarga affluent yang ingin dashboard menyeluruh untuk investasi, proteksi, dan tujuan
+                        pendidikan.</p>
+                </div>
+                <div class="persona">
+                    <h3>Nasabah Private</h3>
+                    <p>Untuk klien HNW yang membutuhkan tampilan wealth terintegrasi, legacy desk, dan privasi tinggi.
+                    </p>
+                </div>
+                <div class="persona">
+                    <h3>Advisor / RM</h3>
+                    <p>Untuk penasihat investasi atau relationship manager yang memerlukan workspace review dan
+                        rekomendasi klien.</p>
+                </div>
+                <div class="persona">
+                    <h3>Boutique Wealth Office</h3>
+                    <p>Untuk firma advisory kecil yang ingin pengalaman digital premium dengan proses layanan yang lebih
+                        rapi.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="alur" class="section section-alt">
+        <div class="container">
+            <div class="section-title"><span class="label">Alur Penggunaan</span>
+                <h2>Dibuat untuk perjalanan pengguna yang jelas dan premium.</h2>
+                <p>Mulai dari konsolidasi data sampai review bersama advisor, setiap langkah dirancang agar nasabah
+                    memahami kondisi wealth keluarga dengan lebih mudah.</p>
+            </div>
+            <div class="steps-grid">
+                <div class="step">
+                    <div class="icon" style="border-radius:999px">1</div>
+                    <h3>Konsolidasikan data keluarga</h3>
+                    <p>Masukkan aset, tujuan, polis, beneficiary, dan dokumen penting ke satu sistem yang rapi.</p>
+                </div>
+                <div class="step">
+                    <div class="icon" style="border-radius:999px">2</div>
+                    <h3>Pantau progres & risiko</h3>
+                    <p>Lihat funding gap, jatuh tempo, prioritas tindakan, dan kesiapan tujuan keluarga.</p>
+                </div>
+                <div class="step">
+                    <div class="icon" style="border-radius:999px">3</div>
+                    <h3>Review bersama advisor</h3>
+                    <p>Lakukan review terstruktur, catat rekomendasi, dan tindak lanjuti semuanya dalam satu platform.
+                    </p>
+                </div>
+                <div class="step">
+                    <div class="icon" style="border-radius:999px">4</div>
+                    <h3>Jaga keberlanjutan wealth keluarga</h3>
+                    <p>Hubungkan investasi, proteksi, pajak, dan legacy agar keputusan keuangan lebih menyeluruh.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="keamanan" class="section">
+        <div class="container security-grid">
+            <div>
+                <div class="section-title"><span class="label">Keamanan & Governance</span>
+                    <h2>Dibangun dengan pendekatan privasi, kontrol akses, dan governance yang kuat.</h2>
+                    <p>Karena platform ini menangani data portofolio, keluarga, beneficiary, dokumen, dan catatan
+                        advisory, desain pengalaman pengguna harus memberi rasa aman sekaligus profesional.</p>
+                </div>
+                <div class="dark-list" style="margin-top:26px">
+                    <div class="list-item" style="color:#334155">
+                        <div class="tick">✓</div>
+                        <div>Role-based access untuk client, advisor, household member, dan admin</div>
+                    </div>
+                    <div class="list-item" style="color:#334155">
+                        <div class="tick">✓</div>
+                        <div>Audit trail untuk login, akses dokumen, update data, dan tindak lanjut advisory</div>
+                    </div>
+                    <div class="list-item" style="color:#334155">
+                        <div class="tick">✓</div>
+                        <div>Document vault dengan kontrol akses, histori versi, dan status dokumen</div>
+                    </div>
+                    <div class="list-item" style="color:#334155">
+                        <div class="tick">✓</div>
+                        <div>Notifikasi terstruktur untuk review, jatuh tempo, dan action plan</div>
+                    </div>
+                </div>
+            </div>
+            <div class="feature-grid" style="margin-top:0;grid-template-columns:repeat(2,1fr)">
+                <div class="security-card">
+                    <div class="icon">🔐</div>
+                    <h3>Access Control</h3>
+                    <p>Hak akses terstruktur berbasis peran dan household.</p>
+                </div>
+                <div class="security-card">
+                    <div class="icon">📄</div>
+                    <h3>Document Audit</h3>
+                    <p>Setiap dokumen dapat diberi status, versi, dan histori akses.</p>
+                </div>
+                <div class="security-card">
+                    <div class="icon">🔔</div>
+                    <h3>Smart Alerts</h3>
+                    <p>Reminder untuk goal gap, polis, pajak, dan review berkala.</p>
+                </div>
+                <div class="security-card">
+                    <div class="icon">🛡</div>
+                    <h3>Operational Trust</h3>
+                    <p>Dirancang untuk membangun kepercayaan nasabah premium.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" style="padding-top:0">
+        <div class="container">
+            <div class="cta">
+                <div class="cta-grid">
+                    <div>
+                        <div class="eyebrow"
+                            style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.16);color:#fff">Call
+                            to Action</div>
+                        <h2 style="font-size:clamp(30px,4vw,46px);line-height:1.14;margin:18px 0 0">Bangun pengalaman
+                            advisory premium yang lebih terintegrasi.</h2>
+                        <p style="margin:16px 0 0;color:#cbd5e1;font-size:18px;line-height:1.8">Landing page ini dapat
+                            dikembangkan lebih lanjut menjadi website resmi produk, mockup investor deck, atau frontend
+                            prototype untuk tim developer dan stakeholder.</p>
+                    </div>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end;align-items:center">
+                        <a class="btn" style="background:#fff;color:#0f172a;border-color:#fff"
+                            href="#">Request Demo</a>
+                        <a class="btn" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.28)"
+                            href="investapremier-wealthos-presentation-mockup.html">View Product Tour</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container footer-inner">
+            <div>
+                <div style="font-weight:800">InvestaPremier WealthOS</div>
+                <div style="margin-top:6px;color:#64748b;font-size:14px">Premium wealth advisory platform for modern
+                    private clients.</div>
+            </div>
+            <div class="footer-links"><a href="#fitur">Fitur</a><a href="#keamanan">Keamanan</a><a
+                    href="#">Kontak</a><a href="#">Kebijakan Privasi</a></div>
+        </div>
+    </footer>
+</body>
+
+</html>
