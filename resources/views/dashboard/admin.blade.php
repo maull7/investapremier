@@ -268,4 +268,134 @@
             </div>
         </div>
     </div>
+
+    {{-- ===== SECTION ANALISA ===== --}}
+    <div class="mt-8 mb-4 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-primary/10 grid place-items-center text-primary">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        </div>
+        <div>
+            <h2 class="text-lg font-bold text-primary">Analisa Reksa Dana</h2>
+            <p class="text-xs text-muted">Statistik submission analisa dari user</p>
+        </div>
+        <a href="{{ route('admin.analisa.index') }}" class="ml-auto text-sm text-primary hover:underline">Lihat Semua →</a>
+    </div>
+
+    {{-- Stat cards analisa --}}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+        <div class="bg-white rounded-2xl border border-line p-6 shadow-sm">
+            <p class="text-xs text-muted uppercase tracking-wide font-semibold mb-1">Total Analisa</p>
+            <p class="text-3xl font-extrabold text-primary">{{ $totalAnalisa }}</p>
+            <p class="text-xs text-muted mt-1">Semua submission</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-line p-6 shadow-sm">
+            <p class="text-xs text-muted uppercase tracking-wide font-semibold mb-1">Menunggu Review</p>
+            <p class="text-3xl font-extrabold text-yellow-600">{{ $analisaPending }}</p>
+            <p class="text-xs text-muted mt-1">Perlu ditindaklanjuti</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-line p-6 shadow-sm">
+            <p class="text-xs text-muted uppercase tracking-wide font-semibold mb-1">Sudah Direview</p>
+            <p class="text-3xl font-extrabold text-green-600">{{ $analisaReviewed }}</p>
+            <p class="text-xs text-muted mt-1">Selesai diproses</p>
+        </div>
+    </div>
+
+    {{-- Chart + Tabel --}}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {{-- Chart submission per bulan --}}
+        <div class="bg-white rounded-2xl border border-line p-6 shadow-sm">
+            <h3 class="font-semibold text-primary mb-4 text-sm">Submission per Bulan (6 Bulan Terakhir)</h3>
+            <canvas id="chartAnalisaBulan" height="180"></canvas>
+        </div>
+
+        {{-- Chart distribusi jenis RD --}}
+        <div class="bg-white rounded-2xl border border-line p-6 shadow-sm">
+            <h3 class="font-semibold text-primary mb-4 text-sm">Distribusi Jenis Reksa Dana</h3>
+            @if($analisaPerJenis->isEmpty())
+                <p class="text-sm text-muted text-center py-8">Belum ada data.</p>
+            @else
+                <canvas id="chartAnalisaJenis" height="180"></canvas>
+            @endif
+        </div>
+    </div>
+
+    {{-- Tabel submission terbaru --}}
+    <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-line flex items-center justify-between">
+            <h3 class="font-semibold text-primary text-sm">Submission Terbaru</h3>
+            <a href="{{ route('admin.analisa.index', ['status' => 'submitted']) }}" class="text-xs text-primary hover:underline">Lihat yang pending →</a>
+        </div>
+        @if($recentAnalisa->isEmpty())
+            <div class="p-8 text-center text-sm text-muted">Belum ada submission analisa.</div>
+        @else
+        <table class="w-full text-sm">
+            <thead class="bg-[#f8fafc] border-b border-line">
+                <tr>
+                    <th class="text-left px-5 py-3 font-semibold text-primary text-xs">User</th>
+                    <th class="text-left px-5 py-3 font-semibold text-primary text-xs">Reksa Dana</th>
+                    <th class="text-left px-5 py-3 font-semibold text-primary text-xs">Jenis</th>
+                    <th class="text-left px-5 py-3 font-semibold text-primary text-xs">Status</th>
+                    <th class="text-left px-5 py-3 font-semibold text-primary text-xs">Tanggal</th>
+                    <th class="px-5 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-line">
+                @foreach($recentAnalisa as $a)
+                <tr class="hover:bg-[#f8fafc] transition">
+                    <td class="px-5 py-3">{{ $a->user->name }}</td>
+                    <td class="px-5 py-3 font-medium">{{ $a->nama_reksa_dana }}</td>
+                    <td class="px-5 py-3 text-muted">{{ $a->jenis_reksa_dana }}</td>
+                    <td class="px-5 py-3">
+                        @php $sc = match($a->status) { 'submitted' => 'bg-yellow-100 text-yellow-700', 'reviewed' => 'bg-green-100 text-green-700', default => 'bg-gray-100 text-gray-600' }; @endphp
+                        <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium {{ $sc }}">
+                            {{ match($a->status) { 'submitted' => 'Pending', 'reviewed' => 'Reviewed', default => 'Draft' } }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-3 text-muted">{{ $a->created_at->format('d M Y') }}</td>
+                    <td class="px-5 py-3 text-right">
+                        <a href="{{ route('admin.analisa.show', $a) }}" class="text-xs text-primary hover:underline">Detail</a>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        @endif
+    </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+new Chart(document.getElementById('chartAnalisaBulan'), {
+    type: 'bar',
+    data: {
+        labels: {!! $analisaPerBulan->keys()->map(fn($b) => \Carbon\Carbon::parse($b.'-01')->format('M Y')) !!},
+        datasets: [{
+            label: 'Submission',
+            data: {!! $analisaPerBulan->values() !!},
+            backgroundColor: '#2563eb',
+            borderRadius: 4,
+        }]
+    },
+    options: {
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+});
+
+@if($analisaPerJenis->isNotEmpty())
+new Chart(document.getElementById('chartAnalisaJenis'), {
+    type: 'doughnut',
+    data: {
+        labels: {!! $analisaPerJenis->keys() !!},
+        datasets: [{
+            data: {!! $analisaPerJenis->values() !!},
+            backgroundColor: ['#1e3a5f','#2563eb','#3b82f6','#60a5fa'],
+        }]
+    },
+    options: { plugins: { legend: { position: 'right' } }, cutout: '55%' }
+});
+@endif
+</script>
+@endpush
+
 @endsection

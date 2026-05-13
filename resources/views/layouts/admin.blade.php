@@ -40,6 +40,16 @@
                     Pendaftaran Member
                 </a>
             </div>
+            <a href="{{ route('admin.analisa.index') }}"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.analisa.*') ? 'bg-white/10 font-semibold' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                Monitor Analisa
+            </a>
+            <a href="/horizon" target="_blank"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/70 hover:bg-white/5 hover:text-white">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+                Queue Monitor
+            </a>
             <a href="{{ route('profile.edit') }}"
                class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('profile.*') ? 'bg-white/10 font-semibold' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
@@ -93,6 +103,17 @@
                     Pendaftaran Member
                 </a>
             </div>
+            <a href="{{ route('admin.analisa.index') }}"
+               @@click="sidebarOpen = false"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.analisa.*') ? 'bg-white/10 font-semibold' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                Monitor Analisa
+            </a>
+            <a href="/horizon" target="_blank"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/70 hover:bg-white/5 hover:text-white">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+                Queue Monitor
+            </a>
             <a href="{{ route('profile.edit') }}"
                @@click="sidebarOpen = false"
                class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('profile.*') ? 'bg-white/10 font-semibold' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">

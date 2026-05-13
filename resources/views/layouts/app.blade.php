@@ -13,5 +13,6 @@
     <body class="font-sans antialiased">
         @yield('header')
         @yield('body')
+        @stack('scripts')
     </body>
 </html>

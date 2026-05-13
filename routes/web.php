@@ -4,8 +4,10 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\QuestionController;
 use App\Http\Controllers\Admin\MemberController as AdminMemberController;
+use App\Http\Controllers\Admin\AnalisaController as AdminAnalisaController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\MemberController;
+use App\Http\Controllers\AnalisaController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use Illuminate\Support\Facades\Route;
 
@@ -45,12 +47,27 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('members/{member}', [AdminMemberController::class, 'show'])->name('members.show');
     Route::post('members/{member}/approve', [AdminMemberController::class, 'approve'])->name('members.approve');
     Route::post('members/{member}/reject', [AdminMemberController::class, 'reject'])->name('members.reject');
+
+    // Monitor analisa yang diupload user
+    Route::get('analisa', [AdminAnalisaController::class, 'index'])->name('analisa.index');
+    Route::get('analisa/{analisa}', [AdminAnalisaController::class, 'show'])->name('analisa.show');
+    Route::get('analisa/{analisa}/pdf', [AdminAnalisaController::class, 'exportPdf'])->name('analisa.pdf');
+    Route::post('analisa/{analisa}/review', [AdminAnalisaController::class, 'review'])->name('analisa.review');
 });
 
 Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard.user');
     })->name('dashboard');
+
+    // Upload & lihat hasil analisa
+    Route::get('/analisa', [AnalisaController::class, 'index'])->name('analisa.index');
+    Route::get('/analisa/template', [AnalisaController::class, 'downloadTemplate'])->name('analisa.template');
+    Route::get('/analisa/create', [AnalisaController::class, 'create'])->name('analisa.create');
+    Route::post('/analisa', [AnalisaController::class, 'store'])->name('analisa.store');
+    Route::get('/analisa/{analisa}', [AnalisaController::class, 'show'])->name('analisa.show');
+    Route::get('/analisa/{analisa}/pdf', [AnalisaController::class, 'exportPdf'])->name('analisa.pdf');
+    Route::delete('/analisa/{analisa}', [AnalisaController::class, 'destroy'])->name('analisa.destroy');
 });
 
 Route::middleware(['auth', 'verified'])->prefix('quiz')->name('quiz.')->group(function () {
