@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\MemberProfile;
+use App\Models\StockPrice;
 use App\Models\User;
 
 class MemberController extends Controller
@@ -17,7 +18,18 @@ class MemberController extends Controller
     public function show(MemberProfile $member)
     {
         $member->load(['user', 'portfolios']);
-        return view('admin.members.show', compact('member'));
+
+        // Ambil harga terbaru (T-1) untuk semua efek di portfolio
+        $kodeEfeks = $member->portfolios
+            ->pluck('nama_efek')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $stockPrices = StockPrice::hargaTerbaruBulk($kodeEfeks);
+
+        return view('admin.members.show', compact('member', 'stockPrices'));
     }
 
     public function approve(MemberProfile $member)

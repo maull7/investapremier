@@ -5,9 +5,12 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\QuestionController;
 use App\Http\Controllers\Admin\MemberController as AdminMemberController;
 use App\Http\Controllers\Admin\AnalisaController as AdminAnalisaController;
+use App\Http\Controllers\Admin\ScoreClassificationController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\AnalisaController;
+use App\Http\Controllers\Admin\ReksaDanaController as AdminReksaDanaController;
+use App\Http\Controllers\ReksaDanaController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use Illuminate\Support\Facades\Route;
 
@@ -39,6 +42,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    Route::get('score-classifications', [ScoreClassificationController::class, 'index'])->name('score-classifications.index');
+    Route::put('score-classifications/{scoreClassification}', [ScoreClassificationController::class, 'update'])->name('score-classifications.update');
+
     Route::resource('questions', QuestionController::class);
     Route::get('questions-template', [QuestionController::class, 'downloadTemplate'])->name('questions.template');
     Route::post('questions-import', [QuestionController::class, 'import'])->name('questions.import');
@@ -52,7 +58,21 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('analisa', [AdminAnalisaController::class, 'index'])->name('analisa.index');
     Route::get('analisa/{analisa}', [AdminAnalisaController::class, 'show'])->name('analisa.show');
     Route::get('analisa/{analisa}/pdf', [AdminAnalisaController::class, 'exportPdf'])->name('analisa.pdf');
+    Route::get('analisa/{analisa}/download-ffs', [AdminAnalisaController::class, 'downloadPdf'])->name('analisa.download-ffs');
     Route::post('analisa/{analisa}/review', [AdminAnalisaController::class, 'review'])->name('analisa.review');
+
+    // Daftar Analisa RD
+    Route::get('reksa-dana', [AdminReksaDanaController::class, 'index'])->name('reksa-dana.index');
+    Route::post('reksa-dana/bulk-analisa', [AdminReksaDanaController::class, 'bulkAnalisa'])->name('reksa-dana.bulk-analisa');
+    Route::get('reksa-dana/{reksaDana}/pdf', [AdminReksaDanaController::class, 'downloadPdf'])->name('reksa-dana.pdf');
+
+    // Daftar & Analisa Saham
+    Route::get('saham', fn() => view('admin.saham.index'))->name('saham.index');
+    Route::get('analisa-saham', fn() => view('admin.analisa-saham.index'))->name('analisa-saham.index');
+
+    // Daftar & Analisa Obligasi
+    Route::get('obligasi', fn() => view('admin.obligasi.index'))->name('obligasi.index');
+    Route::get('analisa-obligasi', fn() => view('admin.analisa-obligasi.index'))->name('analisa-obligasi.index');
 });
 
 Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(function () {
@@ -63,11 +83,22 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     // Upload & lihat hasil analisa
     Route::get('/analisa', [AnalisaController::class, 'index'])->name('analisa.index');
     Route::get('/analisa/template', [AnalisaController::class, 'downloadTemplate'])->name('analisa.template');
+    Route::get('/reksa-dana', [ReksaDanaController::class, 'index'])->name('reksa-dana.index');
     Route::get('/analisa/create', [AnalisaController::class, 'create'])->name('analisa.create');
     Route::post('/analisa', [AnalisaController::class, 'store'])->name('analisa.store');
+    Route::post('/analisa/parse-pdf', [AnalisaController::class, 'parsePdf'])->name('analisa.parse-pdf');
     Route::get('/analisa/{analisa}', [AnalisaController::class, 'show'])->name('analisa.show');
     Route::get('/analisa/{analisa}/pdf', [AnalisaController::class, 'exportPdf'])->name('analisa.pdf');
+    Route::get('/analisa/{analisa}/download-ffs', [AnalisaController::class, 'downloadPdf'])->name('analisa.download-ffs');
     Route::delete('/analisa/{analisa}', [AnalisaController::class, 'destroy'])->name('analisa.destroy');
+
+    // Daftar & Analisa Saham
+    Route::get('/saham', fn() => view('saham.index'))->name('saham.index');
+    Route::get('/analisa-saham', fn() => view('analisa-saham.index'))->name('analisa-saham.index');
+
+    // Daftar & Analisa Obligasi
+    Route::get('/obligasi', fn() => view('obligasi.index'))->name('obligasi.index');
+    Route::get('/analisa-obligasi', fn() => view('analisa-obligasi.index'))->name('analisa-obligasi.index');
 });
 
 Route::middleware(['auth', 'verified'])->prefix('quiz')->name('quiz.')->group(function () {
@@ -79,6 +110,7 @@ Route::middleware(['auth', 'verified'])->prefix('quiz')->name('quiz.')->group(fu
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/member/daftar', [MemberController::class, 'create'])->name('member.create');
     Route::post('/member/daftar', [MemberController::class, 'store'])->name('member.store');
+    Route::get('/member/harga-efek', [MemberController::class, 'hargaEfek'])->name('member.harga-efek');
 });
 
 require __DIR__.'/auth.php';

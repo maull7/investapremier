@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AnalisaReksaDana;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class AnalisaController extends Controller
 {
@@ -39,6 +40,15 @@ class AnalisaController extends Controller
         $filename = 'analisa-'.str($analisa->nama_reksa_dana)->slug().'-'.now()->format('Ymd').'.pdf';
 
         return $pdf->download($filename);
+    }
+
+    public function downloadPdf(AnalisaReksaDana $analisa)
+    {
+        if (!$analisa->pdf_path || !Storage::disk('public')->exists($analisa->pdf_path)) {
+            abort(404, 'File PDF tidak ditemukan.');
+        }
+
+        return Storage::disk('public')->download($analisa->pdf_path, 'ffs-'.str($analisa->nama_reksa_dana)->slug().'.pdf');
     }
 
     public function review(Request $request, AnalisaReksaDana $analisa)

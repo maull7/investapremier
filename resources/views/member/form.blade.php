@@ -183,6 +183,8 @@
                             <th class="px-4 py-3 font-semibold">Nama Efek</th>
                             <th class="px-4 py-3 font-semibold">Mulai Kepemilikan</th>
                             <th class="px-4 py-3 font-semibold">Jumlah (Lembar/Unit)</th>
+                            <th class="px-4 py-3 font-semibold">Harga Saat Ini (T-1)</th>
+                            <th class="px-4 py-3 font-semibold">Total Nilai</th>
                             <th class="px-4 py-3 w-10"></th>
                         </tr>
                     </thead>
@@ -200,6 +202,7 @@
                                 </td>
                                 <td class="px-4 py-2">
                                     <input type="text" :name="`portfolios[${i}][nama_efek]`" x-model="row.nama_efek"
+                                        @change="fetchHarga(row)"
                                         placeholder="Nama efek"
                                         class="w-full px-2 py-1.5 border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
                                 </td>
@@ -210,8 +213,23 @@
                                 </td>
                                 <td class="px-4 py-2">
                                     <input type="number" :name="`portfolios[${i}][jumlah]`" x-model="row.jumlah"
+                                        @input="updateTotal(row)"
                                         placeholder="0" min="0" step="0.01"
                                         class="w-full px-2 py-1.5 border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
+                                </td>
+                                <td class="px-4 py-2">
+                                    <div class="relative">
+                                        <input type="text" :name="`portfolios[${i}][harga_saat_ini]`" x-model="row.harga_saat_ini"
+                                            readonly placeholder="—"
+                                            class="w-full px-2 py-1.5 border border-line rounded-lg text-sm bg-[#f8fafc] text-muted cursor-not-allowed">
+                                        <span x-show="row.loadingHarga" class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted animate-pulse">...</span>
+                                    </div>
+                                    <div x-show="row.tanggalHarga" class="text-xs text-muted mt-0.5" x-text="row.tanggalHarga"></div>
+                                </td>
+                                <td class="px-4 py-2">
+                                    <input type="number" :name="`portfolios[${i}][total_nilai]`" x-model="row.total_nilai"
+                                        readonly placeholder="—"
+                                        class="w-full px-2 py-1.5 border border-line rounded-lg text-sm bg-[#f8fafc] text-muted cursor-not-allowed">
                                 </td>
                                 <td class="px-4 py-2 text-center">
                                     <button type="button" @click="rows.splice(i, 1)"
@@ -225,7 +243,7 @@
                             </tr>
                         </template>
                         <tr x-show="rows.length === 0">
-                            <td colspan="5" class="px-4 py-6 text-center text-muted text-sm">
+                            <td colspan="7" class="px-4 py-6 text-center text-muted text-sm">
                                 Belum ada portofolio. Klik "Tambah Baris" untuk menambahkan.
                             </td>
                         </tr>
@@ -250,14 +268,31 @@
     <script>
         function memberForm() {
             return {
-                rows: @json($portfolios),
+                rows: @json($portfolios).map(r => ({...r, loadingHarga: false, tanggalHarga: r.harga_saat_ini ? '' : ''})),
                 addRow() {
                     this.rows.push({
-                        jenis: '',
-                        nama_efek: '',
-                        mulai_kepemilikan: '',
-                        jumlah: ''
+                        jenis: '', nama_efek: '', mulai_kepemilikan: '',
+                        jumlah: '', harga_saat_ini: '', total_nilai: '',
+                        loadingHarga: false, tanggalHarga: ''
                     });
+                },
+                async fetchHarga(row) {
+                    const kode = row.nama_efek?.trim();
+                    if (!kode) { row.harga_saat_ini = ''; row.total_nilai = ''; row.tanggalHarga = ''; return; }
+                    row.loadingHarga = true;
+                    try {
+                        const res = await fetch(`{{ route('member.harga-efek') }}?kode=${encodeURIComponent(kode)}`);
+                        const data = await res.json();
+                        row.harga_saat_ini = data.harga ?? '';
+                        row.tanggalHarga   = data.tanggal ? `T-1: ${data.tanggal}` : (data.harga ? '' : 'Harga tidak ditemukan');
+                    } catch { row.harga_saat_ini = ''; row.tanggalHarga = ''; }
+                    finally { row.loadingHarga = false; }
+                    this.updateTotal(row);
+                },
+                updateTotal(row) {
+                    const j = parseFloat(row.jumlah) || 0;
+                    const h = parseFloat(row.harga_saat_ini) || 0;
+                    row.total_nilai = (j > 0 && h > 0) ? (j * h).toFixed(2) : '';
                 }
             }
         }

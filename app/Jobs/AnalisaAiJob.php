@@ -13,9 +13,11 @@ class AnalisaAiJob implements ShouldQueue
 
     public int $tries = 3;
     public int $backoff = 30;
-    public string $queue = 'ai';
 
-    public function __construct(private int $analisaId) {}
+    public function __construct(private int $analisaId)
+    {
+        $this->onQueue('ai');
+    }
 
     public function handle(GroqService $groq): void
     {

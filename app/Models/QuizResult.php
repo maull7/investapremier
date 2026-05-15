@@ -18,6 +18,16 @@ class QuizResult extends Model
 
     public static function profileFromScore(int $score): string
     {
+        $classification = ScoreClassification::orderBy('sort_order')
+            ->where('min_score', '<=', $score)
+            ->where('max_score', '>=', $score)
+            ->first();
+
+        if ($classification) {
+            return $classification->profile_name;
+        }
+
+        // Fallback jika DB kosong
         return match(true) {
             $score <= 12 => 'Conservative',
             $score <= 20 => 'Tolerant',
@@ -28,6 +38,13 @@ class QuizResult extends Model
 
     public static function allocationFromProfile(string $profile): array
     {
+        $classification = ScoreClassification::where('profile_name', $profile)->first();
+
+        if ($classification) {
+            return $classification->getAllocation();
+        }
+
+        // Fallback jika DB kosong
         return match($profile) {
             'Conservative' => ['Pasar Uang' => 90, 'Pendapatan Tetap' => 10, 'Campuran' => 0, 'Saham' => 0],
             'Tolerant'     => ['Pasar Uang' => 20, 'Pendapatan Tetap' => 70, 'Campuran' => 10, 'Saham' => 0],

@@ -6,9 +6,13 @@ use App\Exports\AnalisaTemplateExport;
 use App\Imports\AnalisaImport;
 use App\Jobs\AnalisaAiJob;
 use App\Models\AnalisaReksaDana;
+use App\Models\StockPrice;
+use App\Services\FfsParserService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 
 class AnalisaController extends Controller
@@ -31,6 +35,68 @@ class AnalisaController extends Controller
         return Excel::download(new AnalisaTemplateExport(), 'template-analisa-reksa-dana.xlsx');
     }
 
+    public function parsePdf(Request $request, FfsParserService $ffsParser)
+    {
+        $request->validate([
+            'file_pdf' => 'required|file|mimes:pdf|max:10240',
+        ]);
+
+        $file = $request->file('file_pdf');
+        $path = $file->getPathname();
+
+        try {
+            $data = $ffsParser->parse($path);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membaca PDF: ' . $e->getMessage(),
+                'data' => null,
+            ], 422);
+        }
+
+        $filename = 'ffs-' . now()->format('Ymd-His') . '-' . Str::random(8) . '.pdf';
+        $storedPath = $file->storeAs('analisa-pdfs', $filename, 'public');
+
+        if ($storedPath && !empty($data['efek'])) {
+            $tanggal = now()->subDay()->toDateString();
+            foreach ($data['efek'] as $efek) {
+                if (!empty($efek['kode_efek'])) {
+                    $harga = !empty($efek['harga']) ? $efek['harga'] : null;
+                    StockPrice::updateOrCreate(
+                        ['kode_efek' => strtoupper($efek['kode_efek']), 'tanggal' => $tanggal],
+                        [
+                            'nama_efek' => $efek['nama_efek'] ?? null,
+                            'jenis' => 'Saham',
+                            'harga' => $harga ?? 0,
+                            'sumber' => 'PDF FFS',
+                        ]
+                    );
+                }
+            }
+        }
+
+        $extracted = [];
+        if ($data['nama_reksa_dana']) $extracted[] = 'Nama RD';
+        if ($data['jenis_reksa_dana']) $extracted[] = 'Jenis RD';
+        if ($data['total_aum']) $extracted[] = 'Total AUM';
+        if ($data['sektor']) $extracted[] = count($data['sektor']) . ' Sektor';
+        if ($data['efek']) $extracted[] = count($data['efek']) . ' Efek';
+        if ($data['kinerja']) $extracted[] = count($data['kinerja']) . ' Bulan Kinerja';
+        if ($data['obligasi']) $extracted[] = count($data['obligasi']) . ' Obligasi';
+        if ($data['bank']) $extracted[] = count($data['bank']) . ' Bank';
+
+        $success = count($extracted) > 0;
+
+        return response()->json([
+            'success' => $success,
+            'message' => $success
+                ? 'Berhasil mengekstrak: ' . implode(', ', $extracted) . '.'
+                : 'Tidak dapat mengekstrak data dari PDF ini. Format mungkin tidak didukung.',
+            'data' => $data,
+            'pdf_file' => $storedPath,
+        ]);
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -38,7 +104,8 @@ class AnalisaController extends Controller
             'jenis_reksa_dana'     => 'required|in:Saham,Pendapatan Tetap,Campuran,Pasar Uang',
             'total_aum'            => 'nullable|numeric|min:0',
             'total_marcap_10_efek' => 'nullable|numeric|min:0',
-            'input_mode'           => 'required|in:manual,excel',
+            'input_mode'           => 'required|in:manual,excel,pdf',
+            'pdf_file'             => 'nullable|string',
         ]);
 
         if ($request->input_mode === 'excel') {
@@ -52,32 +119,34 @@ class AnalisaController extends Controller
     {
         $request->validate([
             'sektor'                    => 'nullable|array',
-            'sektor.*.nama_sektor'      => 'required|string',
-            'sektor.*.bobot'            => 'required|numeric',
+            'sektor.*.nama_sektor'      => 'nullable|string',
+            'sektor.*.bobot'            => 'nullable|numeric',
             'efek'                      => 'nullable|array',
-            'efek.*.kode_efek'          => 'required|string',
-            'efek.*.nama_efek'          => 'required|string',
-            'efek.*.bobot'              => 'required|numeric',
+            'efek.*.kode_efek'          => 'nullable|string',
+            'efek.*.nama_efek'          => 'nullable|string',
+            'efek.*.bobot'              => 'nullable|numeric',
             'efek.*.kontribusi_kinerja' => 'nullable|numeric',
             'efek.*.market_cap'         => 'nullable|numeric',
-            'kinerja'                   => 'nullable|array|min:2',
-            'kinerja.*.periode'         => 'required|date',
-            'kinerja.*.return_pct'      => 'required|numeric',
+            'kinerja'                   => 'nullable|array',
+            'kinerja.*.periode'         => 'nullable|date',
+            'kinerja.*.return_pct'      => 'nullable|numeric',
             'obligasi'                  => 'nullable|array',
-            'obligasi.*.kode_obligasi'  => 'required|string',
-            'obligasi.*.nama_obligasi'  => 'required|string',
-            'obligasi.*.bobot'          => 'required|numeric',
+            'obligasi.*.kode_obligasi'  => 'nullable|string',
+            'obligasi.*.nama_obligasi'  => 'nullable|string',
+            'obligasi.*.bobot'          => 'nullable|numeric',
             'obligasi.*.durasi'         => 'nullable|numeric',
             'obligasi.*.rating'         => 'nullable|string',
             'bank'                      => 'nullable|array',
-            'bank.*.nama_bank'          => 'required|string',
-            'bank.*.bobot'              => 'required|numeric',
+            'bank.*.nama_bank'          => 'nullable|string',
+            'bank.*.bobot'              => 'nullable|numeric',
             'bank.*.car'                => 'nullable|numeric',
             'bank.*.npl'                => 'nullable|numeric',
             'bank.*.klasifikasi_risiko' => 'nullable|string',
         ]);
 
         DB::transaction(function () use ($request) {
+            $pdfPath = $this->resolvePdfPath($request->pdf_file);
+
             $analisa = AnalisaReksaDana::create([
                 'user_id'              => auth()->id(),
                 'nama_reksa_dana'      => $request->nama_reksa_dana,
@@ -85,13 +154,20 @@ class AnalisaController extends Controller
                 'total_aum'            => $request->total_aum,
                 'total_marcap_10_efek' => $request->total_marcap_10_efek,
                 'status'               => 'submitted',
+                'pdf_path'             => $pdfPath,
             ]);
 
-            if ($request->sektor)   $analisa->sektor()->createMany($request->sektor);
-            if ($request->efek)     $analisa->efek()->createMany($request->efek);
-            if ($request->kinerja)  $analisa->kinerja()->createMany($request->kinerja);
-            if ($request->obligasi) $analisa->obligasi()->createMany($request->obligasi);
-            if ($request->bank)     $analisa->bank()->createMany($request->bank);
+            $sektor   = collect($request->sektor)->filter(fn($r) => !empty($r['nama_sektor']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
+            $efek     = collect($request->efek)->filter(fn($r) => !empty($r['kode_efek']) && !empty($r['nama_efek']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
+            $kinerja  = collect($request->kinerja)->filter(fn($r) => !empty($r['periode']) && isset($r['return_pct']) && $r['return_pct'] !== '')->values()->all();
+            $obligasi = collect($request->obligasi)->filter(fn($r) => !empty($r['kode_obligasi']) && !empty($r['nama_obligasi']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
+            $bank     = collect($request->bank)->filter(fn($r) => !empty($r['nama_bank']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
+
+            if ($sektor)   $analisa->sektor()->createMany($sektor);
+            if ($efek)     $analisa->efek()->createMany($efek);
+            if ($kinerja)  $analisa->kinerja()->createMany($kinerja);
+            if ($obligasi) $analisa->obligasi()->createMany($obligasi);
+            if ($bank)     $analisa->bank()->createMany($bank);
 
             AnalisaAiJob::dispatch($analisa->id);
         });
@@ -106,6 +182,8 @@ class AnalisaController extends Controller
         ]);
 
         DB::transaction(function () use ($request) {
+            $pdfPath = $this->resolvePdfPath($request->pdf_file);
+
             $analisa = AnalisaReksaDana::create([
                 'user_id'              => auth()->id(),
                 'nama_reksa_dana'      => $request->nama_reksa_dana,
@@ -113,6 +191,7 @@ class AnalisaController extends Controller
                 'total_aum'            => $request->total_aum,
                 'total_marcap_10_efek' => $request->total_marcap_10_efek,
                 'status'               => 'submitted',
+                'pdf_path'             => $pdfPath,
             ]);
 
             Excel::import(new AnalisaImport($analisa), $request->file('file_excel'));
@@ -121,6 +200,19 @@ class AnalisaController extends Controller
         });
 
         return redirect()->route('user.analisa.index')->with('success', 'Data analisa berhasil diimport dari Excel. Narasi AI sedang diproses.');
+    }
+
+    private function resolvePdfPath(?string $pdfFile): ?string
+    {
+        if (!$pdfFile) return null;
+
+        $tempPath = 'analisa-pdfs/' . basename($pdfFile);
+
+        if (!Storage::disk('public')->exists($tempPath)) {
+            return null;
+        }
+
+        return $tempPath;
     }
 
     public function show(AnalisaReksaDana $analisa)
@@ -144,10 +236,25 @@ class AnalisaController extends Controller
         return $pdf->download($filename);
     }
 
+    public function downloadPdf(AnalisaReksaDana $analisa)
+    {
+        abort_if($analisa->user_id !== auth()->id(), 403);
+
+        if (!$analisa->pdf_path || !Storage::disk('public')->exists($analisa->pdf_path)) {
+            abort(404, 'File PDF tidak ditemukan.');
+        }
+
+        return Storage::disk('public')->download($analisa->pdf_path, 'ffs-'.str($analisa->nama_reksa_dana)->slug().'.pdf');
+    }
+
     public function destroy(AnalisaReksaDana $analisa)
     {
         abort_if($analisa->user_id !== auth()->id(), 403);
         abort_if($analisa->status === 'reviewed', 403, 'Data yang sudah direview tidak dapat dihapus.');
+
+        if ($analisa->pdf_path && Storage::disk('public')->exists($analisa->pdf_path)) {
+            Storage::disk('public')->delete($analisa->pdf_path);
+        }
 
         $analisa->delete();
 

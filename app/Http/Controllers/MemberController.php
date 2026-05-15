@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\MemberProfile;
 use App\Models\MemberPortfolio;
+use App\Models\StockPrice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -19,8 +20,23 @@ class MemberController extends Controller
                 'nama_efek'         => $p->nama_efek,
                 'mulai_kepemilikan' => $p->mulai_kepemilikan?->format('Y-m-d'),
                 'jumlah'            => $p->jumlah,
+                'harga_saat_ini'    => $p->harga_saat_ini,
+                'total_nilai'       => $p->total_nilai,
             ])->values()->toArray();
         return view('member.form', compact('profile', 'portfolios'));
+    }
+
+    public function hargaEfek(Request $request)
+    {
+        $kode = strtoupper(trim($request->query('kode', '')));
+        if (!$kode) {
+            return response()->json(['harga' => null]);
+        }
+        $sp = StockPrice::hargaTerbaru($kode);
+        return response()->json([
+            'harga'   => $sp?->harga,
+            'tanggal' => $sp?->tanggal?->format('d M Y'),
+        ]);
     }
 
     public function store(Request $request)
@@ -58,14 +74,26 @@ class MemberController extends Controller
 
             MemberPortfolio::where('user_id', Auth::id())->delete();
 
+            // Ambil semua harga sekaligus dari DB
+            $namaEfeks = collect($request->portfolios ?? [])
+                ->filter(fn($p) => !empty($p['jenis']) && !empty($p['nama_efek']))
+                ->pluck('nama_efek')
+                ->unique()->values()->all();
+            $stockPrices = StockPrice::hargaTerbaruBulk($namaEfeks);
+
             foreach (($request->portfolios ?? []) as $p) {
                 if (!empty($p['jenis']) && !empty($p['nama_efek'])) {
+                    $jumlah = isset($p['jumlah']) && $p['jumlah'] !== '' ? (float) $p['jumlah'] : null;
+                    $sp     = $stockPrices[strtoupper($p['nama_efek'])] ?? null;
+                    $harga  = $sp?->harga ? (float) $sp->harga : null;
                     MemberPortfolio::create([
-                        'user_id'          => Auth::id(),
-                        'jenis'            => $p['jenis'],
-                        'nama_efek'        => $p['nama_efek'],
-                        'mulai_kepemilikan'=> $p['mulai_kepemilikan'] ?? null,
-                        'jumlah'           => $p['jumlah'] ?? null,
+                        'user_id'           => Auth::id(),
+                        'jenis'             => $p['jenis'],
+                        'nama_efek'         => $p['nama_efek'],
+                        'mulai_kepemilikan' => $p['mulai_kepemilikan'] ?? null,
+                        'jumlah'            => $jumlah,
+                        'harga_saat_ini'    => $harga,
+                        'total_nilai'       => ($harga && $jumlah) ? $harga * $jumlah : null,
                     ]);
                 }
             }

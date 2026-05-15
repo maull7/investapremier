@@ -123,11 +123,18 @@
                             <th class="px-6 py-3 font-semibold">Jenis</th>
                             <th class="px-6 py-3 font-semibold">Nama Efek</th>
                             <th class="px-6 py-3 font-semibold">Mulai Kepemilikan</th>
-                            <th class="px-6 py-3 font-semibold">Jumlah</th>
+                            <th class="px-6 py-3 font-semibold text-right">Jumlah</th>
+                            <th class="px-6 py-3 font-semibold text-right">Harga Saat Ini (T-1)</th>
+                            <th class="px-6 py-3 font-semibold text-right">Total Nilai</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-line">
                         @foreach($member->portfolios as $p)
+                        @php
+                            $sp = $stockPrices[strtoupper($p->nama_efek)] ?? null;
+                            $harga = $sp?->harga;
+                            $totalNilai = ($harga && $p->jumlah) ? $harga * $p->jumlah : null;
+                        @endphp
                         <tr class="hover:bg-[#f8fafc] transition-colors">
                             <td class="px-6 py-3">
                                 <span class="px-2.5 py-1 rounded-full text-xs font-semibold
@@ -137,10 +144,43 @@
                             </td>
                             <td class="px-6 py-3 font-medium text-primary">{{ $p->nama_efek }}</td>
                             <td class="px-6 py-3 text-muted">{{ $p->mulai_kepemilikan?->format('d M Y') ?? '—' }}</td>
-                            <td class="px-6 py-3 text-muted">{{ $p->jumlah ? number_format($p->jumlah, 0, ',', '.') : '—' }}</td>
+                            <td class="px-6 py-3 text-muted text-right">{{ $p->jumlah ? number_format($p->jumlah, 0, ',', '.') : '—' }}</td>
+                            <td class="px-6 py-3 text-right">
+                                @if($harga)
+                                    <span class="font-medium text-primary">Rp {{ number_format($harga, 0, ',', '.') }}</span>
+                                    @if($sp->tanggal)
+                                    <div class="text-xs text-muted">{{ $sp->tanggal->format('d M Y') }}</div>
+                                    @endif
+                                @else
+                                    <span class="text-muted">—</span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-3 text-right">
+                                @if($totalNilai)
+                                    <span class="font-semibold text-primary">Rp {{ number_format($totalNilai, 0, ',', '.') }}</span>
+                                @else
+                                    <span class="text-muted">—</span>
+                                @endif
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>
+                    @if($member->portfolios->isNotEmpty())
+                    @php
+                        $grandTotal = $member->portfolios->sum(function($p) use ($stockPrices) {
+                            $sp = $stockPrices[strtoupper($p->nama_efek)] ?? null;
+                            return ($sp?->harga && $p->jumlah) ? $sp->harga * $p->jumlah : 0;
+                        });
+                    @endphp
+                    @if($grandTotal > 0)
+                    <tfoot>
+                        <tr class="bg-[#f8fafc] font-semibold text-sm">
+                            <td colspan="5" class="px-6 py-3 text-right text-muted">Total Nilai Portfolio</td>
+                            <td class="px-6 py-3 text-right text-primary">Rp {{ number_format($grandTotal, 0, ',', '.') }}</td>
+                        </tr>
+                    </tfoot>
+                    @endif
+                    @endif
                 </table>
             </div>
             @endif

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MemberPortfolio extends Model
 {
-    protected $fillable = ['user_id', 'jenis', 'nama_efek', 'mulai_kepemilikan', 'jumlah'];
+    protected $fillable = ['user_id', 'jenis', 'nama_efek', 'mulai_kepemilikan', 'jumlah', 'harga_saat_ini', 'total_nilai'];
 
     protected $casts = ['mulai_kepemilikan' => 'date'];
 

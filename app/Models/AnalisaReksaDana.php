@@ -11,8 +11,8 @@ class AnalisaReksaDana extends Model
     protected $table = 'analisa_reksa_dana';
 
     protected $fillable = [
-        'user_id', 'nama_reksa_dana', 'jenis_reksa_dana',
-        'total_aum', 'total_marcap_10_efek', 'status', 'catatan_admin', 'ai_narasi',
+        'user_id', 'nama_reksa_dana', 'jenis_reksa_dana', 'kategori', 'mata_uang',
+        'total_aum', 'return_1m', 'total_marcap_10_efek', 'status', 'catatan_admin', 'ai_narasi', 'pdf_path',
     ];
 
     public function user(): BelongsTo
