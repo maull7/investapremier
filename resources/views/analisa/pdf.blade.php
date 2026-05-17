@@ -130,11 +130,82 @@
         </div>
     </div>
 
-    {{-- AI Narasi --}}
+    {{-- AI Narasi / Structured Output --}}
     @if($analisa->ai_narasi)
     <div class="ai-box">
         <div class="ai-title">🤖 Analisa AI (Powered by Groq)</div>
-        <div class="ai-text">{{ $analisa->ai_narasi }}</div>
+
+        @php $ai = $analisa->ai_output; @endphp
+
+        @if($ai)
+            {{-- Ringkasan --}}
+            @if(!empty($ai['ringkasan_utama']))
+            <div class="ai-text" style="margin-bottom:12px">
+                <strong style="color:#0369a1">Ringkasan Utama</strong><br>
+                {{ $ai['ringkasan_utama'] }}
+            </div>
+            @endif
+
+            {{-- Alokasi Aset --}}
+            @if(!empty($ai['alokasi_aset']))
+            <div style="margin-bottom:12px">
+                <strong style="color:#0369a1;font-size:10px">Alokasi Aset</strong>
+                <table style="margin-top:6px">
+                    <thead><tr><th style="text-align:left">Kategori</th><th style="text-align:right">Persentase</th><th style="text-align:left">Keterangan</th></tr></thead>
+                    <tbody>
+                        @foreach($ai['alokasi_aset'] as $aa)
+                        <tr>
+                            <td style="text-align:left">{{ $aa['kategori'] }}</td>
+                            <td style="text-align:right">{{ number_format($aa['persentase'], 2) }}%</td>
+                            <td style="text-align:left">{{ $aa['keterangan'] ?? '-' }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @endif
+
+            {{-- Daftar Efek --}}
+            @if(!empty($ai['daftar_efek']))
+            <div style="margin-bottom:12px">
+                <strong style="color:#0369a1;font-size:10px">Daftar Efek & Persentase</strong>
+                <table style="margin-top:6px">
+                    <thead><tr><th style="text-align:left">Kode</th><th style="text-align:left">Nama</th><th style="text-align:left">Sektor</th><th style="text-align:right">Bobot</th><th style="text-align:right">Kontribusi</th></tr></thead>
+                    <tbody>
+                        @foreach($ai['daftar_efek'] as $de)
+                        <tr>
+                            <td style="text-align:left">{{ $de['kode_efek'] }}</td>
+                            <td style="text-align:left">{{ $de['nama_efek'] }}</td>
+                            <td style="text-align:left">{{ $de['sektor'] ?? '-' }}</td>
+                            <td style="text-align:right">{{ number_format($de['bobot'], 2) }}%</td>
+                            <td style="text-align:right" class="{{ ($de['kontribusi_kinerja'] ?? 0) > 0 ? 'pos' : (($de['kontribusi_kinerja'] ?? 0) < 0 ? 'neg' : '') }}">
+                                {{ isset($de['kontribusi_kinerja']) ? ($de['kontribusi_kinerja'] >= 0 ? '+' : '').$de['kontribusi_kinerja'].'%' : '-' }}
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @endif
+
+            {{-- Analisa Risiko --}}
+            @if(!empty($ai['analisa_risiko']))
+            <div class="ai-text" style="margin-bottom:12px">
+                <strong style="color:#0369a1">Analisa Risiko</strong><br>
+                {{ $ai['analisa_risiko'] }}
+            </div>
+            @endif
+
+            {{-- Rekomendasi --}}
+            @if(!empty($ai['rekomendasi_investor']))
+            <div class="ai-text">
+                <strong style="color:#0369a1">Rekomendasi Investor</strong><br>
+                {{ $ai['rekomendasi_investor'] }}
+            </div>
+            @endif
+        @else
+            <div class="ai-text">{{ $analisa->ai_narasi }}</div>
+        @endif
     </div>
     @endif
 

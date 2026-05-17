@@ -1,7 +1,7 @@
 @extends('layouts.user')
 
 @section('content')
-<div class="space-y-6">
+<div class="space-y-6" x-data="{ activeTab: 'data' }">
     {{-- Header --}}
     <div class="flex items-start justify-between">
         <div>
@@ -28,18 +28,15 @@
         <span class="inline-flex px-3 py-1 rounded-full text-xs font-medium {{ $badge }}">{{ $label }}</span>
     </div>
 
-    {{-- Tombol PDF --}}
     <div class="flex justify-end gap-2">
         @if($analisa->pdf_path)
             <a href="{{ route('user.analisa.download-ffs', $analisa) }}"
                class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                 FFS PDF
             </a>
         @endif
         <a href="{{ route('user.analisa.pdf', $analisa) }}" target="_blank"
            class="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             Export PDF
         </a>
     </div>
@@ -51,24 +48,41 @@
     </div>
     @endif
 
-    {{-- Narasi AI --}}
-    @if($analisa->ai_narasi)
-    <div class="bg-white rounded-xl border border-line p-6">
-        <div class="flex items-center gap-2 mb-4">
-            <span class="text-lg">🤖</span>
-            <h3 class="font-semibold text-primary">Analisa AI</h3>
-            <span class="ml-auto text-xs text-muted bg-[#f1f5f9] px-2 py-1 rounded-full">Powered by Groq</span>
-        </div>
-        <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{{ $analisa->ai_narasi }}</div>
+    <div class="flex gap-1 border-b border-line overflow-x-auto">
+        <button type="button" @click="activeTab='data'"
+            :class="activeTab==='data' ? 'border-b-2 border-primary text-primary font-semibold' : 'text-muted hover:text-primary'"
+            class="px-4 py-2.5 text-sm whitespace-nowrap transition">Data & Grafik</button>
+        <button type="button" @click="activeTab='ai'"
+            :class="activeTab==='ai' ? 'border-b-2 border-primary text-primary font-semibold' : 'text-muted hover:text-primary'"
+            class="px-4 py-2.5 text-sm whitespace-nowrap transition">Analisa AI</button>
+        <button type="button" @click="activeTab='ai-plus'"
+            :class="activeTab==='ai-plus' ? 'border-b-2 border-primary text-primary font-semibold' : 'text-muted hover:text-primary'"
+            class="px-4 py-2.5 text-sm whitespace-nowrap transition">Analisa AI Plus</button>
     </div>
-    @else
-    <div class="bg-[#f8fafc] border border-dashed border-line rounded-xl p-5 flex items-center gap-3 text-sm text-muted">
-        <svg class="w-5 h-5 animate-spin shrink-0" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-        Narasi AI sedang diproses... Refresh halaman beberapa saat lagi.
-    </div>
-    @endif
 
-    {{-- Metric Cards: RAR, Sharpe, Liquidity, Durasi --}}
+    <div x-show="activeTab==='ai'">
+        @php $aiOut = $analisa->ai_output ?? []; @endphp
+        @if(!empty($aiOut['error']))
+            @include('analisa.partials.ai-panel', ['title' => 'Analisa AI', 'variant' => 'standard', 'ai' => $aiOut, 'narasi' => null])
+        @elseif($analisa->ai_narasi)
+            @include('analisa.partials.ai-panel', ['title' => 'Analisa AI', 'variant' => 'standard', 'ai' => $aiOut, 'narasi' => $analisa->ai_narasi])
+        @else
+            <div class="bg-[#f8fafc] border border-dashed border-line rounded-xl p-5 text-sm text-muted">Narasi AI sedang diproses... Refresh halaman.</div>
+        @endif
+    </div>
+
+    <div x-show="activeTab==='ai-plus'">
+        @php $aiPlusOut = $analisa->ai_output_plus ?? []; @endphp
+        @if(!empty($aiPlusOut['error']))
+            @include('analisa.partials.ai-panel', ['title' => 'Analisa AI Plus', 'variant' => 'plus', 'ai' => $aiPlusOut, 'narasi' => null])
+        @elseif($analisa->ai_narasi_plus)
+            @include('analisa.partials.ai-panel', ['title' => 'Analisa AI Plus', 'variant' => 'plus', 'ai' => $aiPlusOut, 'narasi' => $analisa->ai_narasi_plus])
+        @else
+            <div class="bg-[#f8fafc] border border-dashed border-line rounded-xl p-5 text-sm text-muted">Analisa AI Plus sedang diproses... Refresh halaman.</div>
+        @endif
+    </div>
+
+    <div x-show="activeTab==='data'" class="space-y-6">
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         @php
             $metrics = [
@@ -88,15 +102,12 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {{-- Chart: Komposisi Sektor --}}
         @if($analisa->sektor->isNotEmpty())
         <div class="bg-white rounded-xl border border-line p-6">
             <h3 class="font-semibold text-primary mb-4">Komposisi per Sektor</h3>
             <canvas id="chartSektor" height="220"></canvas>
         </div>
         @endif
-
-        {{-- Chart: Kinerja Bulanan --}}
         @if($analisa->kinerja->isNotEmpty())
         <div class="bg-white rounded-xl border border-line p-6">
             <h3 class="font-semibold text-primary mb-4">Return Bulanan (%)</h3>
@@ -105,7 +116,6 @@
         @endif
     </div>
 
-    {{-- Attribution: 10 Efek Terbesar --}}
     @if($analisa->efek->isNotEmpty())
     <div class="bg-white rounded-xl border border-line p-6">
         <h3 class="font-semibold text-primary mb-4">Attribution Analysis — Daftar Efek</h3>
@@ -128,14 +138,8 @@
                         <td class="px-4 py-2.5">{{ $efek->nama_efek }}</td>
                         <td class="px-4 py-2.5 text-muted">{{ $efek->sektor ?? '-' }}</td>
                         <td class="px-4 py-2.5 text-right">{{ number_format($efek->bobot, 2) }}%</td>
-                        <td class="px-4 py-2.5 text-right {{ $efek->kontribusi_kinerja > 0 ? 'text-green-600' : ($efek->kontribusi_kinerja < 0 ? 'text-red-600' : 'text-muted') }}">
-                            {{ $efek->kontribusi_kinerja !== null ? ($efek->kontribusi_kinerja > 0 ? '+' : '').$efek->kontribusi_kinerja.'%' : '-' }}
-                        </td>
-                        <td class="px-4 py-2.5 text-center">
-                            @if($efek->top_10)
-                                <span class="inline-flex w-5 h-5 items-center justify-center bg-primary text-white rounded-full text-xs">✓</span>
-                            @endif
-                        </td>
+                        <td class="px-4 py-2.5 text-right">{{ $efek->kontribusi_kinerja !== null ? ($efek->kontribusi_kinerja > 0 ? '+' : '').$efek->kontribusi_kinerja.'%' : '-' }}</td>
+                        <td class="px-4 py-2.5 text-center">@if($efek->top_10) ✓ @endif</td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -145,76 +149,41 @@
     @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {{-- Durasi & Rating Risk: Obligasi --}}
         @if($analisa->obligasi->isNotEmpty())
         <div class="bg-white rounded-xl border border-line p-6">
             <h3 class="font-semibold text-primary mb-4">Durasi & Rating Risk — Obligasi</h3>
             <table class="w-full text-sm">
-                <thead class="bg-[#f8fafc] border-b border-line">
-                    <tr>
-                        <th class="text-left px-3 py-2 font-semibold text-primary">Obligasi</th>
-                        <th class="text-right px-3 py-2 font-semibold text-primary">Bobot</th>
-                        <th class="text-right px-3 py-2 font-semibold text-primary">Durasi</th>
-                        <th class="text-center px-3 py-2 font-semibold text-primary">Rating</th>
-                    </tr>
-                </thead>
                 <tbody class="divide-y divide-line">
                     @foreach($analisa->obligasi as $ob)
                     <tr>
-                        <td class="px-3 py-2">
-                            <div class="font-medium">{{ $ob->nama_obligasi }}</div>
-                            <div class="text-xs text-muted">{{ $ob->kode_obligasi }}</div>
-                        </td>
+                        <td class="px-3 py-2">{{ $ob->nama_obligasi }} <span class="text-xs text-muted">{{ $ob->kode_obligasi }}</span></td>
                         <td class="px-3 py-2 text-right">{{ number_format($ob->bobot, 2) }}%</td>
                         <td class="px-3 py-2 text-right">{{ $ob->durasi ? $ob->durasi.' thn' : '-' }}</td>
-                        <td class="px-3 py-2 text-center">
-                            <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">{{ $ob->rating ?? '-' }}</span>
-                        </td>
+                        <td class="px-3 py-2 text-center">{{ $ob->rating ?? '-' }}</td>
                     </tr>
                     @endforeach
                 </tbody>
             </table>
         </div>
         @endif
-
-        {{-- Bank Risk --}}
         @if($analisa->bank->isNotEmpty())
         <div class="bg-white rounded-xl border border-line p-6">
             <h3 class="font-semibold text-primary mb-4">Bank Risk — CAR & NPL</h3>
             <table class="w-full text-sm">
-                <thead class="bg-[#f8fafc] border-b border-line">
-                    <tr>
-                        <th class="text-left px-3 py-2 font-semibold text-primary">Bank</th>
-                        <th class="text-right px-3 py-2 font-semibold text-primary">CAR</th>
-                        <th class="text-right px-3 py-2 font-semibold text-primary">NPL</th>
-                        <th class="text-center px-3 py-2 font-semibold text-primary">Risiko</th>
-                    </tr>
-                </thead>
                 <tbody class="divide-y divide-line">
                     @foreach($analisa->bank as $bank)
                     <tr>
-                        <td class="px-3 py-2 font-medium">{{ $bank->nama_bank }}</td>
+                        <td class="px-3 py-2">{{ $bank->nama_bank }}</td>
                         <td class="px-3 py-2 text-right">{{ $bank->car ? $bank->car.'%' : '-' }}</td>
                         <td class="px-3 py-2 text-right">{{ $bank->npl ? $bank->npl.'%' : '-' }}</td>
-                        <td class="px-3 py-2 text-center">
-                            @php
-                                $riskColor = match($bank->klasifikasi_risiko) {
-                                    'Rendah'  => 'bg-green-100 text-green-700',
-                                    'Sedang'  => 'bg-yellow-100 text-yellow-700',
-                                    'Tinggi'  => 'bg-red-100 text-red-700',
-                                    default   => 'bg-gray-100 text-gray-600',
-                                };
-                            @endphp
-                            <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium {{ $riskColor }}">
-                                {{ $bank->klasifikasi_risiko ?? '-' }}
-                            </span>
-                        </td>
+                        <td class="px-3 py-2 text-center">{{ $bank->klasifikasi_risiko ?? '-' }}</td>
                     </tr>
                     @endforeach
                 </tbody>
             </table>
         </div>
         @endif
+    </div>
     </div>
 </div>
 
@@ -226,30 +195,19 @@ new Chart(document.getElementById('chartSektor'), {
     type: 'doughnut',
     data: {
         labels: {!! $analisa->sektor->pluck('nama_sektor') !!},
-        datasets: [{
-            data: {!! $analisa->sektor->pluck('bobot') !!},
-            backgroundColor: ['#1e3a5f','#2563eb','#3b82f6','#60a5fa','#93c5fd','#bfdbfe','#dbeafe','#eff6ff','#f0f9ff','#e0f2fe'],
-        }]
+        datasets: [{ data: {!! $analisa->sektor->pluck('bobot') !!}, backgroundColor: ['#1e3a5f','#2563eb','#3b82f6','#60a5fa','#93c5fd'] }]
     },
     options: { plugins: { legend: { position: 'right' } }, cutout: '60%' }
 });
 @endif
-
 @if($analisa->kinerja->isNotEmpty())
 new Chart(document.getElementById('chartKinerja'), {
     type: 'bar',
     data: {
         labels: {!! $analisa->kinerja->sortBy('periode')->map(fn($k) => $k->periode->format('M Y')) !!},
-        datasets: [{
-            label: 'Return (%)',
-            data: {!! $analisa->kinerja->sortBy('periode')->pluck('return_pct') !!},
-            backgroundColor: (ctx) => ctx.raw >= 0 ? '#22c55e' : '#ef4444',
-        }]
+        datasets: [{ label: 'Return (%)', data: {!! $analisa->kinerja->sortBy('periode')->pluck('return_pct') !!}, backgroundColor: (ctx) => ctx.raw >= 0 ? '#22c55e' : '#ef4444' }]
     },
-    options: {
-        plugins: { legend: { display: false } },
-        scales: { y: { ticks: { callback: v => v + '%' } } }
-    }
+    options: { plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => v + '%' } } } }
 });
 @endif
 </script>

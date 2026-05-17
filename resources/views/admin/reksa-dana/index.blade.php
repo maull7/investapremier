@@ -1,12 +1,12 @@
 @extends('layouts.admin')
 
-@section('title', 'Daftar Analisa RD')
+@section('title', 'Daftar Reksa Dana')
 
 @section('content')
 <div class="mb-6 flex items-center justify-between">
     <div>
-        <h1 class="text-2xl font-bold text-primary">Daftar Analisa Reksa Dana</h1>
-        <p class="text-muted text-sm mt-1">Kelola dan proses analisa FFS reksa dana</p>
+        <h1 class="text-2xl font-bold text-primary">Daftar Reksa Dana</h1>
+        <p class="text-muted text-sm mt-1">Seluruh reksa dana yang tersedia di platform</p>
     </div>
 </div>
 
@@ -62,6 +62,7 @@
                         <th class="px-4 py-3.5 font-semibold">Kategori</th>
                         <th class="px-4 py-3.5 font-semibold">Mata Uang</th>
                         <th class="px-4 py-3.5 font-semibold text-right">AUM</th>
+                        <th class="px-4 py-3.5 font-semibold text-right">UP</th>
                         <th class="px-4 py-3.5 font-semibold text-right">Return 1M</th>
                         <th class="px-4 py-3.5 font-semibold">Status AI</th>
                         <th class="px-4 py-3.5 font-semibold text-center">PDF FFS</th>
@@ -97,7 +98,10 @@
                         <td class="px-4 py-3.5 text-muted text-xs">{{ $rd->kategori ?? '—' }}</td>
                         <td class="px-4 py-3.5 text-muted text-xs">{{ $rd->mata_uang ?? 'IDR' }}</td>
                         <td class="px-4 py-3.5 text-right text-xs text-muted">
-                            {{ $rd->total_aum ? 'Rp ' . number_format($rd->total_aum / 1e9, 2) . ' M' : '—' }}
+                            {{ $rd->total_aum ? 'Rp ' . number_format($rd->total_aum, 0, ',', '.') : '—' }}
+                        </td>
+                        <td class="px-4 py-3.5 text-right text-xs text-muted">
+                            {{ $rd->unit_penyertaan ? number_format($rd->unit_penyertaan, 2, ',', '.') : '—' }}
                         </td>
                         <td class="px-4 py-3.5 text-right text-xs font-semibold">
                             @if($rd->return_1m !== null)
@@ -135,7 +139,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="10" class="px-6 py-12 text-center text-muted">
+                        <td colspan="11" class="px-6 py-12 text-center text-muted">
                             <p class="font-medium">Belum ada data reksa dana</p>
                         </td>
                     </tr>

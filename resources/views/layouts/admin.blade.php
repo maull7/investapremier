@@ -4,7 +4,7 @@
 <div x-data="{
     sidebarOpen: false,
     menuMasterOpen: {{ request()->routeIs('admin.dashboard') || request()->routeIs('admin.questions.*') || request()->routeIs('admin.members.*') || request()->routeIs('admin.score-classifications.*') ? 'true' : 'false' }},
-    reksaDanaOpen: {{ request()->routeIs('admin.reksa-dana.*') || request()->routeIs('admin.analisa.*') ? 'true' : 'false' }},
+    reksaDanaOpen: {{ request()->routeIs('admin.reksa-dana.*') || request()->routeIs('admin.analisa-rd.*') || request()->routeIs('admin.analisa.*') ? 'true' : 'false' }},
     pasarModalOpen: {{ request()->routeIs('admin.saham.*') || request()->routeIs('admin.analisa-saham.*') || request()->routeIs('admin.obligasi.*') || request()->routeIs('admin.analisa-obligasi.*') ? 'true' : 'false' }}
 }" class="flex h-screen overflow-hidden">
     {{-- Overlay mobile --}}
@@ -58,7 +58,7 @@
             {{-- Reksa Dana --}}
             <div>
                 <button type="button" @click="reksaDanaOpen = !reksaDanaOpen"
-                    class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.reksa-dana.*') || request()->routeIs('admin.analisa.*') ? 'bg-white/10 font-semibold' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
+                    class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.reksa-dana.*') || request()->routeIs('admin.analisa-rd.*') || request()->routeIs('admin.analisa.*') ? 'bg-white/10 font-semibold' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
                     <span class="flex items-center gap-3">
                         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
                         Reksa Dana
@@ -69,12 +69,17 @@
                     <a href="{{ route('admin.reksa-dana.index') }}"
                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.reksa-dana.*') ? 'bg-white/10 font-semibold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
                         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-                        Daftar Analisa RD
+                        Daftar Reksa Dana
+                    </a>
+                    <a href="{{ route('admin.analisa-rd.create') }}"
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.analisa-rd.*') ? 'bg-white/10 font-semibold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        Analisa Reksa Dana
                     </a>
                     <a href="{{ route('admin.analisa.index') }}"
                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.analisa.*') ? 'bg-white/10 font-semibold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
                         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                        Monitor Analisa
+                        Monitor Analisa Reksa Dana
                     </a>
                 </div>
             </div>
@@ -98,7 +103,7 @@
                     <a href="{{ route('admin.analisa-saham.index') }}"
                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.analisa-saham.*') ? 'bg-white/10 font-semibold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
                         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                        Analisa Saham
+                        Monitor Analisa Saham
                     </a>
                     <a href="{{ route('admin.obligasi.index') }}"
                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.obligasi.*') ? 'bg-white/10 font-semibold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
@@ -108,7 +113,7 @@
                     <a href="{{ route('admin.analisa-obligasi.index') }}"
                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.analisa-obligasi.*') ? 'bg-white/10 font-semibold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
                         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                        Analisa Obligasi
+                        Monitor Analisa Obligasi
                     </a>
                 </div>
             </div>
@@ -186,7 +191,7 @@
             {{-- Reksa Dana --}}
             <div>
                 <button type="button" @click="reksaDanaOpen = !reksaDanaOpen"
-                    class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.reksa-dana.*') || request()->routeIs('admin.analisa.*') ? 'bg-white/10 font-semibold' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
+                    class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.reksa-dana.*') || request()->routeIs('admin.analisa-rd.*') || request()->routeIs('admin.analisa.*') ? 'bg-white/10 font-semibold' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
                     <span class="flex items-center gap-3">
                         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
                         Reksa Dana
@@ -198,13 +203,19 @@
                        @@click="sidebarOpen = false"
                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.reksa-dana.*') ? 'bg-white/10 font-semibold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
                         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-                        Daftar Analisa RD
+                        Daftar Reksa Dana
+                    </a>
+                    <a href="{{ route('admin.analisa-rd.create') }}"
+                       @@click="sidebarOpen = false"
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.analisa-rd.*') ? 'bg-white/10 font-semibold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        Analisa Reksa Dana
                     </a>
                     <a href="{{ route('admin.analisa.index') }}"
                        @@click="sidebarOpen = false"
                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.analisa.*') ? 'bg-white/10 font-semibold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
                         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                        Monitor Analisa
+                        Monitor Analisa Reksa Dana
                     </a>
                 </div>
             </div>
@@ -230,7 +241,7 @@
                        @@click="sidebarOpen = false"
                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.analisa-saham.*') ? 'bg-white/10 font-semibold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
                         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                        Analisa Saham
+                        Monitor Analisa Saham
                     </a>
                     <a href="{{ route('admin.obligasi.index') }}"
                        @@click="sidebarOpen = false"
@@ -242,7 +253,7 @@
                        @@click="sidebarOpen = false"
                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.analisa-obligasi.*') ? 'bg-white/10 font-semibold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
                         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                        Analisa Obligasi
+                        Monitor Analisa Obligasi
                     </a>
                 </div>
             </div>

@@ -7,7 +7,11 @@ use App\Imports\AnalisaImport;
 use App\Jobs\AnalisaAiJob;
 use App\Models\AnalisaReksaDana;
 use App\Models\StockPrice;
+use App\Services\AnalisaPayloadBuilder;
 use App\Services\FfsParserService;
+use App\Services\AnalisaAiValidator;
+use App\Services\GroqService;
+use App\Jobs\AnalisaAiPlusJob;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +21,26 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class AnalisaController extends Controller
 {
+    protected bool $isAdminContext = false;
+
+    protected function indexRoute(): string
+    {
+        return 'user.analisa.index';
+    }
+
+    protected function formRoutes(): array
+    {
+        return [
+            'layout'          => 'layouts.user',
+            'store'           => route('user.analisa.store'),
+            'template'        => route('user.analisa.template'),
+            'cancel'          => route('user.analisa.index'),
+            'parse_pdf'       => route('user.analisa.parse-pdf'),
+            'preview_ai'      => route('user.analisa.preview-ai'),
+            'preview_ai_plus' => route('user.analisa.preview-ai-plus'),
+        ];
+    }
+
     public function index()
     {
         $analisas = AnalisaReksaDana::where('user_id', auth()->id())
@@ -27,12 +51,70 @@ class AnalisaController extends Controller
 
     public function create()
     {
-        return view('analisa.create');
+        return view('analisa.create', ['formRoutes' => $this->formRoutes()]);
     }
 
     public function downloadTemplate()
     {
         return Excel::download(new AnalisaTemplateExport(), 'template-analisa-reksa-dana.xlsx');
+    }
+
+    public function previewAi(Request $request, GroqService $groq)
+    {
+        $request->validate([
+            'nama_reksa_dana'  => 'required|string|max:255',
+            'jenis_reksa_dana' => 'required|in:Saham,Pendapatan Tetap,Campuran,Pasar Uang',
+        ]);
+
+        try {
+            $analisa = AnalisaPayloadBuilder::fromRequest($request);
+            $result = $groq->generateNarasiAnalisaStructured($analisa);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Analisa AI berhasil dibuat.',
+                'data'    => $result,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat Analisa AI: '.$e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function previewAiPlus(Request $request, GroqService $groq)
+    {
+        $request->validate([
+            'nama_reksa_dana'  => 'required|string|max:255',
+            'jenis_reksa_dana' => 'required|in:Saham,Pendapatan Tetap,Campuran,Pasar Uang',
+        ]);
+
+        $analisa = AnalisaPayloadBuilder::fromRequest($request);
+
+        $plusCheck = AnalisaAiValidator::assessPlusManualData($analisa);
+        if (!$plusCheck['can_run']) {
+            return response()->json([
+                'success' => false,
+                'message' => $plusCheck['message'],
+                'missing' => $plusCheck['missing'],
+            ], 422);
+        }
+
+        try {
+            $result = $groq->generateAnalisaPlusStructured($analisa);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Analisa AI Plus berhasil dibuat.',
+                'data'    => $result,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat Analisa AI Plus: '.$e->getMessage(),
+            ], 422);
+        }
     }
 
     public function parsePdf(Request $request, FfsParserService $ffsParser)
@@ -104,9 +186,17 @@ class AnalisaController extends Controller
             'jenis_reksa_dana'     => 'required|in:Saham,Pendapatan Tetap,Campuran,Pasar Uang',
             'total_aum'            => 'nullable|numeric|min:0',
             'total_marcap_10_efek' => 'nullable|numeric|min:0',
-            'input_mode'           => 'required|in:manual,excel,pdf',
+            'input_mode'           => 'required|in:manual,excel,pdf,ai,ai-plus',
             'pdf_file'             => 'nullable|string',
+            'ai_narasi'            => 'nullable|string',
+            'ai_output'            => 'nullable|string',
+            'ai_narasi_plus'       => 'nullable|string',
+            'ai_output_plus'       => 'nullable|string',
         ]);
+
+        if (in_array($request->input_mode, ['ai', 'ai-plus'], true)) {
+            $request->merge(['input_mode' => 'manual']);
+        }
 
         if ($request->input_mode === 'excel') {
             return $this->storeFromExcel($request);
@@ -169,10 +259,10 @@ class AnalisaController extends Controller
             if ($obligasi) $analisa->obligasi()->createMany($obligasi);
             if ($bank)     $analisa->bank()->createMany($bank);
 
-            AnalisaAiJob::dispatch($analisa->id);
+            $this->persistAiFromRequest($request, $analisa);
         });
 
-        return redirect()->route('user.analisa.index')->with('success', 'Data analisa berhasil disubmit. Narasi AI sedang diproses.');
+        return redirect()->route($this->indexRoute())->with('success', 'Data analisa berhasil disubmit. Narasi AI sedang diproses.');
     }
 
     private function storeFromExcel(Request $request)
@@ -196,10 +286,41 @@ class AnalisaController extends Controller
 
             Excel::import(new AnalisaImport($analisa), $request->file('file_excel'));
 
-            AnalisaAiJob::dispatch($analisa->id);
+            $this->persistAiFromRequest($request, $analisa);
         });
 
-        return redirect()->route('user.analisa.index')->with('success', 'Data analisa berhasil diimport dari Excel. Narasi AI sedang diproses.');
+        return redirect()->route($this->indexRoute())->with('success', 'Data analisa berhasil diimport dari Excel. Narasi AI sedang diproses.');
+    }
+
+    private function persistAiFromRequest(Request $request, AnalisaReksaDana $analisa): void
+    {
+        $analisa->load(['sektor', 'efek', 'kinerja', 'obligasi', 'bank']);
+
+        if ($request->filled('ai_narasi') && $request->filled('ai_output')) {
+            $analisa->update([
+                'ai_narasi' => $request->ai_narasi,
+                'ai_output' => json_decode($request->ai_output, true) ?: [],
+            ]);
+        } else {
+            AnalisaAiJob::dispatch($analisa->id);
+        }
+
+        if ($request->filled('ai_narasi_plus') && $request->filled('ai_output_plus')) {
+            $analisa->update([
+                'ai_narasi_plus' => $request->ai_narasi_plus,
+                'ai_output_plus' => json_decode($request->ai_output_plus, true) ?: [],
+            ]);
+        } elseif (AnalisaAiValidator::hasPlusManualData($analisa)) {
+            AnalisaAiPlusJob::dispatch($analisa->id);
+        } else {
+            $analisa->update([
+                'ai_output_plus' => [
+                    'error'   => true,
+                    'message' => AnalisaAiValidator::plusIncompleteMessage($analisa),
+                    'missing' => AnalisaAiValidator::plusMissingSections($analisa),
+                ],
+            ]);
+        }
     }
 
     private function resolvePdfPath(?string $pdfFile): ?string

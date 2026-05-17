@@ -1,4 +1,4 @@
-@extends('layouts.user')
+@extends($formRoutes['layout'] ?? 'layouts.user')
 
 @section('content')
     <div class="max-w-5xl" x-data="analisaForm()">
@@ -17,7 +17,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('user.analisa.store') }}" enctype="multipart/form-data" class="space-y-6">
+        <form id="analisa-form" method="POST" action="{{ $formRoutes['store'] }}" enctype="multipart/form-data" class="space-y-6">
             @csrf
             <input type="hidden" name="input_mode" :value="mode">
             <input type="hidden" name="pdf_file" x-model="pdfFile">
@@ -69,6 +69,18 @@
                             'text-muted hover:text-primary'"
                         class="px-6 py-3.5 text-sm transition">
                         PDF FFS
+                    </button>
+                    <button type="button" @click="mode='ai'"
+                        :class="mode === 'ai' ? 'border-b-2 border-primary text-primary font-semibold' :
+                            'text-muted hover:text-primary'"
+                        class="px-6 py-3.5 text-sm transition">
+                        Analisa AI
+                    </button>
+                    <button type="button" @click="mode='ai-plus'"
+                        :class="mode === 'ai-plus' ? 'border-b-2 border-primary text-primary font-semibold' :
+                            'text-muted hover:text-primary'"
+                        class="px-6 py-3.5 text-sm transition">
+                        Analisa AI Plus
                     </button>
                 </div>
 
@@ -324,7 +336,7 @@
                         </svg>
                         <div>
                             Download template Excel terlebih dahulu, isi data sesuai format, lalu upload kembali.
-                            <a href="{{ route('user.analisa.template') }}" class="font-semibold underline ml-1">Download
+                            <a href="{{ $formRoutes['template'] }}" class="font-semibold underline ml-1">Download
                                 Template</a>
                         </div>
                     </div>
@@ -382,11 +394,18 @@
                             mengedit data yang telah diekstrak.</p>
                     </div>
                 </div>
+
+                @include('analisa.partials.create-ai-tabs')
             </div>
+
+            <input type="hidden" name="ai_narasi" :value="aiResult?.raw || ''">
+            <input type="hidden" name="ai_output" :value="aiResult ? JSON.stringify(aiResult.parsed || {}) : ''">
+            <input type="hidden" name="ai_narasi_plus" :value="aiPlusResult?.raw || ''">
+            <input type="hidden" name="ai_output_plus" :value="aiPlusResult ? JSON.stringify(aiPlusResult.parsed || {}) : ''">
 
             <div class="flex items-center gap-3">
                 <x-primary-button>Submit Analisa</x-primary-button>
-                <a href="{{ route('user.analisa.index') }}"
+                <a href="{{ $formRoutes['cancel'] }}"
                     class="px-4 py-2 text-sm font-medium text-muted border border-line rounded-lg hover:bg-[#f1f5f9] transition">Batal</a>
             </div>
         </form>
@@ -406,6 +425,14 @@
                         $e['top_10'] = !empty($e['top_10']);
                         return $e;
                     }, $oldEfek);
+
+                    $plusLabels = [
+                        'aum'     => 'Total AUM',
+                        'marcap'  => 'Total MarCap 10 efek terbesar',
+                        'sektor'  => 'Komposisi sektor (minimal 1 baris dengan bobot %)',
+                        'efek'    => 'Daftar efek (minimal 1 baris: kode, nama, bobot %)',
+                        'kinerja' => 'Kinerja bulanan (minimal 2 bulan dengan return %)',
+                    ];
                 @endphp
 
                 return {
@@ -413,6 +440,15 @@
                     pdfLoading: false,
                     pdfResult: '',
                     pdfFile: '',
+                    aiLoading: false,
+                    aiPlusLoading: false,
+                    aiError: '',
+                    aiPlusError: '',
+                    aiResult: null,
+                    aiPlusResult: null,
+                    previewAiUrl: @json($formRoutes['preview_ai']),
+                    previewAiPlusUrl: @json($formRoutes['preview_ai_plus']),
+                    plusRequiredLabels: @json($plusLabels),
                     sektor: @json($oldSektor),
                     efek: @json($oldEfek),
                     kinerja: @json($oldKinerja),
@@ -462,6 +498,145 @@
                         if (this[type].length > 1) this[type].splice(index, 1);
                     },
 
+                    analisaFormEl() {
+                        return this.$root.querySelector('#analisa-form') || this.$root.querySelector('form');
+                    },
+
+                    buildFormPayload() {
+                        const fd = new FormData(this.analisaFormEl());
+                        const payload = new FormData();
+                        ['nama_reksa_dana', 'jenis_reksa_dana', 'total_aum', 'total_marcap_10_efek'].forEach(k => {
+                            payload.append(k, fd.get(k) ?? '');
+                        });
+                        for (const [key, val] of fd.entries()) {
+                            if (key.startsWith('sektor[') || key.startsWith('efek[') || key.startsWith('kinerja[') || key.startsWith('obligasi[') || key.startsWith('bank[')) {
+                                payload.append(key, val);
+                            }
+                        }
+                        payload.append('_token', fd.get('_token'));
+                        return payload;
+                    },
+
+                    validateAiBasics(fd) {
+                        if (!String(fd.get('nama_reksa_dana') || '').trim()) {
+                            return 'Isi Nama Reksa Dana di bagian Informasi Reksa Dana (atas form) terlebih dahulu.';
+                        }
+                        if (!fd.get('jenis_reksa_dana')) {
+                            return 'Pilih Jenis Reksa Dana terlebih dahulu.';
+                        }
+                        return null;
+                    },
+
+                    parseJsonError(resp) {
+                        if (resp.errors) {
+                            return Object.values(resp.errors).flat().join(' ');
+                        }
+                        return resp.message || 'Gagal memproses';
+                    },
+
+                    runAiPreview() {
+                        const fd = new FormData(this.analisaFormEl());
+                        const basicErr = this.validateAiBasics(fd);
+                        if (basicErr) {
+                            this.aiError = basicErr;
+                            return;
+                        }
+                        this.aiLoading = true;
+                        this.aiError = '';
+                        fetch(this.previewAiUrl, { method: 'POST', body: this.buildFormPayload(), headers: { 'Accept': 'application/json' } })
+                            .then(async r => {
+                                const resp = await r.json();
+                                if (!r.ok || !resp.success) {
+                                    this.aiError = this.parseJsonError(resp);
+                                    return;
+                                }
+                                this.aiResult = resp.data;
+                            })
+                            .catch(e => { this.aiError = e.message || 'Gagal memproses'; })
+                            .finally(() => { this.aiLoading = false; });
+                    },
+
+                    validatePlusManualData() {
+                        const hasSektor = this.sektor.some(r =>
+                            String(r.nama_sektor || '').trim() !== '' && r.bobot !== '' && r.bobot != null
+                        );
+                        const hasEfek = this.efek.some(r =>
+                            String(r.kode_efek || '').trim() !== '' &&
+                            String(r.nama_efek || '').trim() !== '' &&
+                            r.bobot !== '' && r.bobot != null
+                        );
+                        if (!hasSektor && !hasEfek) {
+                            return this.msgPlusIncomplete;
+                        }
+                        return null;
+                    },
+
+                    runAiPlusPreview() {
+                        const fd = new FormData(this.analisaFormEl());
+                        const basicErr = this.validateAiBasics(fd);
+                        if (basicErr) {
+                            this.aiPlusError = basicErr;
+                            return;
+                        }
+                        const plusErr = this.validatePlusManualData();
+                        if (plusErr) {
+                            this.aiPlusError = plusErr;
+                            return;
+                        }
+                        this.aiPlusLoading = true;
+                        this.aiPlusError = '';
+                        fetch(this.previewAiPlusUrl, { method: 'POST', body: this.buildFormPayload(), headers: { 'Accept': 'application/json' } })
+                            .then(async r => {
+                                const resp = await r.json();
+                                if (!r.ok || !resp.success) {
+                                    if (resp.missing?.length) {
+                                        this.aiPlusError = resp.message || this.plusIncompleteMessage();
+                                    } else {
+                                        this.aiPlusError = this.parseJsonError(resp);
+                                    }
+                                    return;
+                                }
+                                this.aiPlusResult = resp.data;
+                            })
+                            .catch(e => { this.aiPlusError = e.message || 'Gagal memproses'; })
+                            .finally(() => { this.aiPlusLoading = false; });
+                    },
+
+                    applyAiToManual() {
+                        if (!this.aiResult?.parsed) {
+                            alert('Jalankan Analisa AI terlebih dahulu.');
+                            return;
+                        }
+                        const p = this.aiResult.parsed;
+                        const form = this.analisaFormEl();
+                        if (p.alokasi_aset?.length) {
+                            this.sektor = p.alokasi_aset.map(a => ({
+                                nama_sektor: a.kategori || '',
+                                bobot: a.persentase ?? '',
+                            }));
+                        }
+                        if (p.daftar_efek?.length) {
+                            const sorted = [...p.daftar_efek].sort((a, b) => (b.bobot || 0) - (a.bobot || 0));
+                            this.efek = sorted.map((e, i) => ({
+                                kode_efek: e.kode_efek || '',
+                                nama_efek: e.nama_efek || '',
+                                sektor: e.sektor || '',
+                                bobot: e.bobot ?? '',
+                                kontribusi_kinerja: e.kontribusi_kinerja ?? '',
+                                market_cap: e.market_cap ?? '',
+                                top_10: i < 10,
+                            }));
+                        }
+                        if (form && !form.total_aum?.value && p.total_aum) {
+                            form.total_aum.value = p.total_aum;
+                        }
+                        if (form && !form.total_marcap_10_efek?.value && p.total_marcap_10_efek) {
+                            form.total_marcap_10_efek.value = p.total_marcap_10_efek;
+                        }
+                        this.mode = 'manual';
+                        alert('Data Analisa AI telah diterapkan ke Input Manual. Silakan review sebelum submit.');
+                    },
+
                     parsePdf(event) {
                         const file = event.target.files[0];
                         if (!file) return;
@@ -471,9 +646,9 @@
 
                         const formData = new FormData();
                         formData.append('file_pdf', file);
-                        formData.append('_token', document.querySelector('input[name="_token"]').value);
+                        formData.append('_token', this.analisaFormEl().querySelector('input[name="_token"]').value);
 
-                        fetch('{{ route('user.analisa.parse-pdf') }}', {
+                        fetch('{{ $formRoutes['parse_pdf'] }}', {
                                 method: 'POST',
                                 headers: {
                                     'Accept': 'application/json',

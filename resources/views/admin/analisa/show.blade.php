@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="space-y-6">
+<div class="space-y-6" x-data="{ activeTab: 'data' }">
     {{-- Header --}}
     <div class="flex items-start justify-between">
         <div>
@@ -49,6 +49,42 @@
         <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">{{ session('success') }}</div>
     @endif
 
+    <div class="flex gap-1 border-b border-line overflow-x-auto">
+        <button type="button" @click="activeTab='data'"
+            :class="activeTab==='data' ? 'border-b-2 border-primary text-primary font-semibold' : 'text-muted hover:text-primary'"
+            class="px-4 py-2.5 text-sm whitespace-nowrap transition">Data & Grafik</button>
+        <button type="button" @click="activeTab='ai'"
+            :class="activeTab==='ai' ? 'border-b-2 border-primary text-primary font-semibold' : 'text-muted hover:text-primary'"
+            class="px-4 py-2.5 text-sm whitespace-nowrap transition">Analisa AI</button>
+        <button type="button" @click="activeTab='ai-plus'"
+            :class="activeTab==='ai-plus' ? 'border-b-2 border-primary text-primary font-semibold' : 'text-muted hover:text-primary'"
+            class="px-4 py-2.5 text-sm whitespace-nowrap transition">Analisa AI Plus</button>
+    </div>
+
+    <div x-show="activeTab==='ai'">
+        @php $aiOut = $analisa->ai_output ?? []; @endphp
+        @if(!empty($aiOut['error']))
+            @include('analisa.partials.ai-panel', ['title' => 'Analisa AI', 'variant' => 'standard', 'ai' => $aiOut, 'narasi' => null])
+        @elseif($analisa->ai_narasi)
+            @include('analisa.partials.ai-panel', ['title' => 'Analisa AI', 'variant' => 'standard', 'ai' => $aiOut, 'narasi' => $analisa->ai_narasi])
+        @else
+            <div class="bg-[#f8fafc] border border-dashed border-line rounded-xl p-5 text-sm text-muted">Narasi AI belum tersedia atau sedang diproses.</div>
+        @endif
+    </div>
+
+    <div x-show="activeTab==='ai-plus'">
+        @php $aiPlusOut = $analisa->ai_output_plus ?? []; @endphp
+        @if(!empty($aiPlusOut['error']))
+            @include('analisa.partials.ai-panel', ['title' => 'Analisa AI Plus', 'variant' => 'plus', 'ai' => $aiPlusOut, 'narasi' => null])
+        @elseif($analisa->ai_narasi_plus)
+            @include('analisa.partials.ai-panel', ['title' => 'Analisa AI Plus', 'variant' => 'plus', 'ai' => $aiPlusOut, 'narasi' => $analisa->ai_narasi_plus])
+        @else
+            <div class="bg-[#f8fafc] border border-dashed border-line rounded-xl p-5 text-sm text-muted">Analisa AI Plus belum tersedia atau sedang diproses.</div>
+        @endif
+    </div>
+
+    <div x-show="activeTab==='data'" class="space-y-6">
+
     {{-- Metric Cards --}}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         @php
@@ -67,15 +103,110 @@
         @endforeach
     </div>
 
-    {{-- Narasi AI --}}
-    @if($analisa->ai_narasi)
-    <div class="bg-white rounded-xl border border-line p-6">
-        <div class="flex items-center gap-2 mb-4">
-            <span class="text-lg">🤖</span>
-            <h3 class="font-semibold text-primary">Narasi Analisa AI</h3>
-            <span class="ml-auto text-xs text-muted bg-[#f1f5f9] px-2 py-1 rounded-full">Powered by Groq</span>
-        </div>
-        <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{{ $analisa->ai_narasi }}</div>
+    {{-- Charts (removed legacy AI block) --}}
+    @if(false)
+            {{-- Ringkasan Utama --}}
+            @if(!empty($ai['ringkasan_utama']))
+            <div class="mb-6">
+                <h4 class="text-sm font-semibold text-primary mb-2 flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Ringkasan Utama
+                </h4>
+                <div class="text-sm text-gray-700 leading-relaxed">{{ $ai['ringkasan_utama'] }}</div>
+            </div>
+            @endif
+
+            {{-- Alokasi Aset --}}
+            @if(!empty($ai['alokasi_aset']))
+            <div class="mb-6">
+                <h4 class="text-sm font-semibold text-primary mb-2 flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    Alokasi Aset
+                </h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-[#f8fafc] border-b border-line">
+                            <tr>
+                                <th class="text-left px-3 py-2 font-semibold text-primary">Kategori</th>
+                                <th class="text-right px-3 py-2 font-semibold text-primary">Persentase</th>
+                                <th class="text-left px-3 py-2 font-semibold text-primary">Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-line">
+                            @foreach($ai['alokasi_aset'] as $aa)
+                            <tr>
+                                <td class="px-3 py-2 font-medium">{{ $aa['kategori'] }}</td>
+                                <td class="px-3 py-2 text-right font-mono">{{ number_format($aa['persentase'], 2) }}%</td>
+                                <td class="px-3 py-2 text-muted">{{ $aa['keterangan'] ?? '-' }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
+
+            {{-- Daftar Efek --}}
+            @if(!empty($ai['daftar_efek']))
+            <div class="mb-6">
+                <h4 class="text-sm font-semibold text-primary mb-2 flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                    Daftar Efek & Persentase
+                </h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-[#f8fafc] border-b border-line">
+                            <tr>
+                                <th class="text-left px-3 py-2 font-semibold text-primary">Kode</th>
+                                <th class="text-left px-3 py-2 font-semibold text-primary">Nama Efek</th>
+                                <th class="text-left px-3 py-2 font-semibold text-primary">Sektor</th>
+                                <th class="text-right px-3 py-2 font-semibold text-primary">Bobot (%)</th>
+                                <th class="text-right px-3 py-2 font-semibold text-primary">Kontribusi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-line">
+                            @foreach($ai['daftar_efek'] as $de)
+                            <tr>
+                                <td class="px-3 py-2 font-mono text-xs">{{ $de['kode_efek'] }}</td>
+                                <td class="px-3 py-2">{{ $de['nama_efek'] }}</td>
+                                <td class="px-3 py-2 text-muted">{{ $de['sektor'] ?? '-' }}</td>
+                                <td class="px-3 py-2 text-right font-mono">{{ number_format($de['bobot'], 2) }}%</td>
+                                <td class="px-3 py-2 text-right font-mono {{ ($de['kontribusi_kinerja'] ?? 0) > 0 ? 'text-green-600' : (($de['kontribusi_kinerja'] ?? 0) < 0 ? 'text-red-600' : '') }}">
+                                    {{ isset($de['kontribusi_kinerja']) ? ($de['kontribusi_kinerja'] >= 0 ? '+' : '').$de['kontribusi_kinerja'].'%' : '-' }}
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
+
+            {{-- Analisa Risiko --}}
+            @if(!empty($ai['analisa_risiko']))
+            <div class="mb-6">
+                <h4 class="text-sm font-semibold text-primary mb-2 flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                    Analisa Risiko
+                </h4>
+                <div class="text-sm text-gray-700 leading-relaxed">{{ $ai['analisa_risiko'] }}</div>
+            </div>
+            @endif
+
+            {{-- Rekomendasi --}}
+            @if(!empty($ai['rekomendasi_investor']))
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 class="text-sm font-semibold text-blue-800 mb-1 flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                    Rekomendasi Investor
+                </h4>
+                <div class="text-sm text-blue-700">{{ $ai['rekomendasi_investor'] }}</div>
+            </div>
+            @endif
+        @else
+            {{-- Fallback --}}
+            <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{{ $analisa->ai_narasi }}</div>
+        @endif
     </div>
     @else
     <div class="bg-[#f8fafc] border border-dashed border-line rounded-xl p-4 text-sm text-muted flex items-center gap-2">
@@ -276,6 +407,8 @@
             </div>
         </div>
     </div>
+
+    </div>{{-- end activeTab data --}}
 </div>
 
 @push('scripts')

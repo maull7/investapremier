@@ -29,6 +29,7 @@
                     <th class="px-5 py-3.5 font-semibold">Kategori</th>
                     <th class="px-5 py-3.5 font-semibold">Mata Uang</th>
                     <th class="px-5 py-3.5 font-semibold text-right">AUM</th>
+                    <th class="px-5 py-3.5 font-semibold text-right">UP</th>
                     <th class="px-5 py-3.5 font-semibold text-right">
                         <span class="flex items-center justify-end gap-1">
                             Return 1M
@@ -58,7 +59,10 @@
                     <td class="px-5 py-3.5 text-muted text-xs">{{ $rd->kategori ?? '—' }}</td>
                     <td class="px-5 py-3.5 text-muted text-xs">{{ $rd->mata_uang ?? 'IDR' }}</td>
                     <td class="px-5 py-3.5 text-right text-xs text-muted">
-                        {{ $rd->total_aum ? 'Rp ' . number_format($rd->total_aum / 1e9, 2) . ' M' : '—' }}
+                        {{ $rd->total_aum ? 'Rp ' . number_format($rd->total_aum, 0, ',', '.') : '—' }}
+                    </td>
+                    <td class="px-5 py-3.5 text-right text-xs text-muted">
+                        {{ $rd->unit_penyertaan ? number_format($rd->unit_penyertaan, 2, ',', '.') : '—' }}
                     </td>
                     <td class="px-5 py-3.5 text-right text-xs font-semibold">
                         @if($rd->return_1m !== null)
@@ -72,7 +76,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="px-6 py-12 text-center text-muted">
+                    <td colspan="8" class="px-6 py-12 text-center text-muted">
                         <p class="font-medium">Belum ada data reksa dana</p>
                     </td>
                 </tr>

@@ -46,17 +46,201 @@ class GroqService
         return $response->json('choices.0.message.content', '');
     }
 
+    public function generateNarasiAnalisaStructured(AnalisaReksaDana $analisa): array
+    {
+        $prompt = $this->buildStructuredPrompt($analisa);
+
+        $response = Http::withToken($this->apiKey)
+            ->timeout(90)
+            ->post($this->url, [
+                'model'       => $this->model,
+                'temperature' => 0.3,
+                'messages'    => [
+                    [
+                        'role'    => 'system',
+                        'content' => 'Kamu adalah analis investasi profesional Indonesia yang ahli dalam analisa Reksa Dana. Gunakan Bahasa Indonesia yang baik. Keluarkan jawaban dalam format JSON valid tanpa teks tambahan.',
+                    ],
+                    [
+                        'role'    => 'user',
+                        'content' => $prompt,
+                    ],
+                ],
+            ]);
+
+        if ($response->failed()) {
+            throw new \RuntimeException('Groq API error: '.$response->body());
+        }
+
+        $raw = $response->json('choices.0.message.content', '');
+        $parsed = $this->parseJsonOutput($raw);
+
+        return [
+            'raw'    => $this->buildNarasiFromStructured($parsed),
+            'parsed' => $parsed,
+        ];
+    }
+
+    public function generateAnalisaPlusStructured(AnalisaReksaDana $analisa): array
+    {
+        $prompt = $this->buildPlusStructuredPrompt($analisa);
+
+        $response = Http::withToken($this->apiKey)
+            ->timeout(120)
+            ->post($this->url, [
+                'model'       => $this->model,
+                'temperature' => 0.3,
+                'messages'    => [
+                    [
+                        'role'    => 'system',
+                        'content' => 'Kamu adalah analis investasi senior Indonesia yang ahli analisa mendalam Reksa Dana. Gunakan Bahasa Indonesia. Keluarkan jawaban dalam format JSON valid tanpa teks tambahan.',
+                    ],
+                    [
+                        'role'    => 'user',
+                        'content' => $prompt,
+                    ],
+                ],
+            ]);
+
+        if ($response->failed()) {
+            throw new \RuntimeException('Groq API error: '.$response->body());
+        }
+
+        $raw = $response->json('choices.0.message.content', '');
+        $parsed = $this->parseJsonOutput($raw);
+
+        return [
+            'raw'    => $this->buildNarasiFromPlusStructured($parsed),
+            'parsed' => $parsed,
+        ];
+    }
+
+    public static function parseJsonOutput(string $raw): array
+    {
+        $raw = trim($raw);
+
+        if (str_starts_with($raw, '```')) {
+            $raw = preg_replace('/^```(?:json)?\s*|\s*```$/', '', $raw);
+        }
+
+        $decoded = json_decode($raw, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return $decoded;
+        }
+
+        preg_match('/\{.*\}/s', $raw, $matches);
+        if (!empty($matches)) {
+            $decoded = json_decode($matches[0], true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $decoded;
+            }
+        }
+
+        return [];
+    }
+
+    private function buildNarasiFromStructured(array $data): string
+    {
+        $parts = [];
+
+        if (!empty($data['ringkasan_utama'])) {
+            $parts[] = $data['ringkasan_utama'];
+        }
+
+        if (!empty($data['analisa_risiko'])) {
+            $parts[] = "**Analisa Risiko**\n".$data['analisa_risiko'];
+        }
+
+        if (!empty($data['rekomendasi_investor'])) {
+            $parts[] = "**Rekomendasi**\n".$data['rekomendasi_investor'];
+        }
+
+        return implode("\n\n", $parts);
+    }
+
+    private function buildNarasiFromPlusStructured(array $data): string
+    {
+        $parts = [];
+
+        foreach (['ringkasan_utama', 'analisa_kinerja', 'analisa_risiko', 'analisa_likuiditas', 'rekomendasi_investor'] as $key) {
+            if (!empty($data[$key])) {
+                $parts[] = $data[$key];
+            }
+        }
+
+        return implode("\n\n", $parts);
+    }
+
+    private function buildPlusStructuredPrompt(AnalisaReksaDana $analisa): string
+    {
+        $data = $this->buildDataSection($analisa);
+
+        return <<<PROMPT
+{$data}
+
+Berdasarkan data Input Manual lengkap di atas, buatkan analisa mendalam (Analisa AI Plus) dalam format JSON:
+{
+  "ringkasan_utama": "Ringkasan eksekutif 2-3 paragraf dengan metrik kunci",
+  "analisa_kinerja": "Analisa kinerja bulanan, Sharpe, RAR, dan tren return",
+  "analisa_risiko": "Analisa risiko obligasi, bank, durasi, rating, konsentrasi sektor",
+  "analisa_likuiditas": "Analisa likuiditas portofolio dan rasio AUM vs MarCap 10 efek",
+  "rekomendasi_investor": "Rekomendasi investasi spesifik berdasarkan profil risiko",
+  "metrik_saran": {
+    "sharpe_ratio": null,
+    "rar": null,
+    "liquidity_ratio": null,
+    "durasi_rata_rata": null
+  }
+}
+
+PETUNJUK:
+- Gunakan semua data sektor, efek, kinerja, obligasi, dan bank yang tersedia
+- Jika metrik tidak bisa dihitung, jelaskan di narasi dan set null di metrik_saran
+- Output HANYA JSON valid tanpa markdown
+PROMPT;
+    }
+
     private function buildPrompt(AnalisaReksaDana $analisa): string
     {
+        return $this->buildDataSection($analisa)."\n\nBerikan analisa yang mencakup:\n1. Ringkasan kinerja keseluruhan\n2. Analisa risiko (liquidity, durasi, rating, bank)\n3. Kekuatan dan kelemahan portofolio\n4. Rekomendasi singkat untuk investor";
+    }
+
+    private function buildStructuredPrompt(AnalisaReksaDana $analisa): string
+    {
+        $data = $this->buildDataSection($analisa);
+
+        return <<<PROMPT
+{$data}
+
+Berdasarkan data di atas, buatkan analisa dalam format JSON dengan struktur EXACT berikut (jangan tambah atau kurangi field):
+{
+  "ringkasan_utama": "Ringkasan kinerja keseluruhan dalam 2-3 paragraf, mencakup return, komposisi sektor, dan posisi portfolio secara umum",
+  "alokasi_aset": [
+    {"kategori": "Nama Sektor/Kategori Aset", "persentase": 25.5, "keterangan": "Penjelasan singkat tentang alokasi ini"}
+  ],
+  "daftar_efek": [
+    {"kode_efek": "BBCA", "nama_efek": "Bank Central Asia Tbk.", "sektor": "Keuangan", "bobot": 12.5, "kontribusi_kinerja": 2.3}
+  ],
+  "analisa_risiko": "Analisa risiko likuiditas, durasi, rating obligasi, dan bank dalam 1-2 paragraf",
+  "rekomendasi_investor": "Rekomendasi singkat untuk investor berdasarkan profil risiko dan kondisi portfolio"
+}
+
+PETUNJUK PENTING:
+- Isi `alokasi_aset` dengan data komposisi sektor yang sudah diberikan
+- Isi `daftar_efek` dengan data efek yang sudah diberikan
+- Gunakan Bahasa Indonesia yang baik dan benar
+- Output HANYA JSON valid, tanpa teks lain, tanpa markdown
+- Pastikan JSON bisa diparse dengan json_decode()
+PROMPT;
+    }
+
+    private function buildDataSection(AnalisaReksaDana $analisa): string
+    {
         $lines = [];
-        $lines[] = "Buatkan narasi analisa lengkap untuk Reksa Dana berikut:";
-        $lines[] = "";
         $lines[] = "INFORMASI REKSA DANA";
         $lines[] = "Nama: {$analisa->nama_reksa_dana}";
         $lines[] = "Jenis: {$analisa->jenis_reksa_dana}";
         $lines[] = "Total AUM: ".($analisa->total_aum ? 'Rp '.number_format($analisa->total_aum, 0, ',', '.') : 'N/A');
 
-        // Metrik kinerja
         $lines[] = "";
         $lines[] = "METRIK KINERJA";
         $lines[] = "Sharpe Ratio: ".($analisa->sharpe_ratio ?? 'N/A');
@@ -64,7 +248,6 @@ class GroqService
         $lines[] = "Liquidity Ratio (AUM/MarCap): ".($analisa->liquidity_ratio ? number_format($analisa->liquidity_ratio * 100, 2).'%' : 'N/A');
         $lines[] = "Durasi Rata-rata Obligasi: ".($analisa->durasi_rata_rata ? $analisa->durasi_rata_rata.' tahun' : 'N/A');
 
-        // Sektor
         if ($analisa->sektor->isNotEmpty()) {
             $lines[] = "";
             $lines[] = "KOMPOSISI SEKTOR";
@@ -73,7 +256,6 @@ class GroqService
             }
         }
 
-        // 10 Efek Terbesar
         $top10 = $analisa->efek->where('top_10', true)->sortByDesc('bobot');
         if ($top10->isNotEmpty()) {
             $lines[] = "";
@@ -86,7 +268,6 @@ class GroqService
             }
         }
 
-        // Kinerja bulanan
         if ($analisa->kinerja->isNotEmpty()) {
             $returns = $analisa->kinerja->pluck('return_pct')->toArray();
             $avg = round(array_sum($returns) / count($returns), 4);
@@ -97,7 +278,6 @@ class GroqService
             $lines[] = "Bulan positif: {$positif} dari {$analisa->kinerja->count()}";
         }
 
-        // Obligasi
         if ($analisa->obligasi->isNotEmpty()) {
             $lines[] = "";
             $lines[] = "OBLIGASI DALAM PORTOFOLIO";
@@ -106,7 +286,6 @@ class GroqService
             }
         }
 
-        // Bank
         if ($analisa->bank->isNotEmpty()) {
             $lines[] = "";
             $lines[] = "BANK DALAM PORTOFOLIO";
@@ -114,13 +293,6 @@ class GroqService
                 $lines[] = "- {$b->nama_bank}: CAR {$b->car}%, NPL {$b->npl}%, Risiko: {$b->klasifikasi_risiko}";
             }
         }
-
-        $lines[] = "";
-        $lines[] = "Berikan analisa yang mencakup:";
-        $lines[] = "1. Ringkasan kinerja keseluruhan";
-        $lines[] = "2. Analisa risiko (liquidity, durasi, rating, bank)";
-        $lines[] = "3. Kekuatan dan kelemahan portofolio";
-        $lines[] = "4. Rekomendasi singkat untuk investor";
 
         return implode("\n", $lines);
     }

@@ -10,7 +10,7 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 
-class AnalisaAiJob implements ShouldQueue
+class AnalisaAiPlusJob implements ShouldQueue
 {
     use HandlesAnalisaAiErrors;
     use Queueable;
@@ -25,7 +25,7 @@ class AnalisaAiJob implements ShouldQueue
 
     public function middleware(): array
     {
-        return [(new WithoutOverlapping("analisa-ai-{$this->analisaId}"))->expireAfter(180)];
+        return [(new WithoutOverlapping("analisa-ai-plus-{$this->analisaId}"))->expireAfter(180)];
     }
 
     public function handle(GroqService $groq): void
@@ -33,44 +33,44 @@ class AnalisaAiJob implements ShouldQueue
         $analisa = AnalisaReksaDana::with(['sektor', 'efek', 'kinerja', 'obligasi', 'bank'])
             ->findOrFail($this->analisaId);
 
-        if ($msg = $this->validateForStandardAi($analisa)) {
-            $this->markStandardFailed($analisa, $msg);
+        if ($msg = $this->validateForPlusAi($analisa)) {
+            $this->markPlusFailed($analisa, $msg);
 
             return;
         }
 
         if ($msg = $this->groqKeyError()) {
-            $this->markStandardFailed($analisa, $msg);
+            $this->markPlusFailed($analisa, $msg);
 
             return;
         }
 
-        if (!method_exists($groq, 'generateNarasiAnalisaStructured')) {
-            $this->markStandardFailed($analisa, 'Fitur Analisa AI belum tersedia di server. Restart Horizon setelah deploy.');
+        if (!method_exists($groq, 'generateAnalisaPlusStructured')) {
+            $this->markPlusFailed($analisa, 'Fitur Analisa AI Plus belum tersedia di server. Restart Horizon setelah deploy.');
 
             return;
         }
 
         try {
-            $result = $groq->generateNarasiAnalisaStructured($analisa);
+            $result = $groq->generateAnalisaPlusStructured($analisa);
 
             if (empty($result['parsed']) && empty($result['raw'])) {
-                $this->markStandardFailed($analisa, 'Respons AI kosong atau tidak valid. Silakan coba lagi.');
+                $this->markPlusFailed($analisa, 'Respons AI kosong atau tidak valid. Silakan coba lagi dari form.');
 
                 return;
             }
 
             $analisa->update([
-                'ai_narasi' => $result['raw'],
-                'ai_output' => $result['parsed'],
+                'ai_narasi_plus' => $result['raw'],
+                'ai_output_plus' => $result['parsed'],
             ]);
         } catch (\Throwable $e) {
-            Log::error('AnalisaAiJob gagal', [
+            Log::error('AnalisaAiPlusJob gagal', [
                 'analisa_id' => $this->analisaId,
                 'error'      => $e->getMessage(),
             ]);
 
-            $this->markStandardFailed($analisa, $this->friendlyError($e));
+            $this->markPlusFailed($analisa, $this->friendlyError($e));
 
             throw $e;
         }
@@ -83,11 +83,11 @@ class AnalisaAiJob implements ShouldQueue
             return;
         }
 
-        $output = $analisa->ai_output ?? [];
+        $output = $analisa->ai_output_plus ?? [];
         if (!empty($output['error'])) {
             return;
         }
 
-        $this->markStandardFailed($analisa, $e ? $this->friendlyError($e) : 'Analisa AI gagal setelah beberapa percobaan.');
+        $this->markPlusFailed($analisa, $e ? $this->friendlyError($e) : 'Analisa AI Plus gagal setelah beberapa percobaan.');
     }
 }
