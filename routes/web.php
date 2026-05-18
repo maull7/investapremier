@@ -58,7 +58,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('members/{member}/approve', [AdminMemberController::class, 'approve'])->name('members.approve');
     Route::post('members/{member}/reject', [AdminMemberController::class, 'reject'])->name('members.reject');
 
-    // Monitor analisa yang diupload user
+    // Monitor analisa yang diupload userr
     Route::get('analisa', [AdminAnalisaController::class, 'index'])->name('analisa.index');
     Route::get('analisa/{analisa}', [AdminAnalisaController::class, 'show'])->name('analisa.show');
     Route::get('analisa/{analisa}/pdf', [AdminAnalisaController::class, 'exportPdf'])->name('analisa.pdf');
