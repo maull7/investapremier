@@ -6,9 +6,14 @@ use App\Exports\AnalisaTemplateExport;
 use App\Imports\AnalisaImport;
 use App\Jobs\AnalisaAiJob;
 use App\Models\AnalisaReksaDana;
+use App\Models\DataSourceLink;
+use App\Models\ReksaDana;
 use App\Models\StockPrice;
 use App\Services\AnalisaPayloadBuilder;
+use App\Services\DataSourceAutoDownloadService;
 use App\Services\FfsParserService;
+use App\Services\WebDataFileParserService;
+use App\Services\WebScraperService;
 use App\Services\AnalisaAiValidator;
 use App\Services\GroqService;
 use App\Jobs\AnalisaAiPlusJob;
@@ -30,15 +35,24 @@ class AnalisaController extends Controller
 
     protected function formRoutes(): array
     {
-        return [
-            'layout'          => 'layouts.user',
-            'store'           => route('user.analisa.store'),
-            'template'        => route('user.analisa.template'),
-            'cancel'          => route('user.analisa.index'),
-            'parse_pdf'       => route('user.analisa.parse-pdf'),
-            'preview_ai'      => route('user.analisa.preview-ai'),
-            'preview_ai_plus' => route('user.analisa.preview-ai-plus'),
-        ];
+        $prefix = $this->isAdminContext ? 'admin.analisa-rd' : 'user.analisa';
+
+        return array_merge([
+            'layout'          => $this->isAdminContext ? 'layouts.admin' : 'layouts.user',
+            'store'           => route("{$prefix}.store"),
+            'template'        => route("{$prefix}.template"),
+            'cancel'          => $this->isAdminContext ? route('admin.reksa-dana.index') : route('user.analisa.index'),
+            'parse_pdf'       => route("{$prefix}.parse-pdf"),
+            'preview_ai'      => route("{$prefix}.preview-ai"),
+            'preview_ai_plus' => route("{$prefix}.preview-ai-plus"),
+            'parse_web_file'  => route("{$prefix}.parse-web-file"),
+            'scrape_web'      => $this->isAdminContext
+                ? url('admin/analisa-rd/scrape-web-data')
+                : url('user/analisa/scrape-web-data'),
+            'scrape_url'      => $this->isAdminContext
+                ? url('admin/analisa-rd/scrape-url')
+                : url('user/analisa/scrape-url'),
+        ]);
     }
 
     public function index()
@@ -49,9 +63,48 @@ class AnalisaController extends Controller
         return view('analisa.index', compact('analisas'));
     }
 
+    protected function linkRoutes(): array
+    {
+        // Link pribadi per user (bukan admin global) — selalu lewat route user.*
+        return [
+            'store'   => 'user.data-source-links.store',
+            'update'  => 'user.data-source-links.update',
+            'destroy' => 'user.data-source-links.destroy',
+            'upload'  => 'user.data-source-links.upload',
+        ];
+    }
+
+    protected function linkPageRoute(): string
+    {
+        return $this->isAdminContext ? 'admin.analisa-rd.create' : 'user.analisa.create';
+    }
+
+    protected function dataSourceLinkContext(): array
+    {
+        $dataSourceLinks = DataSourceLink::with('urls')
+            ->forUser(auth()->id())
+            ->where('is_active', true)
+            ->latest()
+            ->get();
+
+        $editingLink = request('edit')
+            ? DataSourceLink::forUser(auth()->id())->with('urls')->find(request('edit'))
+            : null;
+
+        return [
+            'dataSourceLinks' => $dataSourceLinks,
+            'editingLink'     => $editingLink,
+            'linkRoutes'      => $this->linkRoutes(),
+            'linkPageRoute'   => $this->linkPageRoute(),
+        ];
+    }
+
     public function create()
     {
-        return view('analisa.create', ['formRoutes' => $this->formRoutes()]);
+        return view('analisa.create', array_merge(
+            ['formRoutes' => $this->formRoutes()],
+            $this->dataSourceLinkContext(),
+        ));
     }
 
     public function downloadTemplate()
@@ -179,6 +232,106 @@ class AnalisaController extends Controller
         ]);
     }
 
+    public function parseWebFile(Request $request, WebDataFileParserService $parser)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:10240',
+        ]);
+
+        try {
+            $data = $parser->parse($request->file('file')->getPathname());
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membaca file: ' . $e->getMessage(),
+                'data' => null,
+            ], 422);
+        }
+
+        return response()->json($this->webFileParseResponse($data));
+    }
+
+    public function scrapeWebData(Request $request, DataSourceAutoDownloadService $downloader, WebDataFileParserService $parser)
+    {
+        $request->validate([
+            'data_source_link_id' => 'required|exists:data_source_links,id',
+        ]);
+
+        $link = DataSourceLink::forUser(auth()->id())
+            ->with('urls')
+            ->findOrFail($request->data_source_link_id);
+
+        try {
+            $tempPath = $downloader->downloadToTempFile($link);
+            $data = $parser->parse($tempPath);
+            @unlink($tempPath);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null,
+            ], 422);
+        }
+
+        return response()->json($this->webFileParseResponse($data));
+    }
+
+    public function scrapeUrl(Request $request, WebScraperService $scraper)
+    {
+        $request->validate(['url' => 'required|url|max:2048']);
+
+        try {
+            $result = $scraper->scrapeUrl($request->url);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage(), 'data' => null], 422);
+        }
+
+        $response = $this->webFileParseResponse($result['data']);
+        $response['message'] = $result['message'];
+        $response['type'] = $result['type'];
+        if (isset($result['raw_tables'])) {
+            $response['raw_tables'] = $result['raw_tables'];
+        }
+
+        return response()->json($response);
+    }
+
+    protected function webFileParseResponse(array $data): array
+    {
+        $extracted = [];
+        if ($data['nama_reksa_dana']) {
+            $extracted[] = 'Nama RD';
+        }
+        if ($data['total_aum']) {
+            $extracted[] = 'Total AUM';
+        }
+        if ($data['sektor']) {
+            $extracted[] = count($data['sektor']) . ' Sektor';
+        }
+        if ($data['efek']) {
+            $extracted[] = count($data['efek']) . ' Efek';
+        }
+        if ($data['kinerja']) {
+            $extracted[] = count($data['kinerja']) . ' Kinerja';
+        }
+        if ($data['obligasi']) {
+            $extracted[] = count($data['obligasi']) . ' Obligasi';
+        }
+        if ($data['bank']) {
+            $extracted[] = count($data['bank']) . ' Bank';
+        }
+
+        $success = count($extracted) > 0;
+
+        return [
+            'success' => $success,
+            'message' => $success
+                ? 'Data siap diisi ke form: ' . implode(', ', $extracted) . '.'
+                : 'File terbaca tetapi tidak ada data yang cocok. Pastikan format Excel template analisa atau export situs yang benar.',
+            'data' => $data,
+        ];
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -186,7 +339,7 @@ class AnalisaController extends Controller
             'jenis_reksa_dana'     => 'required|in:Saham,Pendapatan Tetap,Campuran,Pasar Uang',
             'total_aum'            => 'nullable|numeric|min:0',
             'total_marcap_10_efek' => 'nullable|numeric|min:0',
-            'input_mode'           => 'required|in:manual,excel,pdf,ai,ai-plus',
+            'input_mode'           => 'required|in:manual,excel,pdf,ai,ai-plus,link-website',
             'pdf_file'             => 'nullable|string',
             'ai_narasi'            => 'nullable|string',
             'ai_output'            => 'nullable|string',
@@ -194,7 +347,7 @@ class AnalisaController extends Controller
             'ai_output_plus'       => 'nullable|string',
         ]);
 
-        if (in_array($request->input_mode, ['ai', 'ai-plus'], true)) {
+        if (in_array($request->input_mode, ['ai', 'ai-plus', 'link-website'], true)) {
             $request->merge(['input_mode' => 'manual']);
         }
 

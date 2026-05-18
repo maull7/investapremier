@@ -8,35 +8,44 @@
         </div>
 
         @if ($errors->any())
+            @php
+                $isLinkTab = request('tab') === 'link-website' || old('input_mode') === 'link-website';
+                $displayErrors = $isLinkTab
+                    ? collect($errors->messages())->filter(fn ($_, $key) => in_array($key, ['urls', 'nama_sumber', 'jenis_akses', 'login_username', 'login_password', 'catatan']) || str_starts_with($key, 'urls.'))->flatten()
+                    : $errors->all();
+            @endphp
+            @if($displayErrors->isNotEmpty())
             <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-6">
                 <ul class="list-disc list-inside space-y-1">
-                    @foreach ($errors->all() as $e)
+                    @foreach ($displayErrors as $e)
                         <li>{{ $e }}</li>
                     @endforeach
                 </ul>
             </div>
+            @endif
         @endif
 
-        <form id="analisa-form" method="POST" action="{{ $formRoutes['store'] }}" enctype="multipart/form-data" class="space-y-6">
+        <form id="analisa-form" method="POST" action="{{ $formRoutes['store'] }}" enctype="multipart/form-data" class="space-y-6"
+              @submit="if (mode === 'link-website') { $event.preventDefault(); webMessage = 'Selesaikan langkah di tab Link Website: unduh file lalu klik Isi Form Otomatis. Setelah itu submit dari tab Input Manual.'; webOk = false; }">
             @csrf
-            <input type="hidden" name="input_mode" :value="mode">
+            <input type="hidden" name="input_mode" :value="mode === 'link-website' ? 'manual' : mode">
             <input type="hidden" name="pdf_file" x-model="pdfFile">
 
             {{-- Info Dasar --}}
-            <div class="bg-white rounded-xl border border-line p-6 space-y-4">
+            <div class="bg-white rounded-xl border border-line p-6 space-y-4" x-show="mode !== 'link-website'" x-cloak>
                 <h3 class="font-semibold text-primary">Informasi Reksa Dana</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <x-input-label for="nama_reksa_dana" value="Nama Reksa Dana *" />
                         <x-text-input id="nama_reksa_dana" name="nama_reksa_dana" type="text" class="mt-1 block w-full"
-                            value="{{ old('nama_reksa_dana') }}" required />
+                            value="{{ old('nama_reksa_dana') }}" x-bind:required="mode !== 'link-website'" />
                         <x-input-error :messages="$errors->get('nama_reksa_dana')" class="mt-1" />
                     </div>
                     <div>
                         <x-input-label for="jenis_reksa_dana" value="Jenis Reksa Dana *" />
                         <select id="jenis_reksa_dana" name="jenis_reksa_dana"
                             class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm"
-                            required>
+                            x-bind:required="mode !== 'link-website'">
                             <option value="">Pilih Jenis</option>
                             @foreach (['Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang'] as $j)
                                 <option value="{{ $j }}" {{ old('jenis_reksa_dana') === $j ? 'selected' : '' }}>
@@ -81,6 +90,12 @@
                             'text-muted hover:text-primary'"
                         class="px-6 py-3.5 text-sm transition">
                         Analisa AI Plus
+                    </button>
+                    <button type="button" @click="mode='link-website'"
+                        :class="mode === 'link-website' ? 'border-b-2 border-indigo-600 text-indigo-600 font-semibold' :
+                            'text-muted hover:text-primary'"
+                        class="px-6 py-3.5 text-sm transition whitespace-nowrap">
+                        Link Website
                     </button>
                 </div>
 
@@ -403,12 +418,18 @@
             <input type="hidden" name="ai_narasi_plus" :value="aiPlusResult?.raw || ''">
             <input type="hidden" name="ai_output_plus" :value="aiPlusResult ? JSON.stringify(aiPlusResult.parsed || {}) : ''">
 
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3" x-show="mode !== 'link-website'" x-cloak>
                 <x-primary-button>Submit Analisa</x-primary-button>
                 <a href="{{ $formRoutes['cancel'] }}"
                     class="px-4 py-2 text-sm font-medium text-muted border border-line rounded-lg hover:bg-[#f1f5f9] transition">Batal</a>
             </div>
         </form>
+
+        {{-- Tab Link Website di luar form analisa (hindari validasi nama/jenis RD) --}}
+        <div x-show="mode === 'link-website'" x-cloak
+             class="bg-white rounded-xl border border-line overflow-hidden mt-6 shadow-sm">
+            @include('analisa.partials.create-link-website-tab')
+        </div>
     </div>
 
     @push('scripts')
@@ -436,7 +457,13 @@
                 @endphp
 
                 return {
-                    mode: '{{ old('input_mode', 'manual') }}',
+                    mode: @json(old('input_mode', request('tab') === 'link-website' ? 'link-website' : 'manual')),
+                    webLoading: false,
+                    webFile: null,
+                    webMessage: '',
+                    webOk: false,
+                    parseWebFileUrl: @json($formRoutes['parse_web_file']),
+                    scrapeWebUrl: @json($formRoutes['scrape_web']),
                     pdfLoading: false,
                     pdfResult: '',
                     pdfFile: '',
@@ -637,6 +664,129 @@
                         alert('Data Analisa AI telah diterapkan ke Input Manual. Silakan review sebelum submit.');
                     },
 
+                    applyExtractedData(data) {
+                        const fields = {
+                            nama_reksa_dana: 'nama_reksa_dana',
+                            jenis_reksa_dana: 'jenis_reksa_dana',
+                            total_aum: 'total_aum',
+                            total_marcap_10_efek: 'total_marcap_10_efek',
+                        };
+                        for (const [key, id] of Object.entries(fields)) {
+                            const el = document.getElementById(id);
+                            if (data[key] && el) el.value = data[key];
+                        }
+                        if (data.sektor?.length) this.sektor = data.sektor;
+                        if (data.efek?.length) {
+                            this.efek = data.efek.map(e => ({
+                                ...e,
+                                top_10: e.top_10 === 'Ya' || e.top_10 === true,
+                            }));
+                        }
+                        if (data.kinerja?.length >= 2) {
+                            this.kinerja = data.kinerja;
+                        } else if (data.kinerja?.length === 1) {
+                            this.kinerja = [...data.kinerja, { periode: '', return_pct: '' }];
+                        }
+                        if (data.obligasi?.length) this.obligasi = data.obligasi;
+                        if (data.bank?.length) this.bank = data.bank;
+                        this.mode = 'manual';
+                    },
+
+                    fillFromWebFile() {
+                        if (!this.webFile) {
+                            alert('Pilih file unduhan dari situs terlebih dahulu.');
+                            return;
+                        }
+                        this.webLoading = true;
+                        this.webMessage = '';
+                        const formData = new FormData();
+                        formData.append('file', this.webFile);
+                        formData.append('_token', this.analisaFormEl().querySelector('input[name="_token"]').value);
+                        fetch(this.parseWebFileUrl, {
+                            method: 'POST',
+                            headers: { Accept: 'application/json' },
+                            body: formData,
+                        })
+                            .then(res => res.json().then(body => ({ ok: res.ok, body })))
+                            .then(({ ok, body }) => {
+                                this.webLoading = false;
+                                if (!ok || !body.success) {
+                                    this.webOk = false;
+                                    this.webMessage = body.message || 'Gagal membaca file.';
+                                    return;
+                                }
+                                this.applyExtractedData(body.data);
+                                this.webOk = true;
+                                this.webMessage = body.message + ' Data sudah di tab Input Manual — lengkapi Jenis RD jika perlu, lalu Submit Analisa.';
+                            })
+                            .catch(() => {
+                                this.webLoading = false;
+                                this.webOk = false;
+                                this.webMessage = 'Gagal memproses file.';
+                            });
+                    },
+
+                    scrapeFromLink(linkId) {
+                        this.webLoading = true;
+                        this.webMessage = '';
+                        const formData = new FormData();
+                        formData.append('data_source_link_id', linkId);
+                        formData.append('_token', this.analisaFormEl().querySelector('input[name="_token"]').value);
+                        fetch(this.scrapeWebUrl, {
+                            method: 'POST',
+                            headers: { Accept: 'application/json' },
+                            body: formData,
+                        })
+                            .then(res => res.json().then(body => ({ ok: res.ok, body })))
+                            .then(({ ok, body }) => {
+                                this.webLoading = false;
+                                if (!ok || !body.success) {
+                                    this.webOk = false;
+                                    this.webMessage = body.message || 'Unduh otomatis gagal. Unduh manual dari link, lalu pilih file di bawah.';
+                                    return;
+                                }
+                                this.applyExtractedData(body.data);
+                                this.webOk = true;
+                                this.webMessage = body.message + ' Data sudah di tab Input Manual — lengkapi Jenis RD jika perlu, lalu Submit Analisa.';
+                            })
+                            .catch(() => {
+                                this.webLoading = false;
+                                this.webOk = false;
+                                this.webMessage = 'Unduh otomatis gagal. Gunakan link → unduh manual → Isi Form Otomatis.';
+                            });
+                    },
+
+                    scrapeUrl(url) {
+                        this.webLoading = true;
+                        this.webMessage = '';
+                        const formData = new FormData();
+                        formData.append('url', url);
+                        formData.append('_token', this.analisaFormEl().querySelector('input[name="_token"]').value);
+                        fetch(@json($formRoutes['scrape_url']), {
+                            method: 'POST',
+                            headers: { Accept: 'application/json' },
+                            body: formData,
+                        })
+                            .then(res => res.json().then(body => ({ ok: res.ok, body })))
+                            .then(({ ok, body }) => {
+                                this.webLoading = false;
+                                if (!ok || !body.success) {
+                                    this.webOk = false;
+                                    this.webMessage = body.message || 'Gagal scrape URL.';
+                                    return;
+                                }
+                                this.applyExtractedData(body.data);
+                                this.webOk = true;
+                                this.webMessage = body.message + ' Data sudah di tab Input Manual — lengkapi Jenis RD jika perlu, lalu Submit Analisa.';
+                                this.mode = 'manual';
+                            })
+                            .catch(() => {
+                                this.webLoading = false;
+                                this.webOk = false;
+                                this.webMessage = 'Gagal scrape URL.';
+                            });
+                    },
+
                     parsePdf(event) {
                         const file = event.target.files[0];
                         if (!file) return;
@@ -670,59 +820,10 @@
                                     return;
                                 }
 
-                                const data = resp.data;
-
-                                // Fill basic info
-                                const fields = {
-                                    nama_reksa_dana: 'nama_reksa_dana',
-                                    jenis_reksa_dana: 'jenis_reksa_dana',
-                                    total_aum: 'total_aum',
-                                    total_marcap_10_efek: 'total_marcap_10_efek'
-                                };
-                                for (const [key, id] of Object.entries(fields)) {
-                                    const el = document.getElementById(id);
-                                    if (data[key] && el) el.value = data[key];
-                                }
-
-                                // Fill sektor
-                                if (data.sektor && data.sektor.length) {
-                                    this.sektor = data.sektor;
-                                }
-
-                                // Fill efek
-                                if (data.efek && data.efek.length) {
-                                    this.efek = data.efek.map(e => ({
-                                        ...e,
-                                        top_10: e.top_10 === 'Ya' || e.top_10 === true
-                                    }));
-                                }
-
-                                // Fill kinerja
-                                if (data.kinerja && data.kinerja.length >= 2) {
-                                    this.kinerja = data.kinerja;
-                                } else if (data.kinerja && data.kinerja.length === 1) {
-                                    this.kinerja = [...data.kinerja, {
-                                        periode: '',
-                                        return_pct: ''
-                                    }];
-                                }
-
-                                // Fill obligasi
-                                if (data.obligasi && data.obligasi.length) {
-                                    this.obligasi = data.obligasi;
-                                }
-
-                                // Fill bank
-                                if (data.bank && data.bank.length) {
-                                    this.bank = data.bank;
-                                }
-
+                                this.applyExtractedData(resp.data);
                                 this.pdfFile = resp.pdf_file || '';
                                 this.pdfResult = resp.message + ' Beralih ke tab Input Manual...';
                                 this.pdfLoading = false;
-                                setTimeout(() => {
-                                    this.mode = 'manual';
-                                }, 2000);
                             })
                             .catch(err => {
                                 this.pdfResult = 'Gagal: ' + err.message;
