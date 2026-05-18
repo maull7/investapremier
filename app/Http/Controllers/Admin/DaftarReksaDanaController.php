@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\DataSourceLink;
+use App\Models\DataSourceSyncLog;
 use App\Models\ReksaDana;
 use App\Imports\HargaReksaDanaImport;
 use App\Imports\HarianReksaDanaImport;
@@ -30,7 +32,40 @@ class DaftarReksaDanaController extends Controller
         }
         $harian = $harianQuery->paginate(20, ['*'], 'harian_page')->withQueryString();
 
-        return view('admin.daftar-reksa-dana.index', compact('reksaDanas', 'harian', 'tab'));
+        $dataSourceLinks = collect();
+        $syncLogs = collect();
+        $reksaDanaList = collect();
+        $editingLink = null;
+
+        if ($tab === 'link-website') {
+            $linkQuery = DataSourceLink::global()->with(['reksaDana', 'urls'])->latest();
+            if ($request->search) {
+                $linkQuery->where(function ($q) use ($request) {
+                    $q->where('nama_sumber', 'like', '%' . $request->search . '%')
+                        ->orWhereHas('reksaDana', fn ($r) => $r->where('nama_reksa_dana', 'like', '%' . $request->search . '%'));
+                });
+            }
+            if ($request->jenis_akses) {
+                $linkQuery->where('jenis_akses', $request->jenis_akses);
+            }
+            $dataSourceLinks = $linkQuery->paginate(15, ['*'], 'link_page')->withQueryString();
+
+            $syncLogs = DataSourceSyncLog::with(['link.reksaDana', 'user'])
+                ->latest()
+                ->paginate(10, ['*'], 'log_page')
+                ->withQueryString();
+
+            $reksaDanaList = ReksaDana::orderBy('nama_reksa_dana')->get(['id', 'nama_reksa_dana']);
+
+            if ($request->edit) {
+                $editingLink = DataSourceLink::with('urls')->find($request->edit);
+            }
+        }
+
+        return view('admin.daftar-reksa-dana.index', compact(
+            'reksaDanas', 'harian', 'tab',
+            'dataSourceLinks', 'syncLogs', 'reksaDanaList', 'editingLink',
+        ));
     }
 
     public function uploadHarga(Request $request)

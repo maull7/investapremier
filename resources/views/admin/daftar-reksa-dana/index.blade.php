@@ -15,6 +15,10 @@
 </div>
 @endif
 
+@if(session('error'))
+<div class="mb-5 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">{{ session('error') }}</div>
+@endif
+
 @if($errors->any())
 <div class="mb-5 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">
     <ul class="list-disc list-inside space-y-1">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
@@ -27,9 +31,13 @@
        class="px-5 py-2.5 text-sm font-semibold border-b-2 transition -mb-px {{ $tab === 'harga' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-primary' }}">
         Harga Reksa Dana
     </a>
-    <a href="{{ route('admin.daftar-reksa-dana.index', array_merge(request()->except('tab', 'harga_page', 'harian_page'), ['tab' => 'harian'])) }}"
+    <a href="{{ route('admin.daftar-reksa-dana.index', array_merge(request()->except('tab', 'harga_page', 'harian_page', 'link_page', 'log_page', 'edit'), ['tab' => 'harian'])) }}"
        class="px-5 py-2.5 text-sm font-semibold border-b-2 transition -mb-px {{ $tab === 'harian' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-primary' }}">
         Harian Reksa Dana
+    </a>
+    <a href="{{ route('admin.daftar-reksa-dana.index', array_merge(request()->except('tab', 'harga_page', 'harian_page', 'link_page', 'log_page', 'edit'), ['tab' => 'link-website'])) }}"
+       class="px-5 py-2.5 text-sm font-semibold border-b-2 transition -mb-px {{ $tab === 'link-website' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-muted hover:text-primary' }}">
+        Link Website
     </a>
 </div>
 
@@ -241,5 +249,8 @@
     @endif
 </div>
 
+{{-- ===================== TAB LINK WEBSITE ===================== --}}
+@elseif($tab === 'link-website')
+    @include('admin.daftar-reksa-dana.partials.tab-link-website')
 @endif
 @endsection

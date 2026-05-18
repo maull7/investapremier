@@ -25,6 +25,11 @@ class ReksaDana extends Model
         return $this->hasMany(HargaReksaDana::class, 'reksa_dana_id');
     }
 
+    public function dataSourceLinks(): HasMany
+    {
+        return $this->hasMany(DataSourceLink::class, 'reksa_dana_id');
+    }
+
     public function getKategoriLabelAttribute(): string
     {
         return is_array($this->kategori) ? implode(', ', $this->kategori) : ($this->kategori ?? '—');

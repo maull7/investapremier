@@ -12,6 +12,8 @@ use App\Http\Controllers\AnalisaController;
 use App\Http\Controllers\Admin\ReksaDanaController as AdminReksaDanaController;
 use App\Http\Controllers\Admin\AnalisaRdController as AdminAnalisaRdController;
 use App\Http\Controllers\Admin\DaftarReksaDanaController;
+use App\Http\Controllers\Admin\DataSourceLinkController;
+use App\Http\Controllers\User\DataSourceLinkController as UserDataSourceLinkController;
 use App\Http\Controllers\ReksaDanaController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use Illuminate\Support\Facades\Route;
@@ -75,11 +77,19 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('daftar-reksa-dana/template-harga', [DaftarReksaDanaController::class, 'downloadTemplateHarga'])->name('daftar-reksa-dana.template-harga');
     Route::get('daftar-reksa-dana/template-harian', [DaftarReksaDanaController::class, 'downloadTemplateHarian'])->name('daftar-reksa-dana.template-harian');
 
+    Route::post('data-source-links', [DataSourceLinkController::class, 'store'])->name('data-source-links.store');
+    Route::put('data-source-links/{dataSourceLink}', [DataSourceLinkController::class, 'update'])->name('data-source-links.update');
+    Route::delete('data-source-links/{dataSourceLink}', [DataSourceLinkController::class, 'destroy'])->name('data-source-links.destroy');
+    Route::post('data-source-links/{dataSourceLink}/upload', [DataSourceLinkController::class, 'upload'])->name('data-source-links.upload');
+
     // Analisa Reksa Dana (form submit, sama seperti user)
     Route::get('analisa-rd/create', [AdminAnalisaRdController::class, 'create'])->name('analisa-rd.create');
     Route::post('analisa-rd', [AdminAnalisaRdController::class, 'store'])->name('analisa-rd.store');
     Route::get('analisa-rd/template', [AdminAnalisaRdController::class, 'downloadTemplate'])->name('analisa-rd.template');
     Route::post('analisa-rd/parse-pdf', [AdminAnalisaRdController::class, 'parsePdf'])->name('analisa-rd.parse-pdf');
+    Route::post('analisa-rd/parse-web-file', [AdminAnalisaRdController::class, 'parseWebFile'])->name('analisa-rd.parse-web-file');
+    Route::post('analisa-rd/scrape-web-data', [AdminAnalisaRdController::class, 'scrapeWebData'])->name('analisa-rd.scrape-web-data');
+    Route::post('analisa-rd/scrape-url', [AdminAnalisaRdController::class, 'scrapeUrl'])->name('analisa-rd.scrape-url');
     Route::post('analisa-rd/preview-ai', [AdminAnalisaRdController::class, 'previewAi'])->name('analisa-rd.preview-ai');
     Route::post('analisa-rd/preview-ai-plus', [AdminAnalisaRdController::class, 'previewAiPlus'])->name('analisa-rd.preview-ai-plus');
 
@@ -104,12 +114,20 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/analisa/create', [AnalisaController::class, 'create'])->name('analisa.create');
     Route::post('/analisa', [AnalisaController::class, 'store'])->name('analisa.store');
     Route::post('/analisa/parse-pdf', [AnalisaController::class, 'parsePdf'])->name('analisa.parse-pdf');
+    Route::post('/analisa/parse-web-file', [AnalisaController::class, 'parseWebFile'])->name('analisa.parse-web-file');
+    Route::post('/analisa/scrape-web-data', [AnalisaController::class, 'scrapeWebData'])->name('analisa.scrape-web-data');
+    Route::post('/analisa/scrape-url', [AnalisaController::class, 'scrapeUrl'])->name('analisa.scrape-url');
     Route::post('/analisa/preview-ai', [AnalisaController::class, 'previewAi'])->name('analisa.preview-ai');
     Route::post('/analisa/preview-ai-plus', [AnalisaController::class, 'previewAiPlus'])->name('analisa.preview-ai-plus');
     Route::get('/analisa/{analisa}', [AnalisaController::class, 'show'])->name('analisa.show');
     Route::get('/analisa/{analisa}/pdf', [AnalisaController::class, 'exportPdf'])->name('analisa.pdf');
     Route::get('/analisa/{analisa}/download-ffs', [AnalisaController::class, 'downloadPdf'])->name('analisa.download-ffs');
     Route::delete('/analisa/{analisa}', [AnalisaController::class, 'destroy'])->name('analisa.destroy');
+
+    Route::post('data-source-links', [UserDataSourceLinkController::class, 'store'])->name('data-source-links.store');
+    Route::put('data-source-links/{dataSourceLink}', [UserDataSourceLinkController::class, 'update'])->name('data-source-links.update');
+    Route::delete('data-source-links/{dataSourceLink}', [UserDataSourceLinkController::class, 'destroy'])->name('data-source-links.destroy');
+    Route::post('data-source-links/{dataSourceLink}/upload', [UserDataSourceLinkController::class, 'upload'])->name('data-source-links.upload');
 
     // Daftar & Analisa Saham
     Route::get('/saham', fn() => view('saham.index'))->name('saham.index');
