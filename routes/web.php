@@ -100,6 +100,10 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     // Daftar & Analisa Obligasi
     Route::get('obligasi', fn() => view('admin.obligasi.index'))->name('obligasi.index');
     Route::get('analisa-obligasi', fn() => view('admin.analisa-obligasi.index'))->name('analisa-obligasi.index');
+
+    // AI Prompts
+    Route::get('ai-prompts', [App\Http\Controllers\Admin\AiPromptController::class, 'index'])->name('ai-prompts.index');
+    Route::put('ai-prompts/{key}', [App\Http\Controllers\Admin\AiPromptController::class, 'update'])->name('ai-prompts.update');
 });
 
 Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(function () {

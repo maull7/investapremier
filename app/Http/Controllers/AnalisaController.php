@@ -115,9 +115,13 @@ class AnalisaController extends Controller
     public function previewAi(Request $request, GroqService $groq)
     {
         $request->validate([
-            'nama_reksa_dana'  => 'required|string|max:255',
-            'jenis_reksa_dana' => 'required|in:Saham,Pendapatan Tetap,Campuran,Pasar Uang',
+            'nama_reksa_dana' => 'required|string|max:255',
         ]);
+
+        // Default jenis jika tidak diisi
+        if (!$request->filled('jenis_reksa_dana')) {
+            $request->merge(['jenis_reksa_dana' => 'Saham']);
+        }
 
         try {
             $analisa = AnalisaPayloadBuilder::fromRequest($request);

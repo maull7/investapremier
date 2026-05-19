@@ -391,14 +391,11 @@
                     </div>
 
                     <div x-show="pdfLoading" class="flex items-center gap-2 text-sm text-muted">
-                        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none"
-                            viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z">
-                            </path>
+                        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                         </svg>
-                        <span>Memproses PDF dengan AI... harap tunggu (10–30 detik).</span>
+                        <span>Membaca PDF... harap tunggu.</span>
                     </div>
 
                     <div x-show="pdfResult" class="text-sm space-y-2">
@@ -468,6 +465,7 @@
                     pdfResult: '',
                     pdfSuccess: false,
                     pdfFile: '',
+                    pdfData: null,
                     aiLoading: false,
                     aiPlusLoading: false,
                     aiError: '',
@@ -534,23 +532,41 @@
                         const fd = new FormData(this.analisaFormEl());
                         const payload = new FormData();
                         ['nama_reksa_dana', 'jenis_reksa_dana', 'total_aum', 'total_marcap_10_efek'].forEach(k => {
-                            payload.append(k, fd.get(k) ?? '');
+                            const val = fd.get(k) ?? '';
+                            // Fallback ke pdfData jika form kosong
+                            payload.append(k, val || (this.pdfData?.[k] ?? ''));
                         });
                         for (const [key, val] of fd.entries()) {
                             if (key.startsWith('sektor[') || key.startsWith('efek[') || key.startsWith('kinerja[') || key.startsWith('obligasi[') || key.startsWith('bank[')) {
                                 payload.append(key, val);
                             }
                         }
+                        // Inject pdfData untuk field yang kosong (cek nilai, bukan hanya key)
+                        if (this.pdfData) {
+                            const arrayFields = ['sektor', 'efek', 'kinerja', 'obligasi', 'bank'];
+                            arrayFields.forEach(field => {
+                                const hasRealData = [...payload.entries()]
+                                    .some(([k, v]) => k.startsWith(field + '[') && String(v).trim() !== '');
+                                if (!hasRealData && this.pdfData[field]?.length) {
+                                    this.pdfData[field].forEach((row, i) => {
+                                        Object.entries(row).forEach(([k, v]) => {
+                                            if (v !== null && v !== undefined && String(v).trim() !== '') {
+                                                payload.append(`${field}[${i}][${k}]`, v);
+                                            }
+                                        });
+                                    });
+                                }
+                            });
+                        }
                         payload.append('_token', fd.get('_token'));
                         return payload;
                     },
 
                     validateAiBasics(fd) {
-                        if (!String(fd.get('nama_reksa_dana') || '').trim()) {
-                            return 'Isi Nama Reksa Dana di bagian Informasi Reksa Dana (atas form) terlebih dahulu.';
-                        }
-                        if (!fd.get('jenis_reksa_dana')) {
-                            return 'Pilih Jenis Reksa Dana terlebih dahulu.';
+                        const nama = String(fd.get('nama_reksa_dana') || '').trim();
+                        // Lolos jika ada nama di form ATAU ada pdfData
+                        if (!nama && !this.pdfData) {
+                            return 'Isi Nama Reksa Dana di bagian Informasi Reksa Dana (atas form) terlebih dahulu, atau upload PDF FFS.';
                         }
                         return null;
                     },
@@ -636,33 +652,58 @@
                             return;
                         }
                         const p = this.aiResult.parsed;
-                        const form = this.analisaFormEl();
+                        const pdf = this.pdfData || {};
+
+                        // Nama, jenis, AUM — prioritas AI, fallback PDF
+                        const setField = (id, val) => {
+                            const el = document.getElementById(id);
+                            if (el && val) el.value = val;
+                        };
+                        setField('nama_reksa_dana',      p.nama_reksa_dana      || pdf.nama_reksa_dana);
+                        setField('jenis_reksa_dana',     p.jenis_reksa_dana     || pdf.jenis_reksa_dana);
+                        setField('total_aum',            p.total_aum            || pdf.total_aum);
+                        setField('total_marcap_10_efek', p.total_marcap_10_efek || pdf.total_marcap_10_efek);
+
+                        // Sektor — dari AI (alokasi_aset), fallback PDF
                         if (p.alokasi_aset?.length) {
                             this.sektor = p.alokasi_aset.map(a => ({
                                 nama_sektor: a.kategori || '',
                                 bobot: a.persentase ?? '',
                             }));
+                        } else if (pdf.sektor?.length) {
+                            this.sektor = pdf.sektor;
                         }
+
+                        // Efek — dari AI (daftar_efek), fallback PDF
                         if (p.daftar_efek?.length) {
-                            const sorted = [...p.daftar_efek].sort((a, b) => (b.bobot || 0) - (a.bobot || 0));
-                            this.efek = sorted.map((e, i) => ({
-                                kode_efek: e.kode_efek || '',
-                                nama_efek: e.nama_efek || '',
-                                sektor: e.sektor || '',
-                                bobot: e.bobot ?? '',
-                                kontribusi_kinerja: e.kontribusi_kinerja ?? '',
-                                market_cap: e.market_cap ?? '',
-                                top_10: i < 10,
-                            }));
+                            this.efek = [...p.daftar_efek]
+                                .sort((a, b) => (b.bobot || 0) - (a.bobot || 0))
+                                .map((e, i) => ({
+                                    kode_efek:          e.kode_efek || '',
+                                    nama_efek:          e.nama_efek || '',
+                                    sektor:             e.sektor || '',
+                                    bobot:              e.bobot ?? '',
+                                    kontribusi_kinerja: e.kontribusi_kinerja ?? '',
+                                    market_cap:         e.market_cap ?? '',
+                                    top_10:             i < 10,
+                                }));
+                        } else if (pdf.efek?.length) {
+                            this.efek = pdf.efek.map((e, i) => ({ ...e, top_10: i < 10 }));
                         }
-                        if (form && !form.total_aum?.value && p.total_aum) {
-                            form.total_aum.value = p.total_aum;
+
+                        // Kinerja — dari PDF (AI tidak generate ini)
+                        if (pdf.kinerja?.length >= 2) {
+                            this.kinerja = pdf.kinerja;
+                        } else if (pdf.kinerja?.length === 1) {
+                            this.kinerja = [...pdf.kinerja, { periode: '', return_pct: '' }];
                         }
-                        if (form && !form.total_marcap_10_efek?.value && p.total_marcap_10_efek) {
-                            form.total_marcap_10_efek.value = p.total_marcap_10_efek;
-                        }
+
+                        // Obligasi & bank — dari PDF
+                        if (pdf.obligasi?.length) this.obligasi = pdf.obligasi;
+                        if (pdf.bank?.length)     this.bank     = pdf.bank;
+
                         this.mode = 'manual';
-                        alert('Data Analisa AI telah diterapkan ke Input Manual. Silakan review sebelum submit.');
+                        alert('Data telah diterapkan ke Input Manual. Silakan review sebelum submit.');
                     },
 
                     applyExtractedData(data) {
@@ -822,10 +863,12 @@
                                     this.pdfResult = resp.message;
                                     return;
                                 }
-                                this.applyExtractedData(resp.data);
+                                // Simpan data PDF ke state, arahkan ke tab Analisa AI
+                                this.pdfData = resp.data;
                                 this.pdfFile = resp.pdf_file || '';
                                 this.pdfSuccess = true;
                                 this.pdfResult = resp.message;
+                                this.mode = 'ai';
                             })
                             .catch(err => {
                                 this.pdfLoading = false;

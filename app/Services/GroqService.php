@@ -162,6 +162,7 @@ PROMPT,
     public function generateNarasiAnalisaStructured(AnalisaReksaDana $analisa): array
     {
         $prompt = $this->buildStructuredPrompt($analisa);
+        $systemPrompt = \App\Models\AiPrompt::get('system_analisa', 'Kamu adalah analis investasi profesional Indonesia yang ahli dalam analisa Reksa Dana. Gunakan Bahasa Indonesia yang baik. Keluarkan jawaban dalam format JSON valid tanpa teks tambahan.');
 
         $response = Http::withToken($this->apiKey)
             ->timeout(90)
@@ -169,14 +170,8 @@ PROMPT,
                 'model'       => $this->model,
                 'temperature' => 0.3,
                 'messages'    => [
-                    [
-                        'role'    => 'system',
-                        'content' => 'Kamu adalah analis investasi profesional Indonesia yang ahli dalam analisa Reksa Dana. Gunakan Bahasa Indonesia yang baik. Keluarkan jawaban dalam format JSON valid tanpa teks tambahan.',
-                    ],
-                    [
-                        'role'    => 'user',
-                        'content' => $prompt,
-                    ],
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    ['role' => 'user',   'content' => $prompt],
                 ],
             ]);
 
@@ -196,6 +191,7 @@ PROMPT,
     public function generateAnalisaPlusStructured(AnalisaReksaDana $analisa): array
     {
         $prompt = $this->buildPlusStructuredPrompt($analisa);
+        $systemPrompt = \App\Models\AiPrompt::get('system_analisa_plus', 'Kamu adalah analis investasi senior Indonesia yang ahli analisa mendalam Reksa Dana. Gunakan Bahasa Indonesia. Keluarkan jawaban dalam format JSON valid tanpa teks tambahan.');
 
         $response = Http::withToken($this->apiKey)
             ->timeout(120)
@@ -203,14 +199,8 @@ PROMPT,
                 'model'       => $this->model,
                 'temperature' => 0.3,
                 'messages'    => [
-                    [
-                        'role'    => 'system',
-                        'content' => 'Kamu adalah analis investasi senior Indonesia yang ahli analisa mendalam Reksa Dana. Gunakan Bahasa Indonesia. Keluarkan jawaban dalam format JSON valid tanpa teks tambahan.',
-                    ],
-                    [
-                        'role'    => 'user',
-                        'content' => $prompt,
-                    ],
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    ['role' => 'user',   'content' => $prompt],
                 ],
             ]);
 
@@ -286,10 +276,7 @@ PROMPT,
     private function buildPlusStructuredPrompt(AnalisaReksaDana $analisa): string
     {
         $data = $this->buildDataSection($analisa);
-
-        return <<<PROMPT
-{$data}
-
+        $instruksi = \App\Models\AiPrompt::get('instruksi_analisa_plus', <<<DEFAULT
 Berdasarkan data Input Manual lengkap di atas, buatkan analisa mendalam (Analisa AI Plus) dalam format JSON:
 {
   "ringkasan_utama": "Ringkasan eksekutif 2-3 paragraf dengan metrik kunci",
@@ -309,7 +296,9 @@ PETUNJUK:
 - Gunakan semua data sektor, efek, kinerja, obligasi, dan bank yang tersedia
 - Jika metrik tidak bisa dihitung, jelaskan di narasi dan set null di metrik_saran
 - Output HANYA JSON valid tanpa markdown
-PROMPT;
+DEFAULT);
+
+        return $data . "\n\n" . $instruksi;
     }
 
     private function buildPrompt(AnalisaReksaDana $analisa): string
@@ -320,10 +309,7 @@ PROMPT;
     private function buildStructuredPrompt(AnalisaReksaDana $analisa): string
     {
         $data = $this->buildDataSection($analisa);
-
-        return <<<PROMPT
-{$data}
-
+        $instruksi = \App\Models\AiPrompt::get('instruksi_analisa', <<<DEFAULT
 Berdasarkan data di atas, buatkan analisa dalam format JSON dengan struktur EXACT berikut (jangan tambah atau kurangi field):
 {
   "ringkasan_utama": "Ringkasan kinerja keseluruhan dalam 2-3 paragraf, mencakup return, komposisi sektor, dan posisi portfolio secara umum",
@@ -343,7 +329,9 @@ PETUNJUK PENTING:
 - Gunakan Bahasa Indonesia yang baik dan benar
 - Output HANYA JSON valid, tanpa teks lain, tanpa markdown
 - Pastikan JSON bisa diparse dengan json_decode()
-PROMPT;
+DEFAULT);
+
+        return $data . "\n\n" . $instruksi;
     }
 
     private function buildDataSection(AnalisaReksaDana $analisa): string
