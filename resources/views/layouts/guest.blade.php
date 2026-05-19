@@ -11,5 +11,6 @@
     </head>
     <body class="font-sans antialiased">
         @yield('body')
+        @yield('scripts')
     </body>
 </html>
