@@ -15,7 +15,29 @@ class FfsParserService
         $lines = array_filter(array_map('trim', explode("\n", $text)));
         $fullText = implode("\n", $lines);
 
-        $data = [
+        return [
+            'nama_reksa_dana' => $this->safeExtract('extractNamaReksaDana', [$lines, $fullText]),
+            'jenis_reksa_dana' => $this->safeExtract('extractJenisReksaDana', [$lines, $fullText]),
+            'total_aum' => $this->safeExtract('extractAum', [$lines, $fullText]),
+            'total_marcap_10_efek' => $this->safeExtract('extractTotalMarcap', [$lines, $fullText]),
+            'sektor' => $this->safeExtract('extractSektor', [$lines, $fullText]),
+            'efek' => $this->safeExtract('extractEfek', [$lines, $fullText]),
+            'kinerja' => $this->safeExtract('extractKinerja', [$lines, $fullText]),
+            'obligasi' => $this->safeExtract('extractObligasi', [$lines, $fullText]),
+            'bank' => $this->safeExtract('extractBank', [$lines, $fullText]),
+        ];
+    }
+
+    public function parseWithAi(string $pdfPath, GroqService $groq): array
+    {
+        $parser = new Parser;
+        $pdf = $parser->parseFile($pdfPath);
+        $text = $pdf->getText();
+
+        $lines = array_filter(array_map('trim', explode("\n", $text)));
+        $fullText = implode("\n", $lines);
+
+        $regex = [
             'nama_reksa_dana' => $this->safeExtract('extractNamaReksaDana', [$lines, $fullText]),
             'jenis_reksa_dana' => $this->safeExtract('extractJenisReksaDana', [$lines, $fullText]),
             'total_aum' => $this->safeExtract('extractAum', [$lines, $fullText]),
@@ -27,7 +49,63 @@ class FfsParserService
             'bank' => $this->safeExtract('extractBank', [$lines, $fullText]),
         ];
 
-        return $data;
+        $ai = $groq->parseFfsPdf($fullText);
+
+        return $this->merge($regex, $ai);
+    }
+
+    private function merge(array $regex, array $ai): array
+    {
+        $arrayFields = ['sektor', 'efek', 'kinerja', 'obligasi', 'bank'];
+
+        foreach ($regex as $key => $value) {
+            $aiValue = $ai[$key] ?? null;
+
+            if (in_array($key, $arrayFields)) {
+                // Pakai AI jika regex kosong atau AI punya lebih banyak data
+                if (empty($value) && !empty($aiValue)) {
+                    $regex[$key] = $aiValue;
+                } elseif (!empty($aiValue) && count($aiValue) > count($value)) {
+                    $regex[$key] = $aiValue;
+                } elseif (!empty($value) && !empty($aiValue)) {
+                    // Enrich existing regex rows dengan field tambahan dari AI (sektor, kontribusi_kinerja, dll)
+                    $regex[$key] = $this->enrichRows($key, $value, $aiValue);
+                }
+            } else {
+                // Pakai AI jika regex null/kosong
+                if (empty($value) && !empty($aiValue)) {
+                    $regex[$key] = $aiValue;
+                }
+            }
+        }
+
+        return $regex;
+    }
+
+    private function enrichRows(string $type, array $regexRows, array $aiRows): array
+    {
+        if ($type === 'efek') {
+            // Index AI rows by kode_efek for fast lookup
+            $aiIndex = [];
+            foreach ($aiRows as $row) {
+                $kode = strtoupper($row['kode_efek'] ?? '');
+                if ($kode) $aiIndex[$kode] = $row;
+            }
+
+            return array_map(function ($row) use ($aiIndex) {
+                $kode = strtoupper($row['kode_efek'] ?? '');
+                $ai = $aiIndex[$kode] ?? null;
+                if ($ai) {
+                    $row['sektor']             = $row['sektor']             ?? ($ai['sektor'] ?? '');
+                    $row['kontribusi_kinerja'] = $row['kontribusi_kinerja'] ?? ($ai['kontribusi_kinerja'] ?? null);
+                    $row['market_cap']         = $row['market_cap']         ?? ($ai['market_cap'] ?? null);
+                    $row['top_10']             = $row['top_10']             ?? ($ai['top_10'] ?? false);
+                }
+                return $row;
+            }, $regexRows);
+        }
+
+        return $regexRows;
     }
 
     private function safeExtract(string $method, array $args): mixed

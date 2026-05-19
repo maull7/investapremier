@@ -398,14 +398,14 @@
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z">
                             </path>
                         </svg>
-                        <span>Memproses PDF... harap tunggu.</span>
+                        <span>Memproses PDF dengan AI... harap tunggu (10–30 detik).</span>
                     </div>
 
                     <div x-show="pdfResult" class="text-sm space-y-2">
-                        <div class="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700">
+                        <div :class="pdfSuccess ? 'p-3 bg-green-50 border border-green-200 rounded-lg text-green-700' : 'p-3 bg-red-50 border border-red-200 rounded-lg text-red-700'">
                             <span x-text="pdfResult"></span>
                         </div>
-                        <p class="text-xs text-muted">Silakan cek tab <strong>Input Manual</strong> untuk melihat dan
+                        <p x-show="pdfSuccess" class="text-xs text-muted">Silakan cek tab <strong>Input Manual</strong> untuk melihat dan
                             mengedit data yang telah diekstrak.</p>
                     </div>
                 </div>
@@ -466,6 +466,7 @@
                     scrapeWebUrl: @json($formRoutes['scrape_web']),
                     pdfLoading: false,
                     pdfResult: '',
+                    pdfSuccess: false,
                     pdfFile: '',
                     aiLoading: false,
                     aiPlusLoading: false,
@@ -793,6 +794,7 @@
 
                         this.pdfLoading = true;
                         this.pdfResult = '';
+                        this.pdfSuccess = false;
 
                         const formData = new FormData();
                         formData.append('file_pdf', file);
@@ -814,20 +816,21 @@
                                 return res.json();
                             })
                             .then(resp => {
+                                this.pdfLoading = false;
                                 if (!resp.success) {
+                                    this.pdfSuccess = false;
                                     this.pdfResult = resp.message;
-                                    this.pdfLoading = false;
                                     return;
                                 }
-
                                 this.applyExtractedData(resp.data);
                                 this.pdfFile = resp.pdf_file || '';
-                                this.pdfResult = resp.message + ' Beralih ke tab Input Manual...';
-                                this.pdfLoading = false;
+                                this.pdfSuccess = true;
+                                this.pdfResult = resp.message;
                             })
                             .catch(err => {
-                                this.pdfResult = 'Gagal: ' + err.message;
                                 this.pdfLoading = false;
+                                this.pdfSuccess = false;
+                                this.pdfResult = 'Gagal: ' + err.message;
                             });
                     },
                 };

@@ -18,6 +18,119 @@ class GroqService
         $this->url    = config('services.groq.url');
     }
 
+    public function parseFfsPdf(string $pdfText): array
+    {
+        $text = mb_substr($pdfText, 0, 8000);
+        $messages = [
+            [
+                'role'    => 'system',
+                'content' => 'Kamu adalah parser dokumen Fund Fact Sheet (FFS) reksa dana Indonesia. Ekstrak data dari teks PDF dan kembalikan HANYA JSON valid tanpa teks lain.',
+            ],
+            [
+                'role'    => 'user',
+                'content' => <<<PROMPT
+Ekstrak data dari teks Fund Fact Sheet berikut. Kembalikan HANYA JSON valid dengan struktur PERSIS seperti ini:
+
+{
+  "nama_reksa_dana": "string atau null",
+  "jenis_reksa_dana": "Saham" atau "Pendapatan Tetap" atau "Campuran" atau "Pasar Uang" atau null,
+  "total_aum": angka rupiah penuh atau null,
+  "total_marcap_10_efek": angka rupiah penuh atau null,
+  "sektor": [
+    {"nama_sektor": "string", "bobot": angka_persen}
+  ],
+  "efek": [
+    {
+      "kode_efek": "string misal BBCA",
+      "nama_efek": "string nama lengkap",
+      "sektor": "string nama sektor efek ini atau kosong",
+      "bobot": angka_persen,
+      "kontribusi_kinerja": angka_persen_atau_null,
+      "market_cap": angka_rupiah_penuh_atau_null,
+      "top_10": true jika masuk 10 efek terbesar
+    }
+  ],
+  "kinerja": [
+    {"periode": "YYYY-MM", "return_pct": angka}
+  ],
+  "obligasi": [
+    {
+      "kode_obligasi": "string misal FR0091 atau kosong",
+      "nama_obligasi": "string nama lengkap",
+      "bobot": angka_persen,
+      "durasi": angka_tahun_atau_null,
+      "rating": "AAA" atau "AA+" atau "AA" atau "AA-" atau "A+" atau "A" atau "A-" atau "BBB+" atau "BBB" atau "BBB-" atau "BB" atau "B" atau "CCC" atau "D" atau null
+    }
+  ],
+  "bank": [
+    {
+      "nama_bank": "string",
+      "bobot": angka_persen_atau_null,
+      "car": angka_persen_atau_null,
+      "npl": angka_persen_atau_null,
+      "klasifikasi_risiko": "Rendah" atau "Sedang" atau "Tinggi" atau null
+    }
+  ]
+}
+
+ATURAN:
+- total_aum dan total_marcap_10_efek dalam Rupiah penuh (misal 1.5 triliun = 1500000000000)
+- bobot dalam persen (misal 12.5, bukan 0.125)
+- periode kinerja format YYYY-MM (misal "2024-03")
+- Jika data tidak ada gunakan null atau array kosong []
+- Output HANYA JSON valid, tanpa penjelasan, tanpa markdown
+
+TEKS FFS:
+{$text}
+PROMPT,
+            ],
+        ];
+
+        // Coba OpenAI dulu
+        $openaiKey = config('services.openai.key');
+        if ($openaiKey) {
+            try {
+                \Log::info('[FFS Parser] Menggunakan OpenAI: ' . config('services.openai.model', 'gpt-4o-mini'));
+                $response = Http::withToken($openaiKey)
+                    ->timeout(60)
+                    ->post(config('services.openai.url'), [
+                        'model'       => config('services.openai.model', 'gpt-4o-mini'),
+                        'temperature' => 0.1,
+                        'messages'    => $messages,
+                    ]);
+
+                if ($response->successful()) {
+                    $raw = $response->json('choices.0.message.content', '');
+                    $parsed = self::parseJsonOutput($raw);
+                    if (!empty($parsed)) {
+                        \Log::info('[FFS Parser] OpenAI berhasil, ' . count($parsed) . ' field diekstrak.');
+                        return $parsed;
+                    }
+                }
+                \Log::warning('[FFS Parser] OpenAI gagal atau hasil kosong, fallback ke Groq. Status: ' . $response->status());
+            } catch (\Throwable $e) {
+                \Log::warning('[FFS Parser] OpenAI exception: ' . $e->getMessage() . ', fallback ke Groq.');
+            }
+        }
+
+        // Fallback ke Groq
+        \Log::info('[FFS Parser] Menggunakan Groq: ' . $this->model);
+        $response = Http::withToken($this->apiKey)
+            ->timeout(90)
+            ->post($this->url, [
+                'model'       => $this->model,
+                'temperature' => 0.1,
+                'messages'    => $messages,
+            ]);
+
+        if ($response->failed()) {
+            throw new \RuntimeException('Groq API error: ' . $response->body());
+        }
+
+        $raw = $response->json('choices.0.message.content', '');
+        return self::parseJsonOutput($raw);
+    }
+
     public function generateNarasiAnalisa(AnalisaReksaDana $analisa): string
     {
         $prompt = $this->buildPrompt($analisa);

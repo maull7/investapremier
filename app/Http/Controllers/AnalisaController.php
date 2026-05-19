@@ -170,8 +170,10 @@ class AnalisaController extends Controller
         }
     }
 
-    public function parsePdf(Request $request, FfsParserService $ffsParser)
+    public function parsePdf(Request $request, FfsParserService $ffsParser, GroqService $groq)
     {
+        set_time_limit(120);
+
         $request->validate([
             'file_pdf' => 'required|file|mimes:pdf|max:10240',
         ]);
@@ -180,7 +182,7 @@ class AnalisaController extends Controller
         $path = $file->getPathname();
 
         try {
-            $data = $ffsParser->parse($path);
+            $data = $ffsParser->parseWithAi($path, $groq);
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
