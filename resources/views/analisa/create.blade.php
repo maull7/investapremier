@@ -54,6 +54,17 @@
                         </select>
                         <x-input-error :messages="$errors->get('jenis_reksa_dana')" class="mt-1" />
                     </div>
+                    <div>
+                        <x-input-label for="kategori" value="Kategori" />
+                        <select id="kategori" name="kategori"
+                            class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
+                            <option value="">Pilih Kategori</option>
+                            @foreach (['Terproteksi','global','DIRE-DINFRA','Penyertaan terbatas','Konvensional','Syariah','index','ETF'] as $k)
+                                <option value="{{ $k }}" {{ old('kategori') === $k ? 'selected' : '' }}>{{ $k }}</option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('kategori')" class="mt-1" />
+                    </div>
 
                 </div>
             </div>

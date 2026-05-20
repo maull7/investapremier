@@ -8,12 +8,32 @@
     <p class="text-muted text-sm mt-1">Informasi dan analisa reksa dana yang tersedia</p>
 </div>
 
+@if(session('success'))
+<div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-5">
+    {{ session('success') }}
+</div>
+@endif
+
 {{-- Filter Jenis --}}
-<div class="flex gap-2 text-xs mb-5 flex-wrap">
-    @foreach(['', 'Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang'] as $j)
-    <a href="{{ route('user.reksa-dana.index', $j ? ['jenis' => $j] : []) }}"
+<div class="flex gap-2 text-xs mb-3 flex-wrap">
+    @foreach(array_merge([''], $jenisOptions) as $j)
+    <a href="{{ route('user.reksa-dana.index', array_filter(['jenis' => $j ?: null, 'kategori' => request('kategori')])) }}"
        class="px-3 py-1.5 rounded-lg border transition {{ request('jenis') === $j || (!request('jenis') && $j === '') ? 'bg-primary text-white border-primary' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
-        {{ $j ?: 'Semua' }}
+        {{ $j ?: 'Semua Jenis' }}
+    </a>
+    @endforeach
+</div>
+
+{{-- Filter Kategori --}}
+<div class="flex gap-2 text-xs mb-5 flex-wrap">
+    <a href="{{ route('user.reksa-dana.index', array_filter(['jenis' => request('jenis')])) }}"
+       class="px-3 py-1.5 rounded-lg border transition {{ !request('kategori') ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
+        Semua Kategori
+    </a>
+    @foreach($kategoriOptions as $k)
+    <a href="{{ route('user.reksa-dana.index', array_filter(['jenis' => request('jenis'), 'kategori' => $k])) }}"
+       class="px-3 py-1.5 rounded-lg border transition {{ request('kategori') === $k ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
+        {{ $k }}
     </a>
     @endforeach
 </div>
@@ -36,6 +56,7 @@
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
                         </span>
                     </th>
+                    <th class="px-5 py-3.5 font-semibold"></th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-line">
@@ -73,10 +94,25 @@
                             <span class="text-muted">—</span>
                         @endif
                     </td>
+                    <td class="px-5 py-3.5">
+                        <div class="flex items-center gap-1">
+                            <a href="{{ route('user.reksa-dana.edit', $rd) }}"
+                               class="p-1.5 rounded-lg text-muted hover:text-blue-600 hover:bg-blue-50 transition" title="Edit">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            </a>
+                            <form method="POST" action="{{ route('user.reksa-dana.destroy', $rd) }}"
+                                  onsubmit="return confirm('Hapus data reksa dana ini?')">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="p-1.5 rounded-lg text-muted hover:text-red-600 hover:bg-red-50 transition" title="Hapus">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="px-6 py-12 text-center text-muted">
+                    <td colspan="9" class="px-6 py-12 text-center text-muted">
                         <p class="font-medium">Belum ada data reksa dana</p>
                     </td>
                 </tr>

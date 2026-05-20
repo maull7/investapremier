@@ -15,9 +15,11 @@ use App\Http\Controllers\Admin\DaftarReksaDanaController;
 use App\Http\Controllers\Admin\DataSourceLinkController;
 use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\ObligasiController as AdminObligasiController;
+use App\Http\Controllers\Admin\InvestmentManagerController as AdminInvestmentManagerController;
 use App\Http\Controllers\User\DataSourceLinkController as UserDataSourceLinkController;
 use App\Http\Controllers\User\StockController as UserStockController;
 use App\Http\Controllers\User\ObligasiController as UserObligasiController;
+use App\Http\Controllers\User\InvestmentManagerController as UserInvestmentManagerController;
 use App\Http\Controllers\ReksaDanaController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use Illuminate\Support\Facades\Route;
@@ -121,6 +123,12 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('obligasi/import-bond', [AdminObligasiController::class, 'importBond'])->name('obligasi.import-bond');
     Route::get('analisa-obligasi', fn() => view('admin.analisa-obligasi.index'))->name('analisa-obligasi.index');
 
+    // Manajer Investasi
+    Route::resource('investment-managers', AdminInvestmentManagerController::class)->except(['show']);
+    Route::get('investment-managers-template', [AdminInvestmentManagerController::class, 'downloadTemplate'])->name('investment-managers.template');
+    Route::post('investment-managers-import', [AdminInvestmentManagerController::class, 'import'])->name('investment-managers.import');
+    Route::delete('investment-managers-period/{investmentManagerPeriod}', [AdminInvestmentManagerController::class, 'destroyPeriod'])->name('investment-managers.period-destroy');
+
     // AI Prompts
     Route::get('ai-prompts', [App\Http\Controllers\Admin\AiPromptController::class, 'index'])->name('ai-prompts.index');
     Route::put('ai-prompts/{key}', [App\Http\Controllers\Admin\AiPromptController::class, 'update'])->name('ai-prompts.update');
@@ -135,6 +143,9 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/analisa', [AnalisaController::class, 'index'])->name('analisa.index');
     Route::get('/analisa/template', [AnalisaController::class, 'downloadTemplate'])->name('analisa.template');
     Route::get('/reksa-dana', [ReksaDanaController::class, 'index'])->name('reksa-dana.index');
+    Route::get('/reksa-dana/{reksaDana}/edit', [ReksaDanaController::class, 'edit'])->name('reksa-dana.edit');
+    Route::put('/reksa-dana/{reksaDana}', [ReksaDanaController::class, 'update'])->name('reksa-dana.update');
+    Route::delete('/reksa-dana/{reksaDana}', [ReksaDanaController::class, 'destroy'])->name('reksa-dana.destroy');
     Route::get('/analisa/create', [AnalisaController::class, 'create'])->name('analisa.create');
     Route::post('/analisa', [AnalisaController::class, 'store'])->name('analisa.store');
     Route::post('/analisa/parse-pdf', [AnalisaController::class, 'parsePdf'])->name('analisa.parse-pdf');
@@ -144,6 +155,8 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::post('/analisa/preview-ai', [AnalisaController::class, 'previewAi'])->name('analisa.preview-ai');
     Route::post('/analisa/preview-ai-plus', [AnalisaController::class, 'previewAiPlus'])->name('analisa.preview-ai-plus');
     Route::get('/analisa/{analisa}', [AnalisaController::class, 'show'])->name('analisa.show');
+    Route::get('/analisa/{analisa}/edit', [AnalisaController::class, 'edit'])->name('analisa.edit');
+    Route::put('/analisa/{analisa}', [AnalisaController::class, 'update'])->name('analisa.update');
     Route::get('/analisa/{analisa}/pdf', [AnalisaController::class, 'exportPdf'])->name('analisa.pdf');
     Route::get('/analisa/{analisa}/download-ffs', [AnalisaController::class, 'downloadPdf'])->name('analisa.download-ffs');
     Route::delete('/analisa/{analisa}', [AnalisaController::class, 'destroy'])->name('analisa.destroy');
@@ -162,6 +175,9 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     // Daftar & Analisa Obligasi
     Route::get('/obligasi', [UserObligasiController::class, 'index'])->name('obligasi.index');
     Route::get('/analisa-obligasi', fn() => view('analisa-obligasi.index'))->name('analisa-obligasi.index');
+
+    // Manajer Investasi
+    Route::get('/investment-managers', [UserInvestmentManagerController::class, 'index'])->name('investment-managers.index');
 });
 
 Route::middleware(['auth', 'verified'])->prefix('quiz')->name('quiz.')->group(function () {

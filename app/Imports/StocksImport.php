@@ -20,6 +20,7 @@ class StocksImport implements ToCollection, WithHeadingRow, WithCalculatedFormul
 
             $toNum = function ($val) {
                 if ($val === null || $val === '') return null;
+                if (is_numeric($val)) return $val;
                 $s = str_replace(['.', ','], ['', '.'], (string) $val);
                 if (!is_numeric($s)) return null;
                 return $s;

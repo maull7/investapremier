@@ -32,6 +32,7 @@
                     <tr>
                         <th class="text-left px-5 py-3 font-semibold text-primary">Nama Reksa Dana</th>
                         <th class="text-left px-5 py-3 font-semibold text-primary">Jenis</th>
+                        <th class="text-left px-5 py-3 font-semibold text-primary">Kategori</th>
                         <th class="text-left px-5 py-3 font-semibold text-primary">Status</th>
                         <th class="text-left px-5 py-3 font-semibold text-primary">Tanggal</th>
                         <th class="px-5 py-3"></th>
@@ -42,6 +43,7 @@
                     <tr class="hover:bg-[#f8fafc] transition">
                         <td class="px-5 py-3.5 font-medium text-primary">{{ $analisa->nama_reksa_dana }}</td>
                         <td class="px-5 py-3.5 text-muted">{{ $analisa->jenis_reksa_dana }}</td>
+                        <td class="px-5 py-3.5 text-muted">{{ $analisa->kategori ?? '—' }}</td>
                         <td class="px-5 py-3.5">
                             @php
                                 $badge = match($analisa->status) {
@@ -65,6 +67,10 @@
                                     Lihat Hasil
                                 </a>
                                 @if($analisa->status !== 'reviewed')
+                                <a href="{{ route('user.analisa.edit', $analisa) }}"
+                                   class="px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition">
+                                    Edit
+                                </a>
                                 <form method="POST" action="{{ route('user.analisa.destroy', $analisa) }}"
                                       onsubmit="return confirm('Hapus data analisa ini?')">
                                     @csrf @method('DELETE')

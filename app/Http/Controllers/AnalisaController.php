@@ -400,6 +400,7 @@ class AnalisaController extends Controller
                 'user_id'              => auth()->id(),
                 'nama_reksa_dana'      => $request->nama_reksa_dana,
                 'jenis_reksa_dana'     => $request->jenis_reksa_dana,
+                'kategori'             => $request->kategori,
                 'total_aum'            => $request->total_aum,
                 'total_marcap_10_efek' => $request->total_marcap_10_efek,
                 'status'               => 'submitted',
@@ -437,6 +438,7 @@ class AnalisaController extends Controller
                 'user_id'              => auth()->id(),
                 'nama_reksa_dana'      => $request->nama_reksa_dana,
                 'jenis_reksa_dana'     => $request->jenis_reksa_dana,
+                'kategori'             => $request->kategori,
                 'total_aum'            => $request->total_aum,
                 'total_marcap_10_efek' => $request->total_marcap_10_efek,
                 'status'               => 'submitted',
@@ -493,6 +495,68 @@ class AnalisaController extends Controller
         }
 
         return $tempPath;
+    }
+
+    public function edit(AnalisaReksaDana $analisa)
+    {
+        abort_if($analisa->user_id !== auth()->id(), 403);
+        abort_if($analisa->status === 'reviewed', 403, 'Data yang sudah direview tidak dapat diedit.');
+
+        $analisa->load(['sektor', 'efek', 'kinerja', 'obligasi', 'bank']);
+
+        $editData = [
+            'sektor'   => $analisa->sektor->map(fn($s) => ['nama_sektor' => $s->nama_sektor, 'bobot' => $s->bobot])->values(),
+            'efek'     => $analisa->efek->map(fn($e) => ['kode_efek' => $e->kode_efek, 'nama_efek' => $e->nama_efek, 'sektor' => $e->sektor, 'bobot' => $e->bobot, 'kontribusi_kinerja' => $e->kontribusi_kinerja, 'market_cap' => $e->market_cap, 'top_10' => $e->top_10])->values(),
+            'kinerja'  => $analisa->kinerja->map(fn($k) => ['periode' => \Carbon\Carbon::parse($k->periode)->format('Y-m'), 'return_pct' => $k->return_pct])->values(),
+            'obligasi' => $analisa->obligasi->map(fn($o) => ['kode_obligasi' => $o->kode_obligasi, 'nama_obligasi' => $o->nama_obligasi, 'bobot' => $o->bobot, 'durasi' => $o->durasi, 'rating' => $o->rating])->values(),
+            'bank'     => $analisa->bank->map(fn($b) => ['nama_bank' => $b->nama_bank, 'bobot' => $b->bobot, 'car' => $b->car, 'npl' => $b->npl, 'klasifikasi_risiko' => $b->klasifikasi_risiko])->values(),
+        ];
+
+        return view('analisa.edit', compact('analisa', 'editData'));
+    }
+
+    public function update(Request $request, AnalisaReksaDana $analisa)
+    {
+        abort_if($analisa->user_id !== auth()->id(), 403);
+        abort_if($analisa->status === 'reviewed', 403, 'Data yang sudah direview tidak dapat diedit.');
+
+        $request->validate([
+            'nama_reksa_dana'      => 'required|string|max:255',
+            'jenis_reksa_dana'     => 'required|in:Saham,Pendapatan Tetap,Campuran,Pasar Uang',
+            'kategori'             => 'nullable|in:Terproteksi,global,DIRE-DINFRA,Penyertaan terbatas,Konvensional,Syariah,index,ETF',
+            'total_aum'            => 'nullable|numeric|min:0',
+            'total_marcap_10_efek' => 'nullable|numeric|min:0',
+        ]);
+
+        DB::transaction(function () use ($request, $analisa) {
+            $analisa->update([
+                'nama_reksa_dana'      => $request->nama_reksa_dana,
+                'jenis_reksa_dana'     => $request->jenis_reksa_dana,
+                'kategori'             => $request->kategori,
+                'total_aum'            => $request->total_aum,
+                'total_marcap_10_efek' => $request->total_marcap_10_efek,
+            ]);
+
+            $sektor   = collect($request->sektor ?? [])->filter(fn($r) => !empty($r['nama_sektor']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
+            $efek     = collect($request->efek ?? [])->filter(fn($r) => !empty($r['kode_efek']) && !empty($r['nama_efek']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
+            $kinerja  = collect($request->kinerja ?? [])->filter(fn($r) => !empty($r['periode']) && isset($r['return_pct']) && $r['return_pct'] !== '')->values()->all();
+            $obligasi = collect($request->obligasi ?? [])->filter(fn($r) => !empty($r['kode_obligasi']) && !empty($r['nama_obligasi']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
+            $bank     = collect($request->bank ?? [])->filter(fn($r) => !empty($r['nama_bank']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
+
+            $analisa->sektor()->delete();
+            $analisa->efek()->delete();
+            $analisa->kinerja()->delete();
+            $analisa->obligasi()->delete();
+            $analisa->bank()->delete();
+
+            if ($sektor)   $analisa->sektor()->createMany($sektor);
+            if ($efek)     $analisa->efek()->createMany($efek);
+            if ($kinerja)  $analisa->kinerja()->createMany($kinerja);
+            if ($obligasi) $analisa->obligasi()->createMany($obligasi);
+            if ($bank)     $analisa->bank()->createMany($bank);
+        });
+
+        return redirect()->route('user.analisa.index')->with('success', 'Data analisa berhasil diperbarui.');
     }
 
     public function show(AnalisaReksaDana $analisa)
