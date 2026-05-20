@@ -16,10 +16,13 @@ use App\Http\Controllers\Admin\DataSourceLinkController;
 use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\ObligasiController as AdminObligasiController;
 use App\Http\Controllers\Admin\InvestmentManagerController as AdminInvestmentManagerController;
+use App\Http\Controllers\Admin\UnitLinkController as AdminUnitLinkController;
 use App\Http\Controllers\User\DataSourceLinkController as UserDataSourceLinkController;
 use App\Http\Controllers\User\StockController as UserStockController;
 use App\Http\Controllers\User\ObligasiController as UserObligasiController;
 use App\Http\Controllers\User\InvestmentManagerController as UserInvestmentManagerController;
+use App\Http\Controllers\User\UnitLinkController as UserUnitLinkController;
+use App\Http\Controllers\User\PerencanaanInvestasiController;
 use App\Http\Controllers\ReksaDanaController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use Illuminate\Support\Facades\Route;
@@ -129,6 +132,16 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('investment-managers-import', [AdminInvestmentManagerController::class, 'import'])->name('investment-managers.import');
     Route::delete('investment-managers-period/{investmentManagerPeriod}', [AdminInvestmentManagerController::class, 'destroyPeriod'])->name('investment-managers.period-destroy');
 
+    // Unit Link
+    Route::get('unit-link', [AdminUnitLinkController::class, 'index'])->name('unit-link.index');
+    Route::get('unit-link/create', [AdminUnitLinkController::class, 'create'])->name('unit-link.create');
+    Route::post('unit-link', [AdminUnitLinkController::class, 'store'])->name('unit-link.store');
+    Route::get('unit-link/{unitLink}/edit', [AdminUnitLinkController::class, 'edit'])->name('unit-link.edit');
+    Route::put('unit-link/{unitLink}', [AdminUnitLinkController::class, 'update'])->name('unit-link.update');
+    Route::delete('unit-link/{unitLink}', [AdminUnitLinkController::class, 'destroy'])->name('unit-link.destroy');
+    Route::get('unit-link-template', [AdminUnitLinkController::class, 'downloadTemplate'])->name('unit-link.template');
+    Route::post('unit-link-import', [AdminUnitLinkController::class, 'import'])->name('unit-link.import');
+
     // AI Prompts
     Route::get('ai-prompts', [App\Http\Controllers\Admin\AiPromptController::class, 'index'])->name('ai-prompts.index');
     Route::put('ai-prompts/{key}', [App\Http\Controllers\Admin\AiPromptController::class, 'update'])->name('ai-prompts.update');
@@ -178,6 +191,14 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
 
     // Manajer Investasi
     Route::get('/investment-managers', [UserInvestmentManagerController::class, 'index'])->name('investment-managers.index');
+
+    // Unit Link
+    Route::get('/unit-link', [UserUnitLinkController::class, 'index'])->name('unit-link.index');
+
+    // Perencanaan Investasi
+    Route::resource('/perencanaan-investasi', PerencanaanInvestasiController::class)->except(['show']);
+    Route::get('/perencanaan-investasi/{perencanaan_investasi}', [PerencanaanInvestasiController::class, 'show'])->name('perencanaan-investasi.show');
+    Route::post('/perencanaan-investasi/{perencanaan_investasi}/regenerate-ai', [PerencanaanInvestasiController::class, 'regenerateAi'])->name('perencanaan-investasi.regenerate-ai');
 });
 
 Route::middleware(['auth', 'verified'])->prefix('quiz')->name('quiz.')->group(function () {
