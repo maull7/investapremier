@@ -137,14 +137,22 @@
             <a href="{{ $questions->previousPageUrl() }}" class="px-3 py-1.5 rounded-lg text-muted hover:text-primary hover:bg-[#f1f5f9] transition text-xs">← Prev</a>
             @endif
 
-            {{-- Pages --}}
-            @foreach($questions->getUrlRange(1, $questions->lastPage()) as $page => $url)
+            @php $cur=$questions->currentPage();$last=$questions->lastPage();$s=max(1,$cur-2);$e=min($last,$cur+2); @endphp
+            @if($s>1)
+                <a href="{{ $questions->url(1) }}" class="w-8 h-8 rounded-lg grid place-items-center text-xs font-semibold text-muted hover:text-primary hover:bg-[#f1f5f9] transition">1</a>
+                @if($s>2)<span class="px-1 text-muted text-xs">…</span>@endif
+            @endif
+            @foreach($questions->getUrlRange($s,$e) as $page => $url)
             <a href="{{ $url }}"
                class="w-8 h-8 rounded-lg grid place-items-center text-xs font-semibold transition
-                      {{ $page == $questions->currentPage() ? 'bg-primary text-white' : 'text-muted hover:text-primary hover:bg-[#f1f5f9]' }}">
+                      {{ $page == $cur ? 'bg-primary text-white' : 'text-muted hover:text-primary hover:bg-[#f1f5f9]' }}">
                 {{ $page }}
             </a>
             @endforeach
+            @if($e<$last)
+                @if($e<$last-1)<span class="px-1 text-muted text-xs">…</span>@endif
+                <a href="{{ $questions->url($last) }}" class="w-8 h-8 rounded-lg grid place-items-center text-xs font-semibold text-muted hover:text-primary hover:bg-[#f1f5f9] transition">{{ $last }}</a>
+            @endif
 
             {{-- Next --}}
             @if($questions->hasMorePages())

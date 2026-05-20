@@ -13,7 +13,11 @@ use App\Http\Controllers\Admin\ReksaDanaController as AdminReksaDanaController;
 use App\Http\Controllers\Admin\AnalisaRdController as AdminAnalisaRdController;
 use App\Http\Controllers\Admin\DaftarReksaDanaController;
 use App\Http\Controllers\Admin\DataSourceLinkController;
+use App\Http\Controllers\Admin\StockController;
+use App\Http\Controllers\Admin\ObligasiController as AdminObligasiController;
 use App\Http\Controllers\User\DataSourceLinkController as UserDataSourceLinkController;
+use App\Http\Controllers\User\StockController as UserStockController;
+use App\Http\Controllers\User\ObligasiController as UserObligasiController;
 use App\Http\Controllers\ReksaDanaController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use Illuminate\Support\Facades\Route;
@@ -94,11 +98,27 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('analisa-rd/preview-ai-plus', [AdminAnalisaRdController::class, 'previewAiPlus'])->name('analisa-rd.preview-ai-plus');
 
     // Daftar & Analisa Saham
-    Route::get('saham', fn() => view('admin.saham.index'))->name('saham.index');
+    Route::resource('saham', StockController::class)->except(['show']);
+    Route::get('saham-template', [StockController::class, 'downloadTemplate'])->name('saham.template');
+    Route::post('saham-import', [StockController::class, 'import'])->name('saham.import');
     Route::get('analisa-saham', fn() => view('admin.analisa-saham.index'))->name('analisa-saham.index');
 
     // Daftar & Analisa Obligasi
-    Route::get('obligasi', fn() => view('admin.obligasi.index'))->name('obligasi.index');
+    Route::get('obligasi', [AdminObligasiController::class, 'index'])->name('obligasi.index');
+    Route::get('obligasi/harga-referensi/create', [AdminObligasiController::class, 'createHargaReferensi'])->name('obligasi.create-harga-referensi');
+    Route::post('obligasi/harga-referensi', [AdminObligasiController::class, 'storeHargaReferensi'])->name('obligasi.store-harga-referensi');
+    Route::get('obligasi/harga-referensi/{obligasiHargaReferensi}/edit', [AdminObligasiController::class, 'editHargaReferensi'])->name('obligasi.edit-harga-referensi');
+    Route::put('obligasi/harga-referensi/{obligasiHargaReferensi}', [AdminObligasiController::class, 'updateHargaReferensi'])->name('obligasi.update-harga-referensi');
+    Route::delete('obligasi/harga-referensi/{obligasiHargaReferensi}', [AdminObligasiController::class, 'destroyHargaReferensi'])->name('obligasi.destroy-harga-referensi');
+    Route::get('obligasi/template-harga-referensi', [AdminObligasiController::class, 'downloadTemplateHargaReferensi'])->name('obligasi.template-harga-referensi');
+    Route::post('obligasi/import-harga-referensi', [AdminObligasiController::class, 'importHargaReferensi'])->name('obligasi.import-harga-referensi');
+    Route::get('obligasi/bond/create', [AdminObligasiController::class, 'createBond'])->name('obligasi.create-bond');
+    Route::post('obligasi/bond', [AdminObligasiController::class, 'storeBond'])->name('obligasi.store-bond');
+    Route::get('obligasi/bond/{obligasiBond}/edit', [AdminObligasiController::class, 'editBond'])->name('obligasi.edit-bond');
+    Route::put('obligasi/bond/{obligasiBond}', [AdminObligasiController::class, 'updateBond'])->name('obligasi.update-bond');
+    Route::delete('obligasi/bond/{obligasiBond}', [AdminObligasiController::class, 'destroyBond'])->name('obligasi.destroy-bond');
+    Route::get('obligasi/template-bond', [AdminObligasiController::class, 'downloadTemplateBond'])->name('obligasi.template-bond');
+    Route::post('obligasi/import-bond', [AdminObligasiController::class, 'importBond'])->name('obligasi.import-bond');
     Route::get('analisa-obligasi', fn() => view('admin.analisa-obligasi.index'))->name('analisa-obligasi.index');
 
     // AI Prompts
@@ -134,11 +154,13 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::post('data-source-links/{dataSourceLink}/upload', [UserDataSourceLinkController::class, 'upload'])->name('data-source-links.upload');
 
     // Daftar & Analisa Saham
-    Route::get('/saham', fn() => view('saham.index'))->name('saham.index');
+    Route::resource('/saham', UserStockController::class)->except(['show']);
+    // Route::get('/saham-template', [UserStockController::class, 'downloadTemplate'])->name('saham.template');
+    // Route::post('/saham-import', [UserStockController::class, 'import'])->name('saham.import');
     Route::get('/analisa-saham', fn() => view('analisa-saham.index'))->name('analisa-saham.index');
 
     // Daftar & Analisa Obligasi
-    Route::get('/obligasi', fn() => view('obligasi.index'))->name('obligasi.index');
+    Route::get('/obligasi', [UserObligasiController::class, 'index'])->name('obligasi.index');
     Route::get('/analisa-obligasi', fn() => view('analisa-obligasi.index'))->name('analisa-obligasi.index');
 });
 
@@ -154,4 +176,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/member/harga-efek', [MemberController::class, 'hargaEfek'])->name('member.harga-efek');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

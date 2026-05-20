@@ -1,4 +1,4 @@
-@extends('layouts.user')
+@extends('layouts.admin')
 
 @section('title', 'Daftar Saham - InvestaPremier')
 
@@ -8,25 +8,33 @@
         <div class="mb-6 flex items-center justify-between">
             <div>
                 <h1 class="text-2xl font-bold text-primary">Daftar Saham</h1>
-                <p class="text-muted text-sm mt-1">Informasi saham yang tercatat di bursa</p>
+                <p class="text-muted text-sm mt-1">Kelola data saham yang tercatat di bursa</p>
             </div>
-            {{-- <div class="flex items-center gap-2">
-        <a href="{{ route('user.saham.template') }}"
-           class="flex items-center gap-2 px-4 py-2.5 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary hover:border-primary/30 transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-            Template Excel
-        </a>
-        <button @click="showImport = true"
-                class="flex items-center gap-2 px-4 py-2.5 border border-accent text-accent rounded-xl text-sm font-semibold hover:bg-accent/5 transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-            Import Excel
-        </button>
-        <a href="{{ route('user.saham.create') }}"
-           class="flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:bg-accent/90 transition shadow-sm shadow-accent/20">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Tambah Saham
-        </a>
-    </div> --}}
+            <div class="flex items-center gap-2">
+                <a href="{{ route('admin.saham.template') }}"
+                    class="flex items-center gap-2 px-4 py-2.5 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary hover:border-primary/30 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Template Excel
+                </a>
+                <button @click="showImport = true"
+                    class="flex items-center gap-2 px-4 py-2.5 border border-accent text-accent rounded-xl text-sm font-semibold hover:bg-accent/5 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    Import Excel
+                </button>
+                <a href="{{ route('admin.saham.create') }}"
+                    class="flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:bg-accent/90 transition shadow-sm shadow-accent/20">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Tambah Saham
+                </a>
+            </div>
         </div>
 
         @if (session('success'))
@@ -40,9 +48,20 @@
             </div>
         @endif
 
+        @if (session('error'))
+            <div
+                class="mb-5 flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {{ session('error') }}
+            </div>
+        @endif
+
         {{-- Search --}}
         <div class="mb-5">
-            <form method="GET" action="{{ route('user.saham.index') }}">
+            <form method="GET" action="{{ route('admin.saham.index') }}">
                 <div class="flex items-center gap-3">
                     <div class="relative flex-1 max-w-md">
                         <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted" fill="none"
@@ -57,7 +76,7 @@
                     <button type="submit"
                         class="px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition">Cari</button>
                     @if (request('search'))
-                        <a href="{{ route('user.saham.index') }}"
+                        <a href="{{ route('admin.saham.index') }}"
                             class="px-4 py-2.5 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary transition">Reset</a>
                     @endif
                 </div>
@@ -76,7 +95,7 @@
                 </h2>
                 <div class="flex items-center gap-2">
                     <span class="text-xs text-white/60">Tampilkan:</span>
-                    <form method="GET" action="{{ route('user.saham.index') }}">
+                    <form method="GET" action="{{ route('admin.saham.index') }}">
                         @if (request('search'))
                             <input type="hidden" name="search" value="{{ request('search') }}">
                         @endif
@@ -172,7 +191,7 @@
                                     </td>
                                     <td class="px-4 py-3 text-right">
                                         <div class="flex items-center justify-end gap-1">
-                                            <a href="{{ route('user.saham.edit', $s) }}"
+                                            <a href="{{ route('admin.saham.edit', $s) }}"
                                                 class="p-2 rounded-lg text-muted hover:text-primary hover:bg-[#f1f5f9] transition"
                                                 title="Edit">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor"
@@ -269,36 +288,47 @@
                 <p class="text-muted text-sm mb-4">Upload file Excel sesuai format template. Data dengan kode yang sama
                     akan diperbarui.</p>
 
-                {{-- <form method="POST" action="{{ route('user.saham.import') }}" enctype="multipart/form-data">
-            @csrf
-            <div class="border-2 border-dashed border-line rounded-xl p-6 text-center mb-4 hover:border-accent/40 transition">
-                <svg class="w-8 h-8 mx-auto text-muted mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                <label class="cursor-pointer">
-                    <span class="text-sm font-semibold text-accent">Pilih file</span>
-                    <span class="text-sm text-muted"> atau drag & drop</span>
-                    <input type="file" name="file" accept=".xlsx,.xls,.csv" class="hidden" required>
-                </label>
-                <p class="text-xs text-muted mt-1">Format: .xlsx, .xls, .csv</p>
-            </div>
-            @error('file')<p class="text-red-500 text-xs mb-3">{{ $message }}</p>@enderror
+                <form method="POST" action="{{ route('admin.saham.import') }}" enctype="multipart/form-data">
+                    @csrf
+                    <div
+                        class="border-2 border-dashed border-line rounded-xl p-6 text-center mb-4 hover:border-accent/40 transition">
+                        <svg class="w-8 h-8 mx-auto text-muted mb-2" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <label class="cursor-pointer">
+                            <span class="text-sm font-semibold text-accent">Pilih file</span>
+                            <span class="text-sm text-muted"> atau drag & drop</span>
+                            <input type="file" name="file" accept=".xlsx,.xls,.csv" class="hidden" required>
+                        </label>
+                        <p class="text-xs text-muted mt-1">Format: .xlsx, .xls, .csv</p>
+                    </div>
+                    @error('file')
+                        <p class="text-red-500 text-xs mb-3">{{ $message }}</p>
+                    @enderror
 
-            <div class="flex items-center justify-between">
-                <a href="{{ route('user.saham.template') }}" class="text-xs text-accent hover:underline flex items-center gap-1">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                    Download template
-                </a>
-                <div class="flex items-center gap-2">
-                    <button type="button" @click="showImport = false"
-                            class="px-4 py-2 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary transition">
-                        Batal
-                    </button>
-                    <button type="submit"
-                            class="px-4 py-2 bg-accent text-white rounded-xl text-sm font-semibold hover:bg-accent/90 transition">
-                        Upload & Import
-                    </button>
-                </div>
-            </div>
-        </form> --}}
+                    <div class="flex items-center justify-between">
+                        <a href="{{ route('admin.saham.template') }}"
+                            class="text-xs text-accent hover:underline flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Download template
+                        </a>
+                        <div class="flex items-center gap-2">
+                            <button type="button" @click="showImport = false"
+                                class="px-4 py-2 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary transition">
+                                Batal
+                            </button>
+                            <button type="submit"
+                                class="px-4 py-2 bg-accent text-white rounded-xl text-sm font-semibold hover:bg-accent/90 transition">
+                                Upload & Import
+                            </button>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -331,7 +361,7 @@
                         class="px-4 py-2 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary hover:border-primary/30 transition">
                         Batal
                     </button>
-                    <form method="POST" :action="`/user/saham/${deleteId}`">
+                    <form method="POST" :action="`/admin/saham/${deleteId}`">
                         @csrf @method('DELETE')
                         <button type="submit"
                             class="px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition">
