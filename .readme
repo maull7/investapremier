@@ -1,0 +1,74 @@
+Terapkan penyesuaian tampilan dan struktur fitur analisa ke seluruh instrumen investasi dengan detail berikut:
+
+1. MONITOR ANALISA
+- Format tampilan “Monitor Analisa Reksa Dana” dijadikan template utama.
+- Terapkan format dan layout yang sama untuk:
+  - Unit Link
+  - Saham
+  - Obligasi
+
+2. ANALISA
+- Format halaman “Analisa Reksa Dana” dijadikan acuan utama.
+- Terapkan juga ke:
+  - Unit Link
+  - Saham
+  - Obligasi
+
+3. UNIT LINK
+- Format dan struktur Unit Link harus sama persis seperti Reksa Dana.
+- Gunakan:
+  - layout
+  - tab
+  - struktur input
+  - flow analisa
+  - tampilan hasil
+  yang identik dengan Reksa Dana.
+
+4. SAHAM DAN OBLIGASI
+Untuk menu:
+- “Input Manual”
+- “Upload Excel”
+
+JANGAN menggunakan format Reksa Dana.
+
+Buat format khusus untuk Saham dan Obligasi yang fokus pada:
+- Ringkasan laporan keuangan
+- Data financial statement
+- Analisa keuangan
+
+Field yang perlu disiapkan menyesuaikan dengan yang sudah tersedia
+
+Pastikan:
+- struktur form lebih cocok untuk data financial statement
+- tabel lebih rapi dan mudah dibaca
+- upload excel dapat membaca format laporan keuangan
+- data dapat digunakan oleh AI Analisa
+
+5. PERUBAHAN MENU PDF
+Untuk:
+- Saham
+- Obligasi
+
+Ubah nama menu:
+- dari: “PDF FFS”
+- menjadi: “PDF Lapkeu”
+
+Pastikan:
+- seluruh label UI diperbarui
+- route/menu terkait ikut diperbarui
+- tidak ada referensi lama “PDF FFS” yang tersisa untuk Saham dan Obligasi
+
+6. KETENTUAN IMPLEMENTASI
+- Jangan merusak fitur Reksa Dana yang sudah berjalan.
+- Pertahankan struktur coding existing sebisa mungkin.
+- Gunakan reusable component jika memungkinkan.
+- Pastikan seluruh menu tetap responsive.
+- Pastikan data lama tetap kompatibel.
+- Pastikan semua tab, filter, dan action tetap berfungsi.
+
+7. OUTPUT YANG DIHARAPKAN
+- Tampilan Monitor Analisa konsisten di semua instrumen.
+- Unit Link identik dengan Reksa Dana.
+- Saham dan Obligasi memiliki format analisa laporan keuangan yang lebih sesuai.
+- Penamaan menu PDF sudah berubah menjadi “PDF Lapkeu”.
+- Tidak ada error pada routing, CRUD, upload excel, maupun AI analisa.

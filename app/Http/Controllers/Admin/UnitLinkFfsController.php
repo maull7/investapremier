@@ -8,25 +8,21 @@ use App\Models\AnalisaReksaDana;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
-class ReksaDanaController extends Controller
+class UnitLinkFfsController extends Controller
 {
     public function index(Request $request)
     {
         $query = AnalisaReksaDana::with('user')
-            ->where('product_type', 'reksa_dana')
+            ->where('product_type', 'unit_link')
             ->latest();
 
         if ($request->jenis) {
             $query->where('jenis_reksa_dana', $request->jenis);
         }
 
-        if ($request->kategori) {
-            $query->whereJsonContains('kategori', $request->kategori);
-        }
+        $analisas = $query->paginate(20)->withQueryString();
 
-        $reksaDanas = $query->paginate(20)->withQueryString();
-
-        return view('admin.reksa-dana.index', compact('reksaDanas'));
+        return view('admin.unit-link-ffs.index', compact('analisas'));
     }
 
     public function bulkAnalisa(Request $request)
@@ -42,18 +38,18 @@ class ReksaDanaController extends Controller
             }
         }
 
-        return back()->with('success', "{$count} reksa dana sedang diproses analisa FFS.");
+        return back()->with('success', "{$count} unit link sedang diproses analisa FFS.");
     }
 
-    public function downloadPdf(AnalisaReksaDana $reksaDana)
+    public function downloadPdf(AnalisaReksaDana $analisa)
     {
-        if (!$reksaDana->pdf_path || !Storage::disk('public')->exists($reksaDana->pdf_path)) {
+        if (!$analisa->pdf_path || !Storage::disk('public')->exists($analisa->pdf_path)) {
             abort(404, 'File PDF tidak ditemukan.');
         }
 
         return Storage::disk('public')->download(
-            $reksaDana->pdf_path,
-            'ffs-' . str($reksaDana->nama_reksa_dana)->slug() . '.pdf'
+            $analisa->pdf_path,
+            'ffs-' . str($analisa->nama_reksa_dana)->slug() . '.pdf'
         );
     }
 }

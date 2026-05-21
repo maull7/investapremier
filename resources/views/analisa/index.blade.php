@@ -4,10 +4,10 @@
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-xl font-bold text-primary">Analisa Reksa Dana</h1>
-            <p class="text-sm text-muted mt-0.5">Kelola dan lihat hasil analisa portofolio Reksa Dana Anda</p>
+            <h1 class="text-xl font-bold text-primary">Analisa {{ $productLabel ?? 'Reksa Dana' }}</h1>
+            <p class="text-sm text-muted mt-0.5">Kelola dan lihat hasil analisa portofolio {{ $productLabel ?? 'Reksa Dana' }} Anda</p>
         </div>
-        <a href="{{ route('user.analisa.create') }}"
+        <a href="{{ $createRoute ?? route('user.analisa.create') }}"
            class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Submit Analisa Baru

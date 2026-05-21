@@ -241,6 +241,109 @@ PROMPT,
         return [];
     }
 
+    public function generateNarasiLapkeuStructured(array $data, string $instrumen = 'Saham'): array
+    {
+        $fmt = fn($v) => $v !== null ? number_format((float)$v, 2, ',', '.') : 'N/A';
+
+        $lines = [];
+        $lines[] = "INSTRUMEN: {$instrumen}";
+        if (!empty($data['nama'])) $lines[] = "Nama: {$data['nama']}";
+        if (!empty($data['kode'])) $lines[] = "Kode: {$data['kode']}";
+        if (!empty($data['periode'])) $lines[] = "Periode: {$data['periode']}";
+        if (!empty($data['mata_uang'])) $lines[] = "Mata Uang: {$data['mata_uang']}";
+
+        if ($instrumen === 'Obligasi') {
+            if (!empty($data['rating'])) $lines[] = "Rating: {$data['rating']}";
+            if ($data['kupon'] ?? null) $lines[] = "Kupon: {$data['kupon']}%";
+            if ($data['ytm'] ?? null) $lines[] = "YTM: {$data['ytm']}%";
+        }
+
+        $lines[] = "";
+        $lines[] = "NERACA (Balance Sheet)";
+        $lines[] = "Total Aset: {$fmt($data['total_asset'])}";
+        $lines[] = "  - Aset Lancar: {$fmt($data['current_asset'])}";
+        $lines[] = "    - Kas & Setara Kas: {$fmt($data['cash_equivalents'])}";
+        $lines[] = "    - Piutang Usaha: {$fmt($data['account_receivable'])}";
+        $lines[] = "    - Persediaan: {$fmt($data['inventories'])}";
+        $lines[] = "  - Aset Tidak Lancar: {$fmt($data['fixed_asset'])}";
+        $lines[] = "Total Liabilitas: {$fmt($data['total_liabilities'])}";
+        $lines[] = "  - Liabilitas Jangka Pendek: {$fmt($data['current_liabilities'])}";
+        $lines[] = "  - Liabilitas Jangka Panjang: {$fmt($data['long_term_loans'])}";
+        $lines[] = "Total Ekuitas: {$fmt($data['equity'])}";
+
+        $lines[] = "";
+        $lines[] = "LABA RUGI (Income Statement)";
+        $lines[] = "Pendapatan Bersih: {$fmt($data['net_revenue'])}";
+        $lines[] = "Laba Kotor: {$fmt($data['gross_income'])}";
+        $lines[] = "EBIT: {$fmt($data['ebit'])}";
+        $lines[] = "EBITDA: {$fmt($data['ebitda'])}";
+        $lines[] = "Beban Bunga: {$fmt($data['interest_expense'])}";
+        $lines[] = "Laba Bersih: {$fmt($data['net_income'])}";
+
+        $lines[] = "";
+        $lines[] = "ARUS KAS";
+        $lines[] = "Operasional: {$fmt($data['cash_flows_operating_activities'])}";
+        $lines[] = "Investasi: {$fmt($data['cash_flows_investment'])}";
+        $lines[] = "Pendanaan: {$fmt($data['cash_flows_financing'])}";
+
+        $dataSection = implode("\n", $lines);
+
+        $prompt = <<<PROMPT
+{$dataSection}
+
+Berdasarkan data laporan keuangan {$instrumen} di atas, buatkan analisa keuangan dalam format JSON dengan struktur EXACT berikut:
+{
+  "ringkasan_utama": "Ringkasan kondisi keuangan dalam 2-3 paragraf",
+  "analisa_neraca": "Analisa struktur aset, liabilitas, dan ekuitas — leverage, likuiditas, solvabilitas",
+  "analisa_laba_rugi": "Analisa profitabilitas: margin kotor, margin EBIT, net margin, tren laba",
+  "analisa_arus_kas": "Analisa kualitas arus kas operasional vs laba, capex, free cash flow",
+  "rasio_keuangan": {
+    "current_ratio": null,
+    "debt_to_equity": null,
+    "net_profit_margin": null,
+    "roe": null
+  },
+  "rekomendasi": "Kesimpulan dan rekomendasi singkat berdasarkan kondisi keuangan"
+}
+
+PETUNJUK:
+- Hitung rasio jika data tersedia: current_ratio = current_asset/current_liabilities, DER = total_liabilities/equity, net margin = net_income/net_revenue * 100, ROE = net_income/equity * 100
+- Set null jika tidak bisa dihitung
+- Gunakan Bahasa Indonesia yang baik
+- Output HANYA JSON valid tanpa markdown
+PROMPT;
+
+        $systemPrompt = "Kamu adalah analis keuangan profesional Indonesia yang ahli menganalisa laporan keuangan {$instrumen}. Keluarkan jawaban dalam format JSON valid tanpa teks tambahan.";
+
+        $response = Http::withToken($this->apiKey)
+            ->timeout(90)
+            ->post($this->url, [
+                'model'       => $this->model,
+                'temperature' => 0.3,
+                'messages'    => [
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    ['role' => 'user',   'content' => $prompt],
+                ],
+            ]);
+
+        if ($response->failed()) {
+            throw new \RuntimeException('Groq API error: ' . $response->body());
+        }
+
+        $raw = $response->json('choices.0.message.content', '');
+        $parsed = self::parseJsonOutput($raw);
+
+        $narasiParts = [];
+        foreach (['ringkasan_utama', 'analisa_neraca', 'analisa_laba_rugi', 'analisa_arus_kas', 'rekomendasi'] as $key) {
+            if (!empty($parsed[$key])) $narasiParts[] = $parsed[$key];
+        }
+
+        return [
+            'raw'    => implode("\n\n", $narasiParts),
+            'parsed' => $parsed,
+        ];
+    }
+
     private function buildNarasiFromStructured(array $data): string
     {
         $parts = [];
@@ -396,5 +499,193 @@ DEFAULT);
         }
 
         return implode("\n", $lines);
+    }
+
+    public function generateNarasiLapkeuPlusStructured(array $data, string $instrumen = 'Saham'): array
+    {
+        $fmt = fn($v) => $v !== null ? number_format((float)$v, 2, ',', '.') : 'N/A';
+
+        $lines = [];
+        $lines[] = "INSTRUMEN: {$instrumen}";
+        if (!empty($data['nama'])) $lines[] = "Nama: {$data['nama']}";
+        if (!empty($data['kode'])) $lines[] = "Kode: {$data['kode']}";
+        if (!empty($data['periode'])) $lines[] = "Periode: {$data['periode']}";
+        if (!empty($data['mata_uang'])) $lines[] = "Mata Uang: {$data['mata_uang']}";
+
+        if ($instrumen === 'Obligasi') {
+            if (!empty($data['rating'])) $lines[] = "Rating: {$data['rating']}";
+            if ($data['kupon'] ?? null) $lines[] = "Kupon: {$data['kupon']}%";
+            if ($data['ytm'] ?? null) $lines[] = "YTM: {$data['ytm']}%";
+        }
+
+        $lines[] = "";
+        $lines[] = "NERACA (Balance Sheet)";
+        $lines[] = "Total Aset: {$fmt($data['total_asset'])}";
+        $lines[] = "  - Aset Lancar: {$fmt($data['current_asset'])}";
+        $lines[] = "    - Kas & Setara Kas: {$fmt($data['cash_equivalents'])}";
+        $lines[] = "    - Piutang Usaha: {$fmt($data['account_receivable'])}";
+        $lines[] = "    - Persediaan: {$fmt($data['inventories'])}";
+        $lines[] = "  - Aset Tidak Lancar: {$fmt($data['fixed_asset'])}";
+        $lines[] = "Total Liabilitas: {$fmt($data['total_liabilities'])}";
+        $lines[] = "  - Liabilitas Jangka Pendek: {$fmt($data['current_liabilities'])}";
+        $lines[] = "  - Liabilitas Jangka Panjang: {$fmt($data['long_term_loans'])}";
+        $lines[] = "Total Ekuitas: {$fmt($data['equity'])}";
+
+        $lines[] = "";
+        $lines[] = "LABA RUGI (Income Statement)";
+        $lines[] = "Pendapatan Bersih: {$fmt($data['net_revenue'])}";
+        $lines[] = "Laba Kotor: {$fmt($data['gross_income'])}";
+        $lines[] = "EBIT: {$fmt($data['ebit'])}";
+        $lines[] = "EBITDA: {$fmt($data['ebitda'])}";
+        $lines[] = "Beban Bunga: {$fmt($data['interest_expense'])}";
+        $lines[] = "Laba Bersih: {$fmt($data['net_income'])}";
+
+        $lines[] = "";
+        $lines[] = "ARUS KAS";
+        $lines[] = "Operasional: {$fmt($data['cash_flows_operating_activities'])}";
+        $lines[] = "Investasi: {$fmt($data['cash_flows_investment'])}";
+        $lines[] = "Pendanaan: {$fmt($data['cash_flows_financing'])}";
+
+        $dataSection = implode("\n", $lines);
+
+        $prompt = <<<PROMPT
+{$dataSection}
+
+Berdasarkan data laporan keuangan {$instrumen} lengkap di atas, buatkan analisa MENDALAM (Analisa AI Plus) dalam format JSON dengan struktur EXACT berikut:
+{
+  "ringkasan_utama": "Ringkasan eksekutif kondisi keuangan dalam 2-3 paragraf dengan metrik kunci",
+  "analisa_neraca": "Analisa mendalam struktur aset, liabilitas, dan ekuitas — leverage, likuiditas, solvabilitas",
+  "analisa_laba_rugi": "Analisa mendalam profitabilitas: margin kotor, margin EBIT, net margin, tren laba, efisiensi operasional",
+  "analisa_arus_kas": "Analisa mendalam kualitas arus kas operasional vs laba, capex, free cash flow, siklus konversi kas",
+  "rasio_keuangan": {
+    "current_ratio": null,
+    "debt_to_equity": null,
+    "net_profit_margin": null,
+    "roe": null
+  },
+  "analisa_likuiditas": "Analisa likuiditas jangka pendek dan kemampuan memenuhi kewajiban",
+  "analisa_solvabilitas": "Analisa struktur modal dan kemampuan membayar utang jangka panjang",
+  "analisa_profitabilitas": "Analisa efisiensi dan profitabilitas perusahaan secara keseluruhan",
+  "rekomendasi": "Kesimpulan dan rekomendasi investasi spesifik berdasarkan kondisi keuangan"
+}
+
+PETUNJUK:
+- Hitung rasio jika data tersedia: current_ratio = current_asset/current_liabilities, DER = total_liabilities/equity, net margin = net_income/net_revenue * 100, ROE = net_income/equity * 100
+- Set null jika tidak bisa dihitung
+- Gunakan Bahasa Indonesia yang baik dan profesional
+- Output HANYA JSON valid tanpa markdown
+PROMPT;
+
+        $systemPrompt = "Kamu adalah analis keuangan senior Indonesia yang ahli analisa mendalam laporan keuangan {$instrumen}. Keluarkan jawaban dalam format JSON valid tanpa teks tambahan.";
+
+        $response = Http::withToken($this->apiKey)
+            ->timeout(120)
+            ->post($this->url, [
+                'model'       => $this->model,
+                'temperature' => 0.3,
+                'messages'    => [
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    ['role' => 'user',   'content' => $prompt],
+                ],
+            ]);
+
+        if ($response->failed()) {
+            throw new \RuntimeException('Groq API error: ' . $response->body());
+        }
+
+        $raw = $response->json('choices.0.message.content', '');
+        $parsed = self::parseJsonOutput($raw);
+
+        $narasiParts = [];
+        foreach (['ringkasan_utama', 'analisa_neraca', 'analisa_laba_rugi', 'analisa_arus_kas', 'analisa_likuiditas', 'analisa_solvabilitas', 'analisa_profitabilitas', 'rekomendasi'] as $key) {
+            if (!empty($parsed[$key])) $narasiParts[] = $parsed[$key];
+        }
+
+        return [
+            'raw'    => implode("\n\n", $narasiParts),
+            'parsed' => $parsed,
+        ];
+    }
+
+    public function parseLapkeuPdf(string $pdfText, string $instrumen = 'Saham'): array
+    {
+        $text = mb_substr($pdfText, 0, 8000);
+
+        $isObligasi = $instrumen === 'Obligasi';
+        $nameKey    = $isObligasi ? 'nama_obligasi' : 'nama_perusahaan';
+        $codeKey    = $isObligasi ? 'kode_obligasi' : 'kode_saham';
+        if ($isObligasi) {
+            $extraFields = <<<EXTRA
+  "{$nameKey}": "string atau null",
+  "{$codeKey}": "string atau null",
+  "nama_emiten": "string atau null",
+  "rating": "string atau null (misal AAA, AA, A, BBB, dll)",
+  "kupon": angka atau null,
+  "ytm": angka atau null,
+EXTRA;
+        } else {
+            $extraFields = <<<EXTRA
+  "{$nameKey}": "string atau null",
+  "{$codeKey}": "string atau null",
+  "sektor": "string atau null",
+EXTRA;
+        }
+
+        $response = Http::withToken($this->apiKey)
+            ->timeout(90)
+            ->post($this->url, [
+                'model'       => $this->model,
+                'temperature' => 0.1,
+                'messages'    => [
+                    [
+                        'role'    => 'system',
+                        'content' => "Kamu adalah parser laporan keuangan {$instrumen} Indonesia. Ekstrak data keuangan dari teks PDF dan kembalikan HANYA JSON valid tanpa teks lain.",
+                    ],
+                    [
+                        'role'    => 'user',
+                        'content' => <<<PROMPT
+Ekstrak data laporan keuangan dari teks berikut. Kembalikan HANYA JSON valid:
+
+{
+  "{$nameKey}": "string atau null",
+{$extraFields}
+  "periode": "string misal Q4 2024 atau null",
+  "mata_uang": "IDR atau USD atau null",
+  "total_asset": angka atau null,
+  "current_asset": angka atau null,
+  "cash_equivalents": angka atau null,
+  "account_receivable": angka atau null,
+  "inventories": angka atau null,
+  "fixed_asset": angka atau null,
+  "total_liabilities": angka atau null,
+  "current_liabilities": angka atau null,
+  "long_term_loans": angka atau null,
+  "equity": angka atau null,
+  "net_revenue": angka atau null,
+  "gross_income": angka atau null,
+  "ebit": angka atau null,
+  "ebitda": angka atau null,
+  "interest_expense": angka atau null,
+  "net_income": angka atau null,
+  "cash_flows_operating_activities": angka atau null,
+  "cash_flows_investment": angka atau null,
+  "cash_flows_financing": angka atau null
+}
+
+ATURAN: semua angka dalam satuan penuh (bukan juta/miliar), null jika tidak ada. Output HANYA JSON.
+
+TEKS PDF:
+{$text}
+PROMPT,
+                    ],
+                ],
+            ]);
+
+        if ($response->failed()) {
+            throw new \RuntimeException('Groq API error: ' . $response->body());
+        }
+
+        $raw = $response->json('choices.0.message.content', '');
+        return self::parseJsonOutput($raw);
     }
 }

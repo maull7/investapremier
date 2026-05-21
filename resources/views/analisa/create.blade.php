@@ -3,7 +3,7 @@
 @section('content')
     <div class="max-w-5xl" x-data="analisaForm()">
         <div class="mb-6">
-            <h1 class="text-xl font-bold text-primary">Submit Analisa Reksa Dana</h1>
+            <h1 class="text-xl font-bold text-primary">Submit Analisa {{ $productLabel ?? 'Reksa Dana' }}</h1>
             <p class="text-sm text-muted mt-0.5">Isi data secara manual, upload Excel, atau ekstrak dari PDF FFS</p>
         </div>
 
