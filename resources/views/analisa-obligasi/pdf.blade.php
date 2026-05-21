@@ -76,6 +76,11 @@
 <p>{{ $analisa->ai_narasi }}</p>
 @endif
 
+@if($analisa->ai_narasi_plus)
+<h2>Analisa AI Plus</h2>
+<p>{{ $analisa->ai_narasi_plus }}</p>
+@endif
+
 @if($analisa->catatan)
 <h2>Catatan</h2>
 <p>{{ $analisa->catatan }}</p>

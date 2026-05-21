@@ -1,7 +1,7 @@
 @extends($layout ?? 'layouts.user')
 
 @section('content')
-<div class="max-w-5xl" x-data="lapkeuForm('{{ $previewAiRoute }}', '{{ $parsePdfRoute }}')">
+<div class="max-w-5xl" x-data="lapkeuForm('{{ $previewAiRoute }}', '{{ $previewAiPlusRoute }}', '{{ $parsePdfRoute }}')">
     <div class="mb-6">
         <h1 class="text-xl font-bold text-primary">Submit Analisa {{ $productLabel }}</h1>
         <p class="text-sm text-muted mt-0.5">Isi data laporan keuangan obligasi secara manual atau upload Excel</p>
@@ -19,9 +19,11 @@
 
     <form id="lapkeu-form" method="POST" action="{{ $storeRoute }}" enctype="multipart/form-data" class="space-y-6">
         @csrf
-        <input type="hidden" name="input_mode" :value="mode === 'ai' ? 'manual' : mode">
+        <input type="hidden" name="input_mode" :value="(mode === 'ai' || mode === 'ai-plus') ? 'manual' : mode">
         <input type="hidden" name="ai_narasi" :value="aiResult?.raw || ''">
         <input type="hidden" name="ai_output" :value="aiResult ? JSON.stringify(aiResult.parsed || {}) : ''">
+        <input type="hidden" name="ai_narasi_plus" :value="aiPlusResult?.raw || ''">
+        <input type="hidden" name="ai_output_plus" :value="aiPlusResult ? JSON.stringify(aiPlusResult.parsed || {}) : ''">
         <input type="hidden" name="pdf_lapkeu_path" x-model="pdfPath">
 
         {{-- Info Dasar --}}
@@ -90,6 +92,9 @@
                 <button type="button" @click="mode='ai'"
                     :class="mode==='ai' ? 'border-b-2 border-primary text-primary font-semibold' : 'text-muted hover:text-primary'"
                     class="px-6 py-3.5 text-sm transition whitespace-nowrap">Analisa AI</button>
+                <button type="button" @click="mode='ai-plus'"
+                    :class="mode==='ai-plus' ? 'border-b-2 border-primary text-primary font-semibold' : 'text-muted hover:text-primary'"
+                    class="px-6 py-3.5 text-sm transition whitespace-nowrap">Analisa AI Plus</button>
                 <button type="button" @click="mode='pdf'"
                     :class="mode==='pdf' ? 'border-b-2 border-primary text-primary font-semibold' : 'text-muted hover:text-primary'"
                     class="px-6 py-3.5 text-sm transition whitespace-nowrap">PDF Lapkeu</button>
@@ -122,6 +127,34 @@
 
             {{-- TAB: AI --}}
             @include('analisa-lapkeu.partials.create-ai-tab')
+
+            {{-- TAB: AI PLUS --}}
+            <div x-show="mode==='ai-plus'" class="p-6 space-y-4">
+                <p class="text-sm text-muted">Analisa AI Plus membutuhkan data <strong>Input Manual yang lengkap</strong> (Neraca, Laba Rugi, dan Arus Kas).</p>
+
+                <div x-show="!isPlusManualReady()" class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-900 space-y-2">
+                    <p class="font-semibold">Data Input Manual belum lengkap</p>
+                    <p class="text-amber-800">Lengkapi bagian berikut di tab <strong>Input Manual</strong> sebelum menjalankan Analisa AI Plus:</p>
+                    <ul class="list-disc list-inside space-y-1 text-amber-900">
+                        <template x-for="item in plusMissingList()" :key="item">
+                            <li x-text="item"></li>
+                        </template>
+                    </ul>
+                </div>
+
+                <button type="button" @click="runAiPlusPreview()"
+                    :disabled="aiPlusLoading || !isPlusManualReady()"
+                    class="px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span x-show="!aiPlusLoading">Jalankan Analisa AI Plus</span>
+                    <span x-show="aiPlusLoading">Memproses...</span>
+                </button>
+                <p x-show="!isPlusManualReady()" class="text-xs text-muted">Tombol aktif setelah semua data di atas terisi.</p>
+
+                <div x-show="aiPlusError" class="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 whitespace-pre-line" x-text="aiPlusError"></div>
+                <template x-if="aiPlusResult">
+                    <div class="space-y-3 border-t border-line pt-4 text-sm text-gray-700 leading-relaxed whitespace-pre-line" x-text="aiPlusResult.raw"></div>
+                </template>
+            </div>
 
             {{-- TAB: PDF --}}
             <div x-show="mode==='pdf'" class="p-6 space-y-5">
@@ -171,17 +204,129 @@
 
 @push('scripts')
 <script>
-function lapkeuForm(previewAiUrl, parsePdfUrl) {
+function lapkeuForm(previewAiUrl, previewAiPlusUrl, parsePdfUrl) {
+    @php
+        $plusLabels = [
+            'total_asset'       => 'Total Aset',
+            'total_liabilities' => 'Total Liabilitas',
+            'equity'            => 'Total Ekuitas',
+            'net_revenue'       => 'Pendapatan Bersih',
+            'net_income'        => 'Laba Bersih',
+        ];
+    @endphp
     return {
         mode: @json(old('input_mode', 'manual')),
         aiLoading: false,
         aiError: '',
         aiResult: null,
         previewAiUrl: previewAiUrl,
+        aiPdfFile: null,
+        aiParseLoading: false,
+        aiParseError: '',
+        aiParseSuccess: '',
+        aiPlusLoading: false,
+        aiPlusError: '',
+        aiPlusResult: null,
+        previewAiPlusUrl: previewAiPlusUrl,
         pdfLoading: false,
         pdfError: '',
         pdfSuccess: '',
         pdfPath: '',
+        plusRequiredLabels: @json($plusLabels),
+        parsePdfUrl: parsePdfUrl,
+
+        onPdfSelected(event) {
+            this.aiPdfFile = event.target?.files?.[0] || null;
+            this.aiParseError = '';
+            this.aiParseSuccess = '';
+        },
+
+        fillLapkeuFormFromData(d) {
+            const set = (name, val) => { const el = document.querySelector(`[name="${name}"]`); if (el && val != null) el.value = val; };
+            const setSelect = (name, val) => { const sel = document.querySelector(`[name="${name}"]`); if (sel && val) { [...sel.options].forEach(o => { if (o.value === val) o.selected = true; }); } };
+            set('nama_obligasi', d.nama_obligasi || d.nama_perusahaan);
+            set('kode_obligasi', d.kode_obligasi || d.kode_saham);
+            set('nama_emiten', d.nama_emiten);
+            set('periode', d.periode);
+            setSelect('rating', d.rating);
+            setSelect('mata_uang', d.mata_uang);
+            if (d.kupon) set('kupon', d.kupon);
+            if (d.ytm) set('ytm', d.ytm);
+            const numFields = ['total_asset','current_asset','cash_equivalents','account_receivable','inventories','fixed_asset','total_liabilities','current_liabilities','long_term_loans','equity','net_revenue','gross_income','ebit','ebitda','interest_expense','net_income','cash_flows_operating_activities','cash_flows_investment','cash_flows_financing'];
+            numFields.forEach(f => set(f, d[f]));
+        },
+
+        runAiFromPdf() {
+            if (!this.aiPdfFile) {
+                this.aiParseError = 'Pilih file PDF terlebih dahulu.';
+                return;
+            }
+            this.aiLoading = true;
+            this.aiError = '';
+            this.aiParseLoading = true;
+            this.aiParseError = '';
+            this.aiParseSuccess = '';
+            this.aiResult = null;
+
+            const fd = new FormData();
+            fd.append('file_pdf', this.aiPdfFile);
+            fd.append('_token', document.querySelector('meta[name=csrf-token]')?.content || '{{ csrf_token() }}');
+
+            fetch(this.parsePdfUrl, { method: 'POST', headers: { 'Accept': 'application/json' }, body: fd })
+                .then(async r => {
+                    const resp = await r.json();
+                    if (!r.ok || !resp.success) {
+                        this.aiParseError = resp.message || 'Gagal membaca PDF.';
+                        this.aiLoading = false;
+                        this.aiParseLoading = false;
+                        return;
+                    }
+                    const d = resp.data;
+                    if (!d || typeof d !== 'object' || Object.keys(d).length === 0) {
+                        this.aiParseError = 'Gagal mengekstrak data dari PDF. Tidak ada data keuangan yang ditemukan.';
+                        this.aiLoading = false;
+                        this.aiParseLoading = false;
+                        return;
+                    }
+                    if (d.pdf_lapkeu_path) this.pdfPath = d.pdf_lapkeu_path;
+                    this.fillLapkeuFormFromData(d);
+                    this.aiParseLoading = false;
+                    const nama = document.getElementById('nama_obligasi')?.value?.trim();
+                    if (!nama) {
+                        this.aiError = 'Nama obligasi tidak ditemukan di PDF. Isi manual di tab Input Manual.';
+                        this.aiLoading = false;
+                        return;
+                    }
+                    const form = document.getElementById('lapkeu-form');
+                    const aiFd = new FormData(form);
+                    fetch(this.previewAiUrl, {
+                        method: 'POST',
+                        headers: { 'Accept': 'application/json' },
+                        body: aiFd,
+                    })
+                    .then(async r2 => {
+                        const resp2 = await r2.json();
+                        if (!r2.ok || !resp2.success) {
+                            this.aiError = resp2.message || 'Gagal memproses analisa AI.';
+                            this.aiLoading = false;
+                            return;
+                        }
+                        this.aiResult = resp2.data;
+                        this.aiLoading = false;
+                        this.aiParseSuccess = 'Data berhasil diekstrak dari PDF, form terisi, dan analisa AI siap. Silakan review di tab Input Manual.';
+                        this.mode = 'manual';
+                    })
+                    .catch(e => {
+                        this.aiError = e.message || 'Gagal memproses analisa AI';
+                        this.aiLoading = false;
+                    });
+                })
+                .catch(e => {
+                    this.aiParseError = e.message || 'Gagal membaca PDF';
+                    this.aiLoading = false;
+                    this.aiParseLoading = false;
+                });
+        },
 
         parsePdf() {
             const fileInput = document.getElementById('pdf-parse-input');
@@ -200,16 +345,12 @@ function lapkeuForm(previewAiUrl, parsePdfUrl) {
                     const resp = await r.json();
                     if (!r.ok || !resp.success) { this.pdfError = resp.message || 'Gagal'; return; }
                     const d = resp.data;
+                    if (!d || typeof d !== 'object' || Object.keys(d).length === 0) {
+                        this.pdfError = 'Gagal mengekstrak data dari PDF. Tidak ada data keuangan yang ditemukan.';
+                        return;
+                    }
                     if (d.pdf_lapkeu_path) this.pdfPath = d.pdf_lapkeu_path;
-                    const set = (name, val) => { const el = document.querySelector(`[name="${name}"]`); if (el && val != null) el.value = val; };
-                    set('nama_obligasi', d.nama_obligasi || d.nama_perusahaan);
-                    set('kode_obligasi', d.kode_obligasi || d.kode_saham);
-                    set('nama_emiten', d.nama_emiten);
-                    set('periode', d.periode);
-                    if (d.rating) { const sel = document.querySelector('[name="rating"]'); if (sel) { [...sel.options].forEach(o => { if (o.value === d.rating) o.selected = true; }); } }
-                    if (d.mata_uang) { const sel = document.querySelector('[name="mata_uang"]'); if (sel) { [...sel.options].forEach(o => { if (o.value === d.mata_uang) o.selected = true; }); } }
-                    const numFields = ['total_asset','current_asset','cash_equivalents','account_receivable','inventories','fixed_asset','total_liabilities','current_liabilities','long_term_loans','equity','net_revenue','gross_income','ebit','ebitda','interest_expense','net_income','cash_flows_operating_activities','cash_flows_investment','cash_flows_financing'];
-                    numFields.forEach(f => set(f, d[f]));
+                    this.fillLapkeuFormFromData(d);
                     this.pdfSuccess = 'Data berhasil diekstrak dari PDF. Periksa dan lengkapi data yang belum terisi, lalu submit.';
                     this.mode = 'manual';
                 })
@@ -241,6 +382,62 @@ function lapkeuForm(previewAiUrl, parsePdfUrl) {
                 this.aiResult = resp.data;
             })
             .catch(e => { this.aiError = e.message || 'Gagal memproses'; })
+            .finally(() => { this.aiLoading = false; });
+        },
+
+        applyAiToManual() {
+            this.mode = 'manual';
+        },
+
+        getFormValue(name) {
+            const el = document.querySelector(`[name="${name}"]`);
+            return el ? el.value?.trim() : '';
+        },
+
+        isPlusManualReady() {
+            if (!this.previewAiPlusUrl) return false;
+            const required = ['total_asset', 'total_liabilities', 'equity', 'net_revenue', 'net_income'];
+            return required.every(f => {
+                const v = this.getFormValue(f);
+                return v !== '' && v != null && !isNaN(Number(v)) && Number(v) !== 0;
+            });
+        },
+
+        plusMissingList() {
+            const required = ['total_asset', 'total_liabilities', 'equity', 'net_revenue', 'net_income'];
+            return required.filter(f => {
+                const v = this.getFormValue(f);
+                return v === '' || v == null || isNaN(Number(v)) || Number(v) === 0;
+            }).map(f => this.plusRequiredLabels[f] || f);
+        },
+
+        runAiPlusPreview() {
+            if (!this.isPlusManualReady()) {
+                this.aiPlusError = 'Lengkapi semua data Input Manual terlebih dahulu.';
+                return;
+            }
+            this.aiPlusLoading = true;
+            this.aiPlusError = '';
+            const form = document.getElementById('lapkeu-form');
+            const fd = new FormData(form);
+            fetch(this.previewAiPlusUrl, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json' },
+                body: fd,
+            })
+            .then(async r => {
+                const resp = await r.json();
+                if (!r.ok || !resp.success) {
+                    if (resp.missing?.length) {
+                        this.aiPlusError = resp.message || 'Lengkapi data Input Manual terlebih dahulu.';
+                    } else {
+                        this.aiPlusError = resp.message || 'Gagal memproses';
+                    }
+                    return;
+                }
+                this.aiPlusResult = resp.data;
+            })
+            .catch(e => { this.aiPlusError = e.message || 'Gagal memproses'; })
             .finally(() => { this.aiLoading = false; });
         },
     };

@@ -57,9 +57,9 @@
                 ['Pinjaman Jangka Panjang', $analisa->long_term_loans],
                 ['Total Liabilitas Tidak Lancar', $analisa->total_non_current_liabilities, true],
                 ['Total Liabilitas', $analisa->total_liabilities, true],
-                ['Modal Saham', $analisa->share_capital],
                 ['Saldo Laba', $analisa->retained_earning],
                 ['Total Ekuitas', $analisa->equity, true],
+                ['Modal Saham', $analisa->share_capital],
             ] as $row)
                 @php [$rl, $rv] = $row; $bold = $row[2] ?? false; @endphp
                 <div class="flex justify-between items-center text-sm {{ $bold ? 'font-semibold border-t border-line pt-2' : '' }}">
@@ -83,11 +83,11 @@
             ['Laba Kotor', $analisa->gross_income, true],
             ['Beban Operasional', $analisa->operational_expense],
             ['Laba Operasional', $analisa->laba_operasional, true],
-            ['Pendapatan/Beban Lain-lain', $analisa->other_income_expense],
             ['Beban Bunga', $analisa->interest_expense],
+            ['Pendapatan/Beban Lain-lain', $analisa->other_income_expense],
             ['Laba Sebelum Pajak', $analisa->income_before_tax, true],
-            ['Pajak Penghasilan', $analisa->taxes],
             ['EBIT', $analisa->ebit, true],
+            ['Pajak Penghasilan', $analisa->taxes],
             ['EBITDA', $analisa->ebitda, true],
             ['Laba Bersih', $analisa->net_income, true],
         ] as $row)

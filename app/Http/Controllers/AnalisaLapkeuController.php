@@ -68,15 +68,17 @@ abstract class AnalisaLapkeuController extends Controller
     public function create()
     {
         $prefix = $this->routePrefix();
+        $hasPlusRoute = \Illuminate\Support\Facades\Route::has($prefix . '.preview-ai-plus');
         return view($this->createView(), [
-            'layout'         => $this->layout(),
-            'productLabel'   => $this->productLabel,
-            'storeRoute'     => route($prefix . '.store'),
-            'templateRoute'  => route($prefix . '.template'),
-            'cancelRoute'    => route($this->indexRouteName()),
-            'routePrefix'    => $prefix,
-            'previewAiRoute' => route($prefix . '.preview-ai'),
-            'parsePdfRoute'  => route($prefix . '.parse-pdf'),
+            'layout'            => $this->layout(),
+            'productLabel'      => $this->productLabel,
+            'storeRoute'        => route($prefix . '.store'),
+            'templateRoute'     => route($prefix . '.template'),
+            'cancelRoute'       => route($this->indexRouteName()),
+            'routePrefix'       => $prefix,
+            'previewAiRoute'    => route($prefix . '.preview-ai'),
+            'previewAiPlusRoute'=> $hasPlusRoute ? route($prefix . '.preview-ai-plus') : null,
+            'parsePdfRoute'     => route($prefix . '.parse-pdf'),
         ]);
     }
 
@@ -140,6 +142,13 @@ abstract class AnalisaLapkeuController extends Controller
             $analisa->update([
                 'ai_narasi' => $request->ai_narasi,
                 'ai_output' => json_decode($request->ai_output, true) ?: [],
+            ]);
+        }
+
+        if ($request->filled('ai_narasi_plus') && $request->filled('ai_output_plus')) {
+            $analisa->update([
+                'ai_narasi_plus' => $request->ai_narasi_plus,
+                'ai_output_plus' => json_decode($request->ai_output_plus, true) ?: [],
             ]);
         }
 
@@ -276,6 +285,83 @@ abstract class AnalisaLapkeuController extends Controller
         }
     }
 
+    public function previewAiPlus(Request $request, GroqService $groq)
+    {
+        $basicRules = $this->validateBasicFields($request);
+        $nameField = array_key_first($basicRules);
+        $request->validate([$nameField => 'required|string|max:255']);
+
+        $data = array_merge(
+            $this->extractLapkeuData($request),
+            [
+                'nama'      => $request->input($nameField),
+                'kode'      => $request->input('kode_saham') ?? $request->input('kode_obligasi'),
+                'periode'   => $request->input('periode'),
+                'mata_uang' => $request->input('mata_uang'),
+                'rating'    => $request->input('rating'),
+                'kupon'     => $request->input('kupon'),
+                'ytm'       => $request->input('ytm'),
+            ]
+        );
+
+        $plusCheck = self::assessPlusManualData($data, $this->instrumentType());
+        if (!$plusCheck['can_run']) {
+            return response()->json([
+                'success' => false,
+                'message' => $plusCheck['message'],
+                'missing' => $plusCheck['missing'],
+            ], 422);
+        }
+
+        try {
+            $result = $groq->generateNarasiLapkeuPlusStructured($data, $this->instrumentType());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Analisa AI Plus berhasil dibuat.',
+                'data'    => $result,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat Analisa AI Plus: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public static function assessPlusManualData(array $data, string $instrumen = 'Saham'): array
+    {
+        $missing = [];
+
+        if (empty($data['total_asset'])) {
+            $missing[] = 'Total Aset';
+        }
+        if (empty($data['total_liabilities'])) {
+            $missing[] = 'Total Liabilitas';
+        }
+        if (empty($data['equity'])) {
+            $missing[] = 'Total Ekuitas';
+        }
+        if (empty($data['net_revenue'])) {
+            $missing[] = 'Pendapatan Bersih';
+        }
+        if (empty($data['net_income'])) {
+            $missing[] = 'Laba Bersih';
+        }
+
+        if ($missing === []) {
+            return ['can_run' => true, 'missing' => [], 'message' => ''];
+        }
+
+        $msg = 'Data Input Manual belum lengkap. Lengkapi bagian berikut di tab Input Manual sebelum menjalankan Analisa AI Plus:' . "\n• " . implode("\n• ", $missing);
+
+        return [
+            'can_run' => false,
+            'missing' => $missing,
+            'message' => $msg,
+        ];
+    }
+
     public function downloadTemplate()
     {
         return response()->download(
@@ -292,7 +378,7 @@ abstract class AnalisaLapkeuController extends Controller
             'other_current_asset', 'fixed_asset', 'other_non_current_asset', 'total_asset',
             'current_liabilities', 'account_payable', 'accruals', 'short_term_loans',
             'current_maturities_of_long_term_loans', 'other_current_liabilities',
-            'long_term_loans', 'employee_benefits', 'other_non_current_liabilities',
+            'long_term_loans', 'other_non_current_liabilities',
             'total_non_current_liabilities', 'total_liabilities',
             'share_capital', 'additional_paid_in_capital', 'retained_earning', 'others',
             'non_controlling_interest', 'total_equity_equity_to_parent_entity', 'equity',

@@ -123,6 +123,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('analisa-saham/template', [AdminAnalisaSahamController::class, 'downloadTemplate'])->name('analisa-saham.template');
     Route::post('analisa-saham/parse-pdf', [AdminAnalisaSahamController::class, 'parsePdf'])->name('analisa-saham.parse-pdf');
     Route::post('analisa-saham/preview-ai', [AdminAnalisaSahamController::class, 'previewAi'])->name('analisa-saham.preview-ai');
+    Route::post('analisa-saham/preview-ai-plus', [AdminAnalisaSahamController::class, 'previewAiPlus'])->name('analisa-saham.preview-ai-plus');
     Route::get('analisa-saham/{analisa}', [AdminMonitorAnalisaSahamController::class, 'show'])->name('analisa-saham.show');
     Route::get('analisa-saham/{analisa}/pdf', [AdminMonitorAnalisaSahamController::class, 'exportPdf'])->name('analisa-saham.pdf');
     Route::get('analisa-saham/{analisa}/download-lapkeu', [AdminMonitorAnalisaSahamController::class, 'downloadLapkeu'])->name('analisa-saham.download-lapkeu');
@@ -151,6 +152,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('analisa-obligasi/template', [AdminAnalisaObligasiController::class, 'downloadTemplate'])->name('analisa-obligasi.template');
     Route::post('analisa-obligasi/parse-pdf', [AdminAnalisaObligasiController::class, 'parsePdf'])->name('analisa-obligasi.parse-pdf');
     Route::post('analisa-obligasi/preview-ai', [AdminAnalisaObligasiController::class, 'previewAi'])->name('analisa-obligasi.preview-ai');
+    Route::post('analisa-obligasi/preview-ai-plus', [AdminAnalisaObligasiController::class, 'previewAiPlus'])->name('analisa-obligasi.preview-ai-plus');
     Route::get('analisa-obligasi/{analisa}', [AdminMonitorAnalisaObligasiController::class, 'show'])->name('analisa-obligasi.show');
     Route::get('analisa-obligasi/{analisa}/pdf', [AdminMonitorAnalisaObligasiController::class, 'exportPdf'])->name('analisa-obligasi.pdf');
     Route::get('analisa-obligasi/{analisa}/download-lapkeu', [AdminMonitorAnalisaObligasiController::class, 'downloadLapkeu'])->name('analisa-obligasi.download-lapkeu');
@@ -244,6 +246,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/analisa-saham/template', [UserAnalisaSahamController::class, 'downloadTemplate'])->name('analisa-saham.template');
     Route::post('/analisa-saham/parse-pdf', [UserAnalisaSahamController::class, 'parsePdf'])->name('analisa-saham.parse-pdf');
     Route::post('/analisa-saham/preview-ai', [UserAnalisaSahamController::class, 'previewAi'])->name('analisa-saham.preview-ai');
+    Route::post('/analisa-saham/preview-ai-plus', [UserAnalisaSahamController::class, 'previewAiPlus'])->name('analisa-saham.preview-ai-plus');
     Route::get('/analisa-saham/{analisa}', [UserAnalisaSahamController::class, 'show'])->name('analisa-saham.show');
     Route::get('/analisa-saham/{analisa}/pdf', [UserAnalisaSahamController::class, 'exportPdf'])->name('analisa-saham.pdf');
     Route::get('/analisa-saham/{analisa}/download-lapkeu', [UserAnalisaSahamController::class, 'downloadLapkeu'])->name('analisa-saham.download-lapkeu');
@@ -257,6 +260,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/analisa-obligasi/template', [UserAnalisaObligasiController::class, 'downloadTemplate'])->name('analisa-obligasi.template');
     Route::post('/analisa-obligasi/parse-pdf', [UserAnalisaObligasiController::class, 'parsePdf'])->name('analisa-obligasi.parse-pdf');
     Route::post('/analisa-obligasi/preview-ai', [UserAnalisaObligasiController::class, 'previewAi'])->name('analisa-obligasi.preview-ai');
+    Route::post('/analisa-obligasi/preview-ai-plus', [UserAnalisaObligasiController::class, 'previewAiPlus'])->name('analisa-obligasi.preview-ai-plus');
     Route::get('/analisa-obligasi/{analisa}', [UserAnalisaObligasiController::class, 'show'])->name('analisa-obligasi.show');
     Route::get('/analisa-obligasi/{analisa}/pdf', [UserAnalisaObligasiController::class, 'exportPdf'])->name('analisa-obligasi.pdf');
     Route::get('/analisa-obligasi/{analisa}/download-lapkeu', [UserAnalisaObligasiController::class, 'downloadLapkeu'])->name('analisa-obligasi.download-lapkeu');

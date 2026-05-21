@@ -56,6 +56,7 @@
         ['Pendapatan Bersih', $analisa->net_revenue, true],
         ['Laba Kotor', $analisa->gross_income, true],
         ['Laba Operasional', $analisa->laba_operasional, true],
+        ['Beban Bunga', $analisa->interest_expense],
         ['EBIT', $analisa->ebit, true],
         ['EBITDA', $analisa->ebitda, true],
         ['Laba Bersih', $analisa->net_income, true],
@@ -84,6 +85,13 @@
 <div class="section">
 <h2>Analisa AI</h2>
 <p>{{ $analisa->ai_narasi }}</p>
+</div>
+@endif
+
+@if($analisa->ai_narasi_plus)
+<div class="section">
+<h2>Analisa AI Plus</h2>
+<p>{{ $analisa->ai_narasi_plus }}</p>
 </div>
 @endif
 

@@ -42,6 +42,27 @@
         </div>
         @endif
 
+        @if(!empty($ai['analisa_likuiditas']))
+        <div class="mb-5">
+            <h4 class="text-sm font-semibold text-primary mb-2">Analisa Likuiditas</h4>
+            <p class="text-sm text-gray-700 leading-relaxed">{{ $ai['analisa_likuiditas'] }}</p>
+        </div>
+        @endif
+
+        @if(!empty($ai['analisa_solvabilitas']))
+        <div class="mb-5">
+            <h4 class="text-sm font-semibold text-primary mb-2">Analisa Solvabilitas</h4>
+            <p class="text-sm text-gray-700 leading-relaxed">{{ $ai['analisa_solvabilitas'] }}</p>
+        </div>
+        @endif
+
+        @if(!empty($ai['analisa_profitabilitas']))
+        <div class="mb-5">
+            <h4 class="text-sm font-semibold text-primary mb-2">Analisa Profitabilitas</h4>
+            <p class="text-sm text-gray-700 leading-relaxed">{{ $ai['analisa_profitabilitas'] }}</p>
+        </div>
+        @endif
+
         @if(!empty($ai['rasio_keuangan']))
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
             @foreach(['current_ratio' => 'Current Ratio', 'debt_to_equity' => 'DER', 'net_profit_margin' => 'Net Margin', 'roe' => 'ROE'] as $mk => $ml)

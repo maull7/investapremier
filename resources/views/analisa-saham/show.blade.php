@@ -57,6 +57,9 @@
         <button type="button" @click="activeTab='ai'"
             :class="activeTab==='ai' ? 'border-b-2 border-primary text-primary font-semibold' : 'text-muted hover:text-primary'"
             class="px-4 py-2.5 text-sm whitespace-nowrap transition">Analisa AI</button>
+        <button type="button" @click="activeTab='ai-plus'"
+            :class="activeTab==='ai-plus' ? 'border-b-2 border-primary text-primary font-semibold' : 'text-muted hover:text-primary'"
+            class="px-4 py-2.5 text-sm whitespace-nowrap transition">Analisa AI Plus</button>
     </div>
 
     {{-- Tab: Data --}}
@@ -71,6 +74,16 @@
             @include('analisa-lapkeu.partials.ai-panel', ['title' => 'Analisa AI', 'ai' => $aiOut, 'narasi' => $analisa->ai_narasi])
         @else
             <div class="bg-[#f8fafc] border border-dashed border-line rounded-xl p-5 text-sm text-muted">Narasi AI belum tersedia.</div>
+        @endif
+    </div>
+
+    {{-- Tab: AI Plus --}}
+    <div x-show="activeTab==='ai-plus'">
+        @php $aiPlusOut = $analisa->ai_output_plus ?? []; @endphp
+        @if($analisa->ai_narasi_plus || !empty($aiPlusOut))
+            @include('analisa-lapkeu.partials.ai-panel', ['title' => 'Analisa AI Plus', 'ai' => $aiPlusOut, 'narasi' => $analisa->ai_narasi_plus])
+        @else
+            <div class="bg-[#f8fafc] border border-dashed border-line rounded-xl p-5 text-sm text-muted">Narasi AI Plus belum tersedia.</div>
         @endif
     </div>
 </div>

@@ -52,6 +52,9 @@ class AnalisaSahamController extends AnalisaLapkeuController
             $file = $request->file('pdf_lapkeu');
             $filename = 'lapkeu-' . now()->format('Ymd-His') . '-' . \Illuminate\Support\Str::random(8) . '.pdf';
             $data['pdf_path'] = $file->storeAs('lapkeu-pdfs', $filename, 'public');
+        } elseif ($request->filled('pdf_lapkeu_path')) {
+            $path = 'lapkeu-pdfs/' . basename($request->pdf_lapkeu_path);
+            $data['pdf_path'] = \Illuminate\Support\Facades\Storage::disk('public')->exists($path) ? $path : null;
         }
 
         $analisa = AnalisaSaham::create($data);
@@ -60,6 +63,13 @@ class AnalisaSahamController extends AnalisaLapkeuController
             $analisa->update([
                 'ai_narasi' => $request->ai_narasi,
                 'ai_output' => json_decode($request->ai_output, true) ?: [],
+            ]);
+        }
+
+        if ($request->filled('ai_narasi_plus') && $request->filled('ai_output_plus')) {
+            $analisa->update([
+                'ai_narasi_plus' => $request->ai_narasi_plus,
+                'ai_output_plus' => json_decode($request->ai_output_plus, true) ?: [],
             ]);
         }
 

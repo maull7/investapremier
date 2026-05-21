@@ -1,13 +1,39 @@
 {{-- Tab: Analisa AI untuk Lapkeu (Saham / Obligasi) --}}
 <div x-show="mode==='ai'" class="p-6 space-y-4">
-    <p class="text-sm text-muted">Isi data laporan keuangan di tab <strong>Input Manual</strong> terlebih dahulu, lalu klik <strong>Jalankan Analisa AI</strong> untuk mendapatkan analisa otomatis.</p>
+    <div class="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+        <div>
+            Upload PDF laporan keuangan, lalu klik <strong>Jalankan Analisa AI</strong>.
+            Data akan otomatis diekstrak ke form Input Manual dan AI akan menganalisa.
+        </div>
+    </div>
 
-    <button type="button" @click="runAiPreview()"
-        :disabled="aiLoading"
-        class="px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 disabled:opacity-50">
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Upload PDF Laporan Keuangan</label>
+        <input type="file" id="ai-pdf-parse-input" accept="application/pdf" @change="onPdfSelected($event)"
+            class="block w-full text-sm text-gray-500 border border-gray-300 rounded-lg px-3 py-2 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer">
+        <p class="text-xs text-muted mt-1">Format: PDF, maks 10MB. Data akan diekstrak dan mengisi form otomatis.</p>
+    </div>
+
+    <button type="button" @click="runAiFromPdf()"
+        :disabled="aiLoading || !aiPdfFile"
+        class="px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed">
         <span x-show="!aiLoading">Jalankan Analisa AI</span>
         <span x-show="aiLoading">Memproses...</span>
     </button>
+    <p x-show="!aiPdfFile" class="text-xs text-muted">Pilih file PDF terlebih dahulu.</p>
+
+    <div x-show="aiParseLoading" class="flex items-center gap-2 text-sm text-muted">
+        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        <span>Membaca & mengekstrak PDF...</span>
+    </div>
+
+    <div x-show="aiParseError" class="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3" x-text="aiParseError"></div>
+
+    <div x-show="aiParseSuccess" class="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-3" x-text="aiParseSuccess"></div>
 
     <div x-show="aiError" class="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3" x-text="aiError"></div>
 
@@ -16,6 +42,14 @@
             <div class="flex items-center gap-2 mb-2">
                 <h3 class="font-semibold text-primary">Analisa AI</h3>
                 <span class="ml-auto text-xs text-muted bg-[#f1f5f9] px-2 py-1 rounded-full">Powered by Groq</span>
+            </div>
+
+            <div class="mb-4">
+                <button type="button" @click="applyAiToManual()"
+                    class="px-4 py-2 bg-accent text-white rounded-lg text-sm font-semibold hover:bg-accent/90 transition">
+                    ✦ Isi Input Manual
+                </button>
+                <p class="text-xs text-muted mt-1">Data dari PDF sudah diisikan ke form. Klik untuk beralih ke tab Input Manual dan review sebelum submit.</p>
             </div>
 
             <template x-if="aiResult.parsed?.ringkasan_utama">

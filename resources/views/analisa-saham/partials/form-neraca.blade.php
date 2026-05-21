@@ -61,17 +61,16 @@
             <h4 class="text-xs font-semibold text-muted uppercase tracking-wide">Liabilitas JK Panjang & Ekuitas</h4>
             @foreach([
                 ['long_term_loans','Pinjaman Jangka Panjang'],
-                ['employee_benefits','Liabilitas Imbalan Kerja'],
                 ['other_non_current_liabilities','Liabilitas Tidak Lancar Lainnya'],
                 ['total_non_current_liabilities','Total Liabilitas Tidak Lancar'],
                 ['total_liabilities','Total Liabilitas'],
+                ['retained_earning','Saldo Laba'],
+                ['equity','Total Ekuitas'],
                 ['share_capital','Modal Saham'],
                 ['additional_paid_in_capital','Tambahan Modal Disetor'],
-                ['retained_earning','Saldo Laba'],
                 ['others','Komponen Ekuitas Lain'],
                 ['non_controlling_interest','Kepentingan Non-Pengendali'],
                 ['total_equity_equity_to_parent_entity','Ekuitas ke Entitas Induk'],
-                ['equity','Total Ekuitas'],
             ] as [$name, $label])
             <div class="flex items-center gap-2">
                 <label class="w-44 text-xs text-gray-600 shrink-0">{{ $label }}</label>
