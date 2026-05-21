@@ -8,32 +8,28 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
-class AnalisaController extends Controller
+class MonitorAnalisaUlController extends Controller
 {
     public function index(Request $request)
     {
         $query = AnalisaReksaDana::with('user')
-            ->where('product_type', 'reksa_dana')
+            ->where('product_type', 'unit_link')
             ->latest();
 
         if ($request->status) {
             $query->where('status', $request->status);
         }
 
-        if ($request->kategori) {
-            $query->whereJsonContains('kategori', $request->kategori);
-        }
-
         $analisas = $query->paginate(20);
 
-        return view('admin.analisa.index', compact('analisas'));
+        return view('admin.unit-link-analisa.index', compact('analisas'));
     }
 
     public function show(AnalisaReksaDana $analisa)
     {
         $analisa->load(['user', 'sektor', 'efek', 'kinerja', 'obligasi', 'bank']);
 
-        return view('admin.analisa.show', compact('analisa'));
+        return view('admin.unit-link-analisa.show', compact('analisa'));
     }
 
     public function exportPdf(AnalisaReksaDana $analisa)
@@ -43,7 +39,7 @@ class AnalisaController extends Controller
         $pdf = Pdf::loadView('analisa.pdf', compact('analisa'))
             ->setPaper('a4', 'portrait');
 
-        $filename = 'analisa-'.str($analisa->nama_reksa_dana)->slug().'-'.now()->format('Ymd').'.pdf';
+        $filename = 'analisa-' . str($analisa->nama_reksa_dana)->slug() . '-' . now()->format('Ymd') . '.pdf';
 
         return $pdf->download($filename);
     }
@@ -54,7 +50,7 @@ class AnalisaController extends Controller
             abort(404, 'File PDF tidak ditemukan.');
         }
 
-        return Storage::disk('public')->download($analisa->pdf_path, 'ffs-'.str($analisa->nama_reksa_dana)->slug().'.pdf');
+        return Storage::disk('public')->download($analisa->pdf_path, 'ffs-' . str($analisa->nama_reksa_dana)->slug() . '.pdf');
     }
 
     public function review(Request $request, AnalisaReksaDana $analisa)
@@ -79,6 +75,6 @@ class AnalisaController extends Controller
 
         $analisa->delete();
 
-        return redirect()->route('admin.analisa.index')->with('success', 'Data analisa berhasil dihapus.');
+        return redirect()->route('admin.unit-link-analisa.index')->with('success', 'Data analisa berhasil dihapus.');
     }
 }

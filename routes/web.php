@@ -17,11 +17,21 @@ use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\ObligasiController as AdminObligasiController;
 use App\Http\Controllers\Admin\InvestmentManagerController as AdminInvestmentManagerController;
 use App\Http\Controllers\Admin\UnitLinkController as AdminUnitLinkController;
+use App\Http\Controllers\Admin\UnitLinkFfsController as AdminUnitLinkFfsController;
+use App\Http\Controllers\Admin\AnalisaUlController as AdminAnalisaUlController;
+use App\Http\Controllers\Admin\MonitorAnalisaUlController as AdminMonitorAnalisaUlController;
+use App\Http\Controllers\Admin\MonitorAnalisaSahamController as AdminMonitorAnalisaSahamController;
+use App\Http\Controllers\Admin\MonitorAnalisaObligasiController as AdminMonitorAnalisaObligasiController;
+use App\Http\Controllers\Admin\AnalisaSahamController as AdminAnalisaSahamController;
+use App\Http\Controllers\Admin\AnalisaObligasiController as AdminAnalisaObligasiController;
+use App\Http\Controllers\User\AnalisaSahamController as UserAnalisaSahamController;
+use App\Http\Controllers\User\AnalisaObligasiController as UserAnalisaObligasiController;
 use App\Http\Controllers\User\DataSourceLinkController as UserDataSourceLinkController;
 use App\Http\Controllers\User\StockController as UserStockController;
 use App\Http\Controllers\User\ObligasiController as UserObligasiController;
 use App\Http\Controllers\User\InvestmentManagerController as UserInvestmentManagerController;
 use App\Http\Controllers\User\UnitLinkController as UserUnitLinkController;
+use App\Http\Controllers\User\AnalisaUlController as UserAnalisaUlController;
 use App\Http\Controllers\User\PerencanaanInvestasiController;
 use App\Http\Controllers\ReksaDanaController;
 use App\Http\Controllers\Auth\SocialAuthController;
@@ -107,7 +117,17 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::resource('saham', StockController::class)->except(['show']);
     Route::get('saham-template', [StockController::class, 'downloadTemplate'])->name('saham.template');
     Route::post('saham-import', [StockController::class, 'import'])->name('saham.import');
-    Route::get('analisa-saham', fn() => view('admin.analisa-saham.index'))->name('analisa-saham.index');
+    Route::get('analisa-saham', [AdminMonitorAnalisaSahamController::class, 'index'])->name('analisa-saham.index');
+    Route::get('analisa-saham/create', [AdminAnalisaSahamController::class, 'create'])->name('analisa-saham.create');
+    Route::post('analisa-saham', [AdminAnalisaSahamController::class, 'store'])->name('analisa-saham.store');
+    Route::get('analisa-saham/template', [AdminAnalisaSahamController::class, 'downloadTemplate'])->name('analisa-saham.template');
+    Route::post('analisa-saham/parse-pdf', [AdminAnalisaSahamController::class, 'parsePdf'])->name('analisa-saham.parse-pdf');
+    Route::post('analisa-saham/preview-ai', [AdminAnalisaSahamController::class, 'previewAi'])->name('analisa-saham.preview-ai');
+    Route::get('analisa-saham/{analisa}', [AdminMonitorAnalisaSahamController::class, 'show'])->name('analisa-saham.show');
+    Route::get('analisa-saham/{analisa}/pdf', [AdminMonitorAnalisaSahamController::class, 'exportPdf'])->name('analisa-saham.pdf');
+    Route::get('analisa-saham/{analisa}/download-lapkeu', [AdminMonitorAnalisaSahamController::class, 'downloadLapkeu'])->name('analisa-saham.download-lapkeu');
+    Route::post('analisa-saham/{analisa}/review', [AdminMonitorAnalisaSahamController::class, 'review'])->name('analisa-saham.review');
+    Route::delete('analisa-saham/{analisa}', [AdminMonitorAnalisaSahamController::class, 'destroy'])->name('analisa-saham.destroy');
 
     // Daftar & Analisa Obligasi
     Route::get('obligasi', [AdminObligasiController::class, 'index'])->name('obligasi.index');
@@ -125,7 +145,17 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::delete('obligasi/bond/{obligasiBond}', [AdminObligasiController::class, 'destroyBond'])->name('obligasi.destroy-bond');
     Route::get('obligasi/template-bond', [AdminObligasiController::class, 'downloadTemplateBond'])->name('obligasi.template-bond');
     Route::post('obligasi/import-bond', [AdminObligasiController::class, 'importBond'])->name('obligasi.import-bond');
-    Route::get('analisa-obligasi', fn() => view('admin.analisa-obligasi.index'))->name('analisa-obligasi.index');
+    Route::get('analisa-obligasi', [AdminMonitorAnalisaObligasiController::class, 'index'])->name('analisa-obligasi.index');
+    Route::get('analisa-obligasi/create', [AdminAnalisaObligasiController::class, 'create'])->name('analisa-obligasi.create');
+    Route::post('analisa-obligasi', [AdminAnalisaObligasiController::class, 'store'])->name('analisa-obligasi.store');
+    Route::get('analisa-obligasi/template', [AdminAnalisaObligasiController::class, 'downloadTemplate'])->name('analisa-obligasi.template');
+    Route::post('analisa-obligasi/parse-pdf', [AdminAnalisaObligasiController::class, 'parsePdf'])->name('analisa-obligasi.parse-pdf');
+    Route::post('analisa-obligasi/preview-ai', [AdminAnalisaObligasiController::class, 'previewAi'])->name('analisa-obligasi.preview-ai');
+    Route::get('analisa-obligasi/{analisa}', [AdminMonitorAnalisaObligasiController::class, 'show'])->name('analisa-obligasi.show');
+    Route::get('analisa-obligasi/{analisa}/pdf', [AdminMonitorAnalisaObligasiController::class, 'exportPdf'])->name('analisa-obligasi.pdf');
+    Route::get('analisa-obligasi/{analisa}/download-lapkeu', [AdminMonitorAnalisaObligasiController::class, 'downloadLapkeu'])->name('analisa-obligasi.download-lapkeu');
+    Route::post('analisa-obligasi/{analisa}/review', [AdminMonitorAnalisaObligasiController::class, 'review'])->name('analisa-obligasi.review');
+    Route::delete('analisa-obligasi/{analisa}', [AdminMonitorAnalisaObligasiController::class, 'destroy'])->name('analisa-obligasi.destroy');
 
     // Manajer Investasi
     Route::resource('investment-managers', AdminInvestmentManagerController::class)->except(['show']);
@@ -142,6 +172,30 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::delete('unit-link/{unitLink}', [AdminUnitLinkController::class, 'destroy'])->name('unit-link.destroy');
     Route::get('unit-link-template', [AdminUnitLinkController::class, 'downloadTemplate'])->name('unit-link.template');
     Route::post('unit-link-import', [AdminUnitLinkController::class, 'import'])->name('unit-link.import');
+
+    // Monitor Unit Link FFS
+    Route::get('unit-link-ffs', [AdminUnitLinkFfsController::class, 'index'])->name('unit-link-ffs.index');
+    Route::post('unit-link-ffs/bulk-analisa', [AdminUnitLinkFfsController::class, 'bulkAnalisa'])->name('unit-link-ffs.bulk-analisa');
+    Route::get('unit-link-ffs/{analisa}/pdf', [AdminUnitLinkFfsController::class, 'downloadPdf'])->name('unit-link-ffs.pdf');
+
+    // Analisa Unit Link (create + store + tools)
+    Route::get('analisa-ul/create', [AdminAnalisaUlController::class, 'create'])->name('analisa-ul.create');
+    Route::post('analisa-ul', [AdminAnalisaUlController::class, 'store'])->name('analisa-ul.store');
+    Route::get('analisa-ul/template', [AdminAnalisaUlController::class, 'downloadTemplate'])->name('analisa-ul.template');
+    Route::post('analisa-ul/parse-pdf', [AdminAnalisaUlController::class, 'parsePdf'])->name('analisa-ul.parse-pdf');
+    Route::post('analisa-ul/parse-web-file', [AdminAnalisaUlController::class, 'parseWebFile'])->name('analisa-ul.parse-web-file');
+    Route::post('analisa-ul/scrape-web-data', [AdminAnalisaUlController::class, 'scrapeWebData'])->name('analisa-ul.scrape-web-data');
+    Route::post('analisa-ul/scrape-url', [AdminAnalisaUlController::class, 'scrapeUrl'])->name('analisa-ul.scrape-url');
+    Route::post('analisa-ul/preview-ai', [AdminAnalisaUlController::class, 'previewAi'])->name('analisa-ul.preview-ai');
+    Route::post('analisa-ul/preview-ai-plus', [AdminAnalisaUlController::class, 'previewAiPlus'])->name('analisa-ul.preview-ai-plus');
+
+    // Monitor Analisa Unit Link
+    Route::get('unit-link-analisa', [AdminMonitorAnalisaUlController::class, 'index'])->name('unit-link-analisa.index');
+    Route::get('unit-link-analisa/{analisa}', [AdminMonitorAnalisaUlController::class, 'show'])->name('unit-link-analisa.show');
+    Route::get('unit-link-analisa/{analisa}/pdf', [AdminMonitorAnalisaUlController::class, 'exportPdf'])->name('unit-link-analisa.pdf');
+    Route::get('unit-link-analisa/{analisa}/download-ffs', [AdminMonitorAnalisaUlController::class, 'downloadPdf'])->name('unit-link-analisa.download-ffs');
+    Route::post('unit-link-analisa/{analisa}/review', [AdminMonitorAnalisaUlController::class, 'review'])->name('unit-link-analisa.review');
+    Route::delete('unit-link-analisa/{analisa}', [AdminMonitorAnalisaUlController::class, 'destroy'])->name('unit-link-analisa.destroy');
 
     // AI Prompts
     Route::get('ai-prompts', [App\Http\Controllers\Admin\AiPromptController::class, 'index'])->name('ai-prompts.index');
@@ -184,17 +238,53 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::resource('/saham', UserStockController::class)->except(['show']);
     // Route::get('/saham-template', [UserStockController::class, 'downloadTemplate'])->name('saham.template');
     // Route::post('/saham-import', [UserStockController::class, 'import'])->name('saham.import');
-    Route::get('/analisa-saham', fn() => view('analisa-saham.index'))->name('analisa-saham.index');
+    Route::get('/analisa-saham', [UserAnalisaSahamController::class, 'index'])->name('analisa-saham.index');
+    Route::get('/analisa-saham/create', [UserAnalisaSahamController::class, 'create'])->name('analisa-saham.create');
+    Route::post('/analisa-saham', [UserAnalisaSahamController::class, 'store'])->name('analisa-saham.store');
+    Route::get('/analisa-saham/template', [UserAnalisaSahamController::class, 'downloadTemplate'])->name('analisa-saham.template');
+    Route::post('/analisa-saham/parse-pdf', [UserAnalisaSahamController::class, 'parsePdf'])->name('analisa-saham.parse-pdf');
+    Route::post('/analisa-saham/preview-ai', [UserAnalisaSahamController::class, 'previewAi'])->name('analisa-saham.preview-ai');
+    Route::get('/analisa-saham/{analisa}', [UserAnalisaSahamController::class, 'show'])->name('analisa-saham.show');
+    Route::get('/analisa-saham/{analisa}/pdf', [UserAnalisaSahamController::class, 'exportPdf'])->name('analisa-saham.pdf');
+    Route::get('/analisa-saham/{analisa}/download-lapkeu', [UserAnalisaSahamController::class, 'downloadLapkeu'])->name('analisa-saham.download-lapkeu');
+    Route::delete('/analisa-saham/{analisa}', [UserAnalisaSahamController::class, 'destroy'])->name('analisa-saham.destroy');
 
     // Daftar & Analisa Obligasi
     Route::get('/obligasi', [UserObligasiController::class, 'index'])->name('obligasi.index');
-    Route::get('/analisa-obligasi', fn() => view('analisa-obligasi.index'))->name('analisa-obligasi.index');
+    Route::get('/analisa-obligasi', [UserAnalisaObligasiController::class, 'index'])->name('analisa-obligasi.index');
+    Route::get('/analisa-obligasi/create', [UserAnalisaObligasiController::class, 'create'])->name('analisa-obligasi.create');
+    Route::post('/analisa-obligasi', [UserAnalisaObligasiController::class, 'store'])->name('analisa-obligasi.store');
+    Route::get('/analisa-obligasi/template', [UserAnalisaObligasiController::class, 'downloadTemplate'])->name('analisa-obligasi.template');
+    Route::post('/analisa-obligasi/parse-pdf', [UserAnalisaObligasiController::class, 'parsePdf'])->name('analisa-obligasi.parse-pdf');
+    Route::post('/analisa-obligasi/preview-ai', [UserAnalisaObligasiController::class, 'previewAi'])->name('analisa-obligasi.preview-ai');
+    Route::get('/analisa-obligasi/{analisa}', [UserAnalisaObligasiController::class, 'show'])->name('analisa-obligasi.show');
+    Route::get('/analisa-obligasi/{analisa}/pdf', [UserAnalisaObligasiController::class, 'exportPdf'])->name('analisa-obligasi.pdf');
+    Route::get('/analisa-obligasi/{analisa}/download-lapkeu', [UserAnalisaObligasiController::class, 'downloadLapkeu'])->name('analisa-obligasi.download-lapkeu');
+    Route::delete('/analisa-obligasi/{analisa}', [UserAnalisaObligasiController::class, 'destroy'])->name('analisa-obligasi.destroy');
 
     // Manajer Investasi
     Route::get('/investment-managers', [UserInvestmentManagerController::class, 'index'])->name('investment-managers.index');
 
-    // Unit Link
+    // Unit Link (master data)
     Route::get('/unit-link', [UserUnitLinkController::class, 'index'])->name('unit-link.index');
+
+    // Analisa Unit Link (user)
+    Route::get('/unit-link-analisa', [UserAnalisaUlController::class, 'index'])->name('unit-link-analisa.index');
+    Route::get('/unit-link-analisa/create', [UserAnalisaUlController::class, 'create'])->name('unit-link-analisa.create');
+    Route::post('/unit-link-analisa', [UserAnalisaUlController::class, 'store'])->name('unit-link-analisa.store');
+    Route::get('/unit-link-analisa/template', [UserAnalisaUlController::class, 'downloadTemplate'])->name('unit-link-analisa.template');
+    Route::post('/unit-link-analisa/parse-pdf', [UserAnalisaUlController::class, 'parsePdf'])->name('unit-link-analisa.parse-pdf');
+    Route::post('/unit-link-analisa/parse-web-file', [UserAnalisaUlController::class, 'parseWebFile'])->name('unit-link-analisa.parse-web-file');
+    Route::post('/unit-link-analisa/scrape-web-data', [UserAnalisaUlController::class, 'scrapeWebData'])->name('unit-link-analisa.scrape-web-data');
+    Route::post('/unit-link-analisa/scrape-url', [UserAnalisaUlController::class, 'scrapeUrl'])->name('unit-link-analisa.scrape-url');
+    Route::post('/unit-link-analisa/preview-ai', [UserAnalisaUlController::class, 'previewAi'])->name('unit-link-analisa.preview-ai');
+    Route::post('/unit-link-analisa/preview-ai-plus', [UserAnalisaUlController::class, 'previewAiPlus'])->name('unit-link-analisa.preview-ai-plus');
+    Route::get('/unit-link-analisa/{analisa}', [UserAnalisaUlController::class, 'show'])->name('unit-link-analisa.show');
+    Route::get('/unit-link-analisa/{analisa}/edit', [UserAnalisaUlController::class, 'edit'])->name('unit-link-analisa.edit');
+    Route::put('/unit-link-analisa/{analisa}', [UserAnalisaUlController::class, 'update'])->name('unit-link-analisa.update');
+    Route::get('/unit-link-analisa/{analisa}/pdf', [UserAnalisaUlController::class, 'exportPdf'])->name('unit-link-analisa.pdf');
+    Route::get('/unit-link-analisa/{analisa}/download-ffs', [UserAnalisaUlController::class, 'downloadPdf'])->name('unit-link-analisa.download-ffs');
+    Route::delete('/unit-link-analisa/{analisa}', [UserAnalisaUlController::class, 'destroy'])->name('unit-link-analisa.destroy');
 
     // Perencanaan Investasi
     Route::resource('/perencanaan-investasi', PerencanaanInvestasiController::class)->except(['show']);

@@ -27,40 +27,74 @@ use Maatwebsite\Excel\Facades\Excel;
 class AnalisaController extends Controller
 {
     protected bool $isAdminContext = false;
+    protected string $productType = 'reksa_dana';
+    protected string $productLabel = 'Reksa Dana';
 
     protected function indexRoute(): string
     {
-        return 'user.analisa.index';
+        if ($this->productType === 'unit_link') {
+            return $this->isAdminContext ? 'admin.unit-link-ffs.index' : 'user.unit-link-analisa.index';
+        }
+        return $this->isAdminContext ? 'admin.reksa-dana.index' : 'user.analisa.index';
     }
 
     protected function formRoutes(): array
     {
-        $prefix = $this->isAdminContext ? 'admin.analisa-rd' : 'user.analisa';
+        $prefix = match (true) {
+            $this->isAdminContext && $this->productType === 'unit_link' => 'admin.analisa-ul',
+            $this->isAdminContext                                        => 'admin.analisa-rd',
+            $this->productType === 'unit_link'                          => 'user.unit-link-analisa',
+            default                                                      => 'user.analisa',
+        };
+
+        $cancelRoute = match (true) {
+            $this->isAdminContext && $this->productType === 'unit_link' => route('admin.unit-link-ffs.index'),
+            $this->isAdminContext                                        => route('admin.reksa-dana.index'),
+            $this->productType === 'unit_link'                          => route('user.unit-link-analisa.index'),
+            default                                                      => route('user.analisa.index'),
+        };
+
+        $scrapeWebBase = match (true) {
+            $this->isAdminContext && $this->productType === 'unit_link' => url('admin/analisa-ul/scrape-web-data'),
+            $this->isAdminContext                                        => url('admin/analisa-rd/scrape-web-data'),
+            $this->productType === 'unit_link'                          => url('user/unit-link-analisa/scrape-web-data'),
+            default                                                      => url('user/analisa/scrape-web-data'),
+        };
+
+        $scrapeUrlBase = match (true) {
+            $this->isAdminContext && $this->productType === 'unit_link' => url('admin/analisa-ul/scrape-url'),
+            $this->isAdminContext                                        => url('admin/analisa-rd/scrape-url'),
+            $this->productType === 'unit_link'                          => url('user/unit-link-analisa/scrape-url'),
+            default                                                      => url('user/analisa/scrape-url'),
+        };
 
         return array_merge([
             'layout'          => $this->isAdminContext ? 'layouts.admin' : 'layouts.user',
             'store'           => route("{$prefix}.store"),
             'template'        => route("{$prefix}.template"),
-            'cancel'          => $this->isAdminContext ? route('admin.reksa-dana.index') : route('user.analisa.index'),
+            'cancel'          => $cancelRoute,
             'parse_pdf'       => route("{$prefix}.parse-pdf"),
             'preview_ai'      => route("{$prefix}.preview-ai"),
             'preview_ai_plus' => route("{$prefix}.preview-ai-plus"),
             'parse_web_file'  => route("{$prefix}.parse-web-file"),
-            'scrape_web'      => $this->isAdminContext
-                ? url('admin/analisa-rd/scrape-web-data')
-                : url('user/analisa/scrape-web-data'),
-            'scrape_url'      => $this->isAdminContext
-                ? url('admin/analisa-rd/scrape-url')
-                : url('user/analisa/scrape-url'),
+            'scrape_web'      => $scrapeWebBase,
+            'scrape_url'      => $scrapeUrlBase,
         ]);
     }
 
     public function index()
     {
         $analisas = AnalisaReksaDana::where('user_id', auth()->id())
+            ->where('product_type', $this->productType)
             ->latest()->get();
 
-        return view('analisa.index', compact('analisas'));
+        $createRoute = $this->productType === 'unit_link'
+            ? route('user.unit-link-analisa.create')
+            : route('user.analisa.create');
+
+        return view('analisa.index', compact('analisas'))
+            ->with('productLabel', $this->productLabel)
+            ->with('createRoute', $createRoute);
     }
 
     protected function linkRoutes(): array
@@ -76,7 +110,12 @@ class AnalisaController extends Controller
 
     protected function linkPageRoute(): string
     {
-        return $this->isAdminContext ? 'admin.analisa-rd.create' : 'user.analisa.create';
+        return match (true) {
+            $this->isAdminContext && $this->productType === 'unit_link' => 'admin.analisa-ul.create',
+            $this->isAdminContext                                        => 'admin.analisa-rd.create',
+            $this->productType === 'unit_link'                          => 'user.unit-link-analisa.create',
+            default                                                      => 'user.analisa.create',
+        };
     }
 
     protected function dataSourceLinkContext(): array
@@ -102,7 +141,7 @@ class AnalisaController extends Controller
     public function create()
     {
         return view('analisa.create', array_merge(
-            ['formRoutes' => $this->formRoutes()],
+            ['formRoutes' => $this->formRoutes(), 'productLabel' => $this->productLabel],
             $this->dataSourceLinkContext(),
         ));
     }
@@ -135,7 +174,7 @@ class AnalisaController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat Analisa AI: '.$e->getMessage(),
+                'message' => 'Gagal membuat Analisa AI: ' . $e->getMessage(),
             ], 422);
         }
     }
@@ -169,7 +208,7 @@ class AnalisaController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat Analisa AI Plus: '.$e->getMessage(),
+                'message' => 'Gagal membuat Analisa AI Plus: ' . $e->getMessage(),
             ], 422);
         }
     }
@@ -179,7 +218,7 @@ class AnalisaController extends Controller
         set_time_limit(120);
 
         $request->validate([
-            'file_pdf' => 'required|file|mimes:pdf|max:10240',
+            'file_pdf' => 'required|file|max:10240',
         ]);
 
         $file = $request->file('file_pdf');
@@ -398,6 +437,7 @@ class AnalisaController extends Controller
 
             $analisa = AnalisaReksaDana::create([
                 'user_id'              => auth()->id(),
+                'product_type'         => $this->productType,
                 'nama_reksa_dana'      => $request->nama_reksa_dana,
                 'jenis_reksa_dana'     => $request->jenis_reksa_dana,
                 'kategori'             => $request->kategori ?? [],
@@ -436,6 +476,7 @@ class AnalisaController extends Controller
 
             $analisa = AnalisaReksaDana::create([
                 'user_id'              => auth()->id(),
+                'product_type'         => $this->productType,
                 'nama_reksa_dana'      => $request->nama_reksa_dana,
                 'jenis_reksa_dana'     => $request->jenis_reksa_dana,
                 'kategori'             => $request->kategori ?? [],
@@ -576,7 +617,7 @@ class AnalisaController extends Controller
         $pdf = Pdf::loadView('analisa.pdf', compact('analisa'))
             ->setPaper('a4', 'portrait');
 
-        $filename = 'analisa-'.str($analisa->nama_reksa_dana)->slug().'-'.now()->format('Ymd').'.pdf';
+        $filename = 'analisa-' . str($analisa->nama_reksa_dana)->slug() . '-' . now()->format('Ymd') . '.pdf';
 
         return $pdf->download($filename);
     }
@@ -589,7 +630,7 @@ class AnalisaController extends Controller
             abort(404, 'File PDF tidak ditemukan.');
         }
 
-        return Storage::disk('public')->download($analisa->pdf_path, 'ffs-'.str($analisa->nama_reksa_dana)->slug().'.pdf');
+        return Storage::disk('public')->download($analisa->pdf_path, 'ffs-' . str($analisa->nama_reksa_dana)->slug() . '.pdf');
     }
 
     public function destroy(AnalisaReksaDana $analisa)
