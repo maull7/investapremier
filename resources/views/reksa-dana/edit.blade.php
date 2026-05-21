@@ -42,14 +42,17 @@
                     <x-input-error :messages="$errors->get('jenis_reksa_dana')" class="mt-1" />
                 </div>
                 <div>
-                    <x-input-label for="kategori" value="Kategori" />
-                    <select id="kategori" name="kategori"
-                        class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
-                        <option value="">Pilih Kategori</option>
-                        @foreach($kategoriOptions as $k)
-                            <option value="{{ $k }}" {{ old('kategori', $reksaDana->kategori) === $k ? 'selected' : '' }}>{{ $k }}</option>
+                    <x-input-label value="Kategori" />
+                    <div class="mt-1 flex flex-wrap gap-3">
+                        @foreach (['Konvensional', 'Syariah', 'index', 'ETF'] as $k)
+                            <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+                                <input type="checkbox" name="kategori[]" value="{{ $k }}"
+                                    {{ in_array($k, old('kategori', $reksaDana->kategori ?? [])) ? 'checked' : '' }}
+                                    class="rounded border-gray-300 text-primary focus:ring-primary/20">
+                                {{ $k }}
+                            </label>
                         @endforeach
-                    </select>
+                    </div>
                     <x-input-error :messages="$errors->get('kategori')" class="mt-1" />
                 </div>
                 <div>

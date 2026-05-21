@@ -144,7 +144,7 @@ class AnalisaController extends Controller
     {
         $request->validate([
             'nama_reksa_dana'  => 'required|string|max:255',
-            'jenis_reksa_dana' => 'required|in:Saham,Pendapatan Tetap,Campuran,Pasar Uang',
+            'jenis_reksa_dana' => 'required|in:Saham,Pendapatan Tetap,Campuran,Pasar Uang,Terproteksi,Global,DIRE-DINFRA,Penyertaan terbatas',
         ]);
 
         $analisa = AnalisaPayloadBuilder::fromRequest($request);
@@ -342,7 +342,7 @@ class AnalisaController extends Controller
     {
         $request->validate([
             'nama_reksa_dana'      => 'required|string|max:255',
-            'jenis_reksa_dana'     => 'required|in:Saham,Pendapatan Tetap,Campuran,Pasar Uang',
+            'jenis_reksa_dana'     => 'required|in:Saham,Pendapatan Tetap,Campuran,Pasar Uang,Terproteksi,Global,DIRE-DINFRA,Penyertaan terbatas',
             'total_aum'            => 'nullable|numeric|min:0',
             'total_marcap_10_efek' => 'nullable|numeric|min:0',
             'input_mode'           => 'required|in:manual,excel,pdf,ai,ai-plus,link-website',
@@ -400,7 +400,7 @@ class AnalisaController extends Controller
                 'user_id'              => auth()->id(),
                 'nama_reksa_dana'      => $request->nama_reksa_dana,
                 'jenis_reksa_dana'     => $request->jenis_reksa_dana,
-                'kategori'             => $request->kategori,
+                'kategori'             => $request->kategori ?? [],
                 'total_aum'            => $request->total_aum,
                 'total_marcap_10_efek' => $request->total_marcap_10_efek,
                 'status'               => 'submitted',
@@ -438,7 +438,7 @@ class AnalisaController extends Controller
                 'user_id'              => auth()->id(),
                 'nama_reksa_dana'      => $request->nama_reksa_dana,
                 'jenis_reksa_dana'     => $request->jenis_reksa_dana,
-                'kategori'             => $request->kategori,
+                'kategori'             => $request->kategori ?? [],
                 'total_aum'            => $request->total_aum,
                 'total_marcap_10_efek' => $request->total_marcap_10_efek,
                 'status'               => 'submitted',
@@ -522,8 +522,9 @@ class AnalisaController extends Controller
 
         $request->validate([
             'nama_reksa_dana'      => 'required|string|max:255',
-            'jenis_reksa_dana'     => 'required|in:Saham,Pendapatan Tetap,Campuran,Pasar Uang',
-            'kategori'             => 'nullable|in:Terproteksi,global,DIRE-DINFRA,Penyertaan terbatas,Konvensional,Syariah,index,ETF',
+            'jenis_reksa_dana'     => 'required|in:Saham,Pendapatan Tetap,Campuran,Pasar Uang,Terproteksi,Global,DIRE-DINFRA,Penyertaan terbatas',
+            'kategori'             => 'nullable|array',
+            'kategori.*'           => 'in:Konvensional,Syariah,index,ETF',
             'total_aum'            => 'nullable|numeric|min:0',
             'total_marcap_10_efek' => 'nullable|numeric|min:0',
         ]);
@@ -532,7 +533,7 @@ class AnalisaController extends Controller
             $analisa->update([
                 'nama_reksa_dana'      => $request->nama_reksa_dana,
                 'jenis_reksa_dana'     => $request->jenis_reksa_dana,
-                'kategori'             => $request->kategori,
+                'kategori'             => $request->kategori ?? [],
                 'total_aum'            => $request->total_aum,
                 'total_marcap_10_efek' => $request->total_marcap_10_efek,
             ]);

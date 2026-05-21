@@ -41,10 +41,24 @@
 
         {{-- Filter Jenis --}}
         <div class="px-6 py-3 border-b border-line flex gap-2 text-xs flex-wrap">
-            @foreach(['', 'Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang'] as $j)
-            <a href="{{ route('admin.reksa-dana.index', $j ? ['jenis' => $j] : []) }}"
+            @foreach(['', 'Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang', 'Terproteksi', 'Global', 'DIRE-DINFRA', 'Penyertaan terbatas'] as $j)
+            <a href="{{ route('admin.reksa-dana.index', array_filter(['jenis' => $j ?: null, 'kategori' => request('kategori')])) }}"
                class="px-3 py-1.5 rounded-lg border transition {{ request('jenis') === $j || (!request('jenis') && $j === '') ? 'bg-primary text-white border-primary' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
-                {{ $j ?: 'Semua' }}
+                {{ $j ?: 'Semua Jenis' }}
+            </a>
+            @endforeach
+        </div>
+
+        {{-- Filter Kategori --}}
+        <div class="px-6 py-3 border-b border-line flex gap-2 text-xs flex-wrap">
+            <a href="{{ route('admin.reksa-dana.index', array_filter(['jenis' => request('jenis')])) }}"
+               class="px-3 py-1.5 rounded-lg border transition {{ !request('kategori') ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
+                Semua Kategori
+            </a>
+            @foreach(['Konvensional', 'Syariah', 'index', 'ETF'] as $k)
+            <a href="{{ route('admin.reksa-dana.index', array_filter(['jenis' => request('jenis'), 'kategori' => $k])) }}"
+               class="px-3 py-1.5 rounded-lg border transition {{ request('kategori') === $k ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
+                {{ $k }}
             </a>
             @endforeach
         </div>
@@ -95,7 +109,17 @@
                             @endphp
                             <span class="px-2 py-0.5 rounded-full text-xs font-semibold {{ $jenisColor }}">{{ $rd->jenis_reksa_dana }}</span>
                         </td>
-                        <td class="px-4 py-3.5 text-muted text-xs">{{ $rd->kategori ?? '—' }}</td>
+                        <td class="px-4 py-3.5 text-muted text-xs">
+                            @if($rd->kategori)
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach((array)$rd->kategori as $kat)
+                                        <span class="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{{ $kat }}</span>
+                                    @endforeach
+                                </div>
+                            @else
+                                —
+                            @endif
+                        </td>
                         <td class="px-4 py-3.5 text-muted text-xs">{{ $rd->mata_uang ?? 'IDR' }}</td>
                         <td class="px-4 py-3.5 text-right text-xs text-muted">
                             {{ $rd->total_aum ? 'Rp ' . number_format($rd->total_aum, 0, ',', '.') : '—' }}

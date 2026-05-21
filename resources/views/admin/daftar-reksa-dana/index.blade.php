@@ -109,7 +109,7 @@
 
             {{-- Filter Jenis --}}
             <div class="px-6 py-3 border-b border-line flex gap-2 text-xs flex-wrap">
-                @foreach (['', 'Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang'] as $j)
+                @foreach (['', 'Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang', 'Terproteksi', 'Global', 'DIRE-DINFRA', 'Penyertaan terbatas'] as $j)
                     <a href="{{ route('admin.daftar-reksa-dana.index', array_merge(request()->except('jenis', 'harga_page'), ['tab' => 'harga'], $j ? ['jenis' => $j] : [])) }}"
                         class="px-3 py-1.5 rounded-lg border transition {{ request('jenis') === $j || (!request('jenis') && $j === '') ? 'bg-primary text-white border-primary' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
                         {{ $j ?: 'Semua' }}

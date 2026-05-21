@@ -10,6 +10,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(AiPromptSeeder::class);
+        $this->call(ScoreClassificationSeeder::class);
 
         User::factory()->create([
             'name' => 'Admin',

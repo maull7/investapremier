@@ -77,7 +77,17 @@
                         @endphp
                         <span class="px-2 py-0.5 rounded-full text-xs font-semibold {{ $jenisColor }}">{{ $rd->jenis_reksa_dana }}</span>
                     </td>
-                    <td class="px-5 py-3.5 text-muted text-xs">{{ $rd->kategori ?? '—' }}</td>
+                    <td class="px-5 py-3.5 text-muted text-xs">
+                        @if($rd->kategori)
+                            <div class="flex flex-wrap gap-1">
+                                @foreach((array)$rd->kategori as $kat)
+                                    <span class="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{{ $kat }}</span>
+                                @endforeach
+                            </div>
+                        @else
+                            —
+                        @endif
+                    </td>
                     <td class="px-5 py-3.5 text-muted text-xs">{{ $rd->mata_uang ?? 'IDR' }}</td>
                     <td class="px-5 py-3.5 text-right text-xs text-muted">
                         {{ $rd->total_aum ? 'Rp ' . number_format($rd->total_aum, 0, ',', '.') : '—' }}

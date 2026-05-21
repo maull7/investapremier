@@ -47,7 +47,7 @@
                             class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm"
                             x-bind:required="mode !== 'link-website'">
                             <option value="">Pilih Jenis</option>
-                            @foreach (['Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang'] as $j)
+                            @foreach (['Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang', 'Terproteksi', 'Global', 'DIRE-DINFRA', 'Penyertaan terbatas'] as $j)
                                 <option value="{{ $j }}" {{ old('jenis_reksa_dana') === $j ? 'selected' : '' }}>
                                     {{ $j }}</option>
                             @endforeach
@@ -55,14 +55,17 @@
                         <x-input-error :messages="$errors->get('jenis_reksa_dana')" class="mt-1" />
                     </div>
                     <div>
-                        <x-input-label for="kategori" value="Kategori" />
-                        <select id="kategori" name="kategori"
-                            class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
-                            <option value="">Pilih Kategori</option>
-                            @foreach (['Terproteksi','global','DIRE-DINFRA','Penyertaan terbatas','Konvensional','Syariah','index','ETF'] as $k)
-                                <option value="{{ $k }}" {{ old('kategori') === $k ? 'selected' : '' }}>{{ $k }}</option>
+                        <x-input-label value="Kategori" />
+                        <div class="mt-1 flex flex-wrap gap-3">
+                            @foreach (['Konvensional', 'Syariah', 'index', 'ETF'] as $k)
+                                <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+                                    <input type="checkbox" name="kategori[]" value="{{ $k }}"
+                                        {{ in_array($k, old('kategori', [])) ? 'checked' : '' }}
+                                        class="rounded border-gray-300 text-primary focus:ring-primary/20">
+                                    {{ $k }}
+                                </label>
                             @endforeach
-                        </select>
+                        </div>
                         <x-input-error :messages="$errors->get('kategori')" class="mt-1" />
                     </div>
 

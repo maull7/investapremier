@@ -7,8 +7,8 @@ use Illuminate\Http\Request;
 
 class ReksaDanaController extends Controller
 {
-    private const JENIS_OPTIONS = ['Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang'];
-    private const KATEGORI_OPTIONS = ['Terproteksi', 'global', 'DIRE-DINFRA', 'Penyertaan terbatas', 'Konvensional', 'Syariah', 'index', 'ETF'];
+    private const JENIS_OPTIONS = ['Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang', 'Terproteksi', 'Global', 'DIRE-DINFRA', 'Penyertaan terbatas'];
+    private const KATEGORI_OPTIONS = ['Konvensional', 'Syariah', 'index', 'ETF'];
 
     public function index(Request $request)
     {
@@ -19,7 +19,7 @@ class ReksaDanaController extends Controller
         }
 
         if ($request->kategori) {
-            $query->where('kategori', $request->kategori);
+            $query->whereJsonContains('kategori', $request->kategori);
         }
 
         $reksaDanas = $query->orderBy('nama_reksa_dana')->paginate(20)->withQueryString();
@@ -56,17 +56,18 @@ class ReksaDanaController extends Controller
         $request->validate([
             'nama_reksa_dana'      => 'required|string|max:255',
             'jenis_reksa_dana'     => 'required|in:' . implode(',', self::JENIS_OPTIONS),
-            'kategori'             => 'nullable|in:' . implode(',', self::KATEGORI_OPTIONS),
+            'kategori'             => 'nullable|array',
+            'kategori.*'           => 'in:Konvensional,Syariah,index,ETF',
             'mata_uang'            => 'nullable|string|max:10',
             'total_aum'            => 'nullable|numeric|min:0',
             'total_marcap_10_efek' => 'nullable|numeric|min:0',
         ]);
 
         \Illuminate\Support\Facades\DB::transaction(function () use ($request, $reksaDana) {
-            $reksaDana->update($request->only([
-                'nama_reksa_dana', 'jenis_reksa_dana', 'kategori', 'mata_uang',
-                'total_aum', 'total_marcap_10_efek',
-            ]));
+            $reksaDana->update(array_merge(
+                $request->only(['nama_reksa_dana', 'jenis_reksa_dana', 'mata_uang', 'total_aum', 'total_marcap_10_efek']),
+                ['kategori' => $request->kategori ?? []]
+            ));
 
             $sektor   = collect($request->sektor ?? [])->filter(fn($r) => !empty($r['nama_sektor']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
             $efek     = collect($request->efek ?? [])->filter(fn($r) => !empty($r['kode_efek']) && !empty($r['nama_efek']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();

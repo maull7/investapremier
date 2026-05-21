@@ -19,6 +19,7 @@ class AnalisaReksaDana extends Model
     protected $casts = [
         'ai_output'      => 'array',
         'ai_output_plus' => 'array',
+        'kategori'       => 'array',
     ];
 
     public function user(): BelongsTo

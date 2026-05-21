@@ -18,6 +18,10 @@ class AnalisaController extends Controller
             $query->where('status', $request->status);
         }
 
+        if ($request->kategori) {
+            $query->whereJsonContains('kategori', $request->kategori);
+        }
+
         $analisas = $query->paginate(20);
 
         return view('admin.analisa.index', compact('analisas'));
@@ -63,5 +67,16 @@ class AnalisaController extends Controller
         ]);
 
         return back()->with('success', 'Data analisa telah ditandai sebagai reviewed.');
+    }
+
+    public function destroy(AnalisaReksaDana $analisa)
+    {
+        if ($analisa->pdf_path && Storage::disk('public')->exists($analisa->pdf_path)) {
+            Storage::disk('public')->delete($analisa->pdf_path);
+        }
+
+        $analisa->delete();
+
+        return redirect()->route('admin.analisa.index')->with('success', 'Data analisa berhasil dihapus.');
     }
 }

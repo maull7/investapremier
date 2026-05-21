@@ -18,7 +18,11 @@ class ReksaDanaController extends Controller
             $query->where('jenis_reksa_dana', $request->jenis);
         }
 
-        $reksaDanas = $query->paginate(20);
+        if ($request->kategori) {
+            $query->whereJsonContains('kategori', $request->kategori);
+        }
+
+        $reksaDanas = $query->paginate(20)->withQueryString();
 
         return view('admin.reksa-dana.index', compact('reksaDanas'));
     }
