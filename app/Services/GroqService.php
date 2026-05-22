@@ -260,31 +260,31 @@ PROMPT,
 
         $lines[] = "";
         $lines[] = "NERACA (Balance Sheet)";
-        $lines[] = "Total Aset: {$fmt($data['total_asset'])}";
-        $lines[] = "  - Aset Lancar: {$fmt($data['current_asset'])}";
-        $lines[] = "    - Kas & Setara Kas: {$fmt($data['cash_equivalents'])}";
-        $lines[] = "    - Piutang Usaha: {$fmt($data['account_receivable'])}";
-        $lines[] = "    - Persediaan: {$fmt($data['inventories'])}";
-        $lines[] = "  - Aset Tidak Lancar: {$fmt($data['fixed_asset'])}";
-        $lines[] = "Total Liabilitas: {$fmt($data['total_liabilities'])}";
-        $lines[] = "  - Liabilitas Jangka Pendek: {$fmt($data['current_liabilities'])}";
-        $lines[] = "  - Liabilitas Jangka Panjang: {$fmt($data['long_term_loans'])}";
-        $lines[] = "Total Ekuitas: {$fmt($data['equity'])}";
+        $lines[] = "Total Aset: {$fmt($data['total_asset'] ?? null)}";
+        $lines[] = "  - Aset Lancar: {$fmt($data['current_asset'] ?? null)}";
+        $lines[] = "    - Kas & Setara Kas: {$fmt($data['cash_equivalents'] ?? null)}";
+        $lines[] = "    - Piutang Usaha: {$fmt($data['account_receivable'] ?? null)}";
+        $lines[] = "    - Persediaan: {$fmt($data['inventories'] ?? null)}";
+        $lines[] = "  - Aset Tidak Lancar: {$fmt($data['fixed_asset'] ?? null)}";
+        $lines[] = "Total Liabilitas: {$fmt($data['total_liabilities'] ?? null)}";
+        $lines[] = "  - Liabilitas Jangka Pendek: {$fmt($data['current_liabilities'] ?? null)}";
+        $lines[] = "  - Liabilitas Jangka Panjang: {$fmt($data['long_term_loans'] ?? null)}";
+        $lines[] = "Total Ekuitas: {$fmt($data['equity'] ?? null)}";
 
         $lines[] = "";
         $lines[] = "LABA RUGI (Income Statement)";
-        $lines[] = "Pendapatan Bersih: {$fmt($data['net_revenue'])}";
-        $lines[] = "Laba Kotor: {$fmt($data['gross_income'])}";
-        $lines[] = "EBIT: {$fmt($data['ebit'])}";
-        $lines[] = "EBITDA: {$fmt($data['ebitda'])}";
-        $lines[] = "Beban Bunga: {$fmt($data['interest_expense'])}";
-        $lines[] = "Laba Bersih: {$fmt($data['net_income'])}";
+        $lines[] = "Pendapatan Bersih: {$fmt($data['net_revenue'] ?? null)}";
+        $lines[] = "Laba Kotor: {$fmt($data['gross_income'] ?? null)}";
+        $lines[] = "EBIT: {$fmt($data['ebit'] ?? null)}";
+        $lines[] = "EBITDA: {$fmt($data['ebitda'] ?? null)}";
+        $lines[] = "Beban Bunga: {$fmt($data['interest_expense'] ?? null)}";
+        $lines[] = "Laba Bersih: {$fmt($data['net_income'] ?? null)}";
 
         $lines[] = "";
         $lines[] = "ARUS KAS";
-        $lines[] = "Operasional: {$fmt($data['cash_flows_operating_activities'])}";
-        $lines[] = "Investasi: {$fmt($data['cash_flows_investment'])}";
-        $lines[] = "Pendanaan: {$fmt($data['cash_flows_financing'])}";
+        $lines[] = "Operasional: {$fmt($data['cash_flows_operating_activities'] ?? null)}";
+        $lines[] = "Investasi: {$fmt($data['cash_flows_investment'] ?? null)}";
+        $lines[] = "Pendanaan: {$fmt($data['cash_flows_financing'] ?? null)}";
 
         $dataSection = implode("\n", $lines);
 
@@ -520,31 +520,29 @@ DEFAULT);
 
         $lines[] = "";
         $lines[] = "NERACA (Balance Sheet)";
-        $lines[] = "Total Aset: {$fmt($data['total_asset'])}";
-        $lines[] = "  - Aset Lancar: {$fmt($data['current_asset'])}";
-        $lines[] = "    - Kas & Setara Kas: {$fmt($data['cash_equivalents'])}";
-        $lines[] = "    - Piutang Usaha: {$fmt($data['account_receivable'])}";
-        $lines[] = "    - Persediaan: {$fmt($data['inventories'])}";
-        $lines[] = "  - Aset Tidak Lancar: {$fmt($data['fixed_asset'])}";
-        $lines[] = "Total Liabilitas: {$fmt($data['total_liabilities'])}";
-        $lines[] = "  - Liabilitas Jangka Pendek: {$fmt($data['current_liabilities'])}";
-        $lines[] = "  - Liabilitas Jangka Panjang: {$fmt($data['long_term_loans'])}";
-        $lines[] = "Total Ekuitas: {$fmt($data['equity'])}";
-
+        $lines[] = "Total Aset: {$fmt($data['total_asset'] ?? null)}";
+        $lines[] = "  - Aset Lancar: {$fmt($data['current_asset'] ?? null)}";
+        $lines[] = "    - Kas & Setara Kas: {$fmt($data['cash_equivalents'] ?? null)}";
+        $lines[] = "    - Piutang Usaha: {$fmt($data['account_receivable'] ?? null)}";
+        $lines[] = "    - Persediaan: {$fmt($data['inventories'] ?? null)}";
+        $lines[] = "  - Aset Tidak Lancar: {$fmt($data['fixed_asset'] ?? null)}";
+        $lines[] = "Total Liabilitas: {$fmt($data['total_liabilities'] ?? null)}";
+        $lines[] = "  - Liabilitas Jangka Pendek: {$fmt($data['current_liabilities'] ?? null)}";
+        $lines[] = "  - Liabilitas Jangka Panjang: {$fmt($data['long_term_loans'] ?? null)}";
+        $lines[] = "Total Ekuitas: {$fmt($data['equity'] ?? null)}";
         $lines[] = "";
         $lines[] = "LABA RUGI (Income Statement)";
-        $lines[] = "Pendapatan Bersih: {$fmt($data['net_revenue'])}";
-        $lines[] = "Laba Kotor: {$fmt($data['gross_income'])}";
-        $lines[] = "EBIT: {$fmt($data['ebit'])}";
-        $lines[] = "EBITDA: {$fmt($data['ebitda'])}";
-        $lines[] = "Beban Bunga: {$fmt($data['interest_expense'])}";
-        $lines[] = "Laba Bersih: {$fmt($data['net_income'])}";
-
+        $lines[] = "Pendapatan Bersih: {$fmt($data['net_revenue'] ?? null)}";
+        $lines[] = "Laba Kotor: {$fmt($data['gross_income'] ?? null)}";
+        $lines[] = "EBIT: {$fmt($data['ebit'] ?? null)}";
+        $lines[] = "EBITDA: {$fmt($data['ebitda'] ?? null)}";
+        $lines[] = "Beban Bunga: {$fmt($data['interest_expense'] ?? null)}";
+        $lines[] = "Laba Bersih: {$fmt($data['net_income'] ?? null)}";
         $lines[] = "";
         $lines[] = "ARUS KAS";
-        $lines[] = "Operasional: {$fmt($data['cash_flows_operating_activities'])}";
-        $lines[] = "Investasi: {$fmt($data['cash_flows_investment'])}";
-        $lines[] = "Pendanaan: {$fmt($data['cash_flows_financing'])}";
+        $lines[] = "Operasional: {$fmt($data['cash_flows_operating_activities'] ?? null)}";
+        $lines[] = "Investasi: {$fmt($data['cash_flows_investment'] ?? null)}";
+        $lines[] = "Pendanaan: {$fmt($data['cash_flows_financing'] ?? null)}";
 
         $dataSection = implode("\n", $lines);
 

@@ -58,6 +58,7 @@ class MonitorAnalisaObligasiController extends AnalisaLapkeuController
             'downloadRoute' => $this->routePrefix() . '.download-lapkeu',
             'reviewRoute' => $this->routePrefix() . '.review',
             'destroyRoute' => $this->routePrefix() . '.destroy',
+            'checkAiStatusRoute' => $this->routePrefix() . '.check-ai-status',
         ]);
     }
 

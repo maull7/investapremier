@@ -1,7 +1,36 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="space-y-6" x-data="{ activeTab: 'data' }">
+<div class="space-y-6" x-data="{
+    activeTab: 'data',
+    aiReady: {{ ($analisa->ai_output ?? false) ? 'true' : 'false' }},
+    aiPlusReady: {{ ($analisa->ai_output_plus ?? false) ? 'true' : 'false' }},
+    aiLoading: {{ ($analisa->ai_output ?? false) ? 'false' : 'true' }},
+    aiPlusLoading: {{ ($analisa->ai_output_plus ?? false) ? 'false' : 'true' }},
+    pollCount: 0,
+    maxPolls: 30,
+    init() {
+        if (this.aiLoading || this.aiPlusLoading) {
+            this.pollAiStatus();
+        }
+    },
+    pollAiStatus() {
+        if (this.pollCount >= this.maxPolls) return;
+        this.pollCount++;
+        fetch('{{ route($checkAiStatusRoute, $analisa) }}')
+            .then(r => r.json())
+            .then(d => {
+                if (d.ai_ready || d.ai_error) window.location.reload();
+                if (d.ai_plus_ready || d.ai_plus_error) window.location.reload();
+                if ((this.aiLoading || this.aiPlusLoading) && this.pollCount < this.maxPolls) {
+                    setTimeout(() => this.pollAiStatus(), 3000);
+                }
+            })
+            .catch(() => {
+                if (this.pollCount < this.maxPolls) setTimeout(() => this.pollAiStatus(), 5000);
+            });
+    }
+}">
     {{-- Header --}}
     <div class="flex items-start justify-between flex-wrap gap-4">
         <div>

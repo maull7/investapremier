@@ -181,7 +181,7 @@
         <div class="flex items-center justify-end gap-3">
             <a href="{{ $cancelRoute }}" class="px-4 py-2 text-sm text-muted border border-line rounded-lg hover:bg-[#f1f5f9] transition">Batal</a>
             <button type="submit" class="px-6 py-2 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 transition">
-                Submit Analisa
+                Submit & Analisa
             </button>
         </div>
     </form>

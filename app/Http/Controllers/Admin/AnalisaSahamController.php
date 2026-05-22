@@ -24,6 +24,7 @@ class AnalisaSahamController extends BaseAnalisaSahamController
             'downloadRoute'=> $this->routePrefix() . '.download-lapkeu',
             'reviewRoute'  => $this->routePrefix() . '.review',
             'destroyRoute' => $this->routePrefix() . '.destroy',
+            'checkAiStatusRoute' => $this->routePrefix() . '.check-ai-status',
         ]);
     }
 
@@ -57,22 +58,10 @@ class AnalisaSahamController extends BaseAnalisaSahamController
         $model = $this->getModel();
         $analisa = $model::create($data);
 
-        if ($request->filled('ai_narasi') && $request->filled('ai_output')) {
-            $analisa->update([
-                'ai_narasi' => $request->ai_narasi,
-                'ai_output' => json_decode($request->ai_output, true) ?: [],
-            ]);
-        }
+        $this->persistLapkeuAiFromRequest($request, $analisa);
 
-        if ($request->filled('ai_narasi_plus') && $request->filled('ai_output_plus')) {
-            $analisa->update([
-                'ai_narasi_plus' => $request->ai_narasi_plus,
-                'ai_output_plus' => json_decode($request->ai_output_plus, true) ?: [],
-            ]);
-        }
-
-        return redirect()->route($this->indexRouteName())
-            ->with('success', 'Data analisa saham berhasil disimpan.');
+        return redirect()->route($this->routePrefix() . '.show', $analisa->id)
+            ->with('success', 'Data analisa saham berhasil disimpan. Analisa AI sedang diproses.');
     }
 
     public function destroy($id)
