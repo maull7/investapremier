@@ -415,6 +415,7 @@ DEFAULT);
     {
         $data = $this->buildDataSection($analisa);
         $instruksiKey = $productType === 'unit_link' ? 'instruksi_analisa_unit_link' : 'instruksi_analisa';
+        $instruksi = \App\Models\AiPrompt::get($instruksiKey, <<<DEFAULT
 Berdasarkan data di atas, buatkan analisa dalam format JSON dengan struktur EXACT berikut (jangan tambah atau kurangi field):
 {
   "ringkasan_utama": "Ringkasan kinerja keseluruhan dalam 2-3 paragraf, mencakup return, komposisi sektor, dan posisi portfolio secara umum",
