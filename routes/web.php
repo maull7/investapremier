@@ -298,6 +298,12 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::resource('/perencanaan-investasi', PerencanaanInvestasiController::class)->except(['show']);
     Route::get('/perencanaan-investasi/{perencanaan_investasi}', [PerencanaanInvestasiController::class, 'show'])->name('perencanaan-investasi.show');
     Route::post('/perencanaan-investasi/{perencanaan_investasi}/regenerate-ai', [PerencanaanInvestasiController::class, 'regenerateAi'])->name('perencanaan-investasi.regenerate-ai');
+
+    // Portofolio AJAX
+    Route::get('/portofolio/produk', [PerencanaanInvestasiController::class, 'getProduk'])->name('portofolio.produk');
+    Route::get('/portofolio/harga', [PerencanaanInvestasiController::class, 'getHarga'])->name('portofolio.harga');
+    Route::get('/portofolio/grafik', [PerencanaanInvestasiController::class, 'getGrafik'])->name('portofolio.grafik');
+    Route::get('/portofolio/rekomendasi', [PerencanaanInvestasiController::class, 'getRekomendasi'])->name('portofolio.rekomendasi');
 });
 
 Route::middleware(['auth', 'verified'])->prefix('quiz')->name('quiz.')->group(function () {
