@@ -74,8 +74,9 @@
                 </a>
             </div>
             <div class="p-5">
-                <p class="text-xs text-muted mb-3">Kolom: <code class="bg-[#f1f5f9] px-1 rounded">nama_reksa_dana |
-                        nama_manajer_investasi | jenis | kategori | mata_uang | nab_per_unit | tanggal_nab</code></p>
+                <p class="text-xs text-muted mb-3">Kolom: <code class="bg-[#f1f5f9] px-1 rounded">kode_reksa_dana (opsional) |
+                        nama_reksa_dana | nama_manajer_investasi | jenis | kategori | kategori_produk (Konvensional/Syariah/Index/ETF) | mata_uang | nab_per_unit | tanggal_nab</code>
+                    — jika kode dikosongkan, akan digenerate otomatis dari kode MI + jenis + kategori produk.</p>
                 <form method="POST" action="{{ route('admin.daftar-reksa-dana.upload-harga') }}"
                     enctype="multipart/form-data">
                     @csrf
@@ -121,9 +122,11 @@
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide">
+                            <th class="px-4 py-3.5 font-semibold">Kode</th>
                             <th class="px-4 py-3.5 font-semibold">Nama Reksa Dana</th>
                             <th class="px-4 py-3.5 font-semibold">Manajer Investasi</th>
                             <th class="px-4 py-3.5 font-semibold">Jenis</th>
+                            <th class="px-4 py-3.5 font-semibold">Kategori Produk</th>
                             <th class="px-4 py-3.5 font-semibold">Kategori</th>
                             <th class="px-4 py-3.5 font-semibold">Mata Uang</th>
                             <th class="px-4 py-3.5 font-semibold text-right">NAB/UP</th>
@@ -133,6 +136,7 @@
                     <tbody class="divide-y divide-line">
                         @forelse($reksaDanas as $rd)
                             <tr class="hover:bg-[#f8fafc] transition-colors">
+                                <td class="px-4 py-3.5 font-mono text-xs text-muted">{{ $rd->kode_reksa_dana ?? '—' }}</td>
                                 <td class="px-4 py-3.5 font-semibold text-primary">{{ $rd->nama_reksa_dana }}</td>
                                 <td class="px-4 py-3.5 text-muted text-xs">{{ $rd->nama_manajer_investasi }}</td>
                                 <td class="px-4 py-3.5">
@@ -146,6 +150,22 @@
                                     @endphp
                                     <span
                                         class="px-2 py-0.5 rounded-full text-xs font-semibold {{ $jenisColor }}">{{ $rd->jenis }}</span>
+                                </td>
+                                <td class="px-4 py-3.5">
+                                    @if($rd->kategori_produk)
+                                        @php
+                                            $kpColor = match ($rd->kategori_produk) {
+                                                'Konvensional' => 'bg-green-100 text-green-700',
+                                                'Syariah' => 'bg-emerald-100 text-emerald-700',
+                                                'Index' => 'bg-blue-100 text-blue-700',
+                                                'ETF' => 'bg-purple-100 text-purple-700',
+                                                default => 'bg-gray-100 text-gray-700',
+                                            };
+                                        @endphp
+                                        <span class="px-2 py-0.5 rounded-full text-xs font-semibold {{ $kpColor }}">{{ $rd->kategori_produk }}</span>
+                                    @else
+                                        <span class="text-xs text-muted">—</span>
+                                    @endif
                                 </td>
                                 <td class="px-4 py-3.5 text-xs text-muted">
                                     @if (is_array($rd->kategori) && count($rd->kategori))
@@ -169,7 +189,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-6 py-12 text-center text-muted">
+                                <td colspan="9" class="px-6 py-12 text-center text-muted">
                                     <p class="font-medium">Belum ada data</p>
                                     <p class="text-xs mt-1">Upload file excel menggunakan form di atas</p>
                                 </td>

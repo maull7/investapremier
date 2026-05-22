@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class InvestmentManager extends Model
 {
-    protected $fillable = ['name'];
+    protected $fillable = ['name', 'kode_mi'];
 
     public function periods()
     {

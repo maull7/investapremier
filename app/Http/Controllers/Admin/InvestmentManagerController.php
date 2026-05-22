@@ -35,10 +35,11 @@ class InvestmentManagerController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255|unique:investment_managers,name',
+            'name'    => 'required|string|max:255|unique:investment_managers,name',
+            'kode_mi' => 'nullable|string|max:10|unique:investment_managers,kode_mi',
         ]);
 
-        InvestmentManager::create($request->only('name'));
+        InvestmentManager::create($request->only('name', 'kode_mi'));
 
         return redirect()->route('admin.investment-managers.index')
             ->with('success', 'Manajer investasi berhasil ditambahkan.');
@@ -53,10 +54,11 @@ class InvestmentManagerController extends Controller
     public function update(Request $request, InvestmentManager $investmentManager)
     {
         $request->validate([
-            'name' => 'required|string|max:255|unique:investment_managers,name,' . $investmentManager->id,
+            'name'    => 'required|string|max:255|unique:investment_managers,name,' . $investmentManager->id,
+            'kode_mi' => 'nullable|string|max:10|unique:investment_managers,kode_mi,' . $investmentManager->id,
         ]);
 
-        $investmentManager->update($request->only('name'));
+        $investmentManager->update($request->only('name', 'kode_mi'));
 
         $periods = $request->input('periods', []);
         foreach ($periods as $periodId => $data) {

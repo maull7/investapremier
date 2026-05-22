@@ -3,6 +3,8 @@
 namespace App\Imports;
 
 use App\Models\ReksaDana;
+use App\Models\InvestmentManager;
+use App\Services\KodeGeneratorService;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
@@ -29,16 +31,55 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows
             }
         }
 
-        return ReksaDana::updateOrCreate(
-            ['nama_reksa_dana' => trim($row['nama_reksa_dana'])],
-            [
+        $nama = trim($row['nama_reksa_dana']);
+        $existing = ReksaDana::where('nama_reksa_dana', $nama)->first();
+
+        if ($existing) {
+            $existing->update([
                 'nama_manajer_investasi' => trim($row['nama_manajer_investasi'] ?? ''),
                 'jenis'                  => trim($row['jenis'] ?? ''),
                 'kategori'               => array_filter($kategori),
                 'mata_uang'              => strtoupper(trim($row['mata_uang'] ?? 'IDR')),
                 'nab_per_unit'           => $row['nab_per_unit'] ?? null,
                 'tanggal_nab'            => $tanggal,
-            ]
+            ]);
+            return $existing;
+        }
+
+        $kategoriProduk = trim($row['kategori_produk'] ?? '');
+        $data = [
+            'nama_manajer_investasi' => trim($row['nama_manajer_investasi'] ?? ''),
+            'jenis'                  => trim($row['jenis'] ?? ''),
+            'kategori'               => array_filter($kategori),
+            'kategori_produk'        => $kategoriProduk ?: null,
+            'mata_uang'              => strtoupper(trim($row['mata_uang'] ?? 'IDR')),
+            'nab_per_unit'           => $row['nab_per_unit'] ?? null,
+            'tanggal_nab'            => $tanggal,
+        ];
+
+        if (!empty($row['kode_reksa_dana'])) {
+            $data['kode_reksa_dana'] = trim($row['kode_reksa_dana']);
+        } else {
+            $data['kode_reksa_dana'] = $this->generateKodeReksaDana($data);
+        }
+
+        return ReksaDana::create(array_merge(['nama_reksa_dana' => $nama], $data));
+    }
+
+    private function generateKodeReksaDana(array $data): ?string
+    {
+        if (empty($data['nama_manajer_investasi']) || empty($data['jenis'])) return null;
+
+        $manager = InvestmentManager::where('name', $data['nama_manajer_investasi'])
+            ->whereNotNull('kode_mi')
+            ->first();
+
+        if (!$manager || !$manager->kode_mi) return null;
+
+        return app(KodeGeneratorService::class)->generateKodeReksaDana(
+            $manager->kode_mi,
+            $data['jenis'],
+            $data['kategori_produk'] ?? null
         );
     }
 }

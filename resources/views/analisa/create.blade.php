@@ -614,6 +614,43 @@
                             .finally(() => { this.aiLoading = false; });
                     },
 
+                    msgPlusIncomplete: 'Lengkapi data sektor/efek di tab Input Manual terlebih dahulu.',
+
+                    isPlusManualReady() {
+                        return (this.plusRequiredLabels?.aum ? String(this.total_aum || document.getElementById('total_aum')?.value || '').trim() !== '' : true)
+                            && (this.plusRequiredLabels?.marcap ? String(this.total_marcap_10_efek || document.getElementById('total_marcap_10_efek')?.value || '').trim() !== '' : true)
+                            && this.sektor.some(r => String(r.nama_sektor || '').trim() !== '' && r.bobot !== '' && r.bobot != null)
+                            && this.efek.some(r => String(r.kode_efek || '').trim() !== '' && String(r.nama_efek || '').trim() !== '' && r.bobot !== '' && r.bobot != null)
+                            && this.kinerja.filter(r => String(r.periode || '').trim() !== '' && r.return_pct !== '' && r.return_pct != null).length >= 2;
+                    },
+
+                    plusMissingList() {
+                        const missing = [];
+                        if (this.plusRequiredLabels?.aum) {
+                            const v = String(this.total_aum || document.getElementById('total_aum')?.value || '').trim();
+                            if (!v) missing.push(this.plusRequiredLabels.aum);
+                        }
+                        if (this.plusRequiredLabels?.marcap) {
+                            const v = String(this.total_marcap_10_efek || document.getElementById('total_marcap_10_efek')?.value || '').trim();
+                            if (!v) missing.push(this.plusRequiredLabels.marcap);
+                        }
+                        if (this.plusRequiredLabels?.sektor && !this.sektor.some(r => String(r.nama_sektor || '').trim() !== '' && r.bobot !== '' && r.bobot != null)) {
+                            missing.push(this.plusRequiredLabels.sektor);
+                        }
+                        if (this.plusRequiredLabels?.efek && !this.efek.some(r => String(r.kode_efek || '').trim() !== '' && String(r.nama_efek || '').trim() !== '' && r.bobot !== '' && r.bobot != null)) {
+                            missing.push(this.plusRequiredLabels.efek);
+                        }
+                        if (this.plusRequiredLabels?.kinerja && this.kinerja.filter(r => String(r.periode || '').trim() !== '' && r.return_pct !== '' && r.return_pct != null).length < 2) {
+                            missing.push(this.plusRequiredLabels.kinerja);
+                        }
+                        return missing;
+                    },
+
+                    plusIncompleteMessage() {
+                        const missing = this.plusMissingList();
+                        return 'Lengkapi data berikut: ' + missing.join(', ');
+                    },
+
                     validatePlusManualData() {
                         const hasSektor = this.sektor.some(r =>
                             String(r.nama_sektor || '').trim() !== '' && r.bobot !== '' && r.bobot != null

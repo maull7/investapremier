@@ -35,7 +35,16 @@ class InvestmentManagerImport implements ToCollection, WithHeadingRow, WithCalcu
             $name = trim($row['nama_investment_manager'] ?? $row['name'] ?? $row['nama'] ?? '');
             if (empty($name)) continue;
 
-            $manager = InvestmentManager::firstOrCreate(['name' => $name]);
+            $kodeMi = trim($row['kode_mi'] ?? $row['kode'] ?? '');
+
+            $manager = InvestmentManager::firstOrCreate(
+                ['name' => $name],
+                ['kode_mi' => $kodeMi ?: null]
+            );
+
+            if ($kodeMi && !$manager->kode_mi) {
+                $manager->update(['kode_mi' => $kodeMi]);
+            }
 
             foreach ($periods as $date => $keys) {
                 $aum = $this->parseIdr($row[$keys['aum']] ?? null);

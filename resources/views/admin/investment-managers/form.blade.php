@@ -28,6 +28,17 @@
             <x-input-error :messages="$errors->get('name')" class="mt-1 text-xs" />
         </div>
 
+        <div>
+            <x-input-label value="Kode MI (dari KSEI)" class="text-sm font-semibold mb-1.5" />
+            <input type="text" name="kode_mi"
+                class="w-full px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent @error('kode_mi') border-red-400 @enderror"
+                placeholder="GR003 — 5 digit dari file KSEI"
+                maxlength="10"
+                value="{{ old('kode_mi', $manager->kode_mi ?? '') }}">
+            <x-input-error :messages="$errors->get('kode_mi')" class="mt-1 text-xs" />
+            <p class="text-xs text-muted mt-1">Kode Manajer Investasi dari KSEI (5 digit, contoh: GR003). Digunakan untuk generate kode Reksa Dana.</p>
+        </div>
+
         @if(isset($manager))
         <div>
             <div class="flex items-center justify-between mb-3">

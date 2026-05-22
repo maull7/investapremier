@@ -7,7 +7,8 @@
         reksaDanaOpen: {{ request()->routeIs('admin.reksa-dana.*') || request()->routeIs('admin.analisa-rd.*') || request()->routeIs('admin.analisa.*') ? 'true' : 'false' }},
         unitLinkOpen: {{ request()->routeIs('admin.unit-link.*') || request()->routeIs('admin.unit-link-ffs.*') || request()->routeIs('admin.analisa-ul.*') || request()->routeIs('admin.unit-link-analisa.*') ? 'true' : 'false' }},
         sahamOpen: {{ request()->routeIs('admin.saham.*') || request()->routeIs('admin.analisa-saham.*') ? 'true' : 'false' }},
-        obligasiOpen: {{ request()->routeIs('admin.obligasi.*') || request()->routeIs('admin.analisa-obligasi.*') ? 'true' : 'false' }}
+        obligasiOpen: {{ request()->routeIs('admin.obligasi.*') || request()->routeIs('admin.analisa-obligasi.*') ? 'true' : 'false' }},
+        menuAiPrompts: {{ request()->routeIs('admin.ai-prompts.*') ? 'true' : 'false' }}
     }" class="flex h-screen overflow-hidden">
         {{-- Overlay mobile --}}
         <div x-show="sidebarOpen" x-cloak @@click="sidebarOpen = false"
@@ -252,13 +253,41 @@
                     </svg>
                     Daftar Reksa Dana
                 </a>
-                <a href="{{ route('admin.ai-prompts.index') }}"
-                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.ai-prompts.*') ? 'bg-white/10 font-semibold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
-                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                    </svg>
-                    Edit Prompt AI
-                </a>
+                {{-- AI Prompts --}}
+                <div>
+                    <button type="button" @click="menuAiPrompts = !menuAiPrompts"
+                        class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.ai-prompts.*') ? 'bg-white/10 font-semibold' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
+                        <span class="flex items-center gap-3">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            AI Prompts
+                        </span>
+                        <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': menuAiPrompts }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div x-show="menuAiPrompts" x-transition class="space-y-1 pl-3">
+                        @php $aiGroups = \App\Models\AiPrompt::groups(); @endphp
+                        @forelse($aiGroups as $aiGroup)
+                            <a href="{{ route('admin.ai-prompts.group', $aiGroup) }}"
+                                class="flex items-center gap-3 px-3 py-2 rounded-lg {{ request()->routeIs('admin.ai-prompts.*') && request('group', request()->segment(4)) === $aiGroup ? 'bg-white/10 font-semibold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
+                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                                {{ ucfirst($aiGroup) }}
+                            </a>
+                        @empty
+                            <a href="{{ route('admin.ai-prompts.index') }}"
+                                class="flex items-center gap-3 px-3 py-2 rounded-lg text-white/70">
+                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                                Semua Prompt
+                            </a>
+                        @endforelse
+                    </div>
+                </div>
                 <a href="{{ route('profile.edit') }}"
                     class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('profile.*') ? 'bg-white/10 font-semibold' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

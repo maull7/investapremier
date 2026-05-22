@@ -203,7 +203,13 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
     // AI Prompts
     Route::get('ai-prompts', [App\Http\Controllers\Admin\AiPromptController::class, 'index'])->name('ai-prompts.index');
+    Route::get('ai-prompts/group/{group}', [App\Http\Controllers\Admin\AiPromptController::class, 'index'])->name('ai-prompts.group');
+    Route::get('ai-prompts/create', [App\Http\Controllers\Admin\AiPromptController::class, 'create'])->name('ai-prompts.create');
+    Route::post('ai-prompts', [App\Http\Controllers\Admin\AiPromptController::class, 'store'])->name('ai-prompts.store');
+    Route::get('ai-prompts/{key}/edit', [App\Http\Controllers\Admin\AiPromptController::class, 'edit'])->name('ai-prompts.edit');
     Route::put('ai-prompts/{key}', [App\Http\Controllers\Admin\AiPromptController::class, 'update'])->name('ai-prompts.update');
+    Route::put('ai-prompts/{key}/value', [App\Http\Controllers\Admin\AiPromptController::class, 'updateValue'])->name('ai-prompts.update-value');
+    Route::delete('ai-prompts/{key}', [App\Http\Controllers\Admin\AiPromptController::class, 'destroy'])->name('ai-prompts.destroy');
 });
 
 Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(function () {

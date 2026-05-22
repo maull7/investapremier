@@ -10,8 +10,8 @@ class ReksaDana extends Model
     protected $table = 'reksa_dana';
 
     protected $fillable = [
-        'nama_reksa_dana', 'nama_manajer_investasi', 'jenis',
-        'kategori', 'mata_uang', 'nab_per_unit', 'tanggal_nab',
+        'kode_reksa_dana', 'nama_reksa_dana', 'nama_manajer_investasi', 'jenis',
+        'kategori', 'kategori_produk', 'mata_uang', 'nab_per_unit', 'tanggal_nab',
     ];
 
     protected $casts = [
