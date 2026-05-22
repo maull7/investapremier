@@ -1,7 +1,67 @@
 @extends('layouts.user')
 
 @section('content')
-<div class="space-y-6" x-data="{ activeTab: 'data' }">
+@extends('layouts.user')
+
+@section('content')
+<div class="space-y-6" x-data="{
+    activeTab: 'data',
+    aiReady: {{ ($analisa->ai_output ?? false) ? 'true' : 'false' }},
+    aiPlusReady: {{ ($analisa->ai_output_plus ?? false) ? 'true' : 'false' }},
+    aiLoading: {{ ($analisa->ai_output ?? false) ? 'false' : 'true' }},
+    aiPlusLoading: {{ ($analisa->ai_output_plus ?? false) ? 'false' : 'true' }},
+    aiError: {{ !empty(($analisa->ai_output ?? [])['error']) ? 'true' : 'false' }},
+    aiPlusError: {{ !empty(($analisa->ai_output_plus ?? [])['error']) ? 'true' : 'false' }},
+    aiNarasi: null,
+    aiOutput: null,
+    aiNarasiPlus: null,
+    aiOutputPlus: null,
+    pollCount: 0,
+    maxPolls: 30,
+    init() {
+        if (this.aiLoading || this.aiPlusLoading) {
+            this.pollAiStatus();
+        }
+    },
+    pollAiStatus() {
+        if (this.pollCount >= this.maxPolls) return;
+        this.pollCount++;
+        fetch('{{ route($checkAiStatusRoute, $analisa) }}')
+            .then(r => r.json())
+            .then(d => {
+                if (d.ai_ready) {
+                    this.aiReady = true;
+                    this.aiLoading = false;
+                    this.aiNarasi = d.ai_narasi;
+                    this.aiOutput = d.ai_output;
+                }
+                if (d.ai_plus_ready) {
+                    this.aiPlusReady = true;
+                    this.aiPlusLoading = false;
+                    this.aiNarasiPlus = d.ai_narasi_plus;
+                    this.aiOutputPlus = d.ai_output_plus;
+                }
+                if (d.ai_error) {
+                    this.aiLoading = false;
+                    this.aiNarasi = null;
+                    this.aiOutput = { error: true, message: d.ai_error };
+                }
+                if (d.ai_plus_error) {
+                    this.aiPlusLoading = false;
+                    this.aiNarasiPlus = null;
+                    this.aiOutputPlus = { error: true, message: d.ai_plus_error };
+                }
+                if ((this.aiLoading || this.aiPlusLoading) && this.pollCount < this.maxPolls) {
+                    setTimeout(() => this.pollAiStatus(), 3000);
+                }
+            })
+            .catch(() => {
+                if (this.pollCount < this.maxPolls) {
+                    setTimeout(() => this.pollAiStatus(), 5000);
+                }
+            });
+    }
+}">
     {{-- Header --}}
     <div class="flex items-start justify-between flex-wrap gap-4">
         <div>
@@ -67,21 +127,43 @@
     </div>
 
     <div x-show="activeTab==='ai'">
-        @php $aiOut = $analisa->ai_output ?? []; @endphp
-        @if($analisa->ai_narasi || !empty($aiOut))
-            @include('analisa-lapkeu.partials.ai-panel', ['title' => 'Analisa AI', 'ai' => $aiOut, 'narasi' => $analisa->ai_narasi])
-        @else
+        <template x-if="aiLoading">
+            <div class="bg-[#f8fafc] border border-dashed border-line rounded-xl p-5 text-sm text-muted flex items-center gap-2">
+                <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span>Memproses Analisa AI ...</span>
+            </div>
+        </template>
+        <template x-if="!aiLoading && aiReady">
+            <div>
+                @include('analisa-lapkeu.partials.ai-panel', ['title' => 'Analisa AI', 'ai' => $analisa->ai_output ?? [], 'narasi' => $analisa->ai_narasi])
+            </div>
+        </template>
+        <template x-if="!aiLoading && !aiReady && aiOutput?.error">
+            <div class="bg-red-50 border border-red-200 rounded-xl p-5 text-sm text-red-700" x-text="aiOutput.message || 'Analisa AI gagal diproses.'"></div>
+        </template>
+        <template x-if="!aiLoading && !aiReady && !aiOutput">
             <div class="bg-[#f8fafc] border border-dashed border-line rounded-xl p-5 text-sm text-muted">Narasi AI belum tersedia.</div>
-        @endif
+        </template>
     </div>
 
     <div x-show="activeTab==='ai-plus'">
-        @php $aiPlusOut = $analisa->ai_output_plus ?? []; @endphp
-        @if($analisa->ai_narasi_plus || !empty($aiPlusOut))
-            @include('analisa-lapkeu.partials.ai-panel', ['title' => 'Analisa AI Plus', 'ai' => $aiPlusOut, 'narasi' => $analisa->ai_narasi_plus])
-        @else
+        <template x-if="aiPlusLoading">
+            <div class="bg-[#f8fafc] border border-dashed border-line rounded-xl p-5 text-sm text-muted flex items-center gap-2">
+                <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span>Memproses Analisa AI Plus ...</span>
+            </div>
+        </template>
+        <template x-if="!aiPlusLoading && aiPlusReady">
+            <div>
+                @include('analisa-lapkeu.partials.ai-panel', ['title' => 'Analisa AI Plus', 'ai' => $analisa->ai_output_plus ?? [], 'narasi' => $analisa->ai_narasi_plus])
+            </div>
+        </template>
+        <template x-if="!aiPlusLoading && !aiPlusReady && aiOutputPlus?.error">
+            <div class="bg-red-50 border border-red-200 rounded-xl p-5 text-sm text-red-700" x-text="aiOutputPlus.message || 'Analisa AI Plus gagal diproses.'"></div>
+        </template>
+        <template x-if="!aiPlusLoading && !aiPlusReady && !aiOutputPlus">
             <div class="bg-[#f8fafc] border border-dashed border-line rounded-xl p-5 text-sm text-muted">Narasi AI Plus belum tersedia.</div>
-        @endif
+        </template>
     </div>
 </div>
 @endsection

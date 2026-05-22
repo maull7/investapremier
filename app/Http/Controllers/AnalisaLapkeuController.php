@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\AnalisaLapkeuAiJob;
+use App\Jobs\AnalisaLapkeuAiPlusJob;
 use App\Services\GroqService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -368,6 +370,70 @@ abstract class AnalisaLapkeuController extends Controller
             public_path('templates/template-analisa-lapkeu.xlsx'),
             'template-analisa-lapkeu.xlsx'
         );
+    }
+
+    protected function persistLapkeuAiFromRequest(Request $request, $analisa): void
+    {
+        $instrumen = $this->instrumentType();
+
+        if ($request->filled('ai_narasi') && $request->filled('ai_output')) {
+            $analisa->update([
+                'ai_narasi' => $request->ai_narasi,
+                'ai_output' => json_decode($request->ai_output, true) ?: [],
+            ]);
+        } else {
+            AnalisaLapkeuAiJob::dispatch($analisa->id, $instrumen);
+        }
+
+        if ($request->filled('ai_narasi_plus') && $request->filled('ai_output_plus')) {
+            $analisa->update([
+                'ai_narasi_plus' => $request->ai_narasi_plus,
+                'ai_output_plus' => json_decode($request->ai_output_plus, true) ?: [],
+            ]);
+        } else {
+            $data = $this->extractLapkeuData($request);
+            $data['nama_perusahaan'] = $request->input($this->namaField());
+            $data['total_asset']     = $request->total_asset;
+            $data['total_liabilities'] = $request->total_liabilities;
+            $data['equity']          = $request->equity;
+            $data['net_revenue']     = $request->net_revenue;
+            $data['net_income']      = $request->net_income;
+
+            $plusCheck = self::assessPlusManualData($data, $instrumen);
+
+            if ($plusCheck['can_run']) {
+                AnalisaLapkeuAiPlusJob::dispatch($analisa->id, $instrumen);
+            } else {
+                $analisa->update([
+                    'ai_output_plus' => [
+                        'error'   => true,
+                        'message' => $plusCheck['message'] ?? 'Data laporan keuangan tidak lengkap untuk Analisa AI Plus.',
+                        'missing' => $plusCheck['missing'] ?? [],
+                    ],
+                ]);
+            }
+        }
+    }
+
+    public function checkAiStatus($idOrAnalisa)
+    {
+        $model = $this->getModel();
+        $analisa = $idOrAnalisa instanceof $model ? $idOrAnalisa : $model::findOrFail($idOrAnalisa);
+
+        return response()->json([
+            'ai_ready'       => !is_null($analisa->ai_output) && empty(($analisa->ai_output ?? [])['error']),
+            'ai_plus_ready'  => !is_null($analisa->ai_output_plus) && empty(($analisa->ai_output_plus ?? [])['error']),
+            'ai_narasi'      => $analisa->ai_narasi,
+            'ai_output'      => $analisa->ai_output,
+            'ai_narasi_plus' => $analisa->ai_narasi_plus,
+            'ai_output_plus' => $analisa->ai_output_plus,
+            'ai_error'       => ($analisa->ai_output ?? [])['error'] ?? false
+                ? ($analisa->ai_output['message'] ?? 'Error tidak diketahui')
+                : null,
+            'ai_plus_error'  => ($analisa->ai_output_plus ?? [])['error'] ?? false
+                ? ($analisa->ai_output_plus['message'] ?? 'Error tidak diketahui')
+                : null,
+        ]);
     }
 
     protected function extractLapkeuData(Request $request): array
