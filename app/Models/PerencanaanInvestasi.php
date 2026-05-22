@@ -41,4 +41,9 @@ class PerencanaanInvestasi extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function portofolioItems()
+    {
+        return $this->hasMany(PortofolioItem::class);
+    }
 }

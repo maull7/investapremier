@@ -48,7 +48,7 @@
                 <p class="font-semibold text-sm">{{ $plan->target_waktu_tahun ? $plan->target_waktu_tahun . ' tahun' : '-' }}</p>
             </div>
             <div>
-                <p class="text-xs text-muted">Dana Tersedia</p>
+                <p class="text-xs text-muted">Portofolio Tersedia</p>
                 <p class="font-semibold text-sm">Rp{{ number_format($plan->dana_tersedia ?? 0, 0, ',', '.') }}</p>
             </div>
             <div>
@@ -116,6 +116,49 @@
         @endif
     </div>
 
+    {{-- Portofolio --}}
+    @if ($plan->portofolioItems->isNotEmpty())
+    <div class="bg-white rounded-2xl border border-line shadow-sm p-6 mb-6">
+        <h3 class="font-bold text-primary text-sm mb-4">Portofolio Saat Ini</h3>
+        <div class="space-y-3">
+            @foreach ($plan->portofolioItems as $item)
+            <div class="bg-[#f8fafc] rounded-xl border border-line">
+                <div class="flex items-center justify-between p-3">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full
+                            {{ $item->jenis === 'Kas/Deposito' ? 'bg-green-100 text-green-700' : '' }}
+                            {{ $item->jenis === 'Reksa Dana' ? 'bg-blue-100 text-blue-700' : '' }}
+                            {{ $item->jenis === 'Saham' ? 'bg-purple-100 text-purple-700' : '' }}
+                            {{ $item->jenis === 'Obligasi' ? 'bg-orange-100 text-orange-700' : '' }}">
+                            {{ $item->jenis }}
+                        </span>
+                        <span class="font-semibold text-sm text-primary">{{ $item->nama_produk }}</span>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-muted">{{ $item->jenis === 'Reksa Dana' ? number_format($item->nominal, 0, ',', '.') . ' UP' : ($item->jenis === 'Saham' ? number_format($item->nominal, 0, ',', '.') . ' lembar' : 'Rp' . number_format($item->nominal, 0, ',', '.')) }} × Rp{{ number_format($item->harga_akuisisi, 0, ',', '.') }}</p>
+                        <p class="font-bold text-sm text-primary">Rp{{ number_format($item->nilai, 0, ',', '.') }}</p>
+                    </div>
+                </div>
+                <div class="border-t border-line">
+                    <div class="chart-loading text-xs text-muted text-center py-6">Memuat grafik...</div>
+                    <div class="h-44 px-4 pb-4" style="display:none;">
+                        <canvas class="portofolio-chart w-full h-full"
+                            data-jenis="{{ $item->jenis }}"
+                            data-produk-id="{{ $item->produk_id ?? '' }}"
+                            data-produk-type="{{ $item->produk_type ?? '' }}"
+                            data-nama="{{ $item->nama_produk }}"></canvas>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+            <div class="flex items-center justify-between p-3 bg-accent/5 rounded-xl border border-accent/20">
+                <span class="font-semibold text-sm text-primary">Total Portofolio</span>
+                <span class="font-bold text-lg text-primary">Rp{{ number_format($plan->portofolioItems->sum('nilai'), 0, ',', '.') }}</span>
+            </div>
+        </div>
+    </div>
+    @endif
+
     {{-- AI Analysis --}}
     <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mb-6">
         <div class="px-6 py-4 border-b border-line flex items-center justify-between bg-gradient-to-r from-accent to-accent/80">
@@ -123,15 +166,20 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                 Analisis & Rekomendasi AI
             </h3>
-            <form method="POST" action="{{ route('user.perencanaan-investasi.regenerate-ai', $plan) }}">
+            <form method="POST" action="{{ route('user.perencanaan-investasi.regenerate-ai', $plan) }}" id="regenerate-form">
                 @csrf
-                <button type="submit"
-                        class="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 text-white rounded-lg text-xs font-semibold hover:bg-white/30 transition"
-                        onclick="this.innerHTML='Memproses...'; this.disabled=true;">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                    Regenerate
+                <button type="submit" id="regenerate-btn"
+                        class="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 text-white rounded-lg text-xs font-semibold hover:bg-white/30 transition">
+                    <svg id="regenerate-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    <span id="regenerate-text">Regenerate</span>
                 </button>
             </form>
+            <script>
+                document.getElementById('regenerate-form').addEventListener('submit', function() {
+                    document.getElementById('regenerate-text').textContent = 'Memproses...';
+                    document.getElementById('regenerate-icon').classList.add('animate-spin');
+                });
+            </script>
         </div>
 
         @if (!empty($plan->ai_output['error']))
@@ -260,6 +308,54 @@
                 </div>
                 @endif
 
+                @if (!empty($ai['rekomendasi_portofolio']))
+                @php
+                    // Map nama produk → item portofolio untuk keperluan grafik
+                    $portofolioMap = $plan->portofolioItems->keyBy('nama_produk');
+                @endphp
+                <div>
+                    <h4 class="font-semibold text-primary text-sm mb-3">Rekomendasi Portofolio</h4>
+                    <div class="space-y-3">
+                        @foreach ($ai['rekomendasi_portofolio'] as $efek)
+                        @php
+                            $item = $portofolioMap->get($efek['nama_efek'] ?? '');
+                            $aksi = $efek['aksi'] ?? 'Tahan';
+                            $aksiColor = match($aksi) {
+                                'Beli'  => 'bg-green-100 text-green-700',
+                                'Jual'  => 'bg-red-100 text-red-700',
+                                default => 'bg-yellow-100 text-yellow-700',
+                            };
+                        @endphp
+                        <div class="bg-white rounded-xl border border-line p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <button type="button"
+                                        onclick="bukaGrafikEfek(this)"
+                                        data-nama="{{ $efek['nama_efek'] ?? '' }}"
+                                        data-jenis="{{ $efek['jenis'] ?? ($item?->jenis ?? '') }}"
+                                        data-produk-id="{{ $item?->produk_id ?? '' }}"
+                                        data-produk-type="{{ $item?->produk_type ?? '' }}"
+                                        class="font-semibold text-sm text-accent hover:underline text-left">
+                                        {{ $efek['nama_efek'] ?? '-' }}
+                                    </button>
+                                    @if (!empty($efek['jenis']))
+                                    <span class="text-xs text-muted bg-[#f1f5f9] px-2 py-0.5 rounded-full">{{ $efek['jenis'] }}</span>
+                                    @endif
+                                </div>
+                                <span class="text-xs font-bold px-2.5 py-1 rounded-full {{ $aksiColor }}">{{ $aksi }}</span>
+                            </div>
+                            @if (!empty($efek['analisa']))
+                            <p class="text-xs text-muted mb-1">{{ $efek['analisa'] }}</p>
+                            @endif
+                            @if (!empty($efek['rekomendasi']))
+                            <p class="text-xs text-primary font-medium">→ {{ $efek['rekomendasi'] }}</p>
+                            @endif
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+
                 @if (!empty($ai['rekomendasi_investor']))
                 <div class="p-4 bg-accent/5 rounded-xl border border-accent/20">
                     <p class="text-xs text-muted font-semibold uppercase tracking-wide mb-1">Rekomendasi untuk Investor</p>
@@ -284,4 +380,144 @@
             Kembali ke Daftar
         </a>
     </div>
+
+    {{-- Grafik Modal --}}
+    <div id="grafikModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h4 id="grafikTitle" class="font-bold text-primary text-sm">Grafik Kinerja</h4>
+                <button onclick="tutupGrafik()" class="text-muted hover:text-primary transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div id="grafikLoading" class="flex items-center justify-center py-12 text-muted text-sm">Memuat grafik...</div>
+            <div id="grafikEmpty" class="hidden flex items-center justify-center py-12 text-muted text-sm">Data grafik tidak tersedia.</div>
+            <canvas id="grafikCanvas" class="hidden" height="200"></canvas>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        let grafikChart = null;
+
+        function bukaGrafikEfek(btn) {
+            const nama = btn.dataset.nama;
+            const jenis = btn.dataset.jenis;
+            const produkId = btn.dataset.produkId;
+            const produkType = btn.dataset.produkType;
+
+            document.getElementById('grafikTitle').textContent = 'Grafik Kinerja — ' + nama;
+            document.getElementById('grafikModal').classList.remove('hidden');
+            document.getElementById('grafikLoading').classList.remove('hidden');
+            document.getElementById('grafikEmpty').classList.add('hidden');
+            document.getElementById('grafikCanvas').classList.add('hidden');
+            document.body.style.overflow = 'hidden';
+
+            if (grafikChart) { grafikChart.destroy(); grafikChart = null; }
+
+            const url = `{{ route('user.portofolio.grafik') }}?jenis=${encodeURIComponent(jenis)}&produk_type=${encodeURIComponent(produkType)}&produk_id=${encodeURIComponent(produkId)}&nama=${encodeURIComponent(nama)}`;
+
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('grafikLoading').classList.add('hidden');
+                    if (!data.labels || !data.labels.length) {
+                        document.getElementById('grafikEmpty').classList.remove('hidden');
+                        return;
+                    }
+                    const canvas = document.getElementById('grafikCanvas');
+                    canvas.classList.remove('hidden');
+                    grafikChart = new Chart(canvas, {
+                        type: 'line',
+                        data: {
+                            labels: data.labels,
+                            datasets: [{
+                                label: data.label || nama,
+                                data: data.values,
+                                borderColor: '#3b82f6',
+                                backgroundColor: 'rgba(59,130,246,0.08)',
+                                fill: true,
+                                tension: 0.3,
+                                pointRadius: 2,
+                                borderWidth: 2,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: { grid: { display: false }, ticks: { maxTicksLimit: 6, font: { size: 10 } } },
+                                y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } }
+                            }
+                        }
+                    });
+                })
+                .catch(() => {
+                    document.getElementById('grafikLoading').classList.add('hidden');
+                    document.getElementById('grafikEmpty').classList.remove('hidden');
+                });
+        }
+
+        function tutupGrafik() {
+            document.getElementById('grafikModal').classList.add('hidden');
+            document.body.style.overflow = '';
+            if (grafikChart) { grafikChart.destroy(); grafikChart = null; }
+        }
+
+        document.getElementById('grafikModal').addEventListener('click', function(e) {
+            if (e.target === this) tutupGrafik();
+        });
+
+        // Inline charts for portfolio items
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.portofolio-chart').forEach(function(canvas) {
+                const jenis = canvas.dataset.jenis;
+                const produkId = canvas.dataset.produkId;
+                const produkType = canvas.dataset.produkType;
+                const nama = canvas.dataset.nama;
+                const chartWrap = canvas.closest('.h-44');
+                const loading = chartWrap.parentElement.querySelector('.chart-loading');
+
+                const url = `{{ route('user.portofolio.grafik') }}?jenis=${encodeURIComponent(jenis)}&produk_type=${encodeURIComponent(produkType)}&produk_id=${encodeURIComponent(produkId)}&nama=${encodeURIComponent(nama)}`;
+
+                fetch(url)
+                    .then(r => r.json())
+                    .then(data => {
+                        loading.style.display = 'none';
+                        if (!data.labels || !data.labels.length) {
+                            return;
+                        }
+                        chartWrap.style.display = 'block';
+                        new Chart(canvas, {
+                            type: 'line',
+                            data: {
+                                labels: data.labels,
+                                datasets: [{
+                                    label: data.label || nama,
+                                    data: data.values,
+                                    borderColor: '#3b82f6',
+                                    backgroundColor: 'rgba(59,130,246,0.08)',
+                                    fill: true,
+                                    tension: 0.3,
+                                    pointRadius: 1,
+                                    borderWidth: 1.5,
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: {
+                                    x: { grid: { display: false }, ticks: { maxTicksLimit: 4, font: { size: 9 } } },
+                                    y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 } } }
+                                }
+                            }
+                        });
+                    })
+                    .catch(() => {
+                        loading.style.display = 'none';
+                    });
+            });
+        });
+    </script>
 @endsection

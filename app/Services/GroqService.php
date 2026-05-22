@@ -159,10 +159,11 @@ PROMPT,
         return $response->json('choices.0.message.content', '');
     }
 
-    public function generateNarasiAnalisaStructured(AnalisaReksaDana $analisa): array
+    public function generateNarasiAnalisaStructured(AnalisaReksaDana $analisa, string $productType = 'reksa_dana'): array
     {
-        $prompt = $this->buildStructuredPrompt($analisa);
-        $systemPrompt = \App\Models\AiPrompt::get('system_analisa', 'Kamu adalah analis investasi profesional Indonesia yang ahli dalam analisa Reksa Dana. Gunakan Bahasa Indonesia yang baik. Keluarkan jawaban dalam format JSON valid tanpa teks tambahan.');
+        $prompt = $this->buildStructuredPrompt($analisa, $productType);
+        $systemKey = $productType === 'unit_link' ? 'system_analisa_unit_link' : 'system_analisa';
+        $systemPrompt = \App\Models\AiPrompt::get($systemKey, 'Kamu adalah analis investasi profesional Indonesia yang ahli dalam analisa Reksa Dana. Gunakan Bahasa Indonesia yang baik. Keluarkan jawaban dalam format JSON valid tanpa teks tambahan.');
 
         $response = Http::withToken($this->apiKey)
             ->timeout(90)
@@ -313,7 +314,8 @@ PETUNJUK:
 - Output HANYA JSON valid tanpa markdown
 PROMPT;
 
-        $systemPrompt = "Kamu adalah analis keuangan profesional Indonesia yang ahli menganalisa laporan keuangan {$instrumen}. Keluarkan jawaban dalam format JSON valid tanpa teks tambahan.";
+        $promptKey = $instrumen === 'Obligasi' ? 'system_analisa_obligasi' : 'system_analisa_saham';
+        $systemPrompt = \App\Models\AiPrompt::get($promptKey, "Kamu adalah analis keuangan profesional Indonesia yang ahli menganalisa laporan keuangan {$instrumen}. Keluarkan jawaban dalam format JSON valid tanpa teks tambahan.");
 
         $response = Http::withToken($this->apiKey)
             ->timeout(90)
@@ -409,10 +411,10 @@ DEFAULT);
         return $this->buildDataSection($analisa)."\n\nBerikan analisa yang mencakup:\n1. Ringkasan kinerja keseluruhan\n2. Analisa risiko (liquidity, durasi, rating, bank)\n3. Kekuatan dan kelemahan portofolio\n4. Rekomendasi singkat untuk investor";
     }
 
-    private function buildStructuredPrompt(AnalisaReksaDana $analisa): string
+    private function buildStructuredPrompt(AnalisaReksaDana $analisa, string $productType = 'reksa_dana'): string
     {
         $data = $this->buildDataSection($analisa);
-        $instruksi = \App\Models\AiPrompt::get('instruksi_analisa', <<<DEFAULT
+        $instruksiKey = $productType === 'unit_link' ? 'instruksi_analisa_unit_link' : 'instruksi_analisa';
 Berdasarkan data di atas, buatkan analisa dalam format JSON dengan struktur EXACT berikut (jangan tambah atau kurangi field):
 {
   "ringkasan_utama": "Ringkasan kinerja keseluruhan dalam 2-3 paragraf, mencakup return, komposisi sektor, dan posisi portfolio secara umum",
@@ -574,7 +576,8 @@ PETUNJUK:
 - Output HANYA JSON valid tanpa markdown
 PROMPT;
 
-        $systemPrompt = "Kamu adalah analis keuangan senior Indonesia yang ahli analisa mendalam laporan keuangan {$instrumen}. Keluarkan jawaban dalam format JSON valid tanpa teks tambahan.";
+        $promptKey = $instrumen === 'Obligasi' ? 'system_analisa_obligasi_plus' : 'system_analisa_saham_plus';
+        $systemPrompt = \App\Models\AiPrompt::get($promptKey, "Kamu adalah analis keuangan senior Indonesia yang ahli analisa mendalam laporan keuangan {$instrumen}. Keluarkan jawaban dalam format JSON valid tanpa teks tambahan.");
 
         $response = Http::withToken($this->apiKey)
             ->timeout(120)
