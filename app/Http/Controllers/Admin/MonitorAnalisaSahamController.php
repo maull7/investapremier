@@ -48,7 +48,7 @@ class MonitorAnalisaSahamController extends AnalisaLapkeuController
 
     public function show($id)
     {
-        $analisa = AnalisaSaham::with('user')->findOrFail($id);
+        $analisa = AnalisaSaham::with(['user', 'brokerResearchDocuments.uploader'])->findOrFail($id);
 
         return view($this->showView(), [
             'analisa' => $analisa,

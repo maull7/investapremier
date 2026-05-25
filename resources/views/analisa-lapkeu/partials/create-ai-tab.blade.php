@@ -12,7 +12,7 @@
         <label class="block text-sm font-medium text-gray-700 mb-1">Upload PDF Laporan Keuangan</label>
         <input type="file" id="ai-pdf-parse-input" accept="application/pdf" @change="onPdfSelected($event)"
             class="block w-full text-sm text-gray-500 border border-gray-300 rounded-lg px-3 py-2 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer">
-        <p class="text-xs text-muted mt-1">Format: PDF, maks 10MB. Data akan diekstrak dan mengisi form otomatis.</p>
+        <p class="text-xs text-muted mt-1">Format: PDF, maks 20MB. Data akan diekstrak dan mengisi form otomatis.</p>
     </div>
 
     <button type="button" @click="runAiFromPdf()"
@@ -28,7 +28,7 @@
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
         </svg>
-        <span>Membaca & mengekstrak PDF...</span>
+        <span>Membaca & mengekstrak PDF di background...</span>
     </div>
 
     <div x-show="aiParseError" class="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3" x-text="aiParseError"></div>

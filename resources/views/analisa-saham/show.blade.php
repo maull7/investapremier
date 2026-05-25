@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="space-y-6" x-data="{
-    activeTab: 'data',
+    activeTab: '{{ session('active_tab', $errors->has('broker') || $errors->has('documents') || $errors->has('documents.*') ? 'riset-broker' : 'data') }}',
     aiReady: {{ ($analisa->ai_output ?? false) ? 'true' : 'false' }},
     aiPlusReady: {{ ($analisa->ai_output_plus ?? false) ? 'true' : 'false' }},
     aiLoading: {{ ($analisa->ai_output ?? false) ? 'false' : 'true' }},
@@ -117,6 +117,9 @@
         <button type="button" @click="activeTab='ai-plus'"
             :class="activeTab==='ai-plus' ? 'border-b-2 border-primary text-primary font-semibold' : 'text-muted hover:text-primary'"
             class="px-4 py-2.5 text-sm whitespace-nowrap transition">Analisa AI Plus</button>
+        <button type="button" @click="activeTab='riset-broker'"
+            :class="activeTab==='riset-broker' ? 'border-b-2 border-primary text-primary font-semibold' : 'text-muted hover:text-primary'"
+            class="px-4 py-2.5 text-sm whitespace-nowrap transition">Riset Broker</button>
     </div>
 
     {{-- Tab: Data --}}
@@ -154,6 +157,11 @@
             </div>
             <div x-show="!aiPlusLoading && !aiPlusReady" class="bg-[#f8fafc] border border-dashed border-line rounded-xl p-5 text-sm text-muted">Narasi AI Plus belum tersedia.</div>
         @endif
+    </div>
+
+    {{-- Tab: Riset Broker --}}
+    <div x-show="activeTab==='riset-broker'" class="space-y-6">
+        @include('analisa-saham.partials.riset-broker')
     </div>
 </div>
 @endsection

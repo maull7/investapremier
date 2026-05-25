@@ -280,6 +280,7 @@ PROMPT,
         $lines[] = "EBITDA: {$fmt($data['ebitda'] ?? null)}";
         $lines[] = "Beban Bunga: {$fmt($data['interest_expense'] ?? null)}";
         $lines[] = "Laba Bersih: {$fmt($data['net_income'] ?? null)}";
+        $lines[] = "EPS: {$fmt($data['eps'] ?? null)}";
 
         $lines[] = "";
         $lines[] = "ARUS KAS";
@@ -541,6 +542,7 @@ DEFAULT);
         $lines[] = "EBITDA: {$fmt($data['ebitda'] ?? null)}";
         $lines[] = "Beban Bunga: {$fmt($data['interest_expense'] ?? null)}";
         $lines[] = "Laba Bersih: {$fmt($data['net_income'] ?? null)}";
+        $lines[] = "EPS: {$fmt($data['eps'] ?? null)}";
         $lines[] = "";
         $lines[] = "ARUS KAS";
         $lines[] = "Operasional: {$fmt($data['cash_flows_operating_activities'] ?? null)}";
@@ -611,7 +613,7 @@ PROMPT;
 
     public function parseLapkeuPdf(string $pdfText, string $instrumen = 'Saham'): array
     {
-        $text = mb_substr($pdfText, 0, 8000);
+        $text = mb_substr($pdfText, 0, 20000);
 
         $isObligasi = $instrumen === 'Obligasi';
         $nameKey    = $isObligasi ? 'nama_obligasi' : 'nama_perusahaan';
@@ -649,7 +651,6 @@ EXTRA;
 Ekstrak data laporan keuangan dari teks berikut. Kembalikan HANYA JSON valid:
 
 {
-  "{$nameKey}": "string atau null",
 {$extraFields}
   "periode": "string misal Q4 2024 atau null",
   "mata_uang": "IDR atau USD atau null",
@@ -665,16 +666,29 @@ Ekstrak data laporan keuangan dari teks berikut. Kembalikan HANYA JSON valid:
   "equity": angka atau null,
   "net_revenue": angka atau null,
   "gross_income": angka atau null,
+  "laba_operasional": angka atau null,
   "ebit": angka atau null,
   "ebitda": angka atau null,
   "interest_expense": angka atau null,
+  "income_before_tax": angka atau null,
+  "taxes": angka atau null,
   "net_income": angka atau null,
+  "eps": angka atau null,
   "cash_flows_operating_activities": angka atau null,
   "cash_flows_investment": angka atau null,
   "cash_flows_financing": angka atau null
 }
 
-ATURAN: semua angka dalam satuan penuh (bukan juta/miliar), null jika tidak ada. Output HANYA JSON.
+ATURAN:
+- Prioritaskan periode laporan terbaru yang tersedia.
+- Revenue/Pendapatan map ke net_revenue.
+- Net Profit/Laba Bersih map ke net_income.
+- Total Liability/Liabilitas map ke total_liabilities.
+- Cash Flow map ke tiga field arus kas jika tersedia.
+- EPS/laba per saham map ke eps dan boleh bernilai desimal.
+- Semua angka laporan posisi keuangan, laba rugi, dan arus kas dalam satuan penuh (bukan juta/miliar), null jika tidak ada.
+- Jika dokumen menyatakan "dalam jutaan Rupiah", kalikan angka dengan 1.000.000; jika "dalam ribuan Rupiah", kalikan dengan 1.000.
+- Output HANYA JSON.
 
 TEKS PDF:
 {$text}
@@ -688,6 +702,104 @@ PROMPT,
         }
 
         $raw = $response->json('choices.0.message.content', '');
-        return self::parseJsonOutput($raw);
+        return self::normalizeLapkeuPdfData(self::parseJsonOutput($raw), $isObligasi);
+    }
+
+    private static function normalizeLapkeuPdfData(array $data, bool $isObligasi): array
+    {
+        $aliases = [
+            'net_revenue' => ['revenue', 'pendapatan', 'pendapatan_bersih', 'sales', 'net_sales'],
+            'net_income' => ['net_profit', 'laba_bersih', 'profit_for_the_year', 'laba_tahun_berjalan'],
+            'total_asset' => ['total_assets', 'total_aset'],
+            'total_liabilities' => ['total_liability', 'total_liabilitas', 'liabilities'],
+            'equity' => ['total_equity', 'ekuitas', 'total_ekuitas'],
+            'cash_flows_operating_activities' => ['operating_cash_flow', 'cash_flow_from_operations', 'arus_kas_operasi'],
+            'cash_flows_investment' => ['investing_cash_flow', 'cash_flow_from_investing', 'arus_kas_investasi'],
+            'cash_flows_financing' => ['financing_cash_flow', 'cash_flow_from_financing', 'arus_kas_pendanaan'],
+            'eps' => ['earnings_per_share', 'laba_per_saham'],
+        ];
+
+        foreach ($aliases as $target => $keys) {
+            if (array_key_exists($target, $data) && $data[$target] !== null && $data[$target] !== '') {
+                continue;
+            }
+
+            foreach ($keys as $key) {
+                if (array_key_exists($key, $data) && $data[$key] !== null && $data[$key] !== '') {
+                    $data[$target] = $data[$key];
+                    break;
+                }
+            }
+        }
+
+        $allowed = [
+            $isObligasi ? 'nama_obligasi' : 'nama_perusahaan',
+            $isObligasi ? 'kode_obligasi' : 'kode_saham',
+            'nama_emiten', 'rating', 'kupon', 'ytm', 'sektor',
+            'periode', 'mata_uang',
+            'total_asset', 'current_asset', 'cash_equivalents', 'account_receivable',
+            'inventories', 'fixed_asset', 'total_liabilities', 'current_liabilities',
+            'long_term_loans', 'equity', 'net_revenue', 'gross_income',
+            'laba_operasional', 'ebit', 'ebitda', 'interest_expense',
+            'income_before_tax', 'taxes', 'net_income', 'eps',
+            'cash_flows_operating_activities', 'cash_flows_investment',
+            'cash_flows_financing',
+        ];
+
+        $normalized = [];
+        foreach ($allowed as $field) {
+            if (!array_key_exists($field, $data)) {
+                continue;
+            }
+
+            $normalized[$field] = in_array($field, ['periode', 'mata_uang', 'nama_perusahaan', 'kode_saham', 'nama_obligasi', 'kode_obligasi', 'nama_emiten', 'rating', 'sektor'], true)
+                ? ($data[$field] !== '' ? $data[$field] : null)
+                : self::normalizeNumericValue($data[$field]);
+        }
+
+        return $normalized;
+    }
+
+    private static function normalizeNumericValue(mixed $value): float|int|null
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return $value;
+        }
+
+        if (!is_string($value)) {
+            return null;
+        }
+
+        $value = trim($value);
+        $isNegative = str_starts_with($value, '(') && str_ends_with($value, ')');
+        $value = trim($value, '() ');
+        $value = preg_replace('/[^\d,\.\-]/', '', $value);
+
+        if ($value === '' || $value === '-') {
+            return null;
+        }
+
+        if (str_contains($value, ',') && str_contains($value, '.')) {
+            $lastComma = strrpos($value, ',');
+            $lastDot = strrpos($value, '.');
+            $value = $lastComma > $lastDot
+                ? str_replace('.', '', str_replace(',', '.', $value))
+                : str_replace(',', '', $value);
+        } elseif (substr_count($value, ',') === 1 && !str_contains($value, '.')) {
+            $value = str_replace(',', '.', $value);
+        } else {
+            $value = str_replace(',', '', $value);
+        }
+
+        if (!is_numeric($value)) {
+            return null;
+        }
+
+        $number = (float) $value;
+        return $isNegative ? -$number : $number;
     }
 }

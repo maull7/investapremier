@@ -14,7 +14,7 @@ class AnalisaSahamController extends BaseAnalisaSahamController
     public function show($analisa)
     {
         $model = $this->getModel();
-        $analisa = $model::with('user')->findOrFail($analisa);
+        $analisa = $model::with(['user', 'brokerResearchDocuments.uploader'])->findOrFail($analisa);
 
         return view($this->showView(), [
             'analisa'      => $analisa,
@@ -32,7 +32,10 @@ class AnalisaSahamController extends BaseAnalisaSahamController
     {
         $request->validate(array_merge($this->validateBasicFields($request), [
             'input_mode' => 'required|in:manual,excel',
-            'pdf_lapkeu' => 'nullable|file|mimes:pdf|max:10240',
+            'pdf_lapkeu' => 'nullable|file|mimes:pdf|max:20480',
+            'broker_research' => 'nullable|array',
+            'broker_research.*.broker' => 'nullable|required_with:broker_research.*.document|string|max:100',
+            'broker_research.*.document' => 'nullable|file|mimes:pdf,docx|max:5120',
         ]));
 
         $data = array_merge(
@@ -57,6 +60,7 @@ class AnalisaSahamController extends BaseAnalisaSahamController
 
         $model = $this->getModel();
         $analisa = $model::create($data);
+        $this->persistInitialBrokerResearchDocument($request, $analisa);
 
         $this->persistLapkeuAiFromRequest($request, $analisa);
 

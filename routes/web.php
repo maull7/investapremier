@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\ScoreClassificationController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\AnalisaController;
+use App\Http\Controllers\AnalisaSahamBrokerResearchController;
 use App\Http\Controllers\Admin\ReksaDanaController as AdminReksaDanaController;
 use App\Http\Controllers\Admin\AnalisaRdController as AdminAnalisaRdController;
 use App\Http\Controllers\Admin\DaftarReksaDanaController;
@@ -124,12 +125,17 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('analisa-saham', [AdminAnalisaSahamController::class, 'store'])->name('analisa-saham.store');
     Route::get('analisa-saham/template', [AdminAnalisaSahamController::class, 'downloadTemplate'])->name('analisa-saham.template');
     Route::post('analisa-saham/parse-pdf', [AdminAnalisaSahamController::class, 'parsePdf'])->name('analisa-saham.parse-pdf');
+    Route::get('analisa-saham/parse-pdf/{uuid}/status', [AdminAnalisaSahamController::class, 'parsePdfStatus'])->name('analisa-saham.parse-pdf-status');
     Route::post('analisa-saham/preview-ai', [AdminAnalisaSahamController::class, 'previewAi'])->name('analisa-saham.preview-ai');
     Route::post('analisa-saham/preview-ai-plus', [AdminAnalisaSahamController::class, 'previewAiPlus'])->name('analisa-saham.preview-ai-plus');
     Route::get('analisa-saham/{analisa}', [AdminMonitorAnalisaSahamController::class, 'show'])->name('analisa-saham.show');
     Route::get('analisa-saham/{analisa}/pdf', [AdminMonitorAnalisaSahamController::class, 'exportPdf'])->name('analisa-saham.pdf');
     Route::get('analisa-saham/{analisa}/download-lapkeu', [AdminMonitorAnalisaSahamController::class, 'downloadLapkeu'])->name('analisa-saham.download-lapkeu');
     Route::get('analisa-saham/{analisa}/ai-status', [AdminMonitorAnalisaSahamController::class, 'checkAiStatus'])->name('analisa-saham.check-ai-status');
+    Route::post('analisa-saham/{analisa}/riset-broker', [AnalisaSahamBrokerResearchController::class, 'store'])->name('analisa-saham.riset-broker.store');
+    Route::get('analisa-saham/{analisa}/riset-broker/{document}/view', [AnalisaSahamBrokerResearchController::class, 'view'])->name('analisa-saham.riset-broker.view');
+    Route::get('analisa-saham/{analisa}/riset-broker/{document}/download', [AnalisaSahamBrokerResearchController::class, 'download'])->name('analisa-saham.riset-broker.download');
+    Route::delete('analisa-saham/{analisa}/riset-broker/{document}', [AnalisaSahamBrokerResearchController::class, 'destroy'])->name('analisa-saham.riset-broker.destroy');
     Route::post('analisa-saham/{analisa}/review', [AdminMonitorAnalisaSahamController::class, 'review'])->name('analisa-saham.review');
     Route::delete('analisa-saham/{analisa}', [AdminMonitorAnalisaSahamController::class, 'destroy'])->name('analisa-saham.destroy');
 
@@ -154,6 +160,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('analisa-obligasi', [AdminAnalisaObligasiController::class, 'store'])->name('analisa-obligasi.store');
     Route::get('analisa-obligasi/template', [AdminAnalisaObligasiController::class, 'downloadTemplate'])->name('analisa-obligasi.template');
     Route::post('analisa-obligasi/parse-pdf', [AdminAnalisaObligasiController::class, 'parsePdf'])->name('analisa-obligasi.parse-pdf');
+    Route::get('analisa-obligasi/parse-pdf/{uuid}/status', [AdminAnalisaObligasiController::class, 'parsePdfStatus'])->name('analisa-obligasi.parse-pdf-status');
     Route::post('analisa-obligasi/preview-ai', [AdminAnalisaObligasiController::class, 'previewAi'])->name('analisa-obligasi.preview-ai');
     Route::post('analisa-obligasi/preview-ai-plus', [AdminAnalisaObligasiController::class, 'previewAiPlus'])->name('analisa-obligasi.preview-ai-plus');
     Route::get('analisa-obligasi/{analisa}', [AdminMonitorAnalisaObligasiController::class, 'show'])->name('analisa-obligasi.show');
@@ -255,12 +262,17 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::post('/analisa-saham', [UserAnalisaSahamController::class, 'store'])->name('analisa-saham.store');
     Route::get('/analisa-saham/template', [UserAnalisaSahamController::class, 'downloadTemplate'])->name('analisa-saham.template');
     Route::post('/analisa-saham/parse-pdf', [UserAnalisaSahamController::class, 'parsePdf'])->name('analisa-saham.parse-pdf');
+    Route::get('/analisa-saham/parse-pdf/{uuid}/status', [UserAnalisaSahamController::class, 'parsePdfStatus'])->name('analisa-saham.parse-pdf-status');
     Route::post('/analisa-saham/preview-ai', [UserAnalisaSahamController::class, 'previewAi'])->name('analisa-saham.preview-ai');
     Route::post('/analisa-saham/preview-ai-plus', [UserAnalisaSahamController::class, 'previewAiPlus'])->name('analisa-saham.preview-ai-plus');
     Route::get('/analisa-saham/{analisa}', [UserAnalisaSahamController::class, 'show'])->name('analisa-saham.show');
     Route::get('/analisa-saham/{analisa}/pdf', [UserAnalisaSahamController::class, 'exportPdf'])->name('analisa-saham.pdf');
     Route::get('/analisa-saham/{analisa}/download-lapkeu', [UserAnalisaSahamController::class, 'downloadLapkeu'])->name('analisa-saham.download-lapkeu');
     Route::get('/analisa-saham/{analisa}/ai-status', [UserAnalisaSahamController::class, 'checkAiStatus'])->name('analisa-saham.check-ai-status');
+    Route::post('/analisa-saham/{analisa}/riset-broker', [AnalisaSahamBrokerResearchController::class, 'store'])->name('analisa-saham.riset-broker.store');
+    Route::get('/analisa-saham/{analisa}/riset-broker/{document}/view', [AnalisaSahamBrokerResearchController::class, 'view'])->name('analisa-saham.riset-broker.view');
+    Route::get('/analisa-saham/{analisa}/riset-broker/{document}/download', [AnalisaSahamBrokerResearchController::class, 'download'])->name('analisa-saham.riset-broker.download');
+    Route::delete('/analisa-saham/{analisa}/riset-broker/{document}', [AnalisaSahamBrokerResearchController::class, 'destroy'])->name('analisa-saham.riset-broker.destroy');
     Route::delete('/analisa-saham/{analisa}', [UserAnalisaSahamController::class, 'destroy'])->name('analisa-saham.destroy');
 
     // Daftar & Analisa Obligasi
@@ -270,6 +282,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::post('/analisa-obligasi', [UserAnalisaObligasiController::class, 'store'])->name('analisa-obligasi.store');
     Route::get('/analisa-obligasi/template', [UserAnalisaObligasiController::class, 'downloadTemplate'])->name('analisa-obligasi.template');
     Route::post('/analisa-obligasi/parse-pdf', [UserAnalisaObligasiController::class, 'parsePdf'])->name('analisa-obligasi.parse-pdf');
+    Route::get('/analisa-obligasi/parse-pdf/{uuid}/status', [UserAnalisaObligasiController::class, 'parsePdfStatus'])->name('analisa-obligasi.parse-pdf-status');
     Route::post('/analisa-obligasi/preview-ai', [UserAnalisaObligasiController::class, 'previewAi'])->name('analisa-obligasi.preview-ai');
     Route::post('/analisa-obligasi/preview-ai-plus', [UserAnalisaObligasiController::class, 'previewAiPlus'])->name('analisa-obligasi.preview-ai-plus');
     Route::get('/analisa-obligasi/{analisa}', [UserAnalisaObligasiController::class, 'show'])->name('analisa-obligasi.show');

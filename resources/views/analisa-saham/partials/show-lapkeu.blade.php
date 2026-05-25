@@ -13,6 +13,7 @@
         ['EBIT', $analisa->ebit],
         ['EBITDA', $analisa->ebitda],
         ['Laba Bersih', $analisa->net_income],
+        ['EPS', $analisa->eps],
     ] as [$label, $value])
     <div class="bg-white rounded-xl border border-line p-4">
         <p class="text-xs text-muted">{{ $label }}</p>
@@ -90,6 +91,7 @@
             ['Pajak Penghasilan', $analisa->taxes],
             ['EBITDA', $analisa->ebitda, true],
             ['Laba Bersih', $analisa->net_income, true],
+            ['EPS', $analisa->eps, true],
         ] as $row)
             @php [$rl, $rv] = $row; $bold = $row[2] ?? false; @endphp
             <div class="flex justify-between items-center text-sm {{ $bold ? 'font-semibold' : '' }}">
