@@ -5,39 +5,51 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>InvestaPremier WealthOS - Presentation Mockup</title>
   <style>
-    :root{--bg:#eef2f7;--dark:#0b1324;--muted:#475569;--line:#d8e1ea;--white:#fff;--accent:#0f766e;--gold:#c9a227}
-    *{box-sizing:border-box} body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:#0f172a}
-    .toolbar{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:16px}
-    .toolbar a,.toolbar button{padding:10px 16px;border-radius:999px;border:1px solid var(--line);background:#fff;color:#0f172a;font-weight:600;cursor:pointer;text-decoration:none}
+    :root{--bg:#f7fafc;--dark:#0b1324;--muted:#475569;--line:#e2e8f0;--white:#fff;--accent:#0f766e;--gold:#c9a227}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-gradient(180deg,#f8fbfd 0%,#ffffff 50%,#f8fbfd 100%);color:#0f172a}
+    a{text-decoration:none;color:inherit}
+    .toolbar{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.9);backdrop-filter:blur(10px);border-bottom:1px solid rgba(226,232,240,.8);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px}
+    .toolbar-brand{display:flex;align-items:center;gap:12px;font-weight:800}
+    .toolbar-brand small{display:block;color:#64748b;font-weight:500;margin-top:2px}
+    .toolbar-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .toolbar a,.toolbar button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:#fff;color:#0f172a;font-weight:700;cursor:pointer;text-decoration:none}
     .toolbar .primary{background:var(--dark);border-color:var(--dark);color:#fff}
     .deck{max-width:1280px;margin:22px auto;padding:0 16px 40px}
-    .slide{aspect-ratio:16/9;background:#fff;border:1px solid var(--line);border-radius:28px;box-shadow:0 14px 40px rgba(15,23,42,.10);padding:42px;display:flex;flex-direction:column;justify-content:space-between;margin-bottom:26px;page-break-after:always}
-    .cover{background:radial-gradient(circle at top right,rgba(20,184,166,.14),transparent 30%),radial-gradient(circle at top left,rgba(245,158,11,.12),transparent 25%),linear-gradient(135deg,#ffffff 0%,#f8fbfd 100%)}
-    .brand{display:flex;align-items:center;gap:12px}.mark{width:44px;height:44px;border-radius:16px;background:#0b1324;color:#fff;display:grid;place-items:center;font-weight:800}
-    .kicker{display:inline-block;padding:8px 12px;border:1px solid var(--line);border-radius:999px;font-size:12px;font-weight:700;background:#fff}
-    h1{font-size:54px;line-height:1.04;margin:18px 0 0;letter-spacing:-.03em} h2{font-size:38px;line-height:1.12;margin:0;letter-spacing:-.02em} h3{font-size:24px;margin:0 0 10px}
+    .slide{aspect-ratio:16/9;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 14px 40px rgba(15,23,42,.10);padding:42px;display:flex;flex-direction:column;justify-content:space-between;margin-bottom:26px;page-break-after:always}
+    .cover{background:linear-gradient(135deg,#ffffff 0%,#f8fbfd 100%)}
+    .brand{display:flex;align-items:center;gap:12px}.mark{width:44px;height:44px;border-radius:8px;background:#0b1324;color:#fff;display:grid;place-items:center;font-weight:800;box-shadow:0 12px 28px rgba(15,23,42,.15)}
+    .mark svg,.toolbar svg,.icon svg{width:20px;height:20px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+    .kicker{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--line);border-radius:999px;font-size:12px;font-weight:700;background:#fff}
+    h1{font-size:54px;line-height:1.04;margin:18px 0 0;letter-spacing:0} h2{font-size:38px;line-height:1.12;margin:0;letter-spacing:0} h3{font-size:24px;margin:0 0 10px}
     p{margin:0;color:#475569;line-height:1.7;font-size:18px}.small{font-size:14px}.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-    .card{border:1px solid var(--line);border-radius:24px;padding:22px;background:#fff}.soft{background:#f8fafc}.dark{background:#0b1324;color:#fff}.dark p{color:#cbd5e1}.muted{color:#475569}
+    .card{border:1px solid var(--line);border-radius:8px;padding:22px;background:#fff}.soft{background:#f8fafc}.dark{background:#0b1324;color:#fff}.dark p{color:#cbd5e1}.muted{color:#475569}
+    .dark .card{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.1);box-shadow:none}.dark .card h3{color:#fff}
     ul{margin:0;padding-left:20px} li{margin:8px 0;color:#334155;font-size:18px;line-height:1.6}
+    .dark li{color:#e2e8f0}
     .metric{font-size:28px;font-weight:800}.footer{display:flex;justify-content:space-between;color:#64748b;font-size:14px}
     .bar{height:12px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-top:8px}.fill{height:100%;background:#0b1324;border-radius:999px}.teal{background:#0f766e}
     .table{width:100%;border-collapse:collapse}.table th,.table td{border-bottom:1px solid var(--line);padding:12px 10px;text-align:left;font-size:16px}.table th{color:#64748b;font-weight:700}
-    .badge{display:inline-block;padding:7px 12px;border-radius:999px;background:#f1f5f9;font-size:12px;font-weight:700}
-    .hero-box{border:1px solid var(--line);border-radius:28px;padding:26px;background:rgba(255,255,255,.88)}
+    .badge{display:inline-flex;align-items:center;justify-content:center;padding:7px 12px;border-radius:8px;background:#f1f5f9;font-size:12px;font-weight:700}
+    .hero-box{border:1px solid var(--line);border-radius:8px;padding:26px;background:rgba(255,255,255,.88)}
+    .icon{width:44px;height:44px;border-radius:8px;background:var(--dark);color:#fff;display:grid;place-items:center;margin-bottom:16px}
+    .dark .icon{background:rgba(255,255,255,.1)}
     @media print{body{background:#fff}.toolbar{display:none}.deck{max-width:none;margin:0;padding:0}.slide{margin:0;border:none;border-radius:0;box-shadow:none;break-after:page}}
-    @media (max-width:900px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr} .slide{aspect-ratio:auto;min-height:100vh;padding:24px} h1{font-size:40px} h2{font-size:30px} }
+    @media (max-width:900px){.toolbar{align-items:flex-start;flex-direction:column;padding:14px 16px}.toolbar-actions{width:100%;justify-content:stretch}.toolbar a,.toolbar button{flex:1}.grid-2,.grid-3,.grid-4{grid-template-columns:1fr} .slide{aspect-ratio:auto;min-height:100vh;padding:24px} h1{font-size:40px} h2{font-size:30px} }
+    @media (max-width:520px){.deck{padding:0 12px 28px}.slide{padding:20px}.toolbar a,.toolbar button{width:100%;flex:none}.toolbar-brand small{display:none}h1{font-size:32px}h2{font-size:26px}h3{font-size:20px}p,li{font-size:16px}.metric{font-size:24px}}
   </style>
 </head>
 <body>
   <div class="toolbar">
-    <div><strong>InvestaPremier WealthOS</strong> <span class="small muted">Presentation Mockup HTML</span></div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap"><a href="{{route('index')}}">Kembali ke Landing Page</a><button class="primary" onclick="window.print()">Print / Save as PDF</button></div>
+    <div class="toolbar-brand"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 4v10l-7 4-7-4V7l7-4z"></path><path d="M12 8v8"></path><path d="M8.5 10.5l3.5 2 3.5-2"></path></svg></span><div>InvestaPremier<small>WealthOS Presentation</small></div></div>
+    <div class="toolbar-actions"><a href="{{route('index')}}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>Landing Page</a><button class="primary" onclick="window.print()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><path d="M6 14h12v8H6z"></path></svg>Print / PDF</button></div>
   </div>
 
   <div class="deck">
     <section class="slide cover">
       <div>
-        <div class="brand"><div class="mark">✦</div><div><strong>InvestaPremier</strong><div class="small muted">WealthOS</div></div></div>
+        <div class="brand"><div class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 4v10l-7 4-7-4V7l7-4z"></path><path d="M12 8v8"></path><path d="M8.5 10.5l3.5 2 3.5-2"></path></svg></div><div><strong>InvestaPremier</strong><div class="small muted">WealthOS</div></div></div>
         <div style="margin-top:42px"><span class="kicker">Private Wealth Advisory Platform</span><h1>One Family,<br>One Financial Cockpit.</h1><p style="max-width:760px;margin-top:20px">Platform wealth advisory premium untuk membantu nasabah prioritas dan private mengelola portofolio investasi, proteksi, pendidikan, legacy, pajak, dan kolaborasi dengan advisor dalam satu ekosistem digital.</p></div>
       </div>
       <div class="footer"><span>Deck overview</span><span>01</span></div>
@@ -60,10 +72,10 @@
         <span class="kicker" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.15);color:#fff">Solution</span>
         <h2 style="margin-top:16px">Satu platform untuk wealth planning keluarga dan workflow advisory</h2>
         <div class="grid-4" style="margin-top:28px">
-          <div class="card"><h3>Portfolio 360</h3><p>Net worth, allocation, liquidity, maturity, dan watchlist review.</p></div>
-          <div class="card"><h3>Goal Planner</h3><p>Pendidikan, pensiun, legacy fund, dan kebutuhan keluarga.</p></div>
-          <div class="card"><h3>Protection Hub</h3><p>Polis, premi, beneficiary, dan coverage gap.</p></div>
-          <div class="card"><h3>Legacy Desk</h3><p>Asset map, beneficiary map, dan checklist warisan.</p></div>
+          <div class="card"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9v9z"></path><path d="M21 12A9 9 0 0 0 12 3"></path></svg></div><h3>Portfolio 360</h3><p>Net worth, allocation, liquidity, maturity, dan watchlist review.</p></div>
+          <div class="card"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 10 12 5 2 10l10 5 10-5z"></path><path d="M6 12v5c3 2 9 2 12 0v-5"></path></svg></div><h3>Goal Planner</h3><p>Pendidikan, pensiun, legacy fund, dan kebutuhan keluarga.</p></div>
+          <div class="card"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg></div><h3>Protection Hub</h3><p>Polis, premi, beneficiary, dan coverage gap.</p></div>
+          <div class="card"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"></path><path d="M5 21V9"></path><path d="M19 21V9"></path><path d="M3 9l9-6 9 6"></path><path d="M9 21v-8h6v8"></path></svg></div><h3>Legacy Desk</h3><p>Asset map, beneficiary map, dan checklist warisan.</p></div>
         </div>
       </div>
       <div class="footer"><span>Core solution</span><span>03</span></div>
@@ -94,12 +106,12 @@
         <span class="kicker">Modules</span>
         <h2 style="margin-top:16px">Modul produk</h2>
         <div class="grid-3" style="margin-top:28px">
-          <div class="card"><h3>Portfolio Command Center</h3><p>Ringkasan aset, alokasi, performa, likuiditas, dan alert jatuh tempo.</p></div>
-          <div class="card"><h3>Goal Planner</h3><p>Funding gap, progress target, kontribusi berkala, dan scenario planning.</p></div>
-          <div class="card"><h3>Protection Hub</h3><p>Daftar polis, premi, coverage, beneficiary, dan review proteksi.</p></div>
-          <div class="card"><h3>Legacy Desk</h3><p>Family structure, beneficiary map, asset transfer plan, checklist.</p></div>
-          <div class="card"><h3>Tax Desk</h3><p>Kalender pajak, dokumen, checklist, dan catatan tindak lanjut.</p></div>
-          <div class="card"><h3>Advisor Collaboration</h3><p>Review session, recommendation workflow, notes, tasks, dan reports.</p></div>
+          <div class="card"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9v9z"></path><path d="M21 12A9 9 0 0 0 12 3"></path></svg></div><h3>Portfolio Command Center</h3><p>Ringkasan aset, alokasi, performa, likuiditas, dan alert jatuh tempo.</p></div>
+          <div class="card"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 10 12 5 2 10l10 5 10-5z"></path><path d="M6 12v5c3 2 9 2 12 0v-5"></path></svg></div><h3>Goal Planner</h3><p>Funding gap, progress target, kontribusi berkala, dan scenario planning.</p></div>
+          <div class="card"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg></div><h3>Protection Hub</h3><p>Daftar polis, premi, coverage, beneficiary, dan review proteksi.</p></div>
+          <div class="card"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"></path><path d="M5 21V9"></path><path d="M19 21V9"></path><path d="M3 9l9-6 9 6"></path><path d="M9 21v-8h6v8"></path></svg></div><h3>Legacy Desk</h3><p>Family structure, beneficiary map, asset transfer plan, checklist.</p></div>
+          <div class="card"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"></path><path d="M8 8h8"></path><path d="M8 12h8"></path><path d="M8 16h5"></path></svg></div><h3>Tax Desk</h3><p>Kalender pajak, dokumen, checklist, dan catatan tindak lanjut.</p></div>
+          <div class="card"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.9"></path><path d="M16 3.1a4 4 0 0 1 0 7.8"></path></svg></div><h3>Advisor Collaboration</h3><p>Review session, recommendation workflow, notes, tasks, dan reports.</p></div>
         </div>
       </div>
       <div class="footer"><span>Modules overview</span><span>05</span></div>
