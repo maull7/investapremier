@@ -16,11 +16,12 @@
             ['ebitda','EBITDA'],
             ['net_income_attributable_to_non_controlling_interest','NCI Net Income'],
             ['net_income','Laba Bersih'],
+            ['eps','EPS / Laba per Saham'],
         ] as [$name, $label])
         <div class="flex items-center gap-2">
             <label class="w-52 text-xs text-gray-600 shrink-0">{{ $label }}</label>
             <input type="number" name="{{ $name }}" step="0.01" value="{{ old($name) }}"
-                class="flex-1 border-gray-300 rounded-lg text-sm focus:border-primary focus:ring focus:ring-primary/20 {{ in_array($name,['gross_income','ebit','ebitda','net_income']) ? 'font-semibold bg-[#f8fafc]' : '' }}">
+                class="flex-1 border-gray-300 rounded-lg text-sm focus:border-primary focus:ring focus:ring-primary/20 {{ in_array($name,['gross_income','ebit','ebitda','net_income','eps']) ? 'font-semibold bg-[#f8fafc]' : '' }}">
         </div>
         @endforeach
     </div>

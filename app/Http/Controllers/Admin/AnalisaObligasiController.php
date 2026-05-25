@@ -30,7 +30,7 @@ class AnalisaObligasiController extends BaseAnalisaObligasiController
     {
         $request->validate(array_merge($this->validateBasicFields($request), [
             'input_mode' => 'required|in:manual,excel',
-            'pdf_lapkeu' => 'nullable|file|mimes:pdf|max:10240',
+            'pdf_lapkeu' => 'nullable|file|mimes:pdf|max:20480',
         ]));
 
         $data = array_merge(

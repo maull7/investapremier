@@ -112,7 +112,7 @@ class AnalisaLapkeuAiPlusJob implements ShouldQueue
             'net_revenue', 'cost_of_good_sold', 'gross_income', 'operational_expense',
             'laba_operasional', 'other_income_expense', 'interest_expense', 'income_before_tax',
             'taxes', 'ebit', 'ebitda', 'net_income_attributable_to_non_controlling_interest',
-            'net_income', 'cash_flows_operating_activities', 'cash_flows_investment',
+            'net_income', 'eps', 'cash_flows_operating_activities', 'cash_flows_investment',
             'cash_flows_financing',
         ];
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AnalisaSaham extends Model
 {
@@ -54,6 +55,7 @@ class AnalisaSaham extends Model
         'ebitda',
         'net_income_attributable_to_non_controlling_interest',
         'net_income',
+        'eps',
         'cash_flows_operating_activities',
         'cash_flows_investment',
         'cash_flows_financing',
@@ -106,6 +108,7 @@ class AnalisaSaham extends Model
         'ebitda' => 'decimal:2',
         'net_income_attributable_to_non_controlling_interest' => 'decimal:2',
         'net_income' => 'decimal:2',
+        'eps' => 'decimal:2',
         'cash_flows_operating_activities' => 'decimal:2',
         'cash_flows_investment' => 'decimal:2',
         'cash_flows_financing' => 'decimal:2',
@@ -116,5 +119,17 @@ class AnalisaSaham extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function brokerResearchDocuments(): HasMany
+    {
+        return $this->hasMany(AnalisaSahamBrokerResearchDocument::class)->latest();
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (AnalisaSaham $analisa) {
+            $analisa->brokerResearchDocuments()->get()->each->deleteStoredFile();
+        });
     }
 }

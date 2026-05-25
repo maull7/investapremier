@@ -4,12 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Jobs\AnalisaLapkeuAiJob;
 use App\Jobs\AnalisaLapkeuAiPlusJob;
+use App\Jobs\ParseLapkeuPdfJob;
+use App\Models\LapkeuPdfExtraction;
 use App\Services\GroqService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Smalot\PdfParser\Parser as PdfParser;
 
 abstract class AnalisaLapkeuController extends Controller
 {
@@ -80,13 +81,14 @@ abstract class AnalisaLapkeuController extends Controller
             'routePrefix'       => $prefix,
             'previewAiRoute'    => route($prefix . '.preview-ai'),
             'previewAiPlusRoute'=> $hasPlusRoute ? route($prefix . '.preview-ai-plus') : null,
-            'parsePdfRoute'     => route($prefix . '.parse-pdf'),
+            'parsePdfRoute'         => route($prefix . '.parse-pdf'),
+            'parsePdfStatusRoute'   => route($prefix . '.parse-pdf-status', ['uuid' => '__UUID__']),
         ]);
     }
 
-    public function parsePdf(Request $request, GroqService $groq)
+    public function parsePdf(Request $request)
     {
-        $request->validate(['file_pdf' => 'required|file|max:10240']);
+        $request->validate(['file_pdf' => 'required|file|mimes:pdf|max:20480']);
 
         $file = $request->file('file_pdf');
 
@@ -95,28 +97,48 @@ abstract class AnalisaLapkeuController extends Controller
             return response()->json(['success' => false, 'message' => 'File harus berformat PDF.'], 422);
         }
 
-        try {
-            $parser = new PdfParser();
-            $pdf    = $parser->parseFile($file->getPathname());
-            $text   = $pdf->getText();
-        } catch (\Throwable $e) {
-            \Log::error('[parsePdf] Gagal membaca PDF: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Gagal membaca PDF: ' . $e->getMessage()]);
-        }
-
-        try {
-            $data = $groq->parseLapkeuPdf($text, $this->instrumentType());
-        } catch (\Throwable $e) {
-            \Log::error('[parsePdf] Gagal parse AI: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Gagal parse AI: ' . $e->getMessage()]);
-        }
-
-        // Simpan PDF sementara
         $filename   = 'lapkeu-' . now()->format('Ymd-His') . '-' . Str::random(8) . '.pdf';
         $storedPath = $file->storeAs('lapkeu-pdfs', $filename, 'public');
-        $data['pdf_lapkeu_path'] = basename($storedPath);
 
-        return response()->json(['success' => true, 'message' => 'PDF berhasil diparse.', 'data' => $data]);
+        $extraction = LapkeuPdfExtraction::create([
+            'uuid' => (string) Str::uuid(),
+            'user_id' => $request->user()->id,
+            'instrumen' => $this->instrumentType(),
+            'status' => 'pending',
+            'file_path' => $storedPath,
+            'original_name' => $file->getClientOriginalName(),
+            'file_size' => $file->getSize(),
+        ]);
+
+        ParseLapkeuPdfJob::dispatch($extraction->id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'PDF berhasil diupload. Proses ekstraksi berjalan di background.',
+            'status' => $extraction->status,
+            'extraction_id' => $extraction->uuid,
+            'poll_url' => route($this->routePrefix() . '.parse-pdf-status', $extraction->uuid),
+        ], 202);
+    }
+
+    public function parsePdfStatus(Request $request, string $uuid)
+    {
+        $extraction = LapkeuPdfExtraction::where('uuid', $uuid)->firstOrFail();
+
+        abort_if($extraction->user_id !== $request->user()->id, 403);
+
+        return response()->json([
+            'success' => true,
+            'status' => $extraction->status,
+            'message' => match ($extraction->status) {
+                'completed' => 'Ekstraksi PDF selesai.',
+                'failed' => $extraction->error_message ?: 'Ekstraksi PDF gagal.',
+                'processing' => 'AI sedang membaca dan mengekstrak PDF.',
+                default => 'PDF masuk antrean ekstraksi.',
+            },
+            'data' => $extraction->status === 'completed' ? $extraction->result_data : null,
+            'error' => $extraction->status === 'failed' ? $extraction->error_message : null,
+        ]);
     }
 
     public function store(Request $request)
@@ -451,7 +473,7 @@ abstract class AnalisaLapkeuController extends Controller
             'net_revenue', 'cost_of_good_sold', 'gross_income', 'operational_expense',
             'laba_operasional', 'other_income_expense', 'interest_expense', 'income_before_tax',
             'taxes', 'ebit', 'ebitda', 'net_income_attributable_to_non_controlling_interest',
-            'net_income', 'cash_flows_operating_activities', 'cash_flows_investment',
+            'net_income', 'eps', 'cash_flows_operating_activities', 'cash_flows_investment',
             'cash_flows_financing',
         ];
 

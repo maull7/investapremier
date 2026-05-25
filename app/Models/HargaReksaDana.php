@@ -10,7 +10,9 @@ class HargaReksaDana extends Model
     protected $table = 'harga_reksa_dana';
 
     protected $fillable = [
-        'reksa_dana_id', 'tanggal', 'nab_per_unit',
+        'reksa_dana_id',
+        'tanggal',
+        'nab_per_unit',
     ];
 
     protected $casts = [

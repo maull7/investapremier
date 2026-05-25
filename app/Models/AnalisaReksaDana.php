@@ -11,9 +11,23 @@ class AnalisaReksaDana extends Model
     protected $table = 'analisa_reksa_dana';
 
     protected $fillable = [
-        'user_id', 'product_type', 'nama_reksa_dana', 'jenis_reksa_dana', 'kategori', 'mata_uang',
-        'total_aum', 'unit_penyertaan', 'return_1m', 'total_marcap_10_efek', 'status', 'catatan_admin',
-        'ai_narasi', 'ai_output', 'ai_narasi_plus', 'ai_output_plus', 'pdf_path',
+        'user_id',
+        'product_type',
+        'nama_reksa_dana',
+        'jenis_reksa_dana',
+        'kategori',
+        'mata_uang',
+        'total_aum',
+        'unit_penyertaan',
+        'return_1m',
+        'total_marcap_10_efek',
+        'status',
+        'catatan_admin',
+        'ai_narasi',
+        'ai_output',
+        'ai_narasi_plus',
+        'ai_output_plus',
+        'pdf_path',
     ];
 
     protected $casts = [

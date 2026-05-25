@@ -34,7 +34,10 @@ class AnalisaSahamController extends AnalisaLapkeuController
     {
         $request->validate(array_merge($this->validateBasicFields($request), [
             'input_mode' => 'required|in:manual,excel',
-            'pdf_lapkeu' => 'nullable|file|mimes:pdf|max:10240',
+            'pdf_lapkeu' => 'nullable|file|mimes:pdf|max:20480',
+            'broker_research' => 'nullable|array',
+            'broker_research.*.broker' => 'nullable|required_with:broker_research.*.document|string|max:100',
+            'broker_research.*.document' => 'nullable|file|mimes:pdf,docx|max:5120',
         ]));
 
         $data = array_merge(
@@ -58,6 +61,7 @@ class AnalisaSahamController extends AnalisaLapkeuController
         }
 
         $analisa = AnalisaSaham::create($data);
+        $this->persistInitialBrokerResearchDocument($request, $analisa);
 
         $this->persistLapkeuAiFromRequest($request, $analisa);
 
@@ -67,7 +71,7 @@ class AnalisaSahamController extends AnalisaLapkeuController
 
     public function show($analisa)
     {
-        $analisa = AnalisaSaham::findOrFail($analisa);
+        $analisa = AnalisaSaham::with('brokerResearchDocuments.uploader')->findOrFail($analisa);
         abort_if($analisa->user_id !== auth()->id(), 403);
 
         return view($this->showView(), [
@@ -120,5 +124,35 @@ class AnalisaSahamController extends AnalisaLapkeuController
         $analisa->delete();
 
         return redirect()->route($this->indexRouteName())->with('success', 'Data analisa saham berhasil dihapus.');
+    }
+
+    protected function persistInitialBrokerResearchDocument(Request $request, AnalisaSaham $analisa): void
+    {
+        if (!$request->hasFile('broker_research')) {
+            return;
+        }
+
+        $documents = $request->file('broker_research', []);
+        $brokers = $request->input('broker_research', []);
+
+        foreach ($documents as $index => $document) {
+            $file = $document['document'] ?? null;
+
+            if (!$file) {
+                continue;
+            }
+
+            $filename = now()->format('Ymd-His') . '-' . \Illuminate\Support\Str::random(10) . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('riset-broker/' . $analisa->id, $filename, 'public');
+
+            $analisa->brokerResearchDocuments()->create([
+                'uploaded_by' => $request->user()->id,
+                'broker' => $brokers[$index]['broker'] ?? '',
+                'original_name' => $file->getClientOriginalName(),
+                'file_path' => $path,
+                'mime_type' => $file->getClientMimeType(),
+                'file_size' => $file->getSize(),
+            ]);
+        }
     }
 }

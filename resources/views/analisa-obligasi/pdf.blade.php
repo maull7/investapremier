@@ -53,6 +53,7 @@
         ['EBIT', $analisa->ebit, true],
         ['EBITDA', $analisa->ebitda, true],
         ['Laba Bersih', $analisa->net_income, true],
+        ['EPS', $analisa->eps, true],
     ] as $row)
         @php [$rl, $rv] = $row; $bold = ($row[2] ?? false) ? 'bold' : ''; @endphp
         <tr><td class="{{ $bold }}">{{ $rl }}</td><td class="right {{ $bold }}">{{ $fmt($rv) }}</td></tr>
