@@ -37,6 +37,8 @@ use App\Http\Controllers\ReksaDanaController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use Illuminate\Support\Facades\Route;
 
+
+//before login
 Route::get('/', function () {
     return view('index');
 })->name('index');
