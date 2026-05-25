@@ -180,7 +180,7 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1">Upload PDF Laporan Keuangan</label>
                         <input type="file" id="pdf-parse-input" accept="application/pdf"
                             class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20">
-                        <p class="text-xs text-muted mt-1">Format PDF. Maks 2MB.</p>
+                        <p class="text-xs text-muted mt-1">Format PDF. Maks 20MB.</p>
                     </div>
                     <button type="button" @click="parsePdf()" :disabled="pdfLoading"
                         class="px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 disabled:opacity-50">
@@ -193,8 +193,8 @@
                         class="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-3"
                         x-text="pdfSuccess"></div>
                     <div x-show="pdfStatus && pdfLoading"
-                        class="text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-lg p-3"
-                        x-text="pdfStatus"></div>
+                        class="text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-lg p-3" x-text="pdfStatus">
+                    </div>
                     <div x-show="extractedData" class="border border-line rounded-lg overflow-hidden">
                         <div
                             class="px-4 py-3 bg-[#f8fafc] border-b border-line flex items-center justify-between gap-3 flex-wrap">
@@ -438,11 +438,16 @@
                             const maxAttempts = 120;
                             const poll = () => {
                                 attempts++;
-                                fetch(pollUrl, { headers: { 'Accept': 'application/json' } })
+                                fetch(pollUrl, {
+                                        headers: {
+                                            'Accept': 'application/json'
+                                        }
+                                    })
                                     .then(async r => {
                                         const resp = await r.json();
                                         if (!r.ok || !resp.success) {
-                                            reject(new Error(resp.message || 'Gagal cek status ekstraksi PDF.'));
+                                            reject(new Error(resp.message ||
+                                                'Gagal cek status ekstraksi PDF.'));
                                             return;
                                         }
 
@@ -455,12 +460,15 @@
                                         }
 
                                         if (resp.status === 'failed') {
-                                            reject(new Error(resp.error || resp.message || 'Ekstraksi PDF gagal.'));
+                                            reject(new Error(resp.error || resp.message ||
+                                                'Ekstraksi PDF gagal.'));
                                             return;
                                         }
 
                                         if (attempts >= maxAttempts) {
-                                            reject(new Error('Ekstraksi PDF belum selesai. Cek kembali beberapa saat lagi.'));
+                                            reject(new Error(
+                                                'Ekstraksi PDF belum selesai. Cek kembali beberapa saat lagi.'
+                                                ));
                                             return;
                                         }
 
@@ -505,7 +513,10 @@
                                     return;
                                 }
                                 this.aiParseSuccess = resp.message || 'PDF masuk antrean ekstraksi.';
-                                const d = await this.pollPdfExtraction(resp.poll_url || this.parsePdfStatusUrl.replace('__UUID__', resp.extraction_id), { ai: true });
+                                const d = await this.pollPdfExtraction(resp.poll_url || this.parsePdfStatusUrl.replace(
+                                    '__UUID__', resp.extraction_id), {
+                                    ai: true
+                                });
                                 if (!d || typeof d !== 'object' || Object.keys(d).length === 0) {
                                     this.aiParseError =
                                         'Gagal mengekstrak data dari PDF. Tidak ada data keuangan yang ditemukan.';
@@ -586,7 +597,8 @@
                                     return;
                                 }
                                 this.pdfStatus = resp.message || 'PDF masuk antrean ekstraksi.';
-                                const d = await this.pollPdfExtraction(resp.poll_url || this.parsePdfStatusUrl.replace('__UUID__', resp.extraction_id));
+                                const d = await this.pollPdfExtraction(resp.poll_url || this.parsePdfStatusUrl.replace(
+                                    '__UUID__', resp.extraction_id));
                                 if (!d || typeof d !== 'object' || Object.keys(d).length === 0) {
                                     this.pdfError =
                                         'Gagal mengekstrak data dari PDF. Tidak ada data keuangan yang ditemukan.';
@@ -686,7 +698,7 @@
                                 if (!r.ok || !resp.success) {
                                     if (resp.missing?.length) {
                                         this.aiPlusError = resp.message ||
-                                        'Lengkapi data Input Manual terlebih dahulu.';
+                                            'Lengkapi data Input Manual terlebih dahulu.';
                                     } else {
                                         this.aiPlusError = resp.message || 'Gagal memproses';
                                     }
