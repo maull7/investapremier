@@ -13,7 +13,7 @@
             <div class="flex items-center gap-2 mb-4">
                 <span class="text-lg">🤖</span>
                 <h3 class="font-semibold text-primary">Analisa AI</h3>
-                <span class="ml-auto text-xs text-muted bg-[#f1f5f9] px-2 py-1 rounded-full">Powered by Groq</span>
+                <span class="ml-auto text-xs text-muted bg-[#f1f5f9] px-2 py-1 rounded-full">Powered by OpenAI</span>
             </div>
 
             {{-- Tombol terapkan --}}

@@ -436,12 +436,9 @@ class PerencanaanInvestasiController extends Controller
 
     private function generateAiAnalysis(PerencanaanInvestasi $plan): ?array
     {
-        $apiKey = config('services.groq.key');
-        $model = config('services.groq.model');
-        $url = config('services.groq.url');
+        if (!config('services.openai.key') && !config('services.groq.key')) return null;
 
-        if (!$apiKey) return null;
-
+        $groq = app(\App\Services\GroqService::class);
         $systemPrompt = AiPrompt::get('system_perencanaan_investasi', 'Kamu adalah AI Financial Planning Assistant yang bertugas menganalisa perencanaan investasi pengguna. Hitung proyeksi kebutuhan dana, estimasi nilai investasi, dan berikan rekomendasi strategi.');
 
         $data = $this->buildDataSection($plan);
@@ -482,23 +479,11 @@ class PerencanaanInvestasiController extends Controller
 JSON
         );
 
-        $response = Http::withToken($apiKey)
-            ->timeout(90)
-            ->post($url, [
-                'model' => $model,
-                'temperature' => 0.3,
-                'messages' => [
-                    ['role' => 'system', 'content' => $systemPrompt],
-                    ['role' => 'user', 'content' => $data . "\n\n" . $instruksi],
-                ],
-            ]);
+        $raw = $groq->callAi([
+            ['role' => 'system', 'content' => $systemPrompt],
+            ['role' => 'user', 'content' => $data . "\n\n" . $instruksi],
+        ], 90, 0.3);
 
-        if (!$response->successful()) {
-            throw new \Exception('AI API error: ' . $response->body());
-        }
-
-        $body = $response->json();
-        $raw = $body['choices'][0]['message']['content'] ?? '';
         $parsed = $this->parseJsonOutput($raw);
 
         return ['raw' => $raw, 'parsed' => $parsed];

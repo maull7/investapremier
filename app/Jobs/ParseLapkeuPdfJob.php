@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\LapkeuPdfExtraction;
 use App\Services\GroqService;
+use App\Services\StockIdentityResolver;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -23,7 +24,7 @@ class ParseLapkeuPdfJob implements ShouldQueue
         $this->onQueue('ai');
     }
 
-    public function handle(GroqService $groq): void
+    public function handle(GroqService $groq, StockIdentityResolver $stockIdentityResolver): void
     {
         $extraction = LapkeuPdfExtraction::findOrFail($this->extractionId);
 
@@ -47,6 +48,9 @@ class ParseLapkeuPdfJob implements ShouldQueue
             }
 
             $data = $groq->parseLapkeuPdf($text, $extraction->instrumen);
+            if ($extraction->instrumen === 'Saham') {
+                $data = $stockIdentityResolver->enrich($data, $extraction->original_name);
+            }
             $data['pdf_lapkeu_path'] = basename($extraction->file_path);
 
             $extraction->update([

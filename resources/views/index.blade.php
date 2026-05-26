@@ -669,7 +669,7 @@
                 left: 24px;
                 right: 24px;
                 z-index: 30;
-                background: rgba(255,255,255,.98);
+                background: rgba(255, 255, 255, .98);
                 backdrop-filter: blur(20px);
                 flex-direction: column;
                 align-items: stretch;
@@ -678,29 +678,34 @@
                 font-size: 16px;
                 border: 1px solid var(--line);
                 border-radius: 8px;
-                box-shadow: 0 24px 50px rgba(15,23,42,.14);
+                box-shadow: 0 24px 50px rgba(15, 23, 42, .14);
                 padding: 12px;
                 opacity: 0;
                 pointer-events: none;
                 transform: translateY(-8px);
                 transition: opacity .2s, transform .2s
             }
+
             .menu a {
                 border-radius: 8px;
                 padding: 12px 14px
             }
+
             .menu a:hover {
                 background: #f8fafc;
                 color: #0f172a
             }
+
             .menu-open {
                 opacity: 1;
                 pointer-events: auto;
                 transform: translateY(0)
             }
+
             .menu-mobile-actions {
                 display: flex
             }
+
             .actions {
                 display: none
             }
@@ -834,7 +839,11 @@
         <div class="container nav-inner">
             <div class="brand">
                 <div class="brand-mark" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="M12 3l7 4v10l-7 4-7-4V7l7-4z"></path><path d="M12 8v8"></path><path d="M8.5 10.5l3.5 2 3.5-2"></path></svg>
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 3l7 4v10l-7 4-7-4V7l7-4z"></path>
+                        <path d="M12 8v8"></path>
+                        <path d="M8.5 10.5l3.5 2 3.5-2"></path>
+                    </svg>
                 </div>
                 <div>InvestaPremier<small>WealthOS</small></div>
             </div>
@@ -851,13 +860,35 @@
                 </div>
             </nav>
             <div class="actions">
-                <a class="btn ghost" href="{{ route('login') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><path d="M10 17l5-5-5-5"></path><path d="M15 12H3"></path></svg>Login</a>
-                <a class="btn primary" href="{{ route('register') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M19 8v6"></path><path d="M22 11h-6"></path></svg>Daftar</a>
-                <a class="btn ghost" href="{{ route('index.presentation') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h18v14H3z"></path><path d="M8 21h8"></path><path d="M12 17v4"></path></svg>Presentasi</a>
+                <a class="btn ghost" href="{{ route('login') }}"><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                        <path d="M10 17l5-5-5-5"></path>
+                        <path d="M15 12H3"></path>
+                    </svg>Login</a>
+                <a class="btn primary" href="{{ route('register') }}"><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M19 8v6"></path>
+                        <path d="M22 11h-6"></path>
+                    </svg>Daftar</a>
+                <a class="btn ghost" href="{{ route('index.presentation') }}"><svg viewBox="0 0 24 24"
+                        aria-hidden="true">
+                        <path d="M3 3h18v14H3z"></path>
+                        <path d="M8 21h8"></path>
+                        <path d="M12 17v4"></path>
+                    </svg>Presentasi</a>
             </div>
-            <button id="site-menu-toggle" type="button" class="hamburger" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
-                <svg class="menu-icon-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path></svg>
-                <svg class="menu-icon-close" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+            <button id="site-menu-toggle" type="button" class="hamburger" aria-expanded="false"
+                aria-controls="site-menu" aria-label="Menu">
+                <svg class="menu-icon-open" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 6h16"></path>
+                    <path d="M4 12h16"></path>
+                    <path d="M4 18h16"></path>
+                </svg>
+                <svg class="menu-icon-close" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M18 6 6 18"></path>
+                    <path d="m6 6 12 12"></path>
+                </svg>
             </button>
         </div>
     </header>
@@ -870,8 +901,16 @@
                 <p class="lead">Kelola portofolio, proteksi, pendidikan, legacy, pajak, dan review advisor dalam satu
                     platform yang elegan, aman, dan terstruktur untuk nasabah prioritas dan private.</p>
                 <div class="hero-cta">
-                    <a class="btn primary" href="{{ route('register') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>Mulai Sekarang</a>
-                    <a class="btn ghost" href="{{ route('index.presentation') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h18v14H3z"></path><path d="M8 21h8"></path><path d="M12 17v4"></path></svg>View Product Tour</a>
+                    <a class="btn primary" href="{{ route('register') }}"><svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M5 12h14"></path>
+                            <path d="m12 5 7 7-7 7"></path>
+                        </svg>Mulai Sekarang</a>
+                    <a class="btn ghost" href="{{ route('index.presentation') }}"><svg viewBox="0 0 24 24"
+                            aria-hidden="true">
+                            <path d="M3 3h18v14H3z"></path>
+                            <path d="M8 21h8"></path>
+                            <path d="M12 17v4"></path>
+                        </svg>View Product Tour</a>
                 </div>
                 <div class="stats">
                     <div class="stat"><b>All-in-one</b><span>360° wealth visibility</span></div>
@@ -918,7 +957,10 @@
                                             style="text-transform:none;letter-spacing:0;color:#64748b;margin-top:4px">
                                             Tampilan portofolio keluarga per kategori aset</div>
                                     </div>
-                                    <div class="metric-icon" style="color:#0f766e"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9v9z"></path><path d="M21 12A9 9 0 0 0 12 3"></path></svg></div>
+                                    <div class="metric-icon" style="color:#0f766e"><svg viewBox="0 0 24 24">
+                                            <path d="M21 12a9 9 0 1 1-9-9v9z"></path>
+                                            <path d="M21 12A9 9 0 0 0 12 3"></path>
+                                        </svg></div>
                                 </div>
                                 <div class="chart-row">
                                     <div class="bar-meta"><span>Saham</span><span>30%</span></div>
@@ -980,9 +1022,23 @@
                             <div class="card">
                                 <div style="font-weight:700">Alert Center</div>
                                 <div class="compact-list">
-                                    <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>Goal pendidikan kurang Rp 250 juta</span>
-                                    <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>2 dokumen perlu diperbarui</span>
-                                    <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9"></path><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"></path></svg>Premi asuransi jatuh tempo minggu ini</span>
+                                    <span><svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M12 9v4"></path>
+                                            <path d="M12 17h.01"></path>
+                                            <path
+                                                d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z">
+                                            </path>
+                                        </svg>Goal pendidikan kurang Rp 250 juta</span>
+                                    <span><svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <path d="M14 2v6h6"></path>
+                                            <path d="M16 13H8"></path>
+                                            <path d="M16 17H8"></path>
+                                        </svg>2 dokumen perlu diperbarui</span>
+                                    <span><svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9"></path>
+                                            <path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"></path>
+                                        </svg>Premi asuransi jatuh tempo minggu ini</span>
                                 </div>
                             </div>
                             <div class="card">
@@ -1030,36 +1086,61 @@
             </div>
             <div class="feature-grid">
                 <div class="feature">
-                    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9v9z"></path><path d="M21 12A9 9 0 0 0 12 3"></path></svg></div>
+                    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M21 12a9 9 0 1 1-9-9v9z"></path>
+                            <path d="M21 12A9 9 0 0 0 12 3"></path>
+                        </svg></div>
                     <h3>Portfolio Command Center</h3>
                     <p>Lihat seluruh aset, alokasi, likuiditas, dan progres investasi keluarga dalam satu dashboard
                         premium.</p>
                 </div>
                 <div class="feature">
-                    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 10 12 5 2 10l10 5 10-5z"></path><path d="M6 12v5c3 2 9 2 12 0v-5"></path></svg></div>
+                    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M22 10 12 5 2 10l10 5 10-5z"></path>
+                            <path d="M6 12v5c3 2 9 2 12 0v-5"></path>
+                        </svg></div>
                     <h3>Goal Planner</h3>
                     <p>Rencanakan pendidikan, pensiun, rumah, legacy fund, dan kebutuhan keluarga dengan target yang
                         terukur.</p>
                 </div>
                 <div class="feature">
-                    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg></div>
+                    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                                d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z">
+                            </path>
+                        </svg></div>
                     <h3>Protection Hub</h3>
                     <p>Kelola polis, beneficiary, premi, serta gap proteksi untuk menjaga stabilitas finansial keluarga.
                     </p>
                 </div>
                 <div class="feature">
-                    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"></path><path d="M5 21V9"></path><path d="M19 21V9"></path><path d="M3 9l9-6 9 6"></path><path d="M9 21v-8h6v8"></path></svg></div>
+                    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M3 21h18"></path>
+                            <path d="M5 21V9"></path>
+                            <path d="M19 21V9"></path>
+                            <path d="M3 9l9-6 9 6"></path>
+                            <path d="M9 21v-8h6v8"></path>
+                        </svg></div>
                     <h3>Legacy & Estate Desk</h3>
                     <p>Susun peta beneficiary, asset ownership, dan checklist warisan agar transisi kekayaan lebih
                         tertata.</p>
                 </div>
                 <div class="feature">
-                    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"></path><path d="M8 8h8"></path><path d="M8 12h8"></path><path d="M8 16h5"></path></svg></div>
+                    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z">
+                            </path>
+                            <path d="M8 8h8"></path>
+                            <path d="M8 12h8"></path>
+                            <path d="M8 16h5"></path>
+                        </svg></div>
                     <h3>Tax & Compliance Desk</h3>
                     <p>Pantau kalender pajak, dokumen pendukung, dan daftar tindak lanjut administratif keluarga.</p>
                 </div>
                 <div class="feature">
-                    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></div>
+                    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true">
+                            <rect x="3" y="11" width="18" height="11" rx="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg></div>
                     <h3>Secure Document Vault</h3>
                     <p>Simpan dokumen investasi, asuransi, pajak, dan legal dengan akses berbasis peran dan jejak audit.
                     </p>
@@ -1079,45 +1160,71 @@
                 <div>
                     <div class="dark-list">
                         <div class="list-item">
-                            <div class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></div>
+                            <div class="tick"><svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M20 6 9 17l-5-5"></path>
+                                </svg></div>
                             <div>Portfolio 360 dan net worth keluarga</div>
                         </div>
                         <div class="list-item">
-                            <div class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></div>
+                            <div class="tick"><svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M20 6 9 17l-5-5"></path>
+                                </svg></div>
                             <div>Goal-based planning untuk pendidikan, pensiun, legacy, dan likuiditas</div>
                         </div>
                         <div class="list-item">
-                            <div class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></div>
+                            <div class="tick"><svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M20 6 9 17l-5-5"></path>
+                                </svg></div>
                             <div>Tracking polis, beneficiary, dan gap proteksi</div>
                         </div>
                         <div class="list-item">
-                            <div class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></div>
+                            <div class="tick"><svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M20 6 9 17l-5-5"></path>
+                                </svg></div>
                             <div>Checklist dokumen pajak, legal, dan estate planning</div>
                         </div>
                         <div class="list-item">
-                            <div class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></div>
+                            <div class="tick"><svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M20 6 9 17l-5-5"></path>
+                                </svg></div>
                             <div>Review meeting, recommendation flow, dan task tracking</div>
                         </div>
                     </div>
                 </div>
                 <div class="feature-grid" style="margin-top:0;grid-template-columns:repeat(2,1fr)">
                     <div class="feature">
-                        <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path><path d="M2 13h20"></path></svg></div>
+                        <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true">
+                                <rect x="2" y="7" width="20" height="14" rx="2"></rect>
+                                <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path>
+                                <path d="M2 13h20"></path>
+                            </svg></div>
                         <h3>Investment & Allocation</h3>
                         <p>Memantau komposisi aset, likuiditas, dan status portofolio keluarga.</p>
                     </div>
                     <div class="feature">
-                        <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 10 12 5 2 10l10 5 10-5z"></path><path d="M6 12v5c3 2 9 2 12 0v-5"></path></svg></div>
+                        <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M22 10 12 5 2 10l10 5 10-5z"></path>
+                                <path d="M6 12v5c3 2 9 2 12 0v-5"></path>
+                            </svg></div>
                         <h3>Education & Retirement Goals</h3>
                         <p>Target-based planning yang terukur dan mudah ditinjau berkala.</p>
                     </div>
                     <div class="feature">
-                        <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg></div>
+                        <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path
+                                    d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z">
+                                </path>
+                            </svg></div>
                         <h3>Insurance & Protection</h3>
                         <p>Ringkasan polis, beneficiary, dan kebutuhan proteksi keluarga.</p>
                     </div>
                     <div class="feature">
-                        <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.9"></path><path d="M16 3.1a4 4 0 0 1 0 7.8"></path></svg></div>
+                        <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.9"></path>
+                                <path d="M16 3.1a4 4 0 0 1 0 7.8"></path>
+                            </svg></div>
                         <h3>Legacy & Estate Desk</h3>
                         <p>Checklist, peta aset, dan kesiapan transisi kekayaan keluarga.</p>
                     </div>
@@ -1201,41 +1308,64 @@
                 </div>
                 <div class="dark-list" style="margin-top:26px">
                     <div class="list-item" style="color:#334155">
-                        <div class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></div>
+                        <div class="tick"><svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M20 6 9 17l-5-5"></path>
+                            </svg></div>
                         <div>Role-based access untuk client, advisor, household member, dan admin</div>
                     </div>
                     <div class="list-item" style="color:#334155">
-                        <div class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></div>
+                        <div class="tick"><svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M20 6 9 17l-5-5"></path>
+                            </svg></div>
                         <div>Audit trail untuk login, akses dokumen, update data, dan tindak lanjut advisory</div>
                     </div>
                     <div class="list-item" style="color:#334155">
-                        <div class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></div>
+                        <div class="tick"><svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M20 6 9 17l-5-5"></path>
+                            </svg></div>
                         <div>Document vault dengan kontrol akses, histori versi, dan status dokumen</div>
                     </div>
                     <div class="list-item" style="color:#334155">
-                        <div class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></div>
+                        <div class="tick"><svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M20 6 9 17l-5-5"></path>
+                            </svg></div>
                         <div>Notifikasi terstruktur untuk review, jatuh tempo, dan action plan</div>
                     </div>
                 </div>
             </div>
             <div class="feature-grid" style="margin-top:0;grid-template-columns:repeat(2,1fr)">
                 <div class="security-card">
-                    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 9.5-2.2"></path><path d="M17 7h4v4"></path></svg></div>
+                    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true">
+                            <rect x="3" y="11" width="18" height="11" rx="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 9.5-2.2"></path>
+                            <path d="M17 7h4v4"></path>
+                        </svg></div>
                     <h3>Access Control</h3>
                     <p>Hak akses terstruktur berbasis peran dan household.</p>
                 </div>
                 <div class="security-card">
-                    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg></div>
+                    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <path d="M14 2v6h6"></path>
+                            <path d="M16 13H8"></path>
+                            <path d="M16 17H8"></path>
+                        </svg></div>
                     <h3>Document Audit</h3>
                     <p>Setiap dokumen dapat diberi status, versi, dan histori akses.</p>
                 </div>
                 <div class="security-card">
-                    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9"></path><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"></path></svg></div>
+                    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9"></path>
+                            <path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"></path>
+                        </svg></div>
                     <h3>Smart Alerts</h3>
                     <p>Reminder untuk goal gap, polis, pajak, dan review berkala.</p>
                 </div>
                 <div class="security-card">
-                    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg></div>
+                    <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            <path d="M9 12l2 2 4-4"></path>
+                        </svg></div>
                     <h3>Operational Trust</h3>
                     <p>Dirancang untuk membangun kepercayaan nasabah premium.</p>
                 </div>

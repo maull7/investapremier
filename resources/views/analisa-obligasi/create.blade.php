@@ -1,7 +1,7 @@
 @extends($layout ?? 'layouts.user')
 
 @section('content')
-    <div class="max-w-5xl" x-data="lapkeuForm('{{ $previewAiRoute }}', '{{ $previewAiPlusRoute }}', '{{ $parsePdfRoute }}', '{{ $parsePdfStatusRoute }}')">
+    <div class="max-w-5xl" x-data="lapkeuForm('{{ $previewAiRoute }}', '{{ $previewAiPlusRoute }}', '{{ $parsePdfRoute }}', '{{ $parsePdfVisionRoute }}', '{{ $parsePdfStatusRoute }}')">
         <div class="mb-6">
             <h1 class="text-xl font-bold text-primary">Submit Analisa {{ $productLabel }}</h1>
             <p class="text-sm text-muted mt-0.5">Isi data laporan keuangan obligasi secara manual atau upload Excel</p>
@@ -195,6 +195,16 @@
                             class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20">
                         <p class="text-xs text-muted mt-1">Format PDF. Maks 20MB.</p>
                     </div>
+                    <div class="flex flex-wrap gap-3 text-sm">
+                        <label class="inline-flex items-center gap-2">
+                            <input type="radio" value="text" x-model="pdfScanMode" class="text-primary focus:ring-primary/20">
+                            <span>PDF parser teks</span>
+                        </label>
+                        <label class="inline-flex items-center gap-2">
+                            <input type="radio" value="vision" x-model="pdfScanMode" class="text-primary focus:ring-primary/20">
+                            <span>Scan AI Vision</span>
+                        </label>
+                    </div>
                     <button type="button" @click="parsePdf()" :disabled="pdfLoading"
                         class="px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 disabled:opacity-50">
                         <span x-show="!pdfLoading">Ekstrak & Isi Form Otomatis</span>
@@ -265,7 +275,7 @@
 
     @push('scripts')
         <script>
-            function lapkeuForm(previewAiUrl, previewAiPlusUrl, parsePdfUrl, parsePdfStatusUrl) {
+            function lapkeuForm(previewAiUrl, previewAiPlusUrl, parsePdfUrl, parsePdfVisionUrl, parsePdfStatusUrl) {
                 @php
                     $plusLabels = [
                         'total_asset' => 'Total Aset',
@@ -294,6 +304,7 @@
                     pdfSuccess: '',
                     pdfStatus: '',
                     pdfPath: '',
+                    pdfScanMode: 'text',
                     extractedData: null,
                     extractionPreviewFields: [{
                             key: 'periode',
@@ -342,6 +353,7 @@
                     ],
                     plusRequiredLabels: @json($plusLabels),
                     parsePdfUrl: parsePdfUrl,
+                    parsePdfVisionUrl: parsePdfVisionUrl,
                     parsePdfStatusUrl: parsePdfStatusUrl,
 
                     onPdfSelected(event) {
@@ -372,9 +384,17 @@
                         if (d.kupon) set('kupon', d.kupon);
                         if (d.ytm) set('ytm', d.ytm);
                         const numFields = ['total_asset', 'current_asset', 'cash_equivalents', 'account_receivable',
-                            'inventories', 'fixed_asset', 'total_liabilities', 'current_liabilities', 'long_term_loans',
-                            'equity', 'net_revenue', 'gross_income', 'laba_operasional', 'ebit', 'ebitda',
-                            'interest_expense', 'income_before_tax', 'taxes', 'net_income', 'eps',
+                            'inventories', 'other_current_asset', 'fixed_asset', 'other_non_current_asset',
+                            'total_liabilities', 'current_liabilities', 'account_payable', 'accruals',
+                            'short_term_loans', 'current_maturities_of_long_term_loans',
+                            'other_current_liabilities', 'long_term_loans', 'other_non_current_liabilities',
+                            'total_non_current_liabilities', 'share_capital', 'additional_paid_in_capital',
+                            'retained_earning', 'others', 'non_controlling_interest',
+                            'total_equity_equity_to_parent_entity', 'equity', 'net_revenue',
+                            'cost_of_good_sold', 'gross_income', 'operational_expense', 'laba_operasional',
+                            'other_income_expense', 'ebit', 'ebitda', 'interest_expense',
+                            'income_before_tax', 'taxes',
+                            'net_income_attributable_to_non_controlling_interest', 'net_income', 'eps',
                             'cash_flows_operating_activities', 'cash_flows_investment', 'cash_flows_financing'
                         ];
                         numFields.forEach(f => set(f, d[f]));
@@ -437,6 +457,37 @@
                         });
                     },
 
+                    submitPdfExtraction(file, options = {}) {
+                        const fd = new FormData();
+                        fd.append('file_pdf', file);
+                        fd.append('_token', document.querySelector('meta[name=csrf-token]')?.content || '{{ csrf_token() }}');
+
+                        const useVision = this.pdfScanMode === 'vision';
+                        const url = useVision && this.parsePdfVisionUrl ? this.parsePdfVisionUrl : this.parsePdfUrl;
+
+                        return fetch(url, {
+                                method: 'POST',
+                                headers: { 'Accept': 'application/json' },
+                                body: fd
+                            })
+                            .then(async r => {
+                                const resp = await r.json();
+                                if (!r.ok || !resp.success) {
+                                    throw new Error(resp.message || 'Gagal membaca PDF.');
+                                }
+
+                                if (resp.status && resp.status !== 'completed') {
+                                    this.pdfStatus = resp.message || 'PDF masuk antrean ekstraksi.';
+                                    if (options.ai) this.aiParseSuccess = this.pdfStatus;
+                                    return this.pollPdfExtraction(resp.poll_url || this.parsePdfStatusUrl.replace('__UUID__', resp.extraction_id), options);
+                                }
+
+                                this.pdfStatus = resp.message || (useVision ? 'Scan AI selesai.' : 'Ekstraksi PDF selesai.');
+                                if (options.ai) this.aiParseSuccess = this.pdfStatus;
+                                return resp.data || {};
+                            });
+                    },
+
                     runAiFromPdf() {
                         if (!this.aiPdfFile) {
                             this.aiParseError = 'Pilih file PDF terlebih dahulu.';
@@ -449,30 +500,8 @@
                         this.aiParseSuccess = '';
                         this.aiResult = null;
 
-                        const fd = new FormData();
-                        fd.append('file_pdf', this.aiPdfFile);
-                        fd.append('_token', document.querySelector('meta[name=csrf-token]')?.content || '{{ csrf_token() }}');
-
-                        fetch(this.parsePdfUrl, {
-                                method: 'POST',
-                                headers: {
-                                    'Accept': 'application/json'
-                                },
-                                body: fd
-                            })
-                            .then(async r => {
-                                const resp = await r.json();
-                                if (!r.ok || !resp.success) {
-                                    this.aiParseError = resp.message || 'Gagal membaca PDF.';
-                                    this.aiLoading = false;
-                                    this.aiParseLoading = false;
-                                    return;
-                                }
-                                this.aiParseSuccess = resp.message || 'PDF masuk antrean ekstraksi.';
-                                const d = await this.pollPdfExtraction(resp.poll_url || this.parsePdfStatusUrl.replace(
-                                    '__UUID__', resp.extraction_id), {
-                                    ai: true
-                                });
+                        this.submitPdfExtraction(this.aiPdfFile, { ai: true })
+                            .then(d => {
                                 if (!d || typeof d !== 'object' || Object.keys(d).length === 0) {
                                     this.aiParseError =
                                         'Gagal mengekstrak data dari PDF. Tidak ada data keuangan yang ditemukan.';
@@ -536,25 +565,8 @@
                         this.pdfSuccess = '';
                         this.pdfStatus = '';
                         this.extractedData = null;
-                        const fd = new FormData();
-                        fd.append('file_pdf', fileInput.files[0]);
-                        fd.append('_token', document.querySelector('meta[name=csrf-token]')?.content || '{{ csrf_token() }}');
-                        fetch(parsePdfUrl, {
-                                method: 'POST',
-                                headers: {
-                                    'Accept': 'application/json'
-                                },
-                                body: fd
-                            })
-                            .then(async r => {
-                                const resp = await r.json();
-                                if (!r.ok || !resp.success) {
-                                    this.pdfError = resp.message || 'Gagal';
-                                    return;
-                                }
-                                this.pdfStatus = resp.message || 'PDF masuk antrean ekstraksi.';
-                                const d = await this.pollPdfExtraction(resp.poll_url || this.parsePdfStatusUrl.replace(
-                                    '__UUID__', resp.extraction_id));
+                        this.submitPdfExtraction(fileInput.files[0])
+                            .then(d => {
                                 if (!d || typeof d !== 'object' || Object.keys(d).length === 0) {
                                     this.pdfError =
                                         'Gagal mengekstrak data dari PDF. Tidak ada data keuangan yang ditemukan.';

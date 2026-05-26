@@ -3,19 +3,71 @@
 namespace App\Services;
 
 use App\Models\AnalisaReksaDana;
-use Illuminate\Support\Facades\Http;
 
 class GroqService
 {
-    private string $apiKey;
-    private string $model;
-    private string $url;
+    private string $openaiKey;
+    private string $openaiModel;
+    private string $openaiUrl;
+
+    private string $groqKey;
+    private string $groqModel;
+    private string $groqUrl;
 
     public function __construct()
     {
-        $this->apiKey = config('services.groq.key');
-        $this->model  = config('services.groq.model');
-        $this->url    = config('services.groq.url');
+        $this->openaiKey   = config('services.openai.key');
+        $this->openaiModel = config('services.openai.model', 'gpt-4.1-mini');
+        $this->openaiUrl   = config('services.openai.url');
+
+        $this->groqKey   = config('services.groq.key');
+        $this->groqModel = config('services.groq.model', 'llama-3.3-70b-versatile');
+        $this->groqUrl   = config('services.groq.url');
+    }
+
+    public function callAi(array $messages, int $timeout = 90, float $temperature = 0.3): string
+    {
+        if ($this->openaiKey) {
+            try {
+                \Log::info('[AI] Menggunakan OpenAI: ' . $this->openaiModel);
+                $response = \Illuminate\Support\Facades\Http::withToken($this->openaiKey)
+                    ->timeout($timeout)
+                    ->post($this->openaiUrl, [
+                        'model'       => $this->openaiModel,
+                        'temperature' => $temperature,
+                        'messages'    => $messages,
+                    ]);
+
+                if ($response->successful()) {
+                    $content = $response->json('choices.0.message.content', '');
+                    if (!empty(trim($content))) {
+                        return $content;
+                    }
+                }
+                \Log::warning('[AI] OpenAI gagal (status: ' . $response->status() . '), fallback ke Groq.');
+            } catch (\Throwable $e) {
+                \Log::warning('[AI] OpenAI exception: ' . $e->getMessage() . ', fallback ke Groq.');
+            }
+        }
+
+        if (!$this->groqKey) {
+            throw new \RuntimeException('AI API error: Tidak ada API key yang tersedia. OpenAI dan Groq gagal.');
+        }
+
+        \Log::info('[AI] Menggunakan Groq (fallback): ' . $this->groqModel);
+        $response = \Illuminate\Support\Facades\Http::withToken($this->groqKey)
+            ->timeout($timeout + 30)
+            ->post($this->groqUrl, [
+                'model'       => $this->groqModel,
+                'temperature' => $temperature,
+                'messages'    => $messages,
+            ]);
+
+        if ($response->failed()) {
+            throw new \RuntimeException('AI API error: ' . $response->body());
+        }
+
+        return $response->json('choices.0.message.content', '');
     }
 
     public function parseFfsPdf(string $pdfText): array
@@ -34,6 +86,7 @@ Ekstrak data dari teks Fund Fact Sheet berikut. Kembalikan HANYA JSON valid deng
 {
   "nama_reksa_dana": "string atau null",
   "jenis_reksa_dana": "Saham" atau "Pendapatan Tetap" atau "Campuran" atau "Pasar Uang" atau null,
+  "kategori": ["Konvensional", "Syariah", "index", "ETF"],
   "total_aum": angka rupiah penuh atau null,
   "total_marcap_10_efek": angka rupiah penuh atau null,
   "sektor": [
@@ -45,7 +98,7 @@ Ekstrak data dari teks Fund Fact Sheet berikut. Kembalikan HANYA JSON valid deng
       "nama_efek": "string nama lengkap",
       "sektor": "string nama sektor efek ini atau kosong",
       "bobot": angka_persen,
-      "kontribusi_kinerja": angka_persen_atau_null,
+      "kontribusi_kinerja": angka_persen_kontribusi_ihsg_atau_null,
       "market_cap": angka_rupiah_penuh_atau_null,
       "top_10": true jika masuk 10 efek terbesar
     }
@@ -74,6 +127,14 @@ Ekstrak data dari teks Fund Fact Sheet berikut. Kembalikan HANYA JSON valid deng
 }
 
 ATURAN:
+- nama_reksa_dana harus nama produk reksa dana yang spesifik, bukan "Fund Fact Sheet", bukan nama manajer investasi, dan bukan nama bank kustodian.
+- kategori boleh berisi lebih dari satu nilai jika dokumen menyebut Syariah, ETF, Index/Indeks, atau Konvensional.
+- kode_efek wajib diisi untuk saham jika tersedia; gunakan ticker BEI tanpa akhiran jika dokumen hanya menampilkan nama saham.
+- sektor pada daftar efek wajib diisi jika sektor efek tersedia di dokumen atau dapat disimpulkan kuat dari tabel sektor/top holdings.
+- kontribusi_kinerja adalah kontribusi terhadap IHSG/kinerja portofolio dalam persen jika tersedia.
+- market_cap dalam Rupiah penuh jika tersedia.
+- kode_obligasi dan nama_obligasi harus dipisah; contoh kode FR0091, PBS036, INDON34.
+- Untuk bank, isi bobot/CAR/NPL/klasifikasi jika ada. Jika hanya ada nama dan bobot deposito/kas di bank, tetap isi nama_bank dan bobot.
 - total_aum dan total_marcap_10_efek dalam Rupiah penuh (misal 1.5 triliun = 1500000000000)
 - bobot dalam persen (misal 12.5, bukan 0.125)
 - periode kinerja format YYYY-MM (misal "2024-03")
@@ -86,48 +147,58 @@ PROMPT,
             ],
         ];
 
-        // Coba OpenAI dulu
-        $openaiKey = config('services.openai.key');
-        if ($openaiKey) {
-            try {
-                \Log::info('[FFS Parser] Menggunakan OpenAI: ' . config('services.openai.model', 'gpt-4o-mini'));
-                $response = Http::withToken($openaiKey)
-                    ->timeout(60)
-                    ->post(config('services.openai.url'), [
-                        'model'       => config('services.openai.model', 'gpt-4o-mini'),
-                        'temperature' => 0.1,
-                        'messages'    => $messages,
-                    ]);
+        $raw = $this->callAi($messages, 90, 0.1);
+        return self::parseJsonOutput($raw);
+    }
 
-                if ($response->successful()) {
-                    $raw = $response->json('choices.0.message.content', '');
-                    $parsed = self::parseJsonOutput($raw);
-                    if (!empty($parsed)) {
-                        \Log::info('[FFS Parser] OpenAI berhasil, ' . count($parsed) . ' field diekstrak.');
-                        return $parsed;
-                    }
-                }
-                \Log::warning('[FFS Parser] OpenAI gagal atau hasil kosong, fallback ke Groq. Status: ' . $response->status());
-            } catch (\Throwable $e) {
-                \Log::warning('[FFS Parser] OpenAI exception: ' . $e->getMessage() . ', fallback ke Groq.');
-            }
-        }
+    public function parseFfsPdfVision(string $pdfPath, ?string $filename = null): array
+    {
+        $prompt = <<<PROMPT
+Baca PDF Fund Fact Sheet berikut seperti analis yang melihat halaman PDF langsung. Ekstrak data dan kembalikan HANYA JSON valid dengan struktur PERSIS seperti ini:
 
-        // Fallback ke Groq
-        \Log::info('[FFS Parser] Menggunakan Groq: ' . $this->model);
-        $response = Http::withToken($this->apiKey)
-            ->timeout(90)
-            ->post($this->url, [
-                'model'       => $this->model,
-                'temperature' => 0.1,
-                'messages'    => $messages,
-            ]);
+{
+  "nama_reksa_dana": "string atau null",
+  "jenis_reksa_dana": "Saham" atau "Pendapatan Tetap" atau "Campuran" atau "Pasar Uang" atau null,
+  "kategori": ["Konvensional", "Syariah", "index", "ETF"],
+  "total_aum": angka rupiah penuh atau null,
+  "total_marcap_10_efek": angka rupiah penuh atau null,
+  "sektor": [{"nama_sektor": "string", "bobot": angka_persen}],
+  "efek": [{
+    "kode_efek": "string",
+    "nama_efek": "string",
+    "sektor": "string atau kosong",
+    "bobot": angka_persen,
+    "kontribusi_kinerja": angka_persen_kontribusi_ihsg_atau_null,
+    "market_cap": angka_rupiah_penuh_atau_null,
+    "top_10": true
+  }],
+  "kinerja": [{"periode": "YYYY-MM", "return_pct": angka}],
+  "obligasi": [{
+    "kode_obligasi": "string",
+    "nama_obligasi": "string",
+    "bobot": angka_persen,
+    "durasi": angka_tahun_atau_null,
+    "rating": "string atau null"
+  }],
+  "bank": [{
+    "nama_bank": "string",
+    "bobot": angka_persen_atau_null,
+    "car": angka_persen_atau_null,
+    "npl": angka_persen_atau_null,
+    "klasifikasi_risiko": "Rendah" atau "Sedang" atau "Tinggi" atau null
+  }]
+}
 
-        if ($response->failed()) {
-            throw new \RuntimeException('Groq API error: ' . $response->body());
-        }
+ATURAN:
+- Gunakan tampilan halaman PDF, tabel, header, footnote, dan teks kecil jika terbaca.
+- nama_reksa_dana harus nama produk yang spesifik, bukan judul "Fund Fact Sheet".
+- Isi kode efek, sektor, kontribusi IHSG/kinerja, market cap, kode/nama obligasi, dan data bank jika terlihat.
+- Jika data tidak ada gunakan null atau array kosong [].
+- Output HANYA JSON valid, tanpa markdown.
+PROMPT;
 
-        $raw = $response->json('choices.0.message.content', '');
+        $raw = $this->callOpenAiPdf($pdfPath, $filename, $prompt, 180, 0.1);
+
         return self::parseJsonOutput($raw);
     }
 
@@ -135,28 +206,16 @@ PROMPT,
     {
         $prompt = $this->buildPrompt($analisa);
 
-        $response = Http::withToken($this->apiKey)
-            ->timeout(60)
-            ->post($this->url, [
-                'model'       => $this->model,
-                'temperature' => 0.7,
-                'messages'    => [
-                    [
-                        'role'    => 'system',
-                        'content' => 'Kamu adalah analis investasi profesional Indonesia yang ahli dalam analisa Reksa Dana. Berikan analisa yang jelas, informatif, dan mudah dipahami investor. Gunakan Bahasa Indonesia yang baik. Format output menggunakan teks biasa tanpa markdown.',
-                    ],
-                    [
-                        'role'    => 'user',
-                        'content' => $prompt,
-                    ],
-                ],
-            ]);
-
-        if ($response->failed()) {
-            throw new \RuntimeException('Groq API error: '.$response->body());
-        }
-
-        return $response->json('choices.0.message.content', '');
+        return $this->callAi([
+            [
+                'role'    => 'system',
+                'content' => 'Kamu adalah analis investasi profesional Indonesia yang ahli dalam analisa Reksa Dana. Berikan analisa yang jelas, informatif, dan mudah dipahami investor. Gunakan Bahasa Indonesia yang baik. Format output menggunakan teks biasa tanpa markdown.',
+            ],
+            [
+                'role'    => 'user',
+                'content' => $prompt,
+            ],
+        ], 60, 0.7);
     }
 
     public function generateNarasiAnalisaStructured(AnalisaReksaDana $analisa, string $productType = 'reksa_dana'): array
@@ -165,22 +224,11 @@ PROMPT,
         $systemKey = $productType === 'unit_link' ? 'system_analisa_unit_link' : 'system_analisa';
         $systemPrompt = \App\Models\AiPrompt::get($systemKey, 'Kamu adalah analis investasi profesional Indonesia yang ahli dalam analisa Reksa Dana. Gunakan Bahasa Indonesia yang baik. Keluarkan jawaban dalam format JSON valid tanpa teks tambahan.');
 
-        $response = Http::withToken($this->apiKey)
-            ->timeout(90)
-            ->post($this->url, [
-                'model'       => $this->model,
-                'temperature' => 0.3,
-                'messages'    => [
-                    ['role' => 'system', 'content' => $systemPrompt],
-                    ['role' => 'user',   'content' => $prompt],
-                ],
-            ]);
+        $raw = $this->callAi([
+            ['role' => 'system', 'content' => $systemPrompt],
+            ['role' => 'user',   'content' => $prompt],
+        ], 90, 0.3);
 
-        if ($response->failed()) {
-            throw new \RuntimeException('Groq API error: '.$response->body());
-        }
-
-        $raw = $response->json('choices.0.message.content', '');
         $parsed = $this->parseJsonOutput($raw);
 
         return [
@@ -194,22 +242,11 @@ PROMPT,
         $prompt = $this->buildPlusStructuredPrompt($analisa);
         $systemPrompt = \App\Models\AiPrompt::get('system_analisa_plus', 'Kamu adalah analis investasi senior Indonesia yang ahli analisa mendalam Reksa Dana. Gunakan Bahasa Indonesia. Keluarkan jawaban dalam format JSON valid tanpa teks tambahan.');
 
-        $response = Http::withToken($this->apiKey)
-            ->timeout(120)
-            ->post($this->url, [
-                'model'       => $this->model,
-                'temperature' => 0.3,
-                'messages'    => [
-                    ['role' => 'system', 'content' => $systemPrompt],
-                    ['role' => 'user',   'content' => $prompt],
-                ],
-            ]);
+        $raw = $this->callAi([
+            ['role' => 'system', 'content' => $systemPrompt],
+            ['role' => 'user',   'content' => $prompt],
+        ], 120, 0.3);
 
-        if ($response->failed()) {
-            throw new \RuntimeException('Groq API error: '.$response->body());
-        }
-
-        $raw = $response->json('choices.0.message.content', '');
         $parsed = $this->parseJsonOutput($raw);
 
         return [
@@ -318,22 +355,11 @@ PROMPT;
         $promptKey = $instrumen === 'Obligasi' ? 'system_analisa_obligasi' : 'system_analisa_saham';
         $systemPrompt = \App\Models\AiPrompt::get($promptKey, "Kamu adalah analis keuangan profesional Indonesia yang ahli menganalisa laporan keuangan {$instrumen}. Keluarkan jawaban dalam format JSON valid tanpa teks tambahan.");
 
-        $response = Http::withToken($this->apiKey)
-            ->timeout(90)
-            ->post($this->url, [
-                'model'       => $this->model,
-                'temperature' => 0.3,
-                'messages'    => [
-                    ['role' => 'system', 'content' => $systemPrompt],
-                    ['role' => 'user',   'content' => $prompt],
-                ],
-            ]);
+        $raw = $this->callAi([
+            ['role' => 'system', 'content' => $systemPrompt],
+            ['role' => 'user',   'content' => $prompt],
+        ], 90, 0.3);
 
-        if ($response->failed()) {
-            throw new \RuntimeException('Groq API error: ' . $response->body());
-        }
-
-        $raw = $response->json('choices.0.message.content', '');
         $parsed = self::parseJsonOutput($raw);
 
         $narasiParts = [];
@@ -582,22 +608,11 @@ PROMPT;
         $promptKey = $instrumen === 'Obligasi' ? 'system_analisa_obligasi_plus' : 'system_analisa_saham_plus';
         $systemPrompt = \App\Models\AiPrompt::get($promptKey, "Kamu adalah analis keuangan senior Indonesia yang ahli analisa mendalam laporan keuangan {$instrumen}. Keluarkan jawaban dalam format JSON valid tanpa teks tambahan.");
 
-        $response = Http::withToken($this->apiKey)
-            ->timeout(120)
-            ->post($this->url, [
-                'model'       => $this->model,
-                'temperature' => 0.3,
-                'messages'    => [
-                    ['role' => 'system', 'content' => $systemPrompt],
-                    ['role' => 'user',   'content' => $prompt],
-                ],
-            ]);
+        $raw = $this->callAi([
+            ['role' => 'system', 'content' => $systemPrompt],
+            ['role' => 'user',   'content' => $prompt],
+        ], 120, 0.3);
 
-        if ($response->failed()) {
-            throw new \RuntimeException('Groq API error: ' . $response->body());
-        }
-
-        $raw = $response->json('choices.0.message.content', '');
         $parsed = self::parseJsonOutput($raw);
 
         $narasiParts = [];
@@ -635,19 +650,14 @@ EXTRA;
 EXTRA;
         }
 
-        $response = Http::withToken($this->apiKey)
-            ->timeout(90)
-            ->post($this->url, [
-                'model'       => $this->model,
-                'temperature' => 0.1,
-                'messages'    => [
-                    [
-                        'role'    => 'system',
-                        'content' => "Kamu adalah parser laporan keuangan {$instrumen} Indonesia. Ekstrak data keuangan dari teks PDF dan kembalikan HANYA JSON valid tanpa teks lain.",
-                    ],
-                    [
-                        'role'    => 'user',
-                        'content' => <<<PROMPT
+        $raw = $this->callAi([
+            [
+                'role'    => 'system',
+                'content' => "Kamu adalah parser laporan keuangan {$instrumen} Indonesia. Ekstrak data keuangan dari teks PDF dan kembalikan HANYA JSON valid tanpa teks lain.",
+            ],
+            [
+                'role'    => 'user',
+                'content' => <<<PROMPT
 Ekstrak data laporan keuangan dari teks berikut. Kembalikan HANYA JSON valid:
 
 {
@@ -659,14 +669,32 @@ Ekstrak data laporan keuangan dari teks berikut. Kembalikan HANYA JSON valid:
   "cash_equivalents": angka atau null,
   "account_receivable": angka atau null,
   "inventories": angka atau null,
+  "other_current_asset": angka atau null,
   "fixed_asset": angka atau null,
+  "other_non_current_asset": angka atau null,
   "total_liabilities": angka atau null,
   "current_liabilities": angka atau null,
+  "account_payable": angka atau null,
+  "accruals": angka atau null,
+  "short_term_loans": angka atau null,
+  "current_maturities_of_long_term_loans": angka atau null,
+  "other_current_liabilities": angka atau null,
   "long_term_loans": angka atau null,
+  "other_non_current_liabilities": angka atau null,
+  "total_non_current_liabilities": angka atau null,
+  "share_capital": angka atau null,
+  "additional_paid_in_capital": angka atau null,
+  "retained_earning": angka atau null,
+  "others": angka atau null,
+  "non_controlling_interest": angka atau null,
+  "total_equity_equity_to_parent_entity": angka atau null,
   "equity": angka atau null,
   "net_revenue": angka atau null,
+  "cost_of_good_sold": angka atau null,
   "gross_income": angka atau null,
+  "operational_expense": angka atau null,
   "laba_operasional": angka atau null,
+  "other_income_expense": angka atau null,
   "ebit": angka atau null,
   "ebitda": angka atau null,
   "interest_expense": angka atau null,
@@ -684,6 +712,13 @@ ATURAN:
 - Revenue/Pendapatan map ke net_revenue.
 - Net Profit/Laba Bersih map ke net_income.
 - Total Liability/Liabilitas map ke total_liabilities.
+- Aset Lancar Lainnya map ke other_current_asset.
+- Aset Tidak Lancar map ke fixed_asset jika labelnya aset tetap/non-current fixed assets; Aset Tidak Lancar Lainnya map ke other_non_current_asset.
+- Utang usaha map ke account_payable, beban akrual map ke accruals, pinjaman jangka pendek map ke short_term_loans.
+- Bagian lancar pinjaman jangka panjang map ke current_maturities_of_long_term_loans.
+- Liabilitas jangka pendek/lancar lainnya map ke other_current_liabilities.
+- Liabilitas jangka panjang lainnya map ke other_non_current_liabilities.
+- Modal saham map ke share_capital, tambahan modal disetor map ke additional_paid_in_capital, saldo laba map ke retained_earning.
 - Cash Flow map ke tiga field arus kas jika tersedia.
 - EPS/laba per saham map ke eps dan boleh bernilai desimal.
 - Semua angka laporan posisi keuangan, laba rugi, dan arus kas dalam satuan penuh (bukan juta/miliar), null jika tidak ada.
@@ -693,16 +728,134 @@ ATURAN:
 TEKS PDF:
 {$text}
 PROMPT,
+            ],
+        ], 90, 0.1);
+
+        return self::normalizeLapkeuPdfData(self::parseJsonOutput($raw), $isObligasi);
+    }
+
+    public function parseLapkeuPdfVision(string $pdfPath, string $instrumen = 'Saham', ?string $filename = null): array
+    {
+        $isObligasi = $instrumen === 'Obligasi';
+        $nameKey    = $isObligasi ? 'nama_obligasi' : 'nama_perusahaan';
+        $codeKey    = $isObligasi ? 'kode_obligasi' : 'kode_saham';
+        $extraFields = $isObligasi
+            ? <<<EXTRA
+  "{$nameKey}": "string atau null",
+  "{$codeKey}": "string atau null",
+  "nama_emiten": "string atau null",
+  "rating": "string atau null",
+  "kupon": angka atau null,
+  "ytm": angka atau null,
+EXTRA
+            : <<<EXTRA
+  "{$nameKey}": "string atau null",
+  "{$codeKey}": "string atau null",
+  "sektor": "string atau null",
+EXTRA;
+
+        $prompt = <<<PROMPT
+Baca PDF laporan keuangan {$instrumen} ini seperti analis yang melihat halaman PDF langsung. Fokus pada periode laporan terbaru. Kembalikan HANYA JSON valid:
+
+{
+{$extraFields}
+  "periode": "string misal Q4 2024 atau null",
+  "mata_uang": "IDR atau USD atau null",
+  "total_asset": angka atau null,
+  "current_asset": angka atau null,
+  "cash_equivalents": angka atau null,
+  "account_receivable": angka atau null,
+  "inventories": angka atau null,
+  "other_current_asset": angka atau null,
+  "fixed_asset": angka atau null,
+  "other_non_current_asset": angka atau null,
+  "total_liabilities": angka atau null,
+  "current_liabilities": angka atau null,
+  "account_payable": angka atau null,
+  "accruals": angka atau null,
+  "short_term_loans": angka atau null,
+  "current_maturities_of_long_term_loans": angka atau null,
+  "other_current_liabilities": angka atau null,
+  "long_term_loans": angka atau null,
+  "other_non_current_liabilities": angka atau null,
+  "total_non_current_liabilities": angka atau null,
+  "share_capital": angka atau null,
+  "additional_paid_in_capital": angka atau null,
+  "retained_earning": angka atau null,
+  "others": angka atau null,
+  "non_controlling_interest": angka atau null,
+  "total_equity_equity_to_parent_entity": angka atau null,
+  "equity": angka atau null,
+  "net_revenue": angka atau null,
+  "cost_of_good_sold": angka atau null,
+  "gross_income": angka atau null,
+  "operational_expense": angka atau null,
+  "laba_operasional": angka atau null,
+  "other_income_expense": angka atau null,
+  "ebit": angka atau null,
+  "ebitda": angka atau null,
+  "interest_expense": angka atau null,
+  "income_before_tax": angka atau null,
+  "taxes": angka atau null,
+  "net_income_attributable_to_non_controlling_interest": angka atau null,
+  "net_income": angka atau null,
+  "eps": angka atau null,
+  "cash_flows_operating_activities": angka atau null,
+  "cash_flows_investment": angka atau null,
+  "cash_flows_financing": angka atau null
+}
+
+ATURAN:
+- Baca tabel neraca, laba rugi, arus kas, catatan satuan, dan header periode dari PDF.
+- Semua angka dalam satuan penuh. Jika PDF menyebut "dalam jutaan Rupiah", kalikan 1.000.000; jika "dalam ribuan Rupiah", kalikan 1.000.
+- Jika ada beberapa periode, ambil kolom periode terbaru.
+- Output HANYA JSON valid, tanpa markdown.
+PROMPT;
+
+        $raw = $this->callOpenAiPdf($pdfPath, $filename, $prompt, 180, 0.1);
+
+        return self::normalizeLapkeuPdfData(self::parseJsonOutput($raw), $isObligasi);
+    }
+
+    private function callOpenAiPdf(string $pdfPath, ?string $filename, string $prompt, int $timeout = 180, float $temperature = 0.1): string
+    {
+        if (!$this->openaiKey) {
+            throw new \RuntimeException('OpenAI API key belum tersedia untuk scan PDF vision.');
+        }
+
+        $bytes = file_get_contents($pdfPath);
+        if ($bytes === false || $bytes === '') {
+            throw new \RuntimeException('File PDF tidak dapat dibaca untuk scan AI.');
+        }
+
+        $response = \Illuminate\Support\Facades\Http::withToken($this->openaiKey)
+            ->timeout($timeout)
+            ->post($this->openaiUrl, [
+                'model' => $this->openaiModel,
+                'temperature' => $temperature,
+                'messages' => [[
+                    'role' => 'user',
+                    'content' => [
+                        [
+                            'type' => 'file',
+                            'file' => [
+                                'filename' => $filename ?: basename($pdfPath),
+                                'file_data' => 'data:application/pdf;base64,' . base64_encode($bytes),
+                            ],
+                        ],
+                        [
+                            'type' => 'text',
+                            'text' => $prompt,
+                        ],
                     ],
-                ],
+                ]],
             ]);
 
         if ($response->failed()) {
-            throw new \RuntimeException('Groq API error: ' . $response->body());
+            throw new \RuntimeException('OpenAI PDF vision error: ' . $response->body());
         }
 
-        $raw = $response->json('choices.0.message.content', '');
-        return self::normalizeLapkeuPdfData(self::parseJsonOutput($raw), $isObligasi);
+        return $response->json('choices.0.message.content', '');
     }
 
     private static function normalizeLapkeuPdfData(array $data, bool $isObligasi): array
@@ -711,8 +864,28 @@ PROMPT,
             'net_revenue' => ['revenue', 'pendapatan', 'pendapatan_bersih', 'sales', 'net_sales'],
             'net_income' => ['net_profit', 'laba_bersih', 'profit_for_the_year', 'laba_tahun_berjalan'],
             'total_asset' => ['total_assets', 'total_aset'],
+            'current_asset' => ['aset_lancar', 'total_aset_lancar', 'current_assets'],
+            'other_current_asset' => ['aset_lancar_lainnya', 'other_current_assets', 'other_current_asset'],
+            'fixed_asset' => ['aset_tetap', 'non_current_assets', 'aset_tidak_lancar', 'fixed_assets'],
+            'other_non_current_asset' => ['aset_tidak_lancar_lainnya', 'other_non_current_assets', 'other_non_current_asset'],
             'total_liabilities' => ['total_liability', 'total_liabilitas', 'liabilities'],
+            'current_liabilities' => ['liabilitas_jangka_pendek', 'liabilitas_lancar', 'current_liability', 'current_liabilities'],
+            'account_payable' => ['utang_usaha', 'trade_payables', 'account_payables', 'accounts_payable'],
+            'short_term_loans' => ['pinjaman_jangka_pendek', 'short_term_borrowings', 'short_term_debt'],
+            'current_maturities_of_long_term_loans' => ['bagian_lancar_pinjaman_jangka_panjang', 'current_maturities'],
+            'other_current_liabilities' => ['liabilitas_lancar_lainnya', 'other_current_liabilities'],
+            'long_term_loans' => ['pinjaman_jangka_panjang', 'long_term_debt', 'long_term_borrowings'],
+            'other_non_current_liabilities' => ['liabilitas_jangka_panjang_lainnya', 'other_non_current_liabilities'],
+            'total_non_current_liabilities' => ['total_liabilitas_jangka_panjang', 'non_current_liabilities'],
             'equity' => ['total_equity', 'ekuitas', 'total_ekuitas'],
+            'share_capital' => ['modal_saham', 'share_capital'],
+            'additional_paid_in_capital' => ['tambahan_modal_disetor', 'additional_paid_in_capital'],
+            'retained_earning' => ['saldo_laba', 'retained_earnings'],
+            'non_controlling_interest' => ['kepentingan_non_pengendali', 'non_controlling_interests'],
+            'total_equity_equity_to_parent_entity' => ['ekuitas_entitas_induk', 'equity_attributable_to_parent'],
+            'cost_of_good_sold' => ['beban_pokok_penjualan', 'cost_of_goods_sold', 'cost_of_good_sold'],
+            'operational_expense' => ['beban_operasional', 'operating_expenses'],
+            'other_income_expense' => ['pendapatan_beban_lain_lain', 'other_income_expenses'],
             'cash_flows_operating_activities' => ['operating_cash_flow', 'cash_flow_from_operations', 'arus_kas_operasi'],
             'cash_flows_investment' => ['investing_cash_flow', 'cash_flow_from_investing', 'arus_kas_investasi'],
             'cash_flows_financing' => ['financing_cash_flow', 'cash_flow_from_financing', 'arus_kas_pendanaan'],
@@ -738,9 +911,15 @@ PROMPT,
             'nama_emiten', 'rating', 'kupon', 'ytm', 'sektor',
             'periode', 'mata_uang',
             'total_asset', 'current_asset', 'cash_equivalents', 'account_receivable',
-            'inventories', 'fixed_asset', 'total_liabilities', 'current_liabilities',
-            'long_term_loans', 'equity', 'net_revenue', 'gross_income',
-            'laba_operasional', 'ebit', 'ebitda', 'interest_expense',
+            'inventories', 'other_current_asset', 'fixed_asset', 'other_non_current_asset',
+            'total_liabilities', 'current_liabilities', 'account_payable', 'accruals',
+            'short_term_loans', 'current_maturities_of_long_term_loans',
+            'other_current_liabilities', 'long_term_loans', 'other_non_current_liabilities',
+            'total_non_current_liabilities', 'share_capital', 'additional_paid_in_capital',
+            'retained_earning', 'others', 'non_controlling_interest',
+            'total_equity_equity_to_parent_entity', 'equity', 'net_revenue',
+            'cost_of_good_sold', 'gross_income', 'operational_expense',
+            'laba_operasional', 'other_income_expense', 'ebit', 'ebitda', 'interest_expense',
             'income_before_tax', 'taxes', 'net_income', 'eps',
             'cash_flows_operating_activities', 'cash_flows_investment',
             'cash_flows_financing',
@@ -790,7 +969,13 @@ PROMPT,
                 ? str_replace('.', '', str_replace(',', '.', $value))
                 : str_replace(',', '', $value);
         } elseif (substr_count($value, ',') === 1 && !str_contains($value, '.')) {
-            $value = str_replace(',', '.', $value);
+            $parts = explode(',', $value);
+            $value = strlen(end($parts)) === 3 ? str_replace(',', '', $value) : str_replace(',', '.', $value);
+        } elseif (substr_count($value, '.') > 1 && !str_contains($value, ',')) {
+            $value = str_replace('.', '', $value);
+        } elseif (substr_count($value, '.') === 1 && !str_contains($value, ',')) {
+            $parts = explode('.', $value);
+            $value = strlen(end($parts)) === 3 ? str_replace('.', '', $value) : $value;
         } else {
             $value = str_replace(',', '', $value);
         }

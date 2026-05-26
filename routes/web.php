@@ -9,6 +9,8 @@ use App\Http\Controllers\Admin\ScoreClassificationController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\AnalisaController;
+use App\Http\Controllers\AnalisaFfsVisionController;
+use App\Http\Controllers\AnalisaLapkeuVisionController;
 use App\Http\Controllers\AnalisaSahamBrokerResearchController;
 use App\Http\Controllers\Admin\ReksaDanaController as AdminReksaDanaController;
 use App\Http\Controllers\Admin\AnalisaRdController as AdminAnalisaRdController;
@@ -110,6 +112,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('analisa-rd', [AdminAnalisaRdController::class, 'store'])->name('analisa-rd.store');
     Route::get('analisa-rd/template', [AdminAnalisaRdController::class, 'downloadTemplate'])->name('analisa-rd.template');
     Route::post('analisa-rd/parse-pdf', [AdminAnalisaRdController::class, 'parsePdf'])->name('analisa-rd.parse-pdf');
+    Route::post('analisa-rd/parse-pdf-vision', [AnalisaFfsVisionController::class, 'parsePdf'])->name('analisa-rd.parse-pdf-vision');
     Route::post('analisa-rd/parse-web-file', [AdminAnalisaRdController::class, 'parseWebFile'])->name('analisa-rd.parse-web-file');
     Route::post('analisa-rd/scrape-web-data', [AdminAnalisaRdController::class, 'scrapeWebData'])->name('analisa-rd.scrape-web-data');
     Route::post('analisa-rd/scrape-url', [AdminAnalisaRdController::class, 'scrapeUrl'])->name('analisa-rd.scrape-url');
@@ -125,6 +128,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('analisa-saham', [AdminAnalisaSahamController::class, 'store'])->name('analisa-saham.store');
     Route::get('analisa-saham/template', [AdminAnalisaSahamController::class, 'downloadTemplate'])->name('analisa-saham.template');
     Route::post('analisa-saham/parse-pdf', [AdminAnalisaSahamController::class, 'parsePdf'])->name('analisa-saham.parse-pdf');
+    Route::post('analisa-saham/parse-pdf-vision', [AnalisaLapkeuVisionController::class, 'parseSahamPdf'])->name('analisa-saham.parse-pdf-vision');
     Route::get('analisa-saham/parse-pdf/{uuid}/status', [AdminAnalisaSahamController::class, 'parsePdfStatus'])->name('analisa-saham.parse-pdf-status');
     Route::post('analisa-saham/preview-ai', [AdminAnalisaSahamController::class, 'previewAi'])->name('analisa-saham.preview-ai');
     Route::post('analisa-saham/preview-ai-plus', [AdminAnalisaSahamController::class, 'previewAiPlus'])->name('analisa-saham.preview-ai-plus');
@@ -160,6 +164,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('analisa-obligasi', [AdminAnalisaObligasiController::class, 'store'])->name('analisa-obligasi.store');
     Route::get('analisa-obligasi/template', [AdminAnalisaObligasiController::class, 'downloadTemplate'])->name('analisa-obligasi.template');
     Route::post('analisa-obligasi/parse-pdf', [AdminAnalisaObligasiController::class, 'parsePdf'])->name('analisa-obligasi.parse-pdf');
+    Route::post('analisa-obligasi/parse-pdf-vision', [AnalisaLapkeuVisionController::class, 'parseObligasiPdf'])->name('analisa-obligasi.parse-pdf-vision');
     Route::get('analisa-obligasi/parse-pdf/{uuid}/status', [AdminAnalisaObligasiController::class, 'parsePdfStatus'])->name('analisa-obligasi.parse-pdf-status');
     Route::post('analisa-obligasi/preview-ai', [AdminAnalisaObligasiController::class, 'previewAi'])->name('analisa-obligasi.preview-ai');
     Route::post('analisa-obligasi/preview-ai-plus', [AdminAnalisaObligasiController::class, 'previewAiPlus'])->name('analisa-obligasi.preview-ai-plus');
@@ -196,6 +201,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('analisa-ul', [AdminAnalisaUlController::class, 'store'])->name('analisa-ul.store');
     Route::get('analisa-ul/template', [AdminAnalisaUlController::class, 'downloadTemplate'])->name('analisa-ul.template');
     Route::post('analisa-ul/parse-pdf', [AdminAnalisaUlController::class, 'parsePdf'])->name('analisa-ul.parse-pdf');
+    Route::post('analisa-ul/parse-pdf-vision', [AnalisaFfsVisionController::class, 'parsePdf'])->name('analisa-ul.parse-pdf-vision');
     Route::post('analisa-ul/parse-web-file', [AdminAnalisaUlController::class, 'parseWebFile'])->name('analisa-ul.parse-web-file');
     Route::post('analisa-ul/scrape-web-data', [AdminAnalisaUlController::class, 'scrapeWebData'])->name('analisa-ul.scrape-web-data');
     Route::post('analisa-ul/scrape-url', [AdminAnalisaUlController::class, 'scrapeUrl'])->name('analisa-ul.scrape-url');
@@ -236,6 +242,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/analisa/create', [AnalisaController::class, 'create'])->name('analisa.create');
     Route::post('/analisa', [AnalisaController::class, 'store'])->name('analisa.store');
     Route::post('/analisa/parse-pdf', [AnalisaController::class, 'parsePdf'])->name('analisa.parse-pdf');
+    Route::post('/analisa/parse-pdf-vision', [AnalisaFfsVisionController::class, 'parsePdf'])->name('analisa.parse-pdf-vision');
     Route::post('/analisa/parse-web-file', [AnalisaController::class, 'parseWebFile'])->name('analisa.parse-web-file');
     Route::post('/analisa/scrape-web-data', [AnalisaController::class, 'scrapeWebData'])->name('analisa.scrape-web-data');
     Route::post('/analisa/scrape-url', [AnalisaController::class, 'scrapeUrl'])->name('analisa.scrape-url');
@@ -262,6 +269,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::post('/analisa-saham', [UserAnalisaSahamController::class, 'store'])->name('analisa-saham.store');
     Route::get('/analisa-saham/template', [UserAnalisaSahamController::class, 'downloadTemplate'])->name('analisa-saham.template');
     Route::post('/analisa-saham/parse-pdf', [UserAnalisaSahamController::class, 'parsePdf'])->name('analisa-saham.parse-pdf');
+    Route::post('/analisa-saham/parse-pdf-vision', [AnalisaLapkeuVisionController::class, 'parseSahamPdf'])->name('analisa-saham.parse-pdf-vision');
     Route::get('/analisa-saham/parse-pdf/{uuid}/status', [UserAnalisaSahamController::class, 'parsePdfStatus'])->name('analisa-saham.parse-pdf-status');
     Route::post('/analisa-saham/preview-ai', [UserAnalisaSahamController::class, 'previewAi'])->name('analisa-saham.preview-ai');
     Route::post('/analisa-saham/preview-ai-plus', [UserAnalisaSahamController::class, 'previewAiPlus'])->name('analisa-saham.preview-ai-plus');
@@ -282,6 +290,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::post('/analisa-obligasi', [UserAnalisaObligasiController::class, 'store'])->name('analisa-obligasi.store');
     Route::get('/analisa-obligasi/template', [UserAnalisaObligasiController::class, 'downloadTemplate'])->name('analisa-obligasi.template');
     Route::post('/analisa-obligasi/parse-pdf', [UserAnalisaObligasiController::class, 'parsePdf'])->name('analisa-obligasi.parse-pdf');
+    Route::post('/analisa-obligasi/parse-pdf-vision', [AnalisaLapkeuVisionController::class, 'parseObligasiPdf'])->name('analisa-obligasi.parse-pdf-vision');
     Route::get('/analisa-obligasi/parse-pdf/{uuid}/status', [UserAnalisaObligasiController::class, 'parsePdfStatus'])->name('analisa-obligasi.parse-pdf-status');
     Route::post('/analisa-obligasi/preview-ai', [UserAnalisaObligasiController::class, 'previewAi'])->name('analisa-obligasi.preview-ai');
     Route::post('/analisa-obligasi/preview-ai-plus', [UserAnalisaObligasiController::class, 'previewAiPlus'])->name('analisa-obligasi.preview-ai-plus');
@@ -303,6 +312,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::post('/unit-link-analisa', [UserAnalisaUlController::class, 'store'])->name('unit-link-analisa.store');
     Route::get('/unit-link-analisa/template', [UserAnalisaUlController::class, 'downloadTemplate'])->name('unit-link-analisa.template');
     Route::post('/unit-link-analisa/parse-pdf', [UserAnalisaUlController::class, 'parsePdf'])->name('unit-link-analisa.parse-pdf');
+    Route::post('/unit-link-analisa/parse-pdf-vision', [AnalisaFfsVisionController::class, 'parsePdf'])->name('unit-link-analisa.parse-pdf-vision');
     Route::post('/unit-link-analisa/parse-web-file', [UserAnalisaUlController::class, 'parseWebFile'])->name('unit-link-analisa.parse-web-file');
     Route::post('/unit-link-analisa/scrape-web-data', [UserAnalisaUlController::class, 'scrapeWebData'])->name('unit-link-analisa.scrape-web-data');
     Route::post('/unit-link-analisa/scrape-url', [UserAnalisaUlController::class, 'scrapeUrl'])->name('unit-link-analisa.scrape-url');

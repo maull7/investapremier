@@ -133,7 +133,7 @@
     {{-- AI Narasi / Structured Output --}}
     @if($analisa->ai_narasi)
     <div class="ai-box">
-        <div class="ai-title">🤖 Analisa AI (Powered by Groq)</div>
+        <div class="ai-title">🤖 Analisa AI (Powered by OpenAI)</div>
 
         @php $ai = $analisa->ai_output; @endphp
 

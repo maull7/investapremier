@@ -74,6 +74,7 @@ class AnalisaController extends Controller
             'template'        => route("{$prefix}.template"),
             'cancel'          => $cancelRoute,
             'parse_pdf'       => route("{$prefix}.parse-pdf"),
+            'parse_pdf_vision'=> \Illuminate\Support\Facades\Route::has("{$prefix}.parse-pdf-vision") ? route("{$prefix}.parse-pdf-vision") : null,
             'preview_ai'      => route("{$prefix}.preview-ai"),
             'preview_ai_plus' => route("{$prefix}.preview-ai-plus"),
             'parse_web_file'  => route("{$prefix}.parse-web-file"),

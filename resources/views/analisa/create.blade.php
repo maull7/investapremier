@@ -404,6 +404,17 @@
                             Sheet.</p>
                     </div>
 
+                    <div class="flex flex-wrap gap-3 text-sm">
+                        <label class="inline-flex items-center gap-2">
+                            <input type="radio" value="text" x-model="pdfScanMode" class="text-primary focus:ring-primary/20">
+                            <span>PDF parser teks</span>
+                        </label>
+                        <label class="inline-flex items-center gap-2">
+                            <input type="radio" value="vision" x-model="pdfScanMode" class="text-primary focus:ring-primary/20">
+                            <span>Scan AI Vision</span>
+                        </label>
+                    </div>
+
                     <div x-show="pdfLoading" class="flex items-center gap-2 text-sm text-muted">
                         <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -479,6 +490,7 @@
                     pdfResult: '',
                     pdfSuccess: false,
                     pdfFile: '',
+                    pdfScanMode: 'text',
                     pdfData: null,
                     aiLoading: false,
                     aiPlusLoading: false,
@@ -488,6 +500,7 @@
                     aiPlusResult: null,
                     previewAiUrl: @json($formRoutes['preview_ai']),
                     previewAiPlusUrl: @json($formRoutes['preview_ai_plus']),
+                    parsePdfVisionUrl: @json($formRoutes['parse_pdf_vision']),
                     plusRequiredLabels: @json($plusLabels),
                     sektor: @json($oldSektor),
                     efek: @json($oldEfek),
@@ -551,9 +564,12 @@
                             payload.append(k, val || (this.pdfData?.[k] ?? ''));
                         });
                         for (const [key, val] of fd.entries()) {
-                            if (key.startsWith('sektor[') || key.startsWith('efek[') || key.startsWith('kinerja[') || key.startsWith('obligasi[') || key.startsWith('bank[')) {
+                            if (key === 'kategori[]' || key.startsWith('kategori[') || key.startsWith('sektor[') || key.startsWith('efek[') || key.startsWith('kinerja[') || key.startsWith('obligasi[') || key.startsWith('bank[')) {
                                 payload.append(key, val);
                             }
+                        }
+                        if (![...payload.keys()].some(k => k === 'kategori[]' || k.startsWith('kategori[')) && this.pdfData?.kategori?.length) {
+                            this.pdfData.kategori.forEach(v => payload.append('kategori[]', v));
                         }
                         // Inject pdfData untuk field yang kosong (cek nilai, bukan hanya key)
                         if (this.pdfData) {
@@ -714,6 +730,7 @@
                         setField('jenis_reksa_dana',     p.jenis_reksa_dana     || pdf.jenis_reksa_dana);
                         setField('total_aum',            p.total_aum            || pdf.total_aum);
                         setField('total_marcap_10_efek', p.total_marcap_10_efek || pdf.total_marcap_10_efek);
+                        this.applyKategori(p.kategori || pdf.kategori || []);
 
                         // Sektor — dari AI (alokasi_aset), fallback PDF
                         if (p.alokasi_aset?.length) {
@@ -782,7 +799,17 @@
                         }
                         if (data.obligasi?.length) this.obligasi = data.obligasi;
                         if (data.bank?.length) this.bank = data.bank;
+                        this.applyKategori(data.kategori || []);
                         this.mode = 'manual';
+                    },
+
+                    applyKategori(kategori) {
+                        const values = Array.isArray(kategori) ? kategori : String(kategori || '').split(/[,;|]/);
+                        const normalized = values.map(v => String(v).trim().toLowerCase()).filter(Boolean);
+                        document.querySelectorAll('input[name="kategori[]"]').forEach(input => {
+                            const value = String(input.value).toLowerCase();
+                            input.checked = normalized.some(k => k === value || (k === 'indeks' && value === 'index'));
+                        });
                     },
 
                     fillFromWebFile() {
@@ -892,7 +919,11 @@
                         formData.append('file_pdf', file);
                         formData.append('_token', this.analisaFormEl().querySelector('input[name="_token"]').value);
 
-                        fetch('{{ $formRoutes['parse_pdf'] }}', {
+                        const url = this.pdfScanMode === 'vision' && this.parsePdfVisionUrl
+                            ? this.parsePdfVisionUrl
+                            : @json($formRoutes['parse_pdf']);
+
+                        fetch(url, {
                                 method: 'POST',
                                 headers: {
                                     'Accept': 'application/json',

@@ -40,6 +40,7 @@ class FfsParserService
         $regex = [
             'nama_reksa_dana' => $this->safeExtract('extractNamaReksaDana', [$lines, $fullText]),
             'jenis_reksa_dana' => $this->safeExtract('extractJenisReksaDana', [$lines, $fullText]),
+            'kategori' => [],
             'total_aum' => $this->safeExtract('extractAum', [$lines, $fullText]),
             'total_marcap_10_efek' => $this->safeExtract('extractTotalMarcap', [$lines, $fullText]),
             'sektor' => $this->safeExtract('extractSektor', [$lines, $fullText]),
@@ -51,7 +52,12 @@ class FfsParserService
 
         $ai = $groq->parseFfsPdf($fullText);
 
-        return $this->merge($regex, $ai);
+        return $this->merge($regex, $this->normalizeAiData($ai));
+    }
+
+    public function normalizeAiParseResult(array $ai): array
+    {
+        return $this->normalizeAiData($ai);
     }
 
     private function merge(array $regex, array $ai): array
@@ -72,6 +78,11 @@ class FfsParserService
                     $regex[$key] = $this->enrichRows($key, $value, $aiValue);
                 }
             } else {
+                if ($key === 'nama_reksa_dana' && $this->looksLikeFundName($aiValue)) {
+                    $regex[$key] = $aiValue;
+                    continue;
+                }
+
                 // Pakai AI jika regex null/kosong
                 if (empty($value) && !empty($aiValue)) {
                     $regex[$key] = $aiValue;
@@ -105,7 +116,127 @@ class FfsParserService
             }, $regexRows);
         }
 
-        return $regexRows;
+        $identityKeys = [
+            'obligasi' => ['kode_obligasi', 'nama_obligasi'],
+            'bank' => ['nama_bank'],
+            'sektor' => ['nama_sektor'],
+        ];
+
+        if (!isset($identityKeys[$type])) {
+            return $regexRows;
+        }
+
+        $aiIndex = [];
+        foreach ($aiRows as $row) {
+            foreach ($identityKeys[$type] as $key) {
+                $identity = $this->normalizeIdentity($row[$key] ?? '');
+                if ($identity !== '') {
+                    $aiIndex[$identity] = $row;
+                }
+            }
+        }
+
+        return array_map(function ($row) use ($identityKeys, $type, $aiIndex) {
+            $ai = null;
+            foreach ($identityKeys[$type] as $key) {
+                $identity = $this->normalizeIdentity($row[$key] ?? '');
+                if ($identity !== '' && isset($aiIndex[$identity])) {
+                    $ai = $aiIndex[$identity];
+                    break;
+                }
+            }
+
+            if ($ai) {
+                foreach ($ai as $key => $value) {
+                    if (($row[$key] ?? null) === null || ($row[$key] ?? '') === '') {
+                        $row[$key] = $value;
+                    }
+                }
+            }
+
+            return $row;
+        }, $regexRows);
+    }
+
+    private function normalizeIdentity(mixed $value): string
+    {
+        return strtoupper(preg_replace('/[^A-Z0-9]+/i', '', (string) $value));
+    }
+
+    private function looksLikeFundName(mixed $value): bool
+    {
+        $name = trim((string) $value);
+        if (strlen($name) < 5) {
+            return false;
+        }
+
+        $lower = strtolower($name);
+        $generic = ['fund fact sheet', 'factsheet', 'fact sheet', 'laporan bulanan', 'monthly report'];
+
+        return !in_array($lower, $generic, true);
+    }
+
+    private function normalizeAiData(array $data): array
+    {
+        $defaults = [
+            'nama_reksa_dana' => null,
+            'jenis_reksa_dana' => null,
+            'kategori' => [],
+            'total_aum' => null,
+            'total_marcap_10_efek' => null,
+            'sektor' => [],
+            'efek' => [],
+            'kinerja' => [],
+            'obligasi' => [],
+            'bank' => [],
+        ];
+
+        $data = array_merge($defaults, array_intersect_key($data, $defaults));
+
+        if (is_string($data['kategori'])) {
+            $data['kategori'] = array_values(array_filter(array_map('trim', preg_split('/[,;|]/', $data['kategori']))));
+        }
+        if (!is_array($data['kategori'])) {
+            $data['kategori'] = [];
+        }
+
+        foreach (['sektor', 'efek', 'kinerja', 'obligasi', 'bank'] as $field) {
+            $data[$field] = is_array($data[$field]) ? array_values($data[$field]) : [];
+        }
+
+        $data['sektor'] = array_map(function ($row) {
+            if (!is_array($row)) {
+                return ['nama_sektor' => (string) $row, 'bobot' => null];
+            }
+            if (isset($row['kategori']) && empty($row['nama_sektor'])) {
+                $row['nama_sektor'] = $row['kategori'];
+            }
+            if (isset($row['persentase']) && !isset($row['bobot'])) {
+                $row['bobot'] = $row['persentase'];
+            }
+            return $row;
+        }, $data['sektor']);
+
+        $data['efek'] = array_map(function ($row) {
+            if (!is_array($row)) {
+                return [];
+            }
+            foreach ([
+                'ticker' => 'kode_efek',
+                'kode_saham' => 'kode_efek',
+                'nama_saham' => 'nama_efek',
+                'kontribusi_ihsg' => 'kontribusi_kinerja',
+                'kontribusi' => 'kontribusi_kinerja',
+                'kapitalisasi_pasar' => 'market_cap',
+            ] as $alias => $target) {
+                if (isset($row[$alias]) && !isset($row[$target])) {
+                    $row[$target] = $row[$alias];
+                }
+            }
+            return $row;
+        }, $data['efek']);
+
+        return $data;
     }
 
     private function safeExtract(string $method, array $args): mixed

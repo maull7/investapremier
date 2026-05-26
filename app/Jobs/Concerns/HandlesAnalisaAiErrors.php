@@ -20,8 +20,8 @@ trait HandlesAnalisaAiErrors
             return 'Fitur Analisa AI belum aktif di server. Jalankan deploy terbaru lalu restart worker: php artisan horizon:terminate';
         }
 
-        if (str_contains($msg, 'Groq API error')) {
-            return 'Layanan AI gagal merespons. Periksa GROQ_API_KEY atau coba lagi nanti. ('.Str::limit($msg, 120).')';
+        if (str_contains($msg, 'AI API error')) {
+            return 'Layanan AI gagal merespons. Periksa OPENAI_API_KEY atau GROQ_API_KEY atau coba lagi nanti. ('.Str::limit($msg, 120).')';
         }
 
         return 'Gagal memproses: '.Str::limit($msg, 220);
@@ -29,8 +29,8 @@ trait HandlesAnalisaAiErrors
 
     protected function groqKeyError(): ?string
     {
-        if (!config('services.groq.key')) {
-            return 'API Groq belum dikonfigurasi. Set GROQ_API_KEY di file .env.';
+        if (!config('services.openai.key') && !config('services.groq.key')) {
+            return 'API AI belum dikonfigurasi. Set OPENAI_API_KEY (atau GROQ_API_KEY sebagai cadangan) di file .env.';
         }
 
         return null;

@@ -82,6 +82,7 @@ abstract class AnalisaLapkeuController extends Controller
             'previewAiRoute'    => route($prefix . '.preview-ai'),
             'previewAiPlusRoute'=> $hasPlusRoute ? route($prefix . '.preview-ai-plus') : null,
             'parsePdfRoute'         => route($prefix . '.parse-pdf'),
+            'parsePdfVisionRoute'   => \Illuminate\Support\Facades\Route::has($prefix . '.parse-pdf-vision') ? route($prefix . '.parse-pdf-vision') : null,
             'parsePdfStatusRoute'   => route($prefix . '.parse-pdf-status', ['uuid' => '__UUID__']),
         ]);
     }

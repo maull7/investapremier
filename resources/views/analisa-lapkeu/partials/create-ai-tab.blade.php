@@ -15,6 +15,17 @@
         <p class="text-xs text-muted mt-1">Format: PDF, maks 20MB. Data akan diekstrak dan mengisi form otomatis.</p>
     </div>
 
+    <div class="flex flex-wrap gap-3 text-sm">
+        <label class="inline-flex items-center gap-2">
+            <input type="radio" value="text" x-model="pdfScanMode" class="text-primary focus:ring-primary/20">
+            <span>PDF parser teks</span>
+        </label>
+        <label class="inline-flex items-center gap-2">
+            <input type="radio" value="vision" x-model="pdfScanMode" class="text-primary focus:ring-primary/20">
+            <span>Scan AI Vision</span>
+        </label>
+    </div>
+
     <button type="button" @click="runAiFromPdf()"
         :disabled="aiLoading || !aiPdfFile"
         class="px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -41,7 +52,7 @@
         <div class="bg-white rounded-xl border border-line p-6 space-y-4">
             <div class="flex items-center gap-2 mb-2">
                 <h3 class="font-semibold text-primary">Analisa AI</h3>
-                <span class="ml-auto text-xs text-muted bg-[#f1f5f9] px-2 py-1 rounded-full">Powered by Groq</span>
+                <span class="ml-auto text-xs text-muted bg-[#f1f5f9] px-2 py-1 rounded-full">Powered by OpenAI</span>
             </div>
 
             <div class="mb-4">

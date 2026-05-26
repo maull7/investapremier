@@ -219,7 +219,7 @@ return [
             'maxJobs'    => 0,
             'memory'     => 128,
             'tries'      => 3,
-            'timeout'    => 120, // Groq bisa lambat
+            'timeout'    => 180, // AI bisa lambat (OpenAI + Groq fallback)
             'nice'       => 0,
         ],
     ],
