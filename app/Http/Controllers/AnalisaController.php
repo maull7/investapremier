@@ -385,6 +385,7 @@ class AnalisaController extends Controller
             'jenis_reksa_dana'     => 'required|in:Saham,Pendapatan Tetap,Campuran,Pasar Uang,Terproteksi,Global,DIRE-DINFRA,Penyertaan terbatas',
             'total_aum'            => 'nullable|numeric|min:0',
             'total_marcap_10_efek' => 'nullable|numeric|min:0',
+            'tanggal_data'         => 'nullable|date',
             'input_mode'           => 'required|in:manual,excel,pdf,ai,ai-plus,link-website',
             'pdf_file'             => 'nullable|string',
             'ai_narasi'            => 'nullable|string',
@@ -406,6 +407,8 @@ class AnalisaController extends Controller
 
     private function storeFromManual(Request $request)
     {
+        $isSimpan = $request->boolean('simpan');
+
         $request->validate([
             'sektor'                    => 'nullable|array',
             'sektor.*.nama_sektor'      => 'nullable|string',
@@ -433,7 +436,7 @@ class AnalisaController extends Controller
             'bank.*.klasifikasi_risiko' => 'nullable|string',
         ]);
 
-        DB::transaction(function () use ($request) {
+        DB::transaction(function () use ($request, $isSimpan) {
             $pdfPath = $this->resolvePdfPath($request->pdf_file);
 
             $analisa = AnalisaReksaDana::create([
@@ -444,7 +447,8 @@ class AnalisaController extends Controller
                 'kategori'             => $request->kategori ?? [],
                 'total_aum'            => $request->total_aum,
                 'total_marcap_10_efek' => $request->total_marcap_10_efek,
-                'status'               => 'submitted',
+                'tanggal_data'         => $request->tanggal_data,
+                'status'               => $isSimpan ? 'input_manual' : 'submitted',
                 'pdf_path'             => $pdfPath,
             ]);
 
@@ -460,19 +464,27 @@ class AnalisaController extends Controller
             if ($obligasi) $analisa->obligasi()->createMany($obligasi);
             if ($bank)     $analisa->bank()->createMany($bank);
 
-            $this->persistAiFromRequest($request, $analisa);
+            if (!$isSimpan) {
+                $this->persistAiFromRequest($request, $analisa);
+            }
         });
+
+        if ($isSimpan) {
+            return redirect()->route($this->indexRoute())->with('success', 'Data berhasil disimpan sebagai Input Manual.');
+        }
 
         return redirect()->route($this->indexRoute())->with('success', 'Data analisa berhasil disubmit. Narasi AI sedang diproses.');
     }
 
     private function storeFromExcel(Request $request)
     {
+        $isSimpan = $request->boolean('simpan');
+
         $request->validate([
             'file_excel' => 'required|file|mimes:xlsx,xls|max:5120',
         ]);
 
-        DB::transaction(function () use ($request) {
+        DB::transaction(function () use ($request, $isSimpan) {
             $pdfPath = $this->resolvePdfPath($request->pdf_file);
 
             $analisa = AnalisaReksaDana::create([
@@ -483,14 +495,21 @@ class AnalisaController extends Controller
                 'kategori'             => $request->kategori ?? [],
                 'total_aum'            => $request->total_aum,
                 'total_marcap_10_efek' => $request->total_marcap_10_efek,
-                'status'               => 'submitted',
+                'tanggal_data'         => $request->tanggal_data,
+                'status'               => $isSimpan ? 'input_manual' : 'submitted',
                 'pdf_path'             => $pdfPath,
             ]);
 
             Excel::import(new AnalisaImport($analisa), $request->file('file_excel'));
 
-            $this->persistAiFromRequest($request, $analisa);
+            if (!$isSimpan) {
+                $this->persistAiFromRequest($request, $analisa);
+            }
         });
+
+        if ($isSimpan) {
+            return redirect()->route($this->indexRoute())->with('success', 'Data berhasil disimpan sebagai Input Manual.');
+        }
 
         return redirect()->route($this->indexRoute())->with('success', 'Data analisa berhasil diimport dari Excel. Narasi AI sedang diproses.');
     }
@@ -569,6 +588,7 @@ class AnalisaController extends Controller
             'kategori.*'           => 'in:Konvensional,Syariah,index,ETF',
             'total_aum'            => 'nullable|numeric|min:0',
             'total_marcap_10_efek' => 'nullable|numeric|min:0',
+            'tanggal_data'         => 'nullable|date',
         ]);
 
         DB::transaction(function () use ($request, $analisa) {
@@ -578,6 +598,7 @@ class AnalisaController extends Controller
                 'kategori'             => $request->kategori ?? [],
                 'total_aum'            => $request->total_aum,
                 'total_marcap_10_efek' => $request->total_marcap_10_efek,
+                'tanggal_data'         => $request->tanggal_data,
             ]);
 
             $sektor   = collect($request->sektor ?? [])->filter(fn($r) => !empty($r['nama_sektor']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();

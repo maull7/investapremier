@@ -11,22 +11,34 @@
             @php
                 $isLinkTab = request('tab') === 'link-website' || old('input_mode') === 'link-website';
                 $displayErrors = $isLinkTab
-                    ? collect($errors->messages())->filter(fn ($_, $key) => in_array($key, ['urls', 'nama_sumber', 'jenis_akses', 'login_username', 'login_password', 'catatan']) || str_starts_with($key, 'urls.'))->flatten()
+                    ? collect($errors->messages())
+                        ->filter(
+                            fn($_, $key) => in_array($key, [
+                                'urls',
+                                'nama_sumber',
+                                'jenis_akses',
+                                'login_username',
+                                'login_password',
+                                'catatan',
+                            ]) || str_starts_with($key, 'urls.'),
+                        )
+                        ->flatten()
                     : $errors->all();
             @endphp
-            @if($displayErrors->isNotEmpty())
-            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-6">
-                <ul class="list-disc list-inside space-y-1">
-                    @foreach ($displayErrors as $e)
-                        <li>{{ $e }}</li>
-                    @endforeach
-                </ul>
-            </div>
+            @if ($displayErrors->isNotEmpty())
+                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-6">
+                    <ul class="list-disc list-inside space-y-1">
+                        @foreach ($displayErrors as $e)
+                            <li>{{ $e }}</li>
+                        @endforeach
+                    </ul>
+                </div>
             @endif
         @endif
 
-        <form id="analisa-form" method="POST" action="{{ $formRoutes['store'] }}" enctype="multipart/form-data" class="space-y-6"
-              @submit="if (mode === 'link-website') { $event.preventDefault(); webMessage = 'Selesaikan langkah di tab Link Website: unduh file lalu klik Isi Form Otomatis. Setelah itu submit dari tab Input Manual.'; webOk = false; }">
+        <form id="analisa-form" method="POST" action="{{ $formRoutes['store'] }}" enctype="multipart/form-data"
+            class="space-y-6"
+            @submit="if (mode === 'link-website') { $event.preventDefault(); webMessage = 'Selesaikan langkah di tab Link Website: unduh file lalu klik Isi Form Otomatis. Setelah itu submit dari tab Input Manual.'; webOk = false; }">
             @csrf
             <input type="hidden" name="input_mode" :value="mode === 'link-website' ? 'manual' : mode">
             <input type="hidden" name="pdf_file" x-model="pdfFile">
@@ -67,6 +79,11 @@
                             @endforeach
                         </div>
                         <x-input-error :messages="$errors->get('kategori')" class="mt-1" />
+                    </div>
+                    <div>
+                        <x-input-label for="tanggal_data" value="Tanggal Data" />
+                        <x-text-input id="tanggal_data" name="tanggal_data" type="date" class="mt-1 block w-full"
+                            value="{{ old('tanggal_data') }}" />
                     </div>
 
                 </div>
@@ -128,12 +145,14 @@
                             <x-text-input id="total_marcap_10_efek" name="total_marcap_10_efek" type="number"
                                 step="0.01" class="mt-1 block w-full" value="{{ old('total_marcap_10_efek') }}" />
                         </div>
+
                     </div>
 
                     <div>
                         <div class="flex items-center justify-between mb-3">
                             <h4 class="font-semibold text-primary text-sm">Komposisi Sektor</h4>
-                            <button type="button" @click="addRow('sektor')" class="text-xs text-primary hover:underline">+
+                            <button type="button" @click="addRow('sektor')"
+                                class="text-xs text-primary hover:underline">+
                                 Tambah Baris</button>
                         </div>
                         <div class="space-y-2">
@@ -406,28 +425,36 @@
 
                     <div class="flex flex-wrap gap-3 text-sm">
                         <label class="inline-flex items-center gap-2">
-                            <input type="radio" value="text" x-model="pdfScanMode" class="text-primary focus:ring-primary/20">
+                            <input type="radio" value="text" x-model="pdfScanMode"
+                                class="text-primary focus:ring-primary/20">
                             <span>PDF parser teks</span>
                         </label>
                         <label class="inline-flex items-center gap-2">
-                            <input type="radio" value="vision" x-model="pdfScanMode" class="text-primary focus:ring-primary/20">
+                            <input type="radio" value="vision" x-model="pdfScanMode"
+                                class="text-primary focus:ring-primary/20">
                             <span>Scan AI Vision</span>
                         </label>
                     </div>
 
                     <div x-show="pdfLoading" class="flex items-center gap-2 text-sm text-muted">
-                        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z">
+                            </path>
                         </svg>
                         <span>Membaca PDF... harap tunggu.</span>
                     </div>
 
                     <div x-show="pdfResult" class="text-sm space-y-2">
-                        <div :class="pdfSuccess ? 'p-3 bg-green-50 border border-green-200 rounded-lg text-green-700' : 'p-3 bg-red-50 border border-red-200 rounded-lg text-red-700'">
+                        <div
+                            :class="pdfSuccess ? 'p-3 bg-green-50 border border-green-200 rounded-lg text-green-700' :
+                                'p-3 bg-red-50 border border-red-200 rounded-lg text-red-700'">
                             <span x-text="pdfResult"></span>
                         </div>
-                        <p x-show="pdfSuccess" class="text-xs text-muted">Silakan cek tab <strong>Input Manual</strong> untuk melihat dan
+                        <p x-show="pdfSuccess" class="text-xs text-muted">Silakan cek tab <strong>Input Manual</strong>
+                            untuk melihat dan
                             mengedit data yang telah diekstrak.</p>
                     </div>
                 </div>
@@ -438,9 +465,12 @@
             <input type="hidden" name="ai_narasi" :value="aiResult?.raw || ''">
             <input type="hidden" name="ai_output" :value="aiResult ? JSON.stringify(aiResult.parsed || {}) : ''">
             <input type="hidden" name="ai_narasi_plus" :value="aiPlusResult?.raw || ''">
-            <input type="hidden" name="ai_output_plus" :value="aiPlusResult ? JSON.stringify(aiPlusResult.parsed || {}) : ''">
+            <input type="hidden" name="ai_output_plus"
+                :value="aiPlusResult ? JSON.stringify(aiPlusResult.parsed || {}) : ''">
 
             <div class="flex items-center gap-3" x-show="mode !== 'link-website'" x-cloak>
+                <button type="submit" name="simpan" value="1"
+                    class="px-4 py-2 text-sm font-medium text-white bg-gray-500 rounded-lg hover:bg-gray-600 transition">Simpan</button>
                 <x-primary-button>Submit Analisa</x-primary-button>
                 <a href="{{ $formRoutes['cancel'] }}"
                     class="px-4 py-2 text-sm font-medium text-muted border border-line rounded-lg hover:bg-[#f1f5f9] transition">Batal</a>
@@ -449,7 +479,7 @@
 
         {{-- Tab Link Website di luar form analisa (hindari validasi nama/jenis RD) --}}
         <div x-show="mode === 'link-website'" x-cloak
-             class="bg-white rounded-xl border border-line overflow-hidden mt-6 shadow-sm">
+            class="bg-white rounded-xl border border-line overflow-hidden mt-6 shadow-sm">
             @include('analisa.partials.create-link-website-tab')
         </div>
     </div>
@@ -458,22 +488,22 @@
         <script>
             function analisaForm() {
                 @php
-                    $oldSektor   = old('sektor',   [['nama_sektor' => '', 'bobot' => '']]);
-                    $oldEfek     = old('efek',     [['kode_efek' => '', 'nama_efek' => '', 'sektor' => '', 'bobot' => '', 'kontribusi_kinerja' => '', 'market_cap' => '', 'top_10' => false]]);
-                    $oldKinerja  = old('kinerja',  [['periode' => '', 'return_pct' => ''], ['periode' => '', 'return_pct' => '']]);
+                    $oldSektor = old('sektor', [['nama_sektor' => '', 'bobot' => '']]);
+                    $oldEfek = old('efek', [['kode_efek' => '', 'nama_efek' => '', 'sektor' => '', 'bobot' => '', 'kontribusi_kinerja' => '', 'market_cap' => '', 'top_10' => false]]);
+                    $oldKinerja = old('kinerja', [['periode' => '', 'return_pct' => ''], ['periode' => '', 'return_pct' => '']]);
                     $oldObligasi = old('obligasi', [['kode_obligasi' => '', 'nama_obligasi' => '', 'bobot' => '', 'durasi' => '', 'rating' => '']]);
-                    $oldBank     = old('bank',     [['nama_bank' => '', 'bobot' => '', 'car' => '', 'npl' => '', 'klasifikasi_risiko' => '']]);
+                    $oldBank = old('bank', [['nama_bank' => '', 'bobot' => '', 'car' => '', 'npl' => '', 'klasifikasi_risiko' => '']]);
                     // Normalize top_10 checkbox (submitted as "1" string or absent)
-                    $oldEfek = array_map(function($e) {
+                    $oldEfek = array_map(function ($e) {
                         $e['top_10'] = !empty($e['top_10']);
                         return $e;
                     }, $oldEfek);
 
                     $plusLabels = [
-                        'aum'     => 'Total AUM',
-                        'marcap'  => 'Total MarCap 10 efek terbesar',
-                        'sektor'  => 'Komposisi sektor (minimal 1 baris dengan bobot %)',
-                        'efek'    => 'Daftar efek (minimal 1 baris: kode, nama, bobot %)',
+                        'aum' => 'Total AUM',
+                        'marcap' => 'Total MarCap 10 efek terbesar',
+                        'sektor' => 'Komposisi sektor (minimal 1 baris dengan bobot %)',
+                        'efek' => 'Daftar efek (minimal 1 baris: kode, nama, bobot %)',
                         'kinerja' => 'Kinerja bulanan (minimal 2 bulan dengan return %)',
                     ];
                 @endphp
@@ -558,17 +588,21 @@
                     buildFormPayload() {
                         const fd = new FormData(this.analisaFormEl());
                         const payload = new FormData();
-                        ['nama_reksa_dana', 'jenis_reksa_dana', 'total_aum', 'total_marcap_10_efek'].forEach(k => {
-                            const val = fd.get(k) ?? '';
-                            // Fallback ke pdfData jika form kosong
-                            payload.append(k, val || (this.pdfData?.[k] ?? ''));
-                        });
+                        ['nama_reksa_dana', 'jenis_reksa_dana', 'total_aum', 'total_marcap_10_efek', 'tanggal_data'].forEach(
+                            k => {
+                                const val = fd.get(k) ?? '';
+                                // Fallback ke pdfData jika form kosong
+                                payload.append(k, val || (this.pdfData?.[k] ?? ''));
+                            });
                         for (const [key, val] of fd.entries()) {
-                            if (key === 'kategori[]' || key.startsWith('kategori[') || key.startsWith('sektor[') || key.startsWith('efek[') || key.startsWith('kinerja[') || key.startsWith('obligasi[') || key.startsWith('bank[')) {
+                            if (key === 'kategori[]' || key.startsWith('kategori[') || key.startsWith('sektor[') || key
+                                .startsWith('efek[') || key.startsWith('kinerja[') || key.startsWith('obligasi[') || key
+                                .startsWith('bank[')) {
                                 payload.append(key, val);
                             }
                         }
-                        if (![...payload.keys()].some(k => k === 'kategori[]' || k.startsWith('kategori[')) && this.pdfData?.kategori?.length) {
+                        if (![...payload.keys()].some(k => k === 'kategori[]' || k.startsWith('kategori[')) && this.pdfData
+                            ?.kategori?.length) {
                             this.pdfData.kategori.forEach(v => payload.append('kategori[]', v));
                         }
                         // Inject pdfData untuk field yang kosong (cek nilai, bukan hanya key)
@@ -580,7 +614,8 @@
                                 if (!hasRealData && this.pdfData[field]?.length) {
                                     this.pdfData[field].forEach((row, i) => {
                                         Object.entries(row).forEach(([k, v]) => {
-                                            if (v !== null && v !== undefined && String(v).trim() !== '') {
+                                            if (v !== null && v !== undefined && String(v).trim() !==
+                                                '') {
                                                 payload.append(`${field}[${i}][${k}]`, v);
                                             }
                                         });
@@ -617,7 +652,13 @@
                         }
                         this.aiLoading = true;
                         this.aiError = '';
-                        fetch(this.previewAiUrl, { method: 'POST', body: this.buildFormPayload(), headers: { 'Accept': 'application/json' } })
+                        fetch(this.previewAiUrl, {
+                                method: 'POST',
+                                body: this.buildFormPayload(),
+                                headers: {
+                                    'Accept': 'application/json'
+                                }
+                            })
                             .then(async r => {
                                 const resp = await r.json();
                                 if (!r.ok || !resp.success) {
@@ -626,18 +667,27 @@
                                 }
                                 this.aiResult = resp.data;
                             })
-                            .catch(e => { this.aiError = e.message || 'Gagal memproses'; })
-                            .finally(() => { this.aiLoading = false; });
+                            .catch(e => {
+                                this.aiError = e.message || 'Gagal memproses';
+                            })
+                            .finally(() => {
+                                this.aiLoading = false;
+                            });
                     },
 
                     msgPlusIncomplete: 'Lengkapi data sektor/efek di tab Input Manual terlebih dahulu.',
 
                     isPlusManualReady() {
-                        return (this.plusRequiredLabels?.aum ? String(this.total_aum || document.getElementById('total_aum')?.value || '').trim() !== '' : true)
-                            && (this.plusRequiredLabels?.marcap ? String(this.total_marcap_10_efek || document.getElementById('total_marcap_10_efek')?.value || '').trim() !== '' : true)
-                            && this.sektor.some(r => String(r.nama_sektor || '').trim() !== '' && r.bobot !== '' && r.bobot != null)
-                            && this.efek.some(r => String(r.kode_efek || '').trim() !== '' && String(r.nama_efek || '').trim() !== '' && r.bobot !== '' && r.bobot != null)
-                            && this.kinerja.filter(r => String(r.periode || '').trim() !== '' && r.return_pct !== '' && r.return_pct != null).length >= 2;
+                        return (this.plusRequiredLabels?.aum ? String(this.total_aum || document.getElementById('total_aum')
+                                ?.value || '').trim() !== '' : true) &&
+                            (this.plusRequiredLabels?.marcap ? String(this.total_marcap_10_efek || document.getElementById(
+                                'total_marcap_10_efek')?.value || '').trim() !== '' : true) &&
+                            this.sektor.some(r => String(r.nama_sektor || '').trim() !== '' && r.bobot !== '' && r.bobot !=
+                                null) &&
+                            this.efek.some(r => String(r.kode_efek || '').trim() !== '' && String(r.nama_efek || '').trim() !==
+                                '' && r.bobot !== '' && r.bobot != null) &&
+                            this.kinerja.filter(r => String(r.periode || '').trim() !== '' && r.return_pct !== '' && r
+                                .return_pct != null).length >= 2;
                     },
 
                     plusMissingList() {
@@ -647,16 +697,20 @@
                             if (!v) missing.push(this.plusRequiredLabels.aum);
                         }
                         if (this.plusRequiredLabels?.marcap) {
-                            const v = String(this.total_marcap_10_efek || document.getElementById('total_marcap_10_efek')?.value || '').trim();
+                            const v = String(this.total_marcap_10_efek || document.getElementById('total_marcap_10_efek')
+                                ?.value || '').trim();
                             if (!v) missing.push(this.plusRequiredLabels.marcap);
                         }
-                        if (this.plusRequiredLabels?.sektor && !this.sektor.some(r => String(r.nama_sektor || '').trim() !== '' && r.bobot !== '' && r.bobot != null)) {
+                        if (this.plusRequiredLabels?.sektor && !this.sektor.some(r => String(r.nama_sektor || '').trim() !==
+                                '' && r.bobot !== '' && r.bobot != null)) {
                             missing.push(this.plusRequiredLabels.sektor);
                         }
-                        if (this.plusRequiredLabels?.efek && !this.efek.some(r => String(r.kode_efek || '').trim() !== '' && String(r.nama_efek || '').trim() !== '' && r.bobot !== '' && r.bobot != null)) {
+                        if (this.plusRequiredLabels?.efek && !this.efek.some(r => String(r.kode_efek || '').trim() !== '' &&
+                                String(r.nama_efek || '').trim() !== '' && r.bobot !== '' && r.bobot != null)) {
                             missing.push(this.plusRequiredLabels.efek);
                         }
-                        if (this.plusRequiredLabels?.kinerja && this.kinerja.filter(r => String(r.periode || '').trim() !== '' && r.return_pct !== '' && r.return_pct != null).length < 2) {
+                        if (this.plusRequiredLabels?.kinerja && this.kinerja.filter(r => String(r.periode || '').trim() !==
+                                '' && r.return_pct !== '' && r.return_pct != null).length < 2) {
                             missing.push(this.plusRequiredLabels.kinerja);
                         }
                         return missing;
@@ -696,7 +750,13 @@
                         }
                         this.aiPlusLoading = true;
                         this.aiPlusError = '';
-                        fetch(this.previewAiPlusUrl, { method: 'POST', body: this.buildFormPayload(), headers: { 'Accept': 'application/json' } })
+                        fetch(this.previewAiPlusUrl, {
+                                method: 'POST',
+                                body: this.buildFormPayload(),
+                                headers: {
+                                    'Accept': 'application/json'
+                                }
+                            })
                             .then(async r => {
                                 const resp = await r.json();
                                 if (!r.ok || !resp.success) {
@@ -709,8 +769,12 @@
                                 }
                                 this.aiPlusResult = resp.data;
                             })
-                            .catch(e => { this.aiPlusError = e.message || 'Gagal memproses'; })
-                            .finally(() => { this.aiPlusLoading = false; });
+                            .catch(e => {
+                                this.aiPlusError = e.message || 'Gagal memproses';
+                            })
+                            .finally(() => {
+                                this.aiPlusLoading = false;
+                            });
                     },
 
                     applyAiToManual() {
@@ -726,10 +790,11 @@
                             const el = document.getElementById(id);
                             if (el && val) el.value = val;
                         };
-                        setField('nama_reksa_dana',      p.nama_reksa_dana      || pdf.nama_reksa_dana);
-                        setField('jenis_reksa_dana',     p.jenis_reksa_dana     || pdf.jenis_reksa_dana);
-                        setField('total_aum',            p.total_aum            || pdf.total_aum);
+                        setField('nama_reksa_dana', p.nama_reksa_dana || pdf.nama_reksa_dana);
+                        setField('jenis_reksa_dana', p.jenis_reksa_dana || pdf.jenis_reksa_dana);
+                        setField('total_aum', p.total_aum || pdf.total_aum);
                         setField('total_marcap_10_efek', p.total_marcap_10_efek || pdf.total_marcap_10_efek);
+                        setField('tanggal_data', p.tanggal_data || pdf.tanggal_data);
                         this.applyKategori(p.kategori || pdf.kategori || []);
 
                         // Sektor — dari AI (alokasi_aset), fallback PDF
@@ -747,28 +812,34 @@
                             this.efek = [...p.daftar_efek]
                                 .sort((a, b) => (b.bobot || 0) - (a.bobot || 0))
                                 .map((e, i) => ({
-                                    kode_efek:          e.kode_efek || '',
-                                    nama_efek:          e.nama_efek || '',
-                                    sektor:             e.sektor || '',
-                                    bobot:              e.bobot ?? '',
+                                    kode_efek: e.kode_efek || '',
+                                    nama_efek: e.nama_efek || '',
+                                    sektor: e.sektor || '',
+                                    bobot: e.bobot ?? '',
                                     kontribusi_kinerja: e.kontribusi_kinerja ?? '',
-                                    market_cap:         e.market_cap ?? '',
-                                    top_10:             i < 10,
+                                    market_cap: e.market_cap ?? '',
+                                    top_10: i < 10,
                                 }));
                         } else if (pdf.efek?.length) {
-                            this.efek = pdf.efek.map((e, i) => ({ ...e, top_10: i < 10 }));
+                            this.efek = pdf.efek.map((e, i) => ({
+                                ...e,
+                                top_10: i < 10
+                            }));
                         }
 
                         // Kinerja — dari PDF (AI tidak generate ini)
                         if (pdf.kinerja?.length >= 2) {
                             this.kinerja = pdf.kinerja;
                         } else if (pdf.kinerja?.length === 1) {
-                            this.kinerja = [...pdf.kinerja, { periode: '', return_pct: '' }];
+                            this.kinerja = [...pdf.kinerja, {
+                                periode: '',
+                                return_pct: ''
+                            }];
                         }
 
                         // Obligasi & bank — dari PDF
                         if (pdf.obligasi?.length) this.obligasi = pdf.obligasi;
-                        if (pdf.bank?.length)     this.bank     = pdf.bank;
+                        if (pdf.bank?.length) this.bank = pdf.bank;
 
                         this.mode = 'manual';
                         alert('Data telah diterapkan ke Input Manual. Silakan review sebelum submit.');
@@ -780,6 +851,7 @@
                             jenis_reksa_dana: 'jenis_reksa_dana',
                             total_aum: 'total_aum',
                             total_marcap_10_efek: 'total_marcap_10_efek',
+                            tanggal_data: 'tanggal_data',
                         };
                         for (const [key, id] of Object.entries(fields)) {
                             const el = document.getElementById(id);
@@ -795,7 +867,10 @@
                         if (data.kinerja?.length >= 2) {
                             this.kinerja = data.kinerja;
                         } else if (data.kinerja?.length === 1) {
-                            this.kinerja = [...data.kinerja, { periode: '', return_pct: '' }];
+                            this.kinerja = [...data.kinerja, {
+                                periode: '',
+                                return_pct: ''
+                            }];
                         }
                         if (data.obligasi?.length) this.obligasi = data.obligasi;
                         if (data.bank?.length) this.bank = data.bank;
@@ -823,12 +898,20 @@
                         formData.append('file', this.webFile);
                         formData.append('_token', this.analisaFormEl().querySelector('input[name="_token"]').value);
                         fetch(this.parseWebFileUrl, {
-                            method: 'POST',
-                            headers: { Accept: 'application/json' },
-                            body: formData,
-                        })
-                            .then(res => res.json().then(body => ({ ok: res.ok, body })))
-                            .then(({ ok, body }) => {
+                                method: 'POST',
+                                headers: {
+                                    Accept: 'application/json'
+                                },
+                                body: formData,
+                            })
+                            .then(res => res.json().then(body => ({
+                                ok: res.ok,
+                                body
+                            })))
+                            .then(({
+                                ok,
+                                body
+                            }) => {
                                 this.webLoading = false;
                                 if (!ok || !body.success) {
                                     this.webOk = false;
@@ -837,7 +920,8 @@
                                 }
                                 this.applyExtractedData(body.data);
                                 this.webOk = true;
-                                this.webMessage = body.message + ' Data sudah di tab Input Manual — lengkapi Jenis RD jika perlu, lalu Submit Analisa.';
+                                this.webMessage = body.message +
+                                    ' Data sudah di tab Input Manual — lengkapi Jenis RD jika perlu, lalu Submit Analisa.';
                             })
                             .catch(() => {
                                 this.webLoading = false;
@@ -853,21 +937,31 @@
                         formData.append('data_source_link_id', linkId);
                         formData.append('_token', this.analisaFormEl().querySelector('input[name="_token"]').value);
                         fetch(this.scrapeWebUrl, {
-                            method: 'POST',
-                            headers: { Accept: 'application/json' },
-                            body: formData,
-                        })
-                            .then(res => res.json().then(body => ({ ok: res.ok, body })))
-                            .then(({ ok, body }) => {
+                                method: 'POST',
+                                headers: {
+                                    Accept: 'application/json'
+                                },
+                                body: formData,
+                            })
+                            .then(res => res.json().then(body => ({
+                                ok: res.ok,
+                                body
+                            })))
+                            .then(({
+                                ok,
+                                body
+                            }) => {
                                 this.webLoading = false;
                                 if (!ok || !body.success) {
                                     this.webOk = false;
-                                    this.webMessage = body.message || 'Unduh otomatis gagal. Unduh manual dari link, lalu pilih file di bawah.';
+                                    this.webMessage = body.message ||
+                                        'Unduh otomatis gagal. Unduh manual dari link, lalu pilih file di bawah.';
                                     return;
                                 }
                                 this.applyExtractedData(body.data);
                                 this.webOk = true;
-                                this.webMessage = body.message + ' Data sudah di tab Input Manual — lengkapi Jenis RD jika perlu, lalu Submit Analisa.';
+                                this.webMessage = body.message +
+                                    ' Data sudah di tab Input Manual — lengkapi Jenis RD jika perlu, lalu Submit Analisa.';
                             })
                             .catch(() => {
                                 this.webLoading = false;
@@ -883,12 +977,20 @@
                         formData.append('url', url);
                         formData.append('_token', this.analisaFormEl().querySelector('input[name="_token"]').value);
                         fetch(@json($formRoutes['scrape_url']), {
-                            method: 'POST',
-                            headers: { Accept: 'application/json' },
-                            body: formData,
-                        })
-                            .then(res => res.json().then(body => ({ ok: res.ok, body })))
-                            .then(({ ok, body }) => {
+                                method: 'POST',
+                                headers: {
+                                    Accept: 'application/json'
+                                },
+                                body: formData,
+                            })
+                            .then(res => res.json().then(body => ({
+                                ok: res.ok,
+                                body
+                            })))
+                            .then(({
+                                ok,
+                                body
+                            }) => {
                                 this.webLoading = false;
                                 if (!ok || !body.success) {
                                     this.webOk = false;
@@ -897,7 +999,8 @@
                                 }
                                 this.applyExtractedData(body.data);
                                 this.webOk = true;
-                                this.webMessage = body.message + ' Data sudah di tab Input Manual — lengkapi Jenis RD jika perlu, lalu Submit Analisa.';
+                                this.webMessage = body.message +
+                                    ' Data sudah di tab Input Manual — lengkapi Jenis RD jika perlu, lalu Submit Analisa.';
                                 this.mode = 'manual';
                             })
                             .catch(() => {
@@ -919,9 +1022,9 @@
                         formData.append('file_pdf', file);
                         formData.append('_token', this.analisaFormEl().querySelector('input[name="_token"]').value);
 
-                        const url = this.pdfScanMode === 'vision' && this.parsePdfVisionUrl
-                            ? this.parsePdfVisionUrl
-                            : @json($formRoutes['parse_pdf']);
+                        const url = this.pdfScanMode === 'vision' && this.parsePdfVisionUrl ?
+                            this.parsePdfVisionUrl :
+                            @json($formRoutes['parse_pdf']);
 
                         fetch(url, {
                                 method: 'POST',

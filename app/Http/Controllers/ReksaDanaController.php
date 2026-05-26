@@ -12,14 +12,19 @@ class ReksaDanaController extends Controller
 
     public function index(Request $request)
     {
-        $query = AnalisaReksaDana::query()->where('user_id', auth()->id())->whereNotNull('ai_narasi');
+        $query = AnalisaReksaDana::query()->where('user_id', auth()->id())->whereIn('status', ['submitted', 'input_manual']);
 
-        if ($request->jenis) {
-            $query->where('jenis_reksa_dana', $request->jenis);
+        if ($request->filled('jenis')) {
+            $query->whereIn('jenis_reksa_dana', (array) $request->jenis);
         }
 
-        if ($request->kategori) {
-            $query->whereJsonContains('kategori', $request->kategori);
+        if ($request->filled('kategori')) {
+            $kategoriFilter = (array) $request->kategori;
+            $query->where(function ($q) use ($kategoriFilter) {
+                foreach ($kategoriFilter as $k) {
+                    $q->whereJsonContains('kategori', $k);
+                }
+            });
         }
 
         $reksaDanas = $query->orderBy('nama_reksa_dana')->paginate(20)->withQueryString();
@@ -61,11 +66,12 @@ class ReksaDanaController extends Controller
             'mata_uang'            => 'nullable|string|max:10',
             'total_aum'            => 'nullable|numeric|min:0',
             'total_marcap_10_efek' => 'nullable|numeric|min:0',
+            'tanggal_data'         => 'nullable|date',
         ]);
 
         \Illuminate\Support\Facades\DB::transaction(function () use ($request, $reksaDana) {
             $reksaDana->update(array_merge(
-                $request->only(['nama_reksa_dana', 'jenis_reksa_dana', 'mata_uang', 'total_aum', 'total_marcap_10_efek']),
+                $request->only(['nama_reksa_dana', 'jenis_reksa_dana', 'mata_uang', 'total_aum', 'total_marcap_10_efek', 'tanggal_data']),
                 ['kategori' => $request->kategori ?? []]
             ));
 

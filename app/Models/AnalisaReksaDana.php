@@ -21,6 +21,7 @@ class AnalisaReksaDana extends Model
         'unit_penyertaan',
         'return_1m',
         'total_marcap_10_efek',
+        'tanggal_data',
         'status',
         'catatan_admin',
         'ai_narasi',
@@ -34,6 +35,7 @@ class AnalisaReksaDana extends Model
         'ai_output'      => 'array',
         'ai_output_plus' => 'array',
         'kategori'       => 'array',
+        'tanggal_data'   => 'date',
     ];
 
     public function user(): BelongsTo
