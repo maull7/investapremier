@@ -10,23 +10,35 @@ use Illuminate\Support\Facades\Storage;
 
 class ReksaDanaController extends Controller
 {
+    private const JENIS_OPTIONS = ['Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang', 'Terproteksi', 'Global', 'DIRE-DINFRA', 'Penyertaan terbatas'];
+    private const KATEGORI_OPTIONS = ['Konvensional', 'Syariah', 'index', 'ETF'];
+
     public function index(Request $request)
     {
         $query = AnalisaReksaDana::with('user')
             ->where('product_type', 'reksa_dana')
             ->latest();
 
-        if ($request->jenis) {
-            $query->where('jenis_reksa_dana', $request->jenis);
+        if ($request->filled('jenis')) {
+            $query->whereIn('jenis_reksa_dana', (array) $request->jenis);
         }
 
-        if ($request->kategori) {
-            $query->whereJsonContains('kategori', $request->kategori);
+        if ($request->filled('kategori')) {
+            $kategoriFilter = (array) $request->kategori;
+            $query->where(function ($q) use ($kategoriFilter) {
+                foreach ($kategoriFilter as $k) {
+                    $q->whereJsonContains('kategori', $k);
+                }
+            });
         }
 
         $reksaDanas = $query->paginate(20)->withQueryString();
 
-        return view('admin.reksa-dana.index', compact('reksaDanas'));
+        return view('admin.reksa-dana.index', [
+            'reksaDanas'      => $reksaDanas,
+            'jenisOptions'    => self::JENIS_OPTIONS,
+            'kategoriOptions' => self::KATEGORI_OPTIONS,
+        ]);
     }
 
     public function bulkAnalisa(Request $request)

@@ -184,6 +184,7 @@ class FfsParserService
             'kategori' => [],
             'total_aum' => null,
             'total_marcap_10_efek' => null,
+            'tanggal_data' => null,
             'sektor' => [],
             'efek' => [],
             'kinerja' => [],

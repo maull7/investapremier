@@ -14,29 +14,51 @@
 </div>
 @endif
 
-{{-- Filter Jenis --}}
-<div class="flex gap-2 text-xs mb-3 flex-wrap">
-    @foreach(array_merge([''], $jenisOptions) as $j)
-    <a href="{{ route('user.reksa-dana.index', array_filter(['jenis' => $j ?: null, 'kategori' => request('kategori')])) }}"
-       class="px-3 py-1.5 rounded-lg border transition {{ request('jenis') === $j || (!request('jenis') && $j === '') ? 'bg-primary text-white border-primary' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
-        {{ $j ?: 'Semua Jenis' }}
-    </a>
-    @endforeach
-</div>
+<form method="GET" action="{{ route('user.reksa-dana.index') }}" class="mb-5 space-y-3">
+    {{-- Filter Jenis --}}
+    <div>
+        <div class="flex items-center gap-2 text-xs mb-2">
+            <span class="font-semibold text-muted">Jenis:</span>
+            <a href="{{ route('user.reksa-dana.index') }}"
+               class="px-3 py-1.5 rounded-lg border transition {{ !request('jenis') ? 'bg-primary text-white border-primary' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
+               Semua
+            </a>
+        </div>
+        <div class="flex gap-2 text-xs flex-wrap">
+            @foreach($jenisOptions as $j)
+            <label class="flex items-center gap-1.5 cursor-pointer px-3 py-1.5 rounded-lg border transition has-[:checked]:bg-primary has-[:checked]:text-white has-[:checked]:border-primary border-line text-muted hover:bg-[#f1f5f9]">
+                <input type="checkbox" name="jenis[]" value="{{ $j }}"
+                    {{ in_array($j, (array) request('jenis')) ? 'checked' : '' }}
+                    class="sr-only"
+                    onchange="this.closest('form').submit();">
+                {{ $j }}
+            </label>
+            @endforeach
+        </div>
+    </div>
 
-{{-- Filter Kategori --}}
-<div class="flex gap-2 text-xs mb-5 flex-wrap">
-    <a href="{{ route('user.reksa-dana.index', array_filter(['jenis' => request('jenis')])) }}"
-       class="px-3 py-1.5 rounded-lg border transition {{ !request('kategori') ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
-        Semua Kategori
-    </a>
-    @foreach($kategoriOptions as $k)
-    <a href="{{ route('user.reksa-dana.index', array_filter(['jenis' => request('jenis'), 'kategori' => $k])) }}"
-       class="px-3 py-1.5 rounded-lg border transition {{ request('kategori') === $k ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
-        {{ $k }}
-    </a>
-    @endforeach
-</div>
+    {{-- Filter Kategori --}}
+    <div>
+        <div class="flex items-center gap-2 text-xs mb-2">
+            <span class="font-semibold text-muted">Kategori:</span>
+            <a href="{{ route('user.reksa-dana.index') }}"
+               class="px-3 py-1.5 rounded-lg border transition {{ !request('kategori') ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
+               Semua
+            </a>
+        </div>
+        <div class="flex gap-2 text-xs flex-wrap">
+            @foreach($kategoriOptions as $k)
+            <label class="flex items-center gap-1.5 cursor-pointer px-3 py-1.5 rounded-lg border transition has-[:checked]:bg-accent has-[:checked]:text-white has-[:checked]:border-accent border-line text-muted hover:bg-[#f1f5f9]">
+                <input type="checkbox" name="kategori[]" value="{{ $k }}"
+                    {{ in_array($k, (array) request('kategori')) ? 'checked' : '' }}
+                    class="sr-only"
+                    onchange="this.closest('form').submit();">
+                {{ $k }}
+            </label>
+            @endforeach
+        </div>
+    </div>
+</form>
 
 <div class="bg-white rounded-2xl border border-line overflow-hidden shadow-sm">
     <div class="overflow-x-auto">
@@ -48,6 +70,7 @@
                     <th class="px-5 py-3.5 font-semibold">Jenis</th>
                     <th class="px-5 py-3.5 font-semibold">Kategori</th>
                     <th class="px-5 py-3.5 font-semibold">Mata Uang</th>
+                    <th class="px-5 py-3.5 font-semibold">Tanggal Data</th>
                     <th class="px-5 py-3.5 font-semibold text-right">AUM</th>
                     <th class="px-5 py-3.5 font-semibold text-right">UP</th>
                     <th class="px-5 py-3.5 font-semibold text-right">
@@ -89,6 +112,7 @@
                         @endif
                     </td>
                     <td class="px-5 py-3.5 text-muted text-xs">{{ $rd->mata_uang ?? 'IDR' }}</td>
+                    <td class="px-5 py-3.5 text-muted text-xs">{{ $rd->tanggal_data ? $rd->tanggal_data->format('d/m/Y') : '—' }}</td>
                     <td class="px-5 py-3.5 text-right text-xs text-muted">
                         {{ $rd->total_aum ? 'Rp ' . number_format($rd->total_aum, 0, ',', '.') : '—' }}
                     </td>
@@ -122,7 +146,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="9" class="px-6 py-12 text-center text-muted">
+                    <td colspan="10" class="px-6 py-12 text-center text-muted">
                         <p class="font-medium">Belum ada data reksa dana</p>
                     </td>
                 </tr>

@@ -89,6 +89,7 @@ Ekstrak data dari teks Fund Fact Sheet berikut. Kembalikan HANYA JSON valid deng
   "kategori": ["Konvensional", "Syariah", "index", "ETF"],
   "total_aum": angka rupiah penuh atau null,
   "total_marcap_10_efek": angka rupiah penuh atau null,
+  "tanggal_data": "YYYY-MM-DD atau null",
   "sektor": [
     {"nama_sektor": "string", "bobot": angka_persen}
   ],
@@ -162,6 +163,7 @@ Baca PDF Fund Fact Sheet berikut seperti analis yang melihat halaman PDF langsun
   "kategori": ["Konvensional", "Syariah", "index", "ETF"],
   "total_aum": angka rupiah penuh atau null,
   "total_marcap_10_efek": angka rupiah penuh atau null,
+  "tanggal_data": "YYYY-MM-DD atau null",
   "sektor": [{"nama_sektor": "string", "bobot": angka_persen}],
   "efek": [{
     "kode_efek": "string",

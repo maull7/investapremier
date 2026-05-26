@@ -65,6 +65,12 @@
                         value="{{ old('total_marcap_10_efek', $analisa->total_marcap_10_efek) }}" />
                     <x-input-error :messages="$errors->get('total_marcap_10_efek')" class="mt-1" />
                 </div>
+                <div>
+                    <x-input-label for="tanggal_data" value="Tanggal Data" />
+                    <x-text-input id="tanggal_data" name="tanggal_data" type="date" class="mt-1 block w-full"
+                        value="{{ old('tanggal_data', $analisa->tanggal_data?->format('Y-m-d')) }}" />
+                    <x-input-error :messages="$errors->get('tanggal_data')" class="mt-1" />
+                </div>
             </div>
         </div>
 
