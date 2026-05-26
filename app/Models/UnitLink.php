@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class UnitLink extends Model
 {
@@ -17,4 +18,9 @@ class UnitLink extends Model
         'buy_price' => 'decimal:4',
         'sell_price' => 'decimal:4',
     ];
+
+    public function harga(): HasMany
+    {
+        return $this->hasMany(HargaUnitLink::class, 'unit_link_id');
+    }
 }

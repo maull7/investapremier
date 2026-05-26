@@ -190,6 +190,11 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::delete('unit-link/{unitLink}', [AdminUnitLinkController::class, 'destroy'])->name('unit-link.destroy');
     Route::get('unit-link-template', [AdminUnitLinkController::class, 'downloadTemplate'])->name('unit-link.template');
     Route::post('unit-link-import', [AdminUnitLinkController::class, 'import'])->name('unit-link.import');
+    Route::get('unit-link-template-harga', [AdminUnitLinkController::class, 'downloadTemplateHarga'])->name('unit-link.template-harga');
+    Route::post('unit-link-import-harga', [AdminUnitLinkController::class, 'importHarga'])->name('unit-link.import-harga');
+    Route::post('unit-link-harga', [AdminUnitLinkController::class, 'storeHarga'])->name('unit-link.store-harga');
+    Route::put('unit-link-harga/{hargaUnitLink}', [AdminUnitLinkController::class, 'updateHarga']);
+    Route::delete('unit-link-harga/{hargaUnitLink}', [AdminUnitLinkController::class, 'destroyHarga']);
 
     // Monitor Unit Link FFS
     Route::get('unit-link-ffs', [AdminUnitLinkFfsController::class, 'index'])->name('unit-link-ffs.index');
