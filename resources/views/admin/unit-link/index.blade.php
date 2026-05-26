@@ -5,7 +5,21 @@
 @section('content')
 <div x-data="{
     deleteId: null, deleteText: '',
-    showImport: false
+    showImport: false,
+    showHargaForm: false,
+    editHargaId: null,
+    deleteHargaId: null,
+    deleteHargaText: '',
+    hargaForm: { unit_link_id: '', datetime: '', harga_median: '', sell_buy_low: '', sell_buy_high: '' },
+    editHarga(id, name, unitLinkId, datetime, hargaMedian, sellBuyLow, sellBuyHigh) {
+        this.editHargaId = id;
+        this.hargaForm.unit_link_id = unitLinkId;
+        this.hargaForm.datetime = datetime;
+        this.hargaForm.harga_median = hargaMedian;
+        this.hargaForm.sell_buy_low = sellBuyLow;
+        this.hargaForm.sell_buy_high = sellBuyHigh;
+        this.showHargaForm = true;
+    }
 }">
 
 <div class="mb-6 flex items-center justify-between">

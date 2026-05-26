@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\UnitLink;
+use App\Models\HargaUnitLink;
 use App\Exports\UnitLinkTemplateExport;
+use App\Exports\HargaUnitLinkTemplateExport;
 use App\Imports\UnitLinkImport;
+use App\Imports\HargaUnitLinkImport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 
@@ -17,6 +20,7 @@ class UnitLinkController extends Controller
         $perPage = in_array($request->per_page, [10, 25, 50]) ? $request->per_page : 10;
 
         $unitLinks = collect();
+        $hargaUnitLinks = collect();
 
         if ($tab === 'unit-links') {
             $query = UnitLink::latest();
@@ -29,9 +33,16 @@ class UnitLinkController extends Controller
                 });
             }
             $unitLinks = $query->paginate($perPage)->withQueryString();
+        } elseif ($tab === 'unit-prices') {
+            $query = HargaUnitLink::with('unitLink')->latest('datetime');
+            if ($request->search) {
+                $s = $request->search;
+                $query->whereHas('unitLink', fn($q) => $q->where('unit_link', 'like', "%{$s}%"));
+            }
+            $hargaUnitLinks = $query->paginate($perPage)->withQueryString();
         }
 
-        return view('admin.unit-link.index', compact('tab', 'perPage', 'unitLinks'));
+        return view('admin.unit-link.index', compact('tab', 'perPage', 'unitLinks', 'hargaUnitLinks'));
     }
 
     public function create()
@@ -103,5 +114,58 @@ class UnitLinkController extends Controller
         Excel::import($import, $request->file('file'));
         return redirect()->route('admin.unit-link.index', ['tab' => 'unit-links'])
             ->with('success', "{$import->imported} data unit link berhasil diimport.");
+    }
+
+    public function downloadTemplateHarga()
+    {
+        return Excel::download(new HargaUnitLinkTemplateExport, 'template-harga-unit-link.xlsx');
+    }
+
+    public function importHarga(Request $request)
+    {
+        $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:5120']);
+        $import = new HargaUnitLinkImport;
+        Excel::import($import, $request->file('file'));
+        return redirect()->route('admin.unit-link.index', ['tab' => 'unit-prices'])
+            ->with('success', "{$import->imported} data harga unit link berhasil diimport.");
+    }
+
+    public function storeHarga(Request $request)
+    {
+        $data = $request->validate([
+            'unit_link_id' => 'required|exists:unit_links,id',
+            'datetime'     => 'required|date',
+            'harga_median' => 'required|numeric',
+            'sell_buy_low' => 'nullable|numeric',
+            'sell_buy_high' => 'nullable|numeric',
+        ]);
+
+        HargaUnitLink::create($data);
+
+        return redirect()->route('admin.unit-link.index', ['tab' => 'unit-prices'])
+            ->with('success', 'Harga unit link berhasil ditambahkan.');
+    }
+
+    public function updateHarga(Request $request, HargaUnitLink $hargaUnitLink)
+    {
+        $data = $request->validate([
+            'unit_link_id'  => 'required|exists:unit_links,id',
+            'datetime'      => 'required|date',
+            'harga_median'  => 'required|numeric',
+            'sell_buy_low'  => 'nullable|numeric',
+            'sell_buy_high' => 'nullable|numeric',
+        ]);
+
+        $hargaUnitLink->update($data);
+
+        return redirect()->route('admin.unit-link.index', ['tab' => 'unit-prices'])
+            ->with('success', 'Harga unit link berhasil diperbarui.');
+    }
+
+    public function destroyHarga(HargaUnitLink $hargaUnitLink)
+    {
+        $hargaUnitLink->delete();
+        return redirect()->route('admin.unit-link.index', ['tab' => 'unit-prices'])
+            ->with('success', 'Harga unit link berhasil dihapus.');
     }
 }
