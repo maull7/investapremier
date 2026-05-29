@@ -19,7 +19,13 @@ class FfsParserService
             'nama_reksa_dana' => $this->safeExtract('extractNamaReksaDana', [$lines, $fullText]),
             'jenis_reksa_dana' => $this->safeExtract('extractJenisReksaDana', [$lines, $fullText]),
             'total_aum' => $this->safeExtract('extractAum', [$lines, $fullText]),
+            'unit_penyertaan' => null,
+            'nab_per_unit' => null,
             'total_marcap_10_efek' => $this->safeExtract('extractTotalMarcap', [$lines, $fullText]),
+            'tanggal_data' => null,
+            'ffs_bulan' => null,
+            'ffs_tahun' => null,
+            'alokasi_aset' => [],
             'sektor' => $this->safeExtract('extractSektor', [$lines, $fullText]),
             'efek' => $this->safeExtract('extractEfek', [$lines, $fullText]),
             'kinerja' => $this->safeExtract('extractKinerja', [$lines, $fullText]),
@@ -42,7 +48,13 @@ class FfsParserService
             'jenis_reksa_dana' => $this->safeExtract('extractJenisReksaDana', [$lines, $fullText]),
             'kategori' => [],
             'total_aum' => $this->safeExtract('extractAum', [$lines, $fullText]),
+            'unit_penyertaan' => null,
+            'nab_per_unit' => null,
             'total_marcap_10_efek' => $this->safeExtract('extractTotalMarcap', [$lines, $fullText]),
+            'tanggal_data' => null,
+            'ffs_bulan' => null,
+            'ffs_tahun' => null,
+            'alokasi_aset' => [],
             'sektor' => $this->safeExtract('extractSektor', [$lines, $fullText]),
             'efek' => $this->safeExtract('extractEfek', [$lines, $fullText]),
             'kinerja' => $this->safeExtract('extractKinerja', [$lines, $fullText]),
@@ -62,7 +74,7 @@ class FfsParserService
 
     private function merge(array $regex, array $ai): array
     {
-        $arrayFields = ['sektor', 'efek', 'kinerja', 'obligasi', 'bank'];
+        $arrayFields = ['alokasi_aset', 'sektor', 'efek', 'kinerja', 'obligasi', 'bank'];
 
         foreach ($regex as $key => $value) {
             $aiValue = $ai[$key] ?? null;
@@ -183,8 +195,13 @@ class FfsParserService
             'jenis_reksa_dana' => null,
             'kategori' => [],
             'total_aum' => null,
+            'unit_penyertaan' => null,
+            'nab_per_unit' => null,
             'total_marcap_10_efek' => null,
             'tanggal_data' => null,
+            'ffs_bulan' => null,
+            'ffs_tahun' => null,
+            'alokasi_aset' => [],
             'sektor' => [],
             'efek' => [],
             'kinerja' => [],
@@ -201,9 +218,35 @@ class FfsParserService
             $data['kategori'] = [];
         }
 
-        foreach (['sektor', 'efek', 'kinerja', 'obligasi', 'bank'] as $field) {
+        foreach (['alokasi_aset', 'sektor', 'efek', 'kinerja', 'obligasi', 'bank'] as $field) {
             $data[$field] = is_array($data[$field]) ? array_values($data[$field]) : [];
         }
+
+        if (!empty($data['tanggal_data']) && (empty($data['ffs_bulan']) || empty($data['ffs_tahun']))) {
+            try {
+                $date = \Carbon\Carbon::parse($data['tanggal_data']);
+                $data['ffs_bulan'] = $data['ffs_bulan'] ?: $date->month;
+                $data['ffs_tahun'] = $data['ffs_tahun'] ?: $date->year;
+            } catch (\Throwable) {
+                //
+            }
+        }
+
+        $data['alokasi_aset'] = array_map(function ($row) {
+            if (!is_array($row)) {
+                return ['nama_aset' => (string) $row, 'persentase' => null];
+            }
+            if (isset($row['kategori']) && empty($row['nama_aset'])) {
+                $row['nama_aset'] = $row['kategori'];
+            }
+            if (isset($row['nama']) && empty($row['nama_aset'])) {
+                $row['nama_aset'] = $row['nama'];
+            }
+            if (isset($row['bobot']) && !isset($row['persentase'])) {
+                $row['persentase'] = $row['bobot'];
+            }
+            return $row;
+        }, $data['alokasi_aset']);
 
         $data['sektor'] = array_map(function ($row) {
             if (!is_array($row)) {

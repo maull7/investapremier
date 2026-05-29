@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AnalisaBank;
+use App\Models\AnalisaAlokasiAset;
 use App\Models\AnalisaEfek;
 use App\Models\AnalisaKinerjaBulanan;
 use App\Models\AnalisaObligasi;
@@ -18,7 +19,12 @@ class AnalisaPayloadBuilder
             'nama_reksa_dana'      => $request->input('nama_reksa_dana', 'Preview'),
             'jenis_reksa_dana'     => $request->input('jenis_reksa_dana', 'Saham'),
             'total_aum'            => $request->input('total_aum'),
+            'unit_penyertaan'      => $request->input('unit_penyertaan'),
+            'nab_per_unit'         => $request->input('nab_per_unit'),
             'total_marcap_10_efek' => $request->input('total_marcap_10_efek'),
+            'tanggal_data'         => $request->input('tanggal_data'),
+            'ffs_bulan'            => $request->input('ffs_bulan'),
+            'ffs_tahun'            => $request->input('ffs_tahun'),
         ]);
 
         $analisa->setRelation('sektor', collect($request->input('sektor', []))
@@ -65,6 +71,13 @@ class AnalisaPayloadBuilder
                 'car'                 => $r['car'] ?? null,
                 'npl'                 => $r['npl'] ?? null,
                 'klasifikasi_risiko'  => $r['klasifikasi_risiko'] ?? null,
+            ])));
+
+        $analisa->setRelation('alokasiAset', collect($request->input('alokasi_aset', []))
+            ->filter(fn ($r) => !empty($r['nama_aset']) && ($r['persentase'] ?? '') !== '')
+            ->map(fn ($r) => new AnalisaAlokasiAset([
+                'nama_aset'  => $r['nama_aset'],
+                'persentase' => $r['persentase'],
             ])));
 
         return $analisa;

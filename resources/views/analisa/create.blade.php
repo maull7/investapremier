@@ -46,26 +46,49 @@
             {{-- Info Dasar --}}
             <div class="bg-white rounded-xl border border-line p-6 space-y-4" x-show="mode !== 'link-website'" x-cloak>
                 <h3 class="font-semibold text-primary">Informasi Reksa Dana</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <x-input-label for="kode_reksa_dana" value="Kode Reksa Dana *" />
+                        <x-text-input id="kode_reksa_dana" name="kode_reksa_dana" type="text" class="mt-1 block w-full"
+                            value="{{ old('kode_reksa_dana') }}" x-bind:required="mode !== 'link-website'"
+                            @input.debounce.500ms="lookupReksaDana($event.target.value)" />
+                        <x-input-error :messages="$errors->get('kode_reksa_dana')" class="mt-1" />
+                        <p class="text-xs mt-1" :class="lookupOk ? 'text-emerald-600' : 'text-muted'" x-text="lookupMessage"></p>
+                    </div>
                     <div>
                         <x-input-label for="nama_reksa_dana" value="Nama Reksa Dana *" />
                         <x-text-input id="nama_reksa_dana" name="nama_reksa_dana" type="text" class="mt-1 block w-full"
                             value="{{ old('nama_reksa_dana') }}" x-bind:required="mode !== 'link-website'" />
                         <x-input-error :messages="$errors->get('nama_reksa_dana')" class="mt-1" />
                     </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                        <x-input-label for="jenis_reksa_dana" value="Jenis Reksa Dana *" />
-                        <select id="jenis_reksa_dana" name="jenis_reksa_dana"
+                        <x-input-label for="tanggal_data" value="Tanggal Data *" />
+                        <x-text-input id="tanggal_data" name="tanggal_data" type="date" class="mt-1 block w-full"
+                            x-model="tanggalData" x-bind:required="mode !== 'link-website'" />
+                        <x-input-error :messages="$errors->get('tanggal_data')" class="mt-1" />
+                    </div>
+                    <div>
+                        <x-input-label for="ffs_bulan" value="Bulan FFS *" />
+                        <select id="ffs_bulan" name="ffs_bulan" x-model="ffsBulan"
                             class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm"
                             x-bind:required="mode !== 'link-website'">
-                            <option value="">Pilih Jenis</option>
-                            @foreach (['Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang', 'Terproteksi', 'Global', 'DIRE-DINFRA', 'Penyertaan terbatas'] as $j)
-                                <option value="{{ $j }}" {{ old('jenis_reksa_dana') === $j ? 'selected' : '' }}>
-                                    {{ $j }}</option>
+                            <option value="">Pilih Bulan</option>
+                            @foreach (range(1, 12) as $bulan)
+                                <option value="{{ $bulan }}">{{ \Carbon\Carbon::create()->month($bulan)->translatedFormat('F') }}</option>
                             @endforeach
                         </select>
-                        <x-input-error :messages="$errors->get('jenis_reksa_dana')" class="mt-1" />
+                        <x-input-error :messages="$errors->get('ffs_bulan')" class="mt-1" />
                     </div>
+                    <div>
+                        <x-input-label for="ffs_tahun" value="Tahun FFS *" />
+                        <x-text-input id="ffs_tahun" name="ffs_tahun" type="number" min="2000" max="2100"
+                            class="mt-1 block w-full" x-model="ffsTahun" x-bind:required="mode !== 'link-website'" />
+                        <x-input-error :messages="$errors->get('ffs_tahun')" class="mt-1" />
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <x-input-label value="Kategori" />
                         <div class="mt-1 flex flex-wrap gap-3">
@@ -81,11 +104,39 @@
                         <x-input-error :messages="$errors->get('kategori')" class="mt-1" />
                     </div>
                     <div>
-                        <x-input-label for="tanggal_data" value="Tanggal Data" />
-                        <x-text-input id="tanggal_data" name="tanggal_data" type="date" class="mt-1 block w-full"
-                            value="{{ old('tanggal_data') }}" />
+                        <x-input-label for="jenis_reksa_dana" value="Jenis Reksa Dana *" />
+                        <select id="jenis_reksa_dana" name="jenis_reksa_dana"
+                            class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm"
+                            x-bind:required="mode !== 'link-website'">
+                            <option value="">Pilih Jenis</option>
+                            @foreach (['Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang', 'Terproteksi', 'Global', 'DIRE-DINFRA', 'Penyertaan terbatas'] as $j)
+                                <option value="{{ $j }}" {{ old('jenis_reksa_dana') === $j ? 'selected' : '' }}>
+                                    {{ $j }}</option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('jenis_reksa_dana')" class="mt-1" />
                     </div>
-
+                    <div>
+                        <x-input-label for="benchmark" value="Benchmark *" />
+                        <x-text-input id="benchmark" name="benchmark" type="text" class="mt-1 block w-full"
+                            value="{{ old('benchmark') }}" x-bind:required="mode !== 'link-website'" />
+                        <x-input-error :messages="$errors->get('benchmark')" class="mt-1" />
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-1 gap-4">
+                    <div>
+                        <x-input-label for="tujuan_investasi" value="Tujuan Investasi *" />
+                        <x-text-input id="tujuan_investasi" name="tujuan_investasi" type="text" class="mt-1 block w-full"
+                            value="{{ old('tujuan_investasi') }}" x-bind:required="mode !== 'link-website'" />
+                        <x-input-error :messages="$errors->get('tujuan_investasi')" class="mt-1" />
+                    </div>
+                    <div>
+                        <x-input-label for="kebijakan_investasi" value="Kebijakan Investasi *" />
+                        <x-text-input id="kebijakan_investasi" name="kebijakan_investasi" type="text"
+                            class="mt-1 block w-full" value="{{ old('kebijakan_investasi') }}"
+                            x-bind:required="mode !== 'link-website'" />
+                        <x-input-error :messages="$errors->get('kebijakan_investasi')" class="mt-1" />
+                    </div>
                 </div>
             </div>
 
@@ -97,6 +148,12 @@
                             'text-muted hover:text-primary'"
                         class="px-6 py-3.5 text-sm transition">
                         Input Manual
+                    </button>
+                    <button type="button" @click="mode='lengkap'"
+                        :class="mode === 'lengkap' ? 'border-b-2 border-primary text-primary font-semibold' :
+                            'text-muted hover:text-primary'"
+                        class="px-6 py-3.5 text-sm transition">
+                        Input Lengkap
                     </button>
                     <button type="button" @click="mode='excel'"
                         :class="mode === 'excel' ? 'border-b-2 border-primary text-primary font-semibold' :
@@ -132,21 +189,76 @@
 
                 {{-- TAB: MANUAL --}}
                 <div x-show="mode==='manual'" class="p-6 space-y-8">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <x-input-label for="tanggal_data_manual" value="Tanggal Data" />
+                            <x-text-input id="tanggal_data_manual" type="date" class="mt-1 block w-full"
+                                x-model="tanggalData" />
+                        </div>
+                        <div>
+                            <x-input-label for="unit_penyertaan" value="Jumlah Unit Penyertaan" />
+                            <x-text-input id="unit_penyertaan" name="unit_penyertaan" type="number" step="0.0001"
+                                class="mt-1 block w-full" x-model="unitPenyertaan" />
+                            <x-input-error :messages="$errors->get('unit_penyertaan')" class="mt-1" />
+                        </div>
+                        <div>
+                            <x-input-label for="nab_per_unit" value="NAB/UP *" />
+                            <x-text-input id="nab_per_unit" name="nab_per_unit" type="number" step="0.000001"
+                                class="mt-1 block w-full" x-model="nabPerUnit" x-bind:required="mode === 'manual'" />
+                            <x-input-error :messages="$errors->get('nab_per_unit')" class="mt-1" />
+                        </div>
+                    </div>
+
+                    @include('analisa.partials.form-alokasi-aset')
+                </div>
+
+                {{-- TAB: INPUT LENGKAP --}}
+                <div x-show="mode==='lengkap'" class="p-6 space-y-8">
 
                     {{-- Sektor --}}
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <x-input-label for="tanggal_data_lengkap" value="Tanggal Data" />
+                            <x-text-input id="tanggal_data_lengkap" type="date" class="mt-1 block w-full"
+                                x-model="tanggalData" />
+                        </div>
                         <div>
                             <x-input-label for="total_aum" value="Total AUM (Rp)" />
                             <x-text-input id="total_aum" name="total_aum" type="number" step="0.01"
-                                class="mt-1 block w-full" value="{{ old('total_aum') }}" />
+                                class="mt-1 block w-full" x-model="totalAum" />
                         </div>
                         <div>
                             <x-input-label for="total_marcap_10_efek" value="Total MarCap 10 Efek Terbesar (Rp)" />
                             <x-text-input id="total_marcap_10_efek" name="total_marcap_10_efek" type="number"
-                                step="0.01" class="mt-1 block w-full" value="{{ old('total_marcap_10_efek') }}" />
+                                step="0.01" class="mt-1 block w-full" x-model="totalMarcap10Efek" />
                         </div>
-
                     </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <x-input-label for="unit_penyertaan_lengkap" value="Jumlah Unit Penyertaan" />
+                            <x-text-input id="unit_penyertaan_lengkap" name="unit_penyertaan" type="number" step="0.0001"
+                                class="mt-1 block w-full" x-model="unitPenyertaan" />
+                        </div>
+                        <div>
+                            <x-input-label for="nab_per_unit_lengkap" value="NAB/UP" />
+                            <x-text-input id="nab_per_unit_lengkap" name="nab_per_unit" type="number" step="0.000001"
+                                class="mt-1 block w-full" x-model="nabPerUnit" />
+                        </div>
+                        <div>
+                            <x-input-label value="Kalender FFS" />
+                            <div class="mt-1 grid grid-cols-2 gap-2">
+                                <input type="number" min="1" max="12" x-model="ffsBulan"
+                                    class="border-gray-300 rounded-lg text-sm px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20"
+                                    placeholder="Bulan" />
+                                <input type="number" min="2000" max="2100" x-model="ffsTahun"
+                                    class="border-gray-300 rounded-lg text-sm px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20"
+                                    placeholder="Tahun" />
+                            </div>
+                        </div>
+                    </div>
+
+                    @include('analisa.partials.form-alokasi-aset')
 
                     <div>
                         <div class="flex items-center justify-between mb-3">
@@ -493,6 +605,7 @@
                     $oldKinerja = old('kinerja', [['periode' => '', 'return_pct' => ''], ['periode' => '', 'return_pct' => '']]);
                     $oldObligasi = old('obligasi', [['kode_obligasi' => '', 'nama_obligasi' => '', 'bobot' => '', 'durasi' => '', 'rating' => '']]);
                     $oldBank = old('bank', [['nama_bank' => '', 'bobot' => '', 'car' => '', 'npl' => '', 'klasifikasi_risiko' => '']]);
+                    $oldAlokasiAset = old('alokasi_aset', [['nama_aset' => '', 'persentase' => '']]);
                     // Normalize top_10 checkbox (submitted as "1" string or absent)
                     $oldEfek = array_map(function ($e) {
                         $e['top_10'] = !empty($e['top_10']);
@@ -530,13 +643,24 @@
                     aiPlusResult: null,
                     previewAiUrl: @json($formRoutes['preview_ai']),
                     previewAiPlusUrl: @json($formRoutes['preview_ai_plus']),
+                    lookupKodeUrl: @json($formRoutes['lookup_kode']),
                     parsePdfVisionUrl: @json($formRoutes['parse_pdf_vision']),
                     plusRequiredLabels: @json($plusLabels),
+                    lookupMessage: '',
+                    lookupOk: false,
+                    tanggalData: @json(old('tanggal_data')),
+                    ffsBulan: @json(old('ffs_bulan')),
+                    ffsTahun: @json(old('ffs_tahun', now()->year)),
+                    unitPenyertaan: @json(old('unit_penyertaan')),
+                    nabPerUnit: @json(old('nab_per_unit')),
+                    totalAum: @json(old('total_aum')),
+                    totalMarcap10Efek: @json(old('total_marcap_10_efek')),
                     sektor: @json($oldSektor),
                     efek: @json($oldEfek),
                     kinerja: @json($oldKinerja),
                     obligasi: @json($oldObligasi),
                     bank: @json($oldBank),
+                    alokasi_aset: @json($oldAlokasiAset),
 
                     addRow(type) {
                         const defaults = {
@@ -571,6 +695,10 @@
                                 npl: '',
                                 klasifikasi_risiko: ''
                             },
+                            alokasi_aset: {
+                                nama_aset: '',
+                                persentase: ''
+                            },
                         };
                         this[type].push({
                             ...defaults[type]
@@ -581,6 +709,15 @@
                         if (this[type].length > 1) this[type].splice(index, 1);
                     },
 
+                    alokasiAsetTotal() {
+                        return this.alokasi_aset.reduce((sum, row) => sum + (parseFloat(row.persentase) || 0), 0);
+                    },
+
+                    alokasiAsetTotalValid() {
+                        const filled = this.alokasi_aset.some(row => String(row.nama_aset || '').trim() !== '' || String(row.persentase || '').trim() !== '');
+                        return !filled || Math.abs(this.alokasiAsetTotal() - 100) <= 0.01;
+                    },
+
                     analisaFormEl() {
                         return this.$root.querySelector('#analisa-form') || this.$root.querySelector('form');
                     },
@@ -588,7 +725,10 @@
                     buildFormPayload() {
                         const fd = new FormData(this.analisaFormEl());
                         const payload = new FormData();
-                        ['nama_reksa_dana', 'jenis_reksa_dana', 'total_aum', 'total_marcap_10_efek', 'tanggal_data'].forEach(
+                        ['kode_reksa_dana', 'nama_reksa_dana', 'jenis_reksa_dana', 'benchmark', 'tujuan_investasi',
+                            'kebijakan_investasi', 'total_aum', 'unit_penyertaan', 'nab_per_unit',
+                            'total_marcap_10_efek', 'tanggal_data', 'ffs_bulan', 'ffs_tahun'
+                        ].forEach(
                             k => {
                                 const val = fd.get(k) ?? '';
                                 // Fallback ke pdfData jika form kosong
@@ -597,6 +737,7 @@
                         for (const [key, val] of fd.entries()) {
                             if (key === 'kategori[]' || key.startsWith('kategori[') || key.startsWith('sektor[') || key
                                 .startsWith('efek[') || key.startsWith('kinerja[') || key.startsWith('obligasi[') || key
+                                .startsWith('alokasi_aset[') || key
                                 .startsWith('bank[')) {
                                 payload.append(key, val);
                             }
@@ -607,7 +748,7 @@
                         }
                         // Inject pdfData untuk field yang kosong (cek nilai, bukan hanya key)
                         if (this.pdfData) {
-                            const arrayFields = ['sektor', 'efek', 'kinerja', 'obligasi', 'bank'];
+                            const arrayFields = ['sektor', 'efek', 'kinerja', 'obligasi', 'bank', 'alokasi_aset'];
                             arrayFields.forEach(field => {
                                 const hasRealData = [...payload.entries()]
                                     .some(([k, v]) => k.startsWith(field + '[') && String(v).trim() !== '');
@@ -641,6 +782,79 @@
                             return Object.values(resp.errors).flat().join(' ');
                         }
                         return resp.message || 'Gagal memproses';
+                    },
+
+                    lookupReksaDana(kode) {
+                        kode = String(kode || '').trim();
+                        if (!this.lookupKodeUrl || kode.length < 2) {
+                            this.lookupMessage = '';
+                            this.lookupOk = false;
+                            return;
+                        }
+
+                        fetch(`${this.lookupKodeUrl}?kode_reksa_dana=${encodeURIComponent(kode)}`, {
+                                headers: {
+                                    Accept: 'application/json'
+                                }
+                            })
+                            .then(res => res.json())
+                            .then(resp => {
+                                if (!resp.found) {
+                                    this.lookupOk = false;
+                                    this.lookupMessage = 'Kode belum ditemukan di master data atau analisa sebelumnya.';
+                                    return;
+                                }
+
+                                const data = {
+                                    ...(resp.master || {}),
+                                    ...(resp.last_analisa || {}),
+                                };
+                                this.applyLookupData(data);
+                                this.lookupOk = true;
+                                this.lookupMessage = resp.last_analisa ?
+                                    'Data analisa terakhir berhasil dimuat.' :
+                                    'Data master reksa dana berhasil dimuat.';
+                            })
+                            .catch(() => {
+                                this.lookupOk = false;
+                                this.lookupMessage = 'Gagal mencari data kode reksa dana.';
+                            });
+                    },
+
+                    applyLookupData(data) {
+                        this.setFieldValue('nama_reksa_dana', data.nama_reksa_dana);
+                        this.setFieldValue('jenis_reksa_dana', data.jenis_reksa_dana);
+                        this.setFieldValue('benchmark', data.benchmark);
+                        this.setFieldValue('tujuan_investasi', data.tujuan_investasi);
+                        this.setFieldValue('kebijakan_investasi', data.kebijakan_investasi);
+                        this.totalAum = data.total_aum ?? this.totalAum;
+                        this.totalMarcap10Efek = data.total_marcap_10_efek ?? this.totalMarcap10Efek;
+                        this.unitPenyertaan = data.unit_penyertaan ?? this.unitPenyertaan;
+                        this.nabPerUnit = data.nab_per_unit ?? this.nabPerUnit;
+                        this.tanggalData = data.tanggal_data ?? this.tanggalData;
+                        this.ffsBulan = data.ffs_bulan ?? this.ffsBulan;
+                        this.ffsTahun = data.ffs_tahun ?? this.ffsTahun;
+                        this.applyKategori(data.kategori || []);
+                        if (data.sektor?.length) this.sektor = data.sektor;
+                        if (data.efek?.length) this.efek = data.efek;
+                        if (data.kinerja?.length) this.kinerja = data.kinerja;
+                        if (data.obligasi?.length) this.obligasi = data.obligasi;
+                        if (data.bank?.length) this.bank = data.bank;
+                        if (data.alokasi_aset?.length) this.alokasi_aset = data.alokasi_aset;
+                    },
+
+                    setFieldValue(id, value) {
+                        if (value === null || value === undefined || value === '') return;
+                        const el = document.getElementById(id);
+                        if (el) {
+                            el.value = value;
+                            el.dispatchEvent(new Event('input', {
+                                bubbles: true
+                            }));
+                            el.dispatchEvent(new Event('change', {
+                                bubbles: true
+                            }));
+                        }
                     },
 
                     runAiPreview() {
@@ -678,9 +892,9 @@
                     msgPlusIncomplete: 'Lengkapi data sektor/efek di tab Input Manual terlebih dahulu.',
 
                     isPlusManualReady() {
-                        return (this.plusRequiredLabels?.aum ? String(this.total_aum || document.getElementById('total_aum')
+                        return (this.plusRequiredLabels?.aum ? String(this.totalAum || document.getElementById('total_aum')
                                 ?.value || '').trim() !== '' : true) &&
-                            (this.plusRequiredLabels?.marcap ? String(this.total_marcap_10_efek || document.getElementById(
+                            (this.plusRequiredLabels?.marcap ? String(this.totalMarcap10Efek || document.getElementById(
                                 'total_marcap_10_efek')?.value || '').trim() !== '' : true) &&
                             this.sektor.some(r => String(r.nama_sektor || '').trim() !== '' && r.bobot !== '' && r.bobot !=
                                 null) &&
@@ -693,11 +907,11 @@
                     plusMissingList() {
                         const missing = [];
                         if (this.plusRequiredLabels?.aum) {
-                            const v = String(this.total_aum || document.getElementById('total_aum')?.value || '').trim();
+                            const v = String(this.totalAum || document.getElementById('total_aum')?.value || '').trim();
                             if (!v) missing.push(this.plusRequiredLabels.aum);
                         }
                         if (this.plusRequiredLabels?.marcap) {
-                            const v = String(this.total_marcap_10_efek || document.getElementById('total_marcap_10_efek')
+                            const v = String(this.totalMarcap10Efek || document.getElementById('total_marcap_10_efek')
                                 ?.value || '').trim();
                             if (!v) missing.push(this.plusRequiredLabels.marcap);
                         }
@@ -786,15 +1000,14 @@
                         const pdf = this.pdfData || {};
 
                         // Nama, jenis, AUM — prioritas AI, fallback PDF
-                        const setField = (id, val) => {
-                            const el = document.getElementById(id);
-                            if (el && val) el.value = val;
-                        };
+                        const setField = (id, val) => this.setFieldValue(id, val);
                         setField('nama_reksa_dana', p.nama_reksa_dana || pdf.nama_reksa_dana);
                         setField('jenis_reksa_dana', p.jenis_reksa_dana || pdf.jenis_reksa_dana);
-                        setField('total_aum', p.total_aum || pdf.total_aum);
-                        setField('total_marcap_10_efek', p.total_marcap_10_efek || pdf.total_marcap_10_efek);
-                        setField('tanggal_data', p.tanggal_data || pdf.tanggal_data);
+                        this.totalAum = p.total_aum || pdf.total_aum || this.totalAum;
+                        this.totalMarcap10Efek = p.total_marcap_10_efek || pdf.total_marcap_10_efek || this.totalMarcap10Efek;
+                        this.tanggalData = p.tanggal_data || pdf.tanggal_data || this.tanggalData;
+                        this.unitPenyertaan = p.unit_penyertaan || pdf.unit_penyertaan || this.unitPenyertaan;
+                        this.nabPerUnit = p.nab_per_unit || pdf.nab_per_unit || this.nabPerUnit;
                         this.applyKategori(p.kategori || pdf.kategori || []);
 
                         // Sektor — dari AI (alokasi_aset), fallback PDF
@@ -845,18 +1058,61 @@
                         alert('Data telah diterapkan ke Input Manual. Silakan review sebelum submit.');
                     },
 
-                    applyExtractedData(data) {
+                    normalizeExtractedData(data) {
+                        data = data || {};
+                        if (data.tanggal_data && (!data.ffs_bulan || !data.ffs_tahun)) {
+                            const d = new Date(`${data.tanggal_data}T00:00:00`);
+                            if (!Number.isNaN(d.getTime())) {
+                                data.ffs_bulan = data.ffs_bulan || d.getMonth() + 1;
+                                data.ffs_tahun = data.ffs_tahun || d.getFullYear();
+                            }
+                        }
+
+                        if (!Array.isArray(data.alokasi_aset)) {
+                            data.alokasi_aset = [];
+                        }
+                        data.alokasi_aset = data.alokasi_aset.map(row => ({
+                            nama_aset: row.nama_aset || row.nama || row.kategori || '',
+                            persentase: row.persentase ?? row.bobot ?? '',
+                        })).filter(row => String(row.nama_aset || '').trim() !== '' || String(row.persentase || '').trim() !== '');
+
+                        return data;
+                    },
+
+                    hasFullInputData(data) {
+                        data = this.normalizeExtractedData({
+                            ...data
+                        });
+                        return Boolean(
+                            data.total_aum ||
+                            data.total_marcap_10_efek ||
+                            data.sektor?.length ||
+                            data.efek?.length ||
+                            data.kinerja?.length ||
+                            data.obligasi?.length ||
+                            data.bank?.length
+                        );
+                    },
+
+                    applyExtractedData(data, preferredMode = 'manual') {
+                        data = this.normalizeExtractedData(data);
                         const fields = {
                             nama_reksa_dana: 'nama_reksa_dana',
                             jenis_reksa_dana: 'jenis_reksa_dana',
-                            total_aum: 'total_aum',
-                            total_marcap_10_efek: 'total_marcap_10_efek',
-                            tanggal_data: 'tanggal_data',
+                            benchmark: 'benchmark',
+                            tujuan_investasi: 'tujuan_investasi',
+                            kebijakan_investasi: 'kebijakan_investasi',
                         };
                         for (const [key, id] of Object.entries(fields)) {
-                            const el = document.getElementById(id);
-                            if (data[key] && el) el.value = data[key];
+                            this.setFieldValue(id, data[key]);
                         }
+                        this.totalAum = data.total_aum ?? this.totalAum;
+                        this.totalMarcap10Efek = data.total_marcap_10_efek ?? this.totalMarcap10Efek;
+                        this.tanggalData = data.tanggal_data ?? this.tanggalData;
+                        this.unitPenyertaan = data.unit_penyertaan ?? this.unitPenyertaan;
+                        this.nabPerUnit = data.nab_per_unit ?? this.nabPerUnit;
+                        this.ffsBulan = data.ffs_bulan ?? this.ffsBulan;
+                        this.ffsTahun = data.ffs_tahun ?? this.ffsTahun;
                         if (data.sektor?.length) this.sektor = data.sektor;
                         if (data.efek?.length) {
                             this.efek = data.efek.map(e => ({
@@ -874,8 +1130,9 @@
                         }
                         if (data.obligasi?.length) this.obligasi = data.obligasi;
                         if (data.bank?.length) this.bank = data.bank;
+                        if (data.alokasi_aset?.length) this.alokasi_aset = data.alokasi_aset;
                         this.applyKategori(data.kategori || []);
-                        this.mode = 'manual';
+                        this.mode = preferredMode;
                     },
 
                     applyKategori(kategori) {
@@ -1048,12 +1305,13 @@
                                     this.pdfResult = resp.message;
                                     return;
                                 }
-                                // Simpan data PDF ke state, arahkan ke tab Analisa AI
-                                this.pdfData = resp.data;
+                                // Simpan data PDF dan isi state form sebanyak data yang tersedia.
+                                const extractedData = this.normalizeExtractedData(resp.data || {});
+                                this.pdfData = extractedData;
                                 this.pdfFile = resp.pdf_file || '';
+                                this.applyExtractedData(extractedData, this.hasFullInputData(extractedData) ? 'lengkap' : 'manual');
                                 this.pdfSuccess = true;
                                 this.pdfResult = resp.message;
-                                this.mode = 'ai';
                             })
                             .catch(err => {
                                 this.pdfLoading = false;

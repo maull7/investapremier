@@ -13,15 +13,22 @@ class AnalisaReksaDana extends Model
     protected $fillable = [
         'user_id',
         'product_type',
+        'kode_reksa_dana',
         'nama_reksa_dana',
         'jenis_reksa_dana',
         'kategori',
+        'benchmark',
+        'tujuan_investasi',
+        'kebijakan_investasi',
         'mata_uang',
         'total_aum',
         'unit_penyertaan',
+        'nab_per_unit',
         'return_1m',
         'total_marcap_10_efek',
         'tanggal_data',
+        'ffs_bulan',
+        'ffs_tahun',
         'status',
         'catatan_admin',
         'ai_narasi',
@@ -36,6 +43,7 @@ class AnalisaReksaDana extends Model
         'ai_output_plus' => 'array',
         'kategori'       => 'array',
         'tanggal_data'   => 'date',
+        'nab_per_unit'   => 'decimal:6',
     ];
 
     public function user(): BelongsTo
@@ -66,6 +74,11 @@ class AnalisaReksaDana extends Model
     public function bank(): HasMany
     {
         return $this->hasMany(AnalisaBank::class, 'analisa_reksa_dana_id');
+    }
+
+    public function alokasiAset(): HasMany
+    {
+        return $this->hasMany(AnalisaAlokasiAset::class, 'analisa_reksa_dana_id');
     }
 
     // Hitung Sharpe Ratio dari data kinerja bulanan

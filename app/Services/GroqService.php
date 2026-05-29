@@ -88,8 +88,15 @@ Ekstrak data dari teks Fund Fact Sheet berikut. Kembalikan HANYA JSON valid deng
   "jenis_reksa_dana": "Saham" atau "Pendapatan Tetap" atau "Campuran" atau "Pasar Uang" atau null,
   "kategori": ["Konvensional", "Syariah", "index", "ETF"],
   "total_aum": angka rupiah penuh atau null,
+  "unit_penyertaan": angka jumlah unit penyertaan atau null,
+  "nab_per_unit": angka NAB/UP atau null,
   "total_marcap_10_efek": angka rupiah penuh atau null,
   "tanggal_data": "YYYY-MM-DD atau null",
+  "ffs_bulan": angka bulan 1-12 atau null,
+  "ffs_tahun": angka tahun 4 digit atau null,
+  "alokasi_aset": [
+    {"nama_aset": "Saham/Obligasi/Pasar Uang/Kas/Deposito/lainnya", "persentase": angka_persen}
+  ],
   "sektor": [
     {"nama_sektor": "string", "bobot": angka_persen}
   ],
@@ -137,6 +144,10 @@ ATURAN:
 - kode_obligasi dan nama_obligasi harus dipisah; contoh kode FR0091, PBS036, INDON34.
 - Untuk bank, isi bobot/CAR/NPL/klasifikasi jika ada. Jika hanya ada nama dan bobot deposito/kas di bank, tetap isi nama_bank dan bobot.
 - total_aum dan total_marcap_10_efek dalam Rupiah penuh (misal 1.5 triliun = 1500000000000)
+- unit_penyertaan adalah jumlah unit penyertaan/units outstanding jika tersedia.
+- nab_per_unit adalah NAB/UP atau NAV per unit jika tersedia.
+- alokasi_aset adalah asset allocation/komposisi aset seperti Saham, Obligasi, Pasar Uang, Kas, Deposito. Jangan isi dari komposisi sektor kecuali tabelnya memang asset allocation.
+- ffs_bulan dan ffs_tahun mengikuti tanggal/periode data FFS jika tersedia.
 - bobot dalam persen (misal 12.5, bukan 0.125)
 - periode kinerja format YYYY-MM (misal "2024-03")
 - Jika data tidak ada gunakan null atau array kosong []
@@ -162,8 +173,13 @@ Baca PDF Fund Fact Sheet berikut seperti analis yang melihat halaman PDF langsun
   "jenis_reksa_dana": "Saham" atau "Pendapatan Tetap" atau "Campuran" atau "Pasar Uang" atau null,
   "kategori": ["Konvensional", "Syariah", "index", "ETF"],
   "total_aum": angka rupiah penuh atau null,
+  "unit_penyertaan": angka jumlah unit penyertaan atau null,
+  "nab_per_unit": angka NAB/UP atau null,
   "total_marcap_10_efek": angka rupiah penuh atau null,
   "tanggal_data": "YYYY-MM-DD atau null",
+  "ffs_bulan": angka bulan 1-12 atau null,
+  "ffs_tahun": angka tahun 4 digit atau null,
+  "alokasi_aset": [{"nama_aset": "string", "persentase": angka_persen}],
   "sektor": [{"nama_sektor": "string", "bobot": angka_persen}],
   "efek": [{
     "kode_efek": "string",
@@ -195,6 +211,7 @@ ATURAN:
 - Gunakan tampilan halaman PDF, tabel, header, footnote, dan teks kecil jika terbaca.
 - nama_reksa_dana harus nama produk yang spesifik, bukan judul "Fund Fact Sheet".
 - Isi kode efek, sektor, kontribusi IHSG/kinerja, market cap, kode/nama obligasi, dan data bank jika terlihat.
+- Isi unit penyertaan, NAB/UP, periode/tanggal data, dan alokasi aset jika terlihat.
 - Jika data tidak ada gunakan null atau array kosong [].
 - Output HANYA JSON valid, tanpa markdown.
 PROMPT;

@@ -23,6 +23,12 @@
             <h3 class="font-semibold text-primary">Informasi Reksa Dana</h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
+                    <x-input-label for="kode_reksa_dana" value="Kode Reksa Dana" />
+                    <x-text-input id="kode_reksa_dana" name="kode_reksa_dana" type="text" class="mt-1 block w-full"
+                        value="{{ old('kode_reksa_dana', $analisa->kode_reksa_dana) }}" />
+                    <x-input-error :messages="$errors->get('kode_reksa_dana')" class="mt-1" />
+                </div>
+                <div>
                     <x-input-label for="nama_reksa_dana" value="Nama Reksa Dana *" />
                     <x-text-input id="nama_reksa_dana" name="nama_reksa_dana" type="text" class="mt-1 block w-full"
                         value="{{ old('nama_reksa_dana', $analisa->nama_reksa_dana) }}" required />
@@ -66,12 +72,63 @@
                     <x-input-error :messages="$errors->get('total_marcap_10_efek')" class="mt-1" />
                 </div>
                 <div>
-                    <x-input-label for="tanggal_data" value="Tanggal Data" />
+                    <x-input-label for="tanggal_data" value="Tanggal Data *" />
                     <x-text-input id="tanggal_data" name="tanggal_data" type="date" class="mt-1 block w-full"
-                        value="{{ old('tanggal_data', $analisa->tanggal_data?->format('Y-m-d')) }}" />
+                        value="{{ old('tanggal_data', $analisa->tanggal_data?->format('Y-m-d')) }}" required />
                     <x-input-error :messages="$errors->get('tanggal_data')" class="mt-1" />
                 </div>
+                <div>
+                    <x-input-label for="ffs_bulan" value="Bulan FFS *" />
+                    <select id="ffs_bulan" name="ffs_bulan" required
+                        class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
+                        <option value="">Pilih Bulan</option>
+                        @foreach(range(1, 12) as $bulan)
+                            <option value="{{ $bulan }}" {{ (int) old('ffs_bulan', $analisa->ffs_bulan) === $bulan ? 'selected' : '' }}>{{ \Carbon\Carbon::create()->month($bulan)->translatedFormat('F') }}</option>
+                        @endforeach
+                    </select>
+                    <x-input-error :messages="$errors->get('ffs_bulan')" class="mt-1" />
+                </div>
+                <div>
+                    <x-input-label for="ffs_tahun" value="Tahun FFS *" />
+                    <x-text-input id="ffs_tahun" name="ffs_tahun" type="number" min="2000" max="2100" class="mt-1 block w-full"
+                        value="{{ old('ffs_tahun', $analisa->ffs_tahun) }}" required />
+                    <x-input-error :messages="$errors->get('ffs_tahun')" class="mt-1" />
+                </div>
+                <div>
+                    <x-input-label for="unit_penyertaan" value="Jumlah Unit Penyertaan" />
+                    <x-text-input id="unit_penyertaan" name="unit_penyertaan" type="number" step="0.0001" class="mt-1 block w-full"
+                        value="{{ old('unit_penyertaan', $analisa->unit_penyertaan) }}" />
+                    <x-input-error :messages="$errors->get('unit_penyertaan')" class="mt-1" />
+                </div>
+                <div>
+                    <x-input-label for="nab_per_unit" value="NAB/UP" />
+                    <x-text-input id="nab_per_unit" name="nab_per_unit" type="number" step="0.000001" class="mt-1 block w-full"
+                        value="{{ old('nab_per_unit', $analisa->nab_per_unit) }}" />
+                    <x-input-error :messages="$errors->get('nab_per_unit')" class="mt-1" />
+                </div>
+                <div>
+                    <x-input-label for="benchmark" value="Benchmark" />
+                    <x-text-input id="benchmark" name="benchmark" type="text" class="mt-1 block w-full"
+                        value="{{ old('benchmark', $analisa->benchmark) }}" />
+                    <x-input-error :messages="$errors->get('benchmark')" class="mt-1" />
+                </div>
+                <div class="sm:col-span-2">
+                    <x-input-label for="tujuan_investasi" value="Tujuan Investasi" />
+                    <x-text-input id="tujuan_investasi" name="tujuan_investasi" type="text" class="mt-1 block w-full"
+                        value="{{ old('tujuan_investasi', $analisa->tujuan_investasi) }}" />
+                    <x-input-error :messages="$errors->get('tujuan_investasi')" class="mt-1" />
+                </div>
+                <div class="sm:col-span-2">
+                    <x-input-label for="kebijakan_investasi" value="Kebijakan Investasi" />
+                    <x-text-input id="kebijakan_investasi" name="kebijakan_investasi" type="text" class="mt-1 block w-full"
+                        value="{{ old('kebijakan_investasi', $analisa->kebijakan_investasi) }}" />
+                    <x-input-error :messages="$errors->get('kebijakan_investasi')" class="mt-1" />
+                </div>
             </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-line p-6 space-y-3">
+            @include('analisa.partials.form-alokasi-aset')
         </div>
 
         {{-- Sektor --}}
@@ -257,6 +314,7 @@ function editForm() {
         kinerja:  @json($editData['kinerja']),
         obligasi: @json($editData['obligasi']),
         bank:     @json($editData['bank']),
+        alokasi_aset: @json($editData['alokasi_aset']),
 
         addRow(type) {
             const defaults = {
@@ -265,12 +323,22 @@ function editForm() {
                 kinerja:  { periode: '', return_pct: '' },
                 obligasi: { kode_obligasi: '', nama_obligasi: '', bobot: '', durasi: '', rating: '' },
                 bank:     { nama_bank: '', bobot: '', car: '', npl: '', klasifikasi_risiko: '' },
+                alokasi_aset: { nama_aset: '', persentase: '' },
             };
             this[type].push({ ...defaults[type] });
         },
 
         removeRow(type, i) {
             this[type].splice(i, 1);
+        },
+
+        alokasiAsetTotal() {
+            return this.alokasi_aset.reduce((sum, row) => sum + (parseFloat(row.persentase) || 0), 0);
+        },
+
+        alokasiAsetTotalValid() {
+            const filled = this.alokasi_aset.some(row => String(row.nama_aset || '').trim() !== '' || String(row.persentase || '').trim() !== '');
+            return !filled || Math.abs(this.alokasiAsetTotal() - 100) <= 0.01;
         },
     };
 }

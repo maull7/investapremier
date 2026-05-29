@@ -71,6 +71,10 @@ class AnalisaFfsVisionController extends Controller
         if (!empty($data['jenis_reksa_dana'])) $extracted[] = 'Jenis RD';
         if (!empty($data['kategori'])) $extracted[] = 'Kategori';
         if (!empty($data['total_aum'])) $extracted[] = 'Total AUM';
+        if (!empty($data['unit_penyertaan'])) $extracted[] = 'Unit Penyertaan';
+        if (!empty($data['nab_per_unit'])) $extracted[] = 'NAB/UP';
+        if (!empty($data['tanggal_data'])) $extracted[] = 'Tanggal Data';
+        if (!empty($data['alokasi_aset'])) $extracted[] = count($data['alokasi_aset']) . ' Alokasi Aset';
         if (!empty($data['sektor'])) $extracted[] = count($data['sektor']) . ' Sektor';
         if (!empty($data['efek'])) $extracted[] = count($data['efek']) . ' Efek';
         if (!empty($data['kinerja'])) $extracted[] = count($data['kinerja']) . ' Bulan Kinerja';
