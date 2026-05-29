@@ -116,8 +116,14 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('analisa-rd/parse-web-file', [AdminAnalisaRdController::class, 'parseWebFile'])->name('analisa-rd.parse-web-file');
     Route::post('analisa-rd/scrape-web-data', [AdminAnalisaRdController::class, 'scrapeWebData'])->name('analisa-rd.scrape-web-data');
     Route::post('analisa-rd/scrape-url', [AdminAnalisaRdController::class, 'scrapeUrl'])->name('analisa-rd.scrape-url');
+    Route::get('analisa-rd/lookup-kode', [AdminAnalisaRdController::class, 'lookupKode'])->name('analisa-rd.lookup-kode');
     Route::post('analisa-rd/preview-ai', [AdminAnalisaRdController::class, 'previewAi'])->name('analisa-rd.preview-ai');
     Route::post('analisa-rd/preview-ai-plus', [AdminAnalisaRdController::class, 'previewAiPlus'])->name('analisa-rd.preview-ai-plus');
+    Route::get('analisa-rd/lookup-sektor', [AdminAnalisaRdController::class, 'lookupSektor'])->name('analisa-rd.lookup-sektor');
+    Route::get('analisa-rd/lookup-ihsg', [AdminAnalisaRdController::class, 'lookupIhsg'])->name('analisa-rd.lookup-ihsg');
+    Route::get('analisa-rd/lookup-return', [AdminAnalisaRdController::class, 'lookupReturn'])->name('analisa-rd.lookup-return');
+    Route::get('analisa-rd/lookup-bond-return', [AdminAnalisaRdController::class, 'lookupBondReturn'])->name('analisa-rd.lookup-bond-return');
+    Route::get('analisa-rd/lookup-bank-data', [AdminAnalisaRdController::class, 'lookupBankData'])->name('analisa-rd.lookup-bank-data');
 
     // Daftar & Analisa Saham
     Route::resource('saham', StockController::class)->except(['show']);
@@ -251,6 +257,12 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::post('/analisa/parse-web-file', [AnalisaController::class, 'parseWebFile'])->name('analisa.parse-web-file');
     Route::post('/analisa/scrape-web-data', [AnalisaController::class, 'scrapeWebData'])->name('analisa.scrape-web-data');
     Route::post('/analisa/scrape-url', [AnalisaController::class, 'scrapeUrl'])->name('analisa.scrape-url');
+    Route::get('/analisa/lookup-kode', [AnalisaController::class, 'lookupKode'])->name('analisa.lookup-kode');
+    Route::get('/analisa/lookup-sektor', [AnalisaController::class, 'lookupSektor'])->name('analisa.lookup-sektor');
+    Route::get('/analisa/lookup-ihsg', [AnalisaController::class, 'lookupIhsg'])->name('analisa.lookup-ihsg');
+    Route::get('/analisa/lookup-return', [AnalisaController::class, 'lookupReturn'])->name('analisa.lookup-return');
+    Route::get('/analisa/lookup-bond-return', [AnalisaController::class, 'lookupBondReturn'])->name('analisa.lookup-bond-return');
+    Route::get('/analisa/lookup-bank-data', [AnalisaController::class, 'lookupBankData'])->name('analisa.lookup-bank-data');
     Route::post('/analisa/preview-ai', [AnalisaController::class, 'previewAi'])->name('analisa.preview-ai');
     Route::post('/analisa/preview-ai-plus', [AnalisaController::class, 'previewAiPlus'])->name('analisa.preview-ai-plus');
     Route::get('/analisa/{analisa}', [AnalisaController::class, 'show'])->name('analisa.show');
