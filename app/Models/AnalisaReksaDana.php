@@ -29,6 +29,10 @@ class AnalisaReksaDana extends Model
         'tanggal_data',
         'ffs_bulan',
         'ffs_tahun',
+        'jenis_laporan',
+        'periode_awal',
+        'periode_akhir',
+        'tahun_laporan',
         'status',
         'catatan_admin',
         'ai_narasi',
@@ -79,6 +83,11 @@ class AnalisaReksaDana extends Model
     public function alokasiAset(): HasMany
     {
         return $this->hasMany(AnalisaAlokasiAset::class, 'analisa_reksa_dana_id');
+    }
+
+    public function sukuk(): HasMany
+    {
+        return $this->hasMany(AnalisaSukuk::class, 'analisa_reksa_dana_id');
     }
 
     // Total MarCap 10 Saham Terbesar = SUM ihsg_contribution untuk efek Top 10 + Saham

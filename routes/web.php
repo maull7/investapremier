@@ -101,6 +101,12 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('daftar-reksa-dana/upload-harian', [DaftarReksaDanaController::class, 'uploadHarian'])->name('daftar-reksa-dana.upload-harian');
     Route::get('daftar-reksa-dana/template-harga', [DaftarReksaDanaController::class, 'downloadTemplateHarga'])->name('daftar-reksa-dana.template-harga');
     Route::get('daftar-reksa-dana/template-harian', [DaftarReksaDanaController::class, 'downloadTemplateHarian'])->name('daftar-reksa-dana.template-harian');
+    Route::post('daftar-reksa-dana/harga/store', [DaftarReksaDanaController::class, 'storeHarga'])->name('daftar-reksa-dana.harga.store');
+    Route::post('daftar-reksa-dana/harga/update/{reksaDana}', [DaftarReksaDanaController::class, 'updateHarga'])->name('daftar-reksa-dana.harga.update');
+    Route::delete('daftar-reksa-dana/harga/destroy/{reksaDana}', [DaftarReksaDanaController::class, 'destroyHarga'])->name('daftar-reksa-dana.harga.destroy');
+    Route::post('daftar-reksa-dana/harian/store', [DaftarReksaDanaController::class, 'storeHarian'])->name('daftar-reksa-dana.harian.store');
+    Route::post('daftar-reksa-dana/harian/update/{hargaReksaDana}', [DaftarReksaDanaController::class, 'updateHarian'])->name('daftar-reksa-dana.harian.update');
+    Route::delete('daftar-reksa-dana/harian/destroy/{hargaReksaDana}', [DaftarReksaDanaController::class, 'destroyHarian'])->name('daftar-reksa-dana.harian.destroy');
 
     Route::post('data-source-links', [DataSourceLinkController::class, 'store'])->name('data-source-links.store');
     Route::put('data-source-links/{dataSourceLink}', [DataSourceLinkController::class, 'update'])->name('data-source-links.update');
@@ -123,6 +129,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('analisa-rd/lookup-ihsg', [AdminAnalisaRdController::class, 'lookupIhsg'])->name('analisa-rd.lookup-ihsg');
     Route::get('analisa-rd/lookup-return', [AdminAnalisaRdController::class, 'lookupReturn'])->name('analisa-rd.lookup-return');
     Route::get('analisa-rd/lookup-bond-return', [AdminAnalisaRdController::class, 'lookupBondReturn'])->name('analisa-rd.lookup-bond-return');
+    Route::get('analisa-rd/lookup-sukuk-return', [AdminAnalisaRdController::class, 'lookupSukukReturn'])->name('analisa-rd.lookup-sukuk-return');
     Route::get('analisa-rd/lookup-bank-data', [AdminAnalisaRdController::class, 'lookupBankData'])->name('analisa-rd.lookup-bank-data');
 
     // Daftar & Analisa Saham
@@ -172,6 +179,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('analisa-obligasi/parse-pdf', [AdminAnalisaObligasiController::class, 'parsePdf'])->name('analisa-obligasi.parse-pdf');
     Route::post('analisa-obligasi/parse-pdf-vision', [AnalisaLapkeuVisionController::class, 'parseObligasiPdf'])->name('analisa-obligasi.parse-pdf-vision');
     Route::get('analisa-obligasi/parse-pdf/{uuid}/status', [AdminAnalisaObligasiController::class, 'parsePdfStatus'])->name('analisa-obligasi.parse-pdf-status');
+    Route::get('analisa-obligasi/lookup-keuangan-emiten', [AdminAnalisaObligasiController::class, 'lookupKeuanganEmiten'])->name('analisa-obligasi.lookup-keuangan-emiten');
     Route::post('analisa-obligasi/preview-ai', [AdminAnalisaObligasiController::class, 'previewAi'])->name('analisa-obligasi.preview-ai');
     Route::post('analisa-obligasi/preview-ai-plus', [AdminAnalisaObligasiController::class, 'previewAiPlus'])->name('analisa-obligasi.preview-ai-plus');
     Route::get('analisa-obligasi/{analisa}', [AdminMonitorAnalisaObligasiController::class, 'show'])->name('analisa-obligasi.show');
@@ -262,6 +270,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/analisa/lookup-ihsg', [AnalisaController::class, 'lookupIhsg'])->name('analisa.lookup-ihsg');
     Route::get('/analisa/lookup-return', [AnalisaController::class, 'lookupReturn'])->name('analisa.lookup-return');
     Route::get('/analisa/lookup-bond-return', [AnalisaController::class, 'lookupBondReturn'])->name('analisa.lookup-bond-return');
+    Route::get('/analisa/lookup-sukuk-return', [AnalisaController::class, 'lookupSukukReturn'])->name('analisa.lookup-sukuk-return');
     Route::get('/analisa/lookup-bank-data', [AnalisaController::class, 'lookupBankData'])->name('analisa.lookup-bank-data');
     Route::post('/analisa/preview-ai', [AnalisaController::class, 'previewAi'])->name('analisa.preview-ai');
     Route::post('/analisa/preview-ai-plus', [AnalisaController::class, 'previewAiPlus'])->name('analisa.preview-ai-plus');
@@ -309,6 +318,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::post('/analisa-obligasi/parse-pdf', [UserAnalisaObligasiController::class, 'parsePdf'])->name('analisa-obligasi.parse-pdf');
     Route::post('/analisa-obligasi/parse-pdf-vision', [AnalisaLapkeuVisionController::class, 'parseObligasiPdf'])->name('analisa-obligasi.parse-pdf-vision');
     Route::get('/analisa-obligasi/parse-pdf/{uuid}/status', [UserAnalisaObligasiController::class, 'parsePdfStatus'])->name('analisa-obligasi.parse-pdf-status');
+    Route::get('/analisa-obligasi/lookup-keuangan-emiten', [UserAnalisaObligasiController::class, 'lookupKeuanganEmiten'])->name('analisa-obligasi.lookup-keuangan-emiten');
     Route::post('/analisa-obligasi/preview-ai', [UserAnalisaObligasiController::class, 'previewAi'])->name('analisa-obligasi.preview-ai');
     Route::post('/analisa-obligasi/preview-ai-plus', [UserAnalisaObligasiController::class, 'previewAiPlus'])->name('analisa-obligasi.preview-ai-plus');
     Route::get('/analisa-obligasi/{analisa}', [UserAnalisaObligasiController::class, 'show'])->name('analisa-obligasi.show');

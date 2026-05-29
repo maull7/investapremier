@@ -185,7 +185,7 @@ class ObligasiController extends Controller
         );
 
         return redirect()->route('admin.obligasi.index', ['tab' => 'bond'])
-            ->with('success', 'Obligasi bond berhasil ditambahkan.');
+            ->with('success', 'Keuangan emiten berhasil ditambahkan.');
     }
 
     public function editBond(ObligasiBond $obligasiBond)
@@ -245,14 +245,14 @@ class ObligasiController extends Controller
         $obligasiBond->update($data);
 
         return redirect()->route('admin.obligasi.index', ['tab' => 'bond'])
-            ->with('success', 'Obligasi bond berhasil diperbarui.');
+            ->with('success', 'Keuangan emiten berhasil diperbarui.');
     }
 
     public function destroyBond(ObligasiBond $obligasiBond)
     {
         $obligasiBond->delete();
         return redirect()->route('admin.obligasi.index', ['tab' => 'bond'])
-            ->with('success', 'Obligasi bond berhasil dihapus.');
+            ->with('success', 'Keuangan emiten berhasil dihapus.');
     }
 
     public function downloadTemplateHargaReferensi()
@@ -280,6 +280,6 @@ class ObligasiController extends Controller
         $import = new ObligasiBondImport;
         Excel::import($import, $request->file('file'));
         return redirect()->route('admin.obligasi.index', ['tab' => 'bond'])
-            ->with('success', "{$import->imported} data obligasi bond berhasil diimport.");
+            ->with('success', "{$import->imported} data keuangan emiten berhasil diimport.");
     }
 }

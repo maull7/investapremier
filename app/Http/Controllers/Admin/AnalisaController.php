@@ -13,8 +13,7 @@ class AnalisaController extends Controller
     public function index(Request $request)
     {
         $query = AnalisaReksaDana::with('user')
-            ->where('product_type', 'reksa_dana')
-            ->latest();
+            ->where('product_type', 'reksa_dana');
 
         if ($request->status) {
             $query->where('status', $request->status);
@@ -24,14 +23,32 @@ class AnalisaController extends Controller
             $query->whereJsonContains('kategori', $request->kategori);
         }
 
+        if ($request->filled('ffs_bulan')) {
+            $query->where('ffs_bulan', $request->ffs_bulan);
+        }
+
+        if ($request->filled('ffs_tahun')) {
+            $query->where('ffs_tahun', $request->ffs_tahun);
+        }
+
+        $query->orderBy('ffs_tahun', 'desc')
+              ->orderBy('ffs_bulan', 'desc')
+              ->orderBy('created_at', 'desc');
+
         $analisas = $query->paginate(20);
 
-        return view('admin.analisa.index', compact('analisas'));
+        $tahunList = AnalisaReksaDana::where('product_type', 'reksa_dana')
+            ->whereNotNull('ffs_tahun')
+            ->distinct()
+            ->orderBy('ffs_tahun', 'desc')
+            ->pluck('ffs_tahun');
+
+        return view('admin.analisa.index', compact('analisas', 'tahunList'));
     }
 
     public function show(AnalisaReksaDana $analisa)
     {
-        $analisa->load(['user', 'sektor', 'efek', 'kinerja', 'obligasi', 'bank']);
+        $analisa->load(['user', 'sektor', 'efek', 'kinerja', 'obligasi', 'bank', 'alokasiAset']);
 
         return view('admin.analisa.show', compact('analisa'));
     }

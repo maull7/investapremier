@@ -96,16 +96,25 @@
             <div
                 class="px-6 py-4 border-b border-line flex items-center justify-between bg-gradient-to-r from-primary to-primary-light">
                 <h2 class="font-bold text-white text-sm">Daftar Reksa Dana ({{ $reksaDanas->total() }} total)</h2>
-                <form method="GET" action="{{ route('admin.daftar-reksa-dana.index') }}" class="flex gap-2">
-                    <input type="hidden" name="tab" value="harga">
-                    @if (request('jenis'))
-                        <input type="hidden" name="jenis" value="{{ request('jenis') }}">
-                    @endif
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama..."
-                        class="text-xs border border-white/30 bg-white/10 text-white placeholder-white/50 rounded-lg px-3 py-1.5 w-44 focus:outline-none focus:bg-white/20">
-                    <button type="submit"
-                        class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition">Cari</button>
-                </form>
+                <div class="flex gap-2">
+                    <button type="button" onclick="openModal('modal-harga-create')"
+                        class="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Tambah Baru
+                    </button>
+                    <form method="GET" action="{{ route('admin.daftar-reksa-dana.index') }}" class="flex gap-2">
+                        <input type="hidden" name="tab" value="harga">
+                        @if (request('jenis'))
+                            <input type="hidden" name="jenis" value="{{ request('jenis') }}">
+                        @endif
+                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama..."
+                            class="text-xs border border-white/30 bg-white/10 text-white placeholder-white/50 rounded-lg px-3 py-1.5 w-44 focus:outline-none focus:bg-white/20">
+                        <button type="submit"
+                            class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition">Cari</button>
+                    </form>
+                </div>
             </div>
 
             {{-- Filter Jenis --}}
@@ -131,6 +140,7 @@
                             <th class="px-4 py-3.5 font-semibold">Mata Uang</th>
                             <th class="px-4 py-3.5 font-semibold text-right">NAB/UP</th>
                             <th class="px-4 py-3.5 font-semibold">Tanggal NAB/UP</th>
+                            <th class="px-4 py-3.5 font-semibold text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-line">
@@ -186,10 +196,29 @@
                                 <td class="px-4 py-3.5 text-xs text-muted">
                                     {{ $rd->tanggal_nab ? $rd->tanggal_nab->format('d M Y') : '—' }}
                                 </td>
+                                <td class="px-4 py-3.5 text-center">
+                                    <div class="flex items-center justify-center gap-1">
+                                        <button type="button" onclick='openEditHarga(@json($rd))'
+                                            class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Edit">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                            </svg>
+                                        </button>
+                                        <form method="POST" action="{{ route('admin.daftar-reksa-dana.harga.destroy', $rd) }}" class="inline"
+                                            onsubmit="return confirm('Yakin ingin menghapus {{ $rd->nama_reksa_dana }}?')">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition" title="Hapus">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="px-6 py-12 text-center text-muted">
+                                <td colspan="10" class="px-6 py-12 text-center text-muted">
                                     <p class="font-medium">Belum ada data</p>
                                     <p class="text-xs mt-1">Upload file excel menggunakan form di atas</p>
                                 </td>
@@ -274,14 +303,23 @@
             <div
                 class="px-6 py-4 border-b border-line flex items-center justify-between bg-gradient-to-r from-accent to-accent/80">
                 <h2 class="font-bold text-white text-sm">Riwayat Harian ({{ $harian->total() }} data)</h2>
-                <form method="GET" action="{{ route('admin.daftar-reksa-dana.index') }}" class="flex gap-2">
-                    <input type="hidden" name="tab" value="harian">
-                    <input type="text" name="search" value="{{ request('search') }}"
-                        placeholder="Cari nama reksa dana..."
-                        class="text-xs border border-white/30 bg-white/10 text-white placeholder-white/50 rounded-lg px-3 py-1.5 w-44 focus:outline-none focus:bg-white/20">
-                    <button type="submit"
-                        class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition">Cari</button>
-                </form>
+                <div class="flex gap-2">
+                    <button type="button" onclick="openModal('modal-harian-create')"
+                        class="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Tambah Baru
+                    </button>
+                    <form method="GET" action="{{ route('admin.daftar-reksa-dana.index') }}" class="flex gap-2">
+                        <input type="hidden" name="tab" value="harian">
+                        <input type="text" name="search" value="{{ request('search') }}"
+                            placeholder="Cari nama reksa dana..."
+                            class="text-xs border border-white/30 bg-white/10 text-white placeholder-white/50 rounded-lg px-3 py-1.5 w-44 focus:outline-none focus:bg-white/20">
+                        <button type="submit"
+                            class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition">Cari</button>
+                    </form>
+                </div>
             </div>
 
             <div class="overflow-x-auto">
@@ -291,6 +329,7 @@
                             <th class="px-4 py-3.5 font-semibold">Tanggal</th>
                             <th class="px-4 py-3.5 font-semibold">Reksadana</th>
                             <th class="px-4 py-3.5 font-semibold text-right">NAB</th>
+                            <th class="px-4 py-3.5 font-semibold text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-line">
@@ -302,10 +341,29 @@
                                 <td class="px-4 py-3.5 text-right text-xs font-semibold text-primary">
                                     {{ number_format($h->nab_per_unit, 2, ',', '.') }}
                                 </td>
+                                <td class="px-4 py-3.5 text-center">
+                                    <div class="flex items-center justify-center gap-1">
+                                        <button type="button" onclick='openEditHarian(@json($h))'
+                                            class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Edit">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                            </svg>
+                                        </button>
+                                        <form method="POST" action="{{ route('admin.daftar-reksa-dana.harian.destroy', $h) }}" class="inline"
+                                            onsubmit="return confirm('Yakin ingin menghapus data harian ini?')">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition" title="Hapus">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="3" class="px-6 py-12 text-center text-muted">
+                                <td colspan="4" class="px-6 py-12 text-center text-muted">
                                     <p class="font-medium">Belum ada data harian</p>
                                     <p class="text-xs mt-1">Upload file excel menggunakan form di atas</p>
                                 </td>
@@ -351,4 +409,317 @@
     @elseif($tab === 'link-website')
         @include('admin.daftar-reksa-dana.partials.tab-link-website')
     @endif
+{{-- ===================== MODAL HARGA CREATE ===================== --}}
+<div id="modal-harga-create" class="fixed inset-0 z-50 hidden bg-black/40 flex items-center justify-center p-4" onclick="if(event.target===this)closeModal('modal-harga-create')">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-line sticky top-0 bg-white z-10">
+            <h3 class="font-bold text-primary">Tambah Reksa Dana</h3>
+            <button type="button" onclick="closeModal('modal-harga-create')" class="p-1 hover:bg-[#f1f5f9] rounded-lg transition">
+                <svg class="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form method="POST" action="{{ route('admin.daftar-reksa-dana.harga.store') }}" class="p-6 space-y-4">
+            @csrf
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Kode Reksa Dana</label>
+                    <input type="text" name="kode_reksa_dana" class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Nama Reksa Dana <span class="text-red-500">*</span></label>
+                    <input type="text" name="nama_reksa_dana" required class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-primary mb-1">Nama Manajer Investasi <span class="text-red-500">*</span></label>
+                <input type="text" name="nama_manajer_investasi" required class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Jenis <span class="text-red-500">*</span></label>
+                    <select name="jenis" required class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+                        <option value="">— Pilih Jenis —</option>
+                        @foreach (['Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang', 'Terproteksi', 'Global', 'DIRE-DINFRA', 'Penyertaan terbatas'] as $j)
+                            <option value="{{ $j }}">{{ $j }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Kategori Produk</label>
+                    <select name="kategori_produk" class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+                        <option value="">— Pilih —</option>
+                        @foreach (['Konvensional', 'Syariah', 'Index', 'ETF'] as $kp)
+                            <option value="{{ $kp }}">{{ $kp }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-primary mb-1">Kategori</label>
+                <div class="flex flex-wrap gap-3">
+                    @foreach (['Konvensional', 'Syariah', 'index', 'ETF'] as $kat)
+                        <label class="flex items-center gap-1.5 text-sm">
+                            <input type="checkbox" name="kategori[]" value="{{ $kat }}" class="rounded border-line text-primary focus:ring-primary/20">
+                            {{ $kat }}
+                        </label>
+                    @endforeach
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Benchmark</label>
+                    <input type="text" name="benchmark" class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Mata Uang</label>
+                    <input type="text" name="mata_uang" value="IDR" class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-primary mb-1">Tujuan Investasi</label>
+                <textarea name="tujuan_investasi" rows="2" class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20"></textarea>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-primary mb-1">Kebijakan Investasi</label>
+                <textarea name="kebijakan_investasi" rows="2" class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">NAB/UP</label>
+                    <input type="number" step="0.000001" name="nab_per_unit" class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Tanggal NAB</label>
+                    <input type="date" name="tanggal_nab" class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="closeModal('modal-harga-create')" class="px-4 py-2 text-sm text-muted border border-line rounded-lg hover:bg-[#f1f5f9] transition">Batal</button>
+                <button type="submit" class="px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-primary/90 transition">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- ===================== MODAL HARGA EDIT ===================== --}}
+<div id="modal-harga-edit" class="fixed inset-0 z-50 hidden bg-black/40 flex items-center justify-center p-4" onclick="if(event.target===this)closeModal('modal-harga-edit')">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-line sticky top-0 bg-white z-10">
+            <h3 class="font-bold text-primary">Edit Reksa Dana</h3>
+            <button type="button" onclick="closeModal('modal-harga-edit')" class="p-1 hover:bg-[#f1f5f9] rounded-lg transition">
+                <svg class="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form method="POST" action="" class="p-6 space-y-4" id="form-harga-edit">
+            @csrf
+            @method('POST')
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Kode Reksa Dana</label>
+                    <input type="text" name="kode_reksa_dana" id="edit-harga-kode" class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Nama Reksa Dana <span class="text-red-500">*</span></label>
+                    <input type="text" name="nama_reksa_dana" id="edit-harga-nama" required class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-primary mb-1">Nama Manajer Investasi <span class="text-red-500">*</span></label>
+                <input type="text" name="nama_manajer_investasi" id="edit-harga-mi" required class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Jenis <span class="text-red-500">*</span></label>
+                    <select name="jenis" id="edit-harga-jenis" required class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+                        @foreach (['Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang', 'Terproteksi', 'Global', 'DIRE-DINFRA', 'Penyertaan terbatas'] as $j)
+                            <option value="{{ $j }}">{{ $j }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Kategori Produk</label>
+                    <select name="kategori_produk" id="edit-harga-kp" class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+                        <option value="">— Pilih —</option>
+                        @foreach (['Konvensional', 'Syariah', 'Index', 'ETF'] as $kp)
+                            <option value="{{ $kp }}">{{ $kp }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-primary mb-1">Kategori</label>
+                <div class="flex flex-wrap gap-3" id="edit-harga-kategori-container">
+                    @foreach (['Konvensional', 'Syariah', 'index', 'ETF'] as $kat)
+                        <label class="flex items-center gap-1.5 text-sm">
+                            <input type="checkbox" name="kategori[]" value="{{ $kat }}" class="kategori-checkbox rounded border-line text-primary focus:ring-primary/20">
+                            {{ $kat }}
+                        </label>
+                    @endforeach
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Benchmark</label>
+                    <input type="text" name="benchmark" id="edit-harga-benchmark" class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Mata Uang</label>
+                    <input type="text" name="mata_uang" id="edit-harga-matauang" class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-primary mb-1">Tujuan Investasi</label>
+                <textarea name="tujuan_investasi" id="edit-harga-tujuan" rows="2" class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20"></textarea>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-primary mb-1">Kebijakan Investasi</label>
+                <textarea name="kebijakan_investasi" id="edit-harga-kebijakan" rows="2" class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">NAB/UP</label>
+                    <input type="number" step="0.000001" name="nab_per_unit" id="edit-harga-nab" class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Tanggal NAB</label>
+                    <input type="date" name="tanggal_nab" id="edit-harga-tgl-nab" class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="closeModal('modal-harga-edit')" class="px-4 py-2 text-sm text-muted border border-line rounded-lg hover:bg-[#f1f5f9] transition">Batal</button>
+                <button type="submit" class="px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-primary/90 transition">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- ===================== MODAL HARIAN CREATE ===================== --}}
+<div id="modal-harian-create" class="fixed inset-0 z-50 hidden bg-black/40 flex items-center justify-center p-4" onclick="if(event.target===this)closeModal('modal-harian-create')">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-line">
+            <h3 class="font-bold text-primary">Tambah Data Harian</h3>
+            <button type="button" onclick="closeModal('modal-harian-create')" class="p-1 hover:bg-[#f1f5f9] rounded-lg transition">
+                <svg class="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form method="POST" action="{{ route('admin.daftar-reksa-dana.harian.store') }}" class="p-6 space-y-4">
+            @csrf
+            <div>
+                <label class="block text-xs font-semibold text-primary mb-1">Reksa Dana <span class="text-red-500">*</span></label>
+                <select name="reksa_dana_id" required class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-accent focus:ring focus:ring-accent/20">
+                    <option value="">— Pilih Reksa Dana —</option>
+                    @foreach($reksaDanaOptions as $rd)
+                        <option value="{{ $rd->id }}">{{ $rd->kode_reksa_dana ? '['.$rd->kode_reksa_dana.'] ' : '' }}{{ $rd->nama_reksa_dana }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Tanggal <span class="text-red-500">*</span></label>
+                    <input type="date" name="tanggal" required class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-accent focus:ring focus:ring-accent/20">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">NAB/UP <span class="text-red-500">*</span></label>
+                    <input type="number" step="0.000001" name="nab_per_unit" required class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-accent focus:ring focus:ring-accent/20">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="closeModal('modal-harian-create')" class="px-4 py-2 text-sm text-muted border border-line rounded-lg hover:bg-[#f1f5f9] transition">Batal</button>
+                <button type="submit" class="px-4 py-2 text-sm text-white bg-accent rounded-lg hover:bg-accent/90 transition">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- ===================== MODAL HARIAN EDIT ===================== --}}
+<div id="modal-harian-edit" class="fixed inset-0 z-50 hidden bg-black/40 flex items-center justify-center p-4" onclick="if(event.target===this)closeModal('modal-harian-edit')">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-line">
+            <h3 class="font-bold text-primary">Edit Data Harian</h3>
+            <button type="button" onclick="closeModal('modal-harian-edit')" class="p-1 hover:bg-[#f1f5f9] rounded-lg transition">
+                <svg class="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form method="POST" action="" class="p-6 space-y-4" id="form-harian-edit">
+            @csrf
+            @method('POST')
+            <div>
+                <label class="block text-xs font-semibold text-primary mb-1">Reksa Dana <span class="text-red-500">*</span></label>
+                <select name="reksa_dana_id" id="edit-harian-rd" required class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-accent focus:ring focus:ring-accent/20">
+                    @foreach($reksaDanaOptions as $rd)
+                        <option value="{{ $rd->id }}">{{ $rd->kode_reksa_dana ? '['.$rd->kode_reksa_dana.'] ' : '' }}{{ $rd->nama_reksa_dana }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Tanggal <span class="text-red-500">*</span></label>
+                    <input type="date" name="tanggal" id="edit-harian-tanggal" required class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-accent focus:ring focus:ring-accent/20">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">NAB/UP <span class="text-red-500">*</span></label>
+                    <input type="number" step="0.000001" name="nab_per_unit" id="edit-harian-nab" required class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-accent focus:ring focus:ring-accent/20">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="closeModal('modal-harian-edit')" class="px-4 py-2 text-sm text-muted border border-line rounded-lg hover:bg-[#f1f5f9] transition">Batal</button>
+                <button type="submit" class="px-4 py-2 text-sm text-white bg-accent rounded-lg hover:bg-accent/90 transition">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- ===================== JAVASCRIPT ===================== --}}
+<script>
+function openModal(id) {
+    document.getElementById(id).classList.remove('hidden');
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.add('hidden');
+}
+
+function openEditHarga(data) {
+    const form = document.getElementById('form-harga-edit');
+    form.action = '{{ route("admin.daftar-reksa-dana.harga.update", "REPLACE_ID") }}'.replace('REPLACE_ID', data.id);
+
+    document.getElementById('edit-harga-kode').value = data.kode_reksa_dana || '';
+    document.getElementById('edit-harga-nama').value = data.nama_reksa_dana;
+    document.getElementById('edit-harga-mi').value = data.nama_manajer_investasi;
+    document.getElementById('edit-harga-jenis').value = data.jenis;
+    document.getElementById('edit-harga-kp').value = data.kategori_produk || '';
+    document.getElementById('edit-harga-benchmark').value = data.benchmark || '';
+    document.getElementById('edit-harga-matauang').value = data.mata_uang || 'IDR';
+    document.getElementById('edit-harga-tujuan').value = data.tujuan_investasi || '';
+    document.getElementById('edit-harga-kebijakan').value = data.kebijakan_investasi || '';
+    document.getElementById('edit-harga-nab').value = data.nab_per_unit || '';
+    document.getElementById('edit-harga-tgl-nab').value = data.tanggal_nab || '';
+
+    document.querySelectorAll('#edit-harga-kategori-container .kategori-checkbox').forEach(cb => {
+        cb.checked = Array.isArray(data.kategori) && data.kategori.includes(cb.value);
+    });
+
+    openModal('modal-harga-edit');
+}
+
+function openEditHarian(data) {
+    const form = document.getElementById('form-harian-edit');
+    form.action = '{{ route("admin.daftar-reksa-dana.harian.update", "REPLACE_ID") }}'.replace('REPLACE_ID', data.id);
+
+    document.getElementById('edit-harian-rd').value = data.reksa_dana_id;
+    document.getElementById('edit-harian-tanggal').value = data.tanggal;
+    document.getElementById('edit-harian-nab').value = data.nab_per_unit;
+
+    openModal('modal-harian-edit');
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.fixed.inset-0.z-50').forEach(m => {
+            if (!m.classList.contains('hidden')) m.classList.add('hidden');
+        });
+    }
+});
+</script>
 @endsection

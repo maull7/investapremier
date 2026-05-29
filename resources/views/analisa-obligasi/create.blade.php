@@ -1,7 +1,7 @@
 @extends($layout ?? 'layouts.user')
 
 @section('content')
-    <div class="max-w-5xl" x-data="lapkeuForm('{{ $previewAiRoute }}', '{{ $previewAiPlusRoute }}', '{{ $parsePdfRoute }}', '{{ $parsePdfVisionRoute }}', '{{ $parsePdfStatusRoute }}')">
+    <div class="max-w-5xl" x-data="lapkeuForm('{{ $previewAiRoute }}', '{{ $previewAiPlusRoute }}', '{{ $parsePdfRoute }}', '{{ $parsePdfVisionRoute }}', '{{ $parsePdfStatusRoute }}', '{{ $lookupKeuanganEmitenRoute }}')">
         <div class="mb-6">
             <h1 class="text-xl font-bold text-primary">Submit Analisa {{ $productLabel }}</h1>
             <p class="text-sm text-muted mt-0.5">Isi data laporan keuangan obligasi secara manual atau upload Excel</p>
@@ -26,6 +26,11 @@
             <input type="hidden" name="ai_output_plus"
                 :value="aiPlusResult ? JSON.stringify(aiPlusResult.parsed || {}) : ''">
             <input type="hidden" name="pdf_lapkeu_path" x-model="pdfPath">
+            <input type="hidden" name="kode_obligasi" :value="kodeObligasi">
+            <input type="hidden" name="nama_emiten" :value="namaEmiten">
+            <input type="hidden" name="jenis_analisa" :value="jenisAnalisa">
+            <input type="hidden" name="periode" :value="jenisAnalisa === 'periode' ? periodeAnalisa : ''">
+            <input type="hidden" name="tahun" :value="jenisAnalisa === 'tahunan' ? tahunAnalisa : ''">
 
             {{-- Info Dasar --}}
             <div class="bg-white rounded-xl border border-line p-6 space-y-4">
@@ -36,17 +41,6 @@
                                 class="text-red-500">*</span></label>
                         <input type="text" name="nama_obligasi" id="nama_obligasi" value="{{ old('nama_obligasi') }}"
                             required
-                            class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Kode Obligasi</label>
-                        <input type="text" name="kode_obligasi" value="{{ old('kode_obligasi') }}"
-                            placeholder="cth: BBCA01"
-                            class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm uppercase">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Emiten</label>
-                        <input type="text" name="nama_emiten" value="{{ old('nama_emiten') }}"
                             class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
                     </div>
                     <div>
@@ -81,11 +75,6 @@
                                     {{ old('mata_uang', 'IDR') === $c ? 'selected' : '' }}>{{ $c }}</option>
                             @endforeach
                         </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Periode</label>
-                        <input type="text" name="periode" value="{{ old('periode') }}" placeholder="cth: Q4 2024"
-                            class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
                     </div>
                 </div>
             </div>
@@ -124,6 +113,7 @@
 
                 {{-- TAB: EXCEL --}}
                 <div x-show="mode==='excel'" class="p-6 space-y-5">
+                    @include('analisa-obligasi.partials.form-analisa-source')
                     <div
                         class="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
                         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -275,7 +265,7 @@
 
     @push('scripts')
         <script>
-            function lapkeuForm(previewAiUrl, previewAiPlusUrl, parsePdfUrl, parsePdfVisionUrl, parsePdfStatusUrl) {
+            function lapkeuForm(previewAiUrl, previewAiPlusUrl, parsePdfUrl, parsePdfVisionUrl, parsePdfStatusUrl, lookupKeuanganEmitenUrl) {
                 @php
                     $plusLabels = [
                         'total_asset' => 'Total Aset',
@@ -287,6 +277,15 @@
                 @endphp
                 return {
                     mode: @json(old('input_mode', 'manual')),
+                    jenisAnalisa: @json(old('jenis_analisa', 'periode')),
+                    kodeObligasi: @json(old('kode_obligasi')),
+                    namaEmiten: @json(old('nama_emiten')),
+                    periodeAnalisa: @json(old('periode')),
+                    tahunAnalisa: @json(old('tahun', now()->year)),
+                    sourceLoading: false,
+                    sourceMessage: '',
+                    sourceOk: false,
+                    lookupKeuanganEmitenUrl: lookupKeuanganEmitenUrl,
                     aiLoading: false,
                     aiError: '',
                     aiResult: null,
@@ -376,9 +375,10 @@
                             }
                         };
                         set('nama_obligasi', d.nama_obligasi || d.nama_perusahaan);
-                        set('kode_obligasi', d.kode_obligasi || d.kode_saham);
-                        set('nama_emiten', d.nama_emiten);
-                        set('periode', d.periode);
+                        this.kodeObligasi = d.kode_obligasi || d.kode_saham || this.kodeObligasi;
+                        this.namaEmiten = d.nama_emiten || this.namaEmiten;
+                        this.periodeAnalisa = d.periode || this.periodeAnalisa;
+                        if (d.periode && String(d.periode).length >= 4) this.tahunAnalisa = String(d.periode).slice(0, 4);
                         setSelect('rating', d.rating);
                         setSelect('mata_uang', d.mata_uang);
                         if (d.kupon) set('kupon', d.kupon);
@@ -520,6 +520,11 @@
                                     this.aiLoading = false;
                                     return;
                                 }
+                                if (!this.isAnalisaSourceReady()) {
+                                    this.aiError = this.analisaSourceError();
+                                    this.aiLoading = false;
+                                    return;
+                                }
                                 const form = document.getElementById('lapkeu-form');
                                 const aiFd = new FormData(form);
                                 fetch(this.previewAiUrl, {
@@ -593,6 +598,10 @@
                             this.aiError = 'Isi Nama Obligasi di bagian Informasi Obligasi terlebih dahulu.';
                             return;
                         }
+                        if (!this.isAnalisaSourceReady()) {
+                            this.aiError = this.analisaSourceError();
+                            return;
+                        }
                         this.aiLoading = true;
                         this.aiError = '';
                         const fd = new FormData(form);
@@ -643,6 +652,62 @@
                             const v = this.getFormValue(f);
                             return v === '' || v == null || isNaN(Number(v)) || Number(v) === 0;
                         }).map(f => this.plusRequiredLabels[f] || f);
+                    },
+
+                    isAnalisaSourceReady() {
+                        if (!this.kodeObligasi?.trim()) return false;
+                        if (this.jenisAnalisa === 'tahunan') return /^\d{4}$/.test(String(this.tahunAnalisa || ''));
+                        return /^\d{6}$/.test(String(this.periodeAnalisa || ''));
+                    },
+
+                    analisaSourceError() {
+                        if (!this.kodeObligasi?.trim()) return 'Isi Emiten di tab Upload Excel atau Analisa AI terlebih dahulu.';
+                        if (this.jenisAnalisa === 'tahunan') return 'Isi Tahun dengan format YYYY.';
+                        return 'Isi Periode LapKeu dengan format YYYYMM.';
+                    },
+
+                    processKeuanganEmiten() {
+                        this.sourceMessage = '';
+                        this.sourceOk = false;
+
+                        if (!this.isAnalisaSourceReady()) {
+                            this.sourceMessage = this.analisaSourceError();
+                            return;
+                        }
+
+                        const params = new URLSearchParams({
+                            kode_obligasi: this.kodeObligasi,
+                            jenis_analisa: this.jenisAnalisa,
+                        });
+
+                        if (this.jenisAnalisa === 'tahunan') {
+                            params.set('tahun', this.tahunAnalisa);
+                        } else {
+                            params.set('periode', this.periodeAnalisa);
+                        }
+
+                        this.sourceLoading = true;
+                        fetch(`${this.lookupKeuanganEmitenUrl}?${params.toString()}`, {
+                                headers: { 'Accept': 'application/json' }
+                            })
+                            .then(async r => {
+                                const resp = await r.json();
+                                if (!r.ok || !resp.found) {
+                                    throw new Error(resp.message || 'Data Keuangan Emiten tidak ditemukan.');
+                                }
+
+                                this.fillLapkeuFormFromData(resp.data || {});
+                                this.extractedData = resp.data || null;
+                                this.sourceOk = true;
+                                this.sourceMessage = resp.message || 'Data Keuangan Emiten berhasil diproses.';
+                            })
+                            .catch(e => {
+                                this.sourceOk = false;
+                                this.sourceMessage = e.message || 'Gagal memproses data Keuangan Emiten.';
+                            })
+                            .finally(() => {
+                                this.sourceLoading = false;
+                            });
                     },
 
                     runAiPlusPreview() {

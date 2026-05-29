@@ -8,6 +8,7 @@ use App\Imports\Sheets\AnalisaEfekSheet;
 use App\Imports\Sheets\AnalisaKinerjaSheet;
 use App\Imports\Sheets\AnalisaObligasiSheet;
 use App\Imports\Sheets\AnalisaBankSheet;
+use App\Imports\Sheets\AnalisaSukukSheet;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
 class AnalisaImport implements WithMultipleSheets
@@ -21,6 +22,7 @@ class AnalisaImport implements WithMultipleSheets
             'Efek'     => new AnalisaEfekSheet($this->analisa),
             'Kinerja'  => new AnalisaKinerjaSheet($this->analisa),
             'Obligasi' => new AnalisaObligasiSheet($this->analisa),
+            'Sukuk'    => new AnalisaSukukSheet($this->analisa),
             'Bank'     => new AnalisaBankSheet($this->analisa),
         ];
     }

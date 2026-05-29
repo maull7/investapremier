@@ -14,6 +14,12 @@
             <p class="text-sm text-muted mt-0.5">
                 {{ $analisa->jenis_reksa_dana }} &bull;
                 Disubmit oleh <strong>{{ $analisa->user->name }}</strong> pada {{ $analisa->created_at->format('d M Y') }}
+                @if ($analisa->ffs_bulan && $analisa->ffs_tahun)
+                    &bull;
+                    Kalender FFS:
+                    <strong>{{ ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][$analisa->ffs_bulan - 1] }}
+                    {{ $analisa->ffs_tahun }}</strong>
+                @endif
             </p>
         </div>
         @php
@@ -21,11 +27,13 @@
                 'draft'     => 'bg-gray-100 text-gray-600',
                 'submitted' => 'bg-yellow-100 text-yellow-700',
                 'reviewed'  => 'bg-green-100 text-green-700',
+                default     => 'bg-slate-100 text-slate-600',
             };
             $label = match($analisa->status) {
                 'draft'     => 'Draft',
                 'submitted' => 'Menunggu Review',
                 'reviewed'  => 'Sudah Direview',
+                default     => ucfirst($analisa->status ?? 'Unknown'),
             };
         @endphp
         <span class="inline-flex px-3 py-1 rounded-full text-xs font-medium {{ $badge }}">{{ $label }}</span>
@@ -103,118 +111,46 @@
         @endforeach
     </div>
 
-    {{-- Charts (removed legacy AI block) --}}
-    @if(false)
-            {{-- Ringkasan Utama --}}
-            @if(!empty($ai['ringkasan_utama']))
-            <div class="mb-6">
-                <h4 class="text-sm font-semibold text-primary mb-2 flex items-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    Ringkasan Utama
-                </h4>
-                <div class="text-sm text-gray-700 leading-relaxed">{{ $ai['ringkasan_utama'] }}</div>
+    {{-- Informasi Keuangan --}}
+    <div class="bg-white rounded-xl border border-line p-6">
+        <h3 class="font-semibold text-primary mb-4">Informasi Keuangan</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-sm">
+            <div>
+                <p class="text-muted text-xs">Total AUM</p>
+                <p class="font-medium mt-0.5">{{ $analisa->total_aum ? 'Rp '.number_format($analisa->total_aum, 0, ',', '.') : '-' }}</p>
             </div>
-            @endif
-
-            {{-- Alokasi Aset --}}
-            @if(!empty($ai['alokasi_aset']))
-            <div class="mb-6">
-                <h4 class="text-sm font-semibold text-primary mb-2 flex items-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                    Alokasi Aset
-                </h4>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead class="bg-[#f8fafc] border-b border-line">
-                            <tr>
-                                <th class="text-left px-3 py-2 font-semibold text-primary">Kategori</th>
-                                <th class="text-right px-3 py-2 font-semibold text-primary">Persentase</th>
-                                <th class="text-left px-3 py-2 font-semibold text-primary">Keterangan</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-line">
-                            @foreach($ai['alokasi_aset'] as $aa)
-                            <tr>
-                                <td class="px-3 py-2 font-medium">{{ $aa['kategori'] }}</td>
-                                <td class="px-3 py-2 text-right font-mono">{{ number_format($aa['persentase'], 2) }}%</td>
-                                <td class="px-3 py-2 text-muted">{{ $aa['keterangan'] ?? '-' }}</td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
+            <div>
+                <p class="text-muted text-xs">Total MarCap 10 Saham Terbesar</p>
+                <p class="font-medium mt-0.5">{{ $analisa->total_marcap_10_efek ? 'Rp '.number_format($analisa->total_marcap_10_efek, 0, ',', '.') : '-' }}</p>
             </div>
-            @endif
-
-            {{-- Daftar Efek --}}
-            @if(!empty($ai['daftar_efek']))
-            <div class="mb-6">
-                <h4 class="text-sm font-semibold text-primary mb-2 flex items-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                    Daftar Efek & Persentase
-                </h4>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead class="bg-[#f8fafc] border-b border-line">
-                            <tr>
-                                <th class="text-left px-3 py-2 font-semibold text-primary">Kode</th>
-                                <th class="text-left px-3 py-2 font-semibold text-primary">Nama Efek</th>
-                                <th class="text-left px-3 py-2 font-semibold text-primary">Sektor</th>
-                                <th class="text-right px-3 py-2 font-semibold text-primary">Bobot (%)</th>
-                                <th class="text-right px-3 py-2 font-semibold text-primary">Kontribusi</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-line">
-                            @foreach($ai['daftar_efek'] as $de)
-                            <tr>
-                                <td class="px-3 py-2 font-mono text-xs">{{ $de['kode_efek'] }}</td>
-                                <td class="px-3 py-2">{{ $de['nama_efek'] }}</td>
-                                <td class="px-3 py-2 text-muted">{{ $de['sektor'] ?? '-' }}</td>
-                                <td class="px-3 py-2 text-right font-mono">{{ number_format($de['bobot'], 2) }}%</td>
-                                <td class="px-3 py-2 text-right font-mono {{ ($de['kontribusi_kinerja'] ?? 0) > 0 ? 'text-green-600' : (($de['kontribusi_kinerja'] ?? 0) < 0 ? 'text-red-600' : '') }}">
-                                    {{ isset($de['kontribusi_kinerja']) ? ($de['kontribusi_kinerja'] >= 0 ? '+' : '').$de['kontribusi_kinerja'].'%' : '-' }}
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
+            <div>
+                <p class="text-muted text-xs">NAB/UP</p>
+                <p class="font-medium mt-0.5">{{ $analisa->nab_per_unit ? number_format($analisa->nab_per_unit, 6, ',', '.') : '-' }}</p>
             </div>
-            @endif
-
-            {{-- Analisa Risiko --}}
-            @if(!empty($ai['analisa_risiko']))
-            <div class="mb-6">
-                <h4 class="text-sm font-semibold text-primary mb-2 flex items-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
-                    Analisa Risiko
-                </h4>
-                <div class="text-sm text-gray-700 leading-relaxed">{{ $ai['analisa_risiko'] }}</div>
+            <div>
+                <p class="text-muted text-xs">Jumlah Unit Penyertaan</p>
+                <p class="font-medium mt-0.5">{{ $analisa->unit_penyertaan ? number_format($analisa->unit_penyertaan, 4, ',', '.') : '-' }}</p>
             </div>
-            @endif
-
-            {{-- Rekomendasi --}}
-            @if(!empty($ai['rekomendasi_investor']))
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 class="text-sm font-semibold text-blue-800 mb-1 flex items-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
-                    Rekomendasi Investor
-                </h4>
-                <div class="text-sm text-blue-700">{{ $ai['rekomendasi_investor'] }}</div>
+            <div>
+                <p class="text-muted text-xs">Kalender FFS</p>
+                <p class="font-medium mt-0.5">
+                    @if ($analisa->ffs_bulan && $analisa->ffs_tahun)
+                        {{ ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][$analisa->ffs_bulan - 1] }}
+                        {{ $analisa->ffs_tahun }}
+                    @else
+                        -
+                    @endif
+                </p>
             </div>
-            @endif
-        @else
-            {{-- Fallback --}}
-            <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{{ $analisa->ai_narasi }}</div>
-        @endif
-    </div>
-    <div class="bg-[#f8fafc] border border-dashed border-line rounded-xl p-4 text-sm text-muted flex items-center gap-2">
-        <svg class="w-4 h-4 animate-spin shrink-0" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-        Narasi AI belum tersedia atau sedang diproses.
+            <div>
+                <p class="text-muted text-xs">Tanggal Data</p>
+                <p class="font-medium mt-0.5">{{ $analisa->tanggal_data ? $analisa->tanggal_data->format('d M Y') : '-' }}</p>
+            </div>
+        </div>
     </div>
 
     {{-- Charts --}}
-    @if($analisa->sektor->isNotEmpty() || $analisa->kinerja->isNotEmpty())
+    @if($analisa->sektor->isNotEmpty() || $analisa->kinerja->isNotEmpty() || $analisa->sukuk->isNotEmpty())
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         @if($analisa->sektor->isNotEmpty())
         <div class="bg-white rounded-xl border border-line p-6">
@@ -228,12 +164,53 @@
             <canvas id="chartKinerjaAdmin" height="220"></canvas>
         </div>
         @endif
+        @if($analisa->sukuk->isNotEmpty())
+        <div class="bg-white rounded-xl border border-line p-6">
+            <h3 class="font-semibold text-primary mb-4">Komposisi Sukuk</h3>
+            <canvas id="chartSukukKomposisi" height="220"></canvas>
+        </div>
+        <div class="bg-white rounded-xl border border-line p-6">
+            <h3 class="font-semibold text-primary mb-4">Negara vs Korporasi</h3>
+            <canvas id="chartSukukJenis" height="220"></canvas>
+        </div>
+        <div class="bg-white rounded-xl border border-line p-6">
+            <h3 class="font-semibold text-primary mb-4">Distribusi Rating Sukuk</h3>
+            <canvas id="chartSukukRating" height="220"></canvas>
+        </div>
+        <div class="bg-white rounded-xl border border-line p-6">
+            <h3 class="font-semibold text-primary mb-4">Distribusi Jatuh Tempo</h3>
+            <canvas id="chartSukukJatuhTempo" height="220"></canvas>
+        </div>
+        @endif
     </div>
     @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {{-- Data Detail --}}
         <div class="lg:col-span-2 space-y-6">
+
+            {{-- Alokasi Aset --}}
+            @if($analisa->alokasiAset->isNotEmpty())
+            <div class="bg-white rounded-xl border border-line p-6">
+                <h3 class="font-semibold text-primary mb-3">Alokasi Aset</h3>
+                <table class="w-full text-sm">
+                    <thead class="bg-[#f8fafc] border-b border-line">
+                        <tr>
+                            <th class="text-left px-3 py-2 font-semibold text-primary">Jenis Aset</th>
+                            <th class="text-right px-3 py-2 font-semibold text-primary">Persentase</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach($analisa->alokasiAset as $aa)
+                        <tr>
+                            <td class="px-3 py-2">{{ $aa->nama_aset }}</td>
+                            <td class="px-3 py-2 text-right font-mono">{{ number_format($aa->persentase, 2) }}%</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @endif
 
             {{-- Sektor --}}
             @if($analisa->sektor->isNotEmpty())
@@ -260,25 +237,45 @@
 
             {{-- Efek --}}
             @if($analisa->efek->isNotEmpty())
-            <div class="bg-white rounded-xl border border-line p-6">
+            <div class="bg-white rounded-xl border border-line p-6 overflow-x-auto">
                 <h3 class="font-semibold text-primary mb-3">Daftar Efek</h3>
                 <table class="w-full text-sm">
                     <thead class="bg-[#f8fafc] border-b border-line">
                         <tr>
-                            <th class="text-left px-3 py-2 font-semibold text-primary">Kode</th>
-                            <th class="text-left px-3 py-2 font-semibold text-primary">Nama</th>
-                            <th class="text-right px-3 py-2 font-semibold text-primary">Bobot</th>
-                            <th class="text-right px-3 py-2 font-semibold text-primary">Kontribusi</th>
+                            <th class="text-left px-2 py-2 font-semibold text-primary text-xs">Kode</th>
+                            <th class="text-left px-2 py-2 font-semibold text-primary text-xs">Nama Efek</th>
+                            <th class="text-left px-2 py-2 font-semibold text-primary text-xs">Sektor</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Bobot %</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Kontribusi % IHSG</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Nilai Pasar</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Return 1M</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Return 3M</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Return 6M</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Return 1 Thn</th>
+                            <th class="text-center px-2 py-2 font-semibold text-primary text-xs">Top 10</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-line">
                         @foreach($analisa->efek->sortByDesc('bobot') as $e)
                         <tr>
-                            <td class="px-3 py-2 font-mono text-xs">{{ $e->kode_efek }}</td>
-                            <td class="px-3 py-2">{{ $e->nama_efek }} @if($e->top_10)<span class="ml-1 text-xs text-primary font-medium">★</span>@endif</td>
-                            <td class="px-3 py-2 text-right">{{ number_format($e->bobot, 2) }}%</td>
-                            <td class="px-3 py-2 text-right {{ $e->kontribusi_kinerja > 0 ? 'text-green-600' : ($e->kontribusi_kinerja < 0 ? 'text-red-600' : '') }}">
-                                {{ $e->kontribusi_kinerja !== null ? ($e->kontribusi_kinerja > 0 ? '+' : '').$e->kontribusi_kinerja.'%' : '-' }}
+                            <td class="px-2 py-2 font-mono text-xs">{{ $e->kode_efek }}</td>
+                            <td class="px-2 py-2 text-xs">{{ $e->nama_efek }}</td>
+                            <td class="px-2 py-2 text-muted text-xs">{{ $e->sektor ?? '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ number_format($e->bobot, 2) }}%</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs {{ ($e->kontribusi_kinerja ?? 0) > 0 ? 'text-green-600' : (($e->kontribusi_kinerja ?? 0) < 0 ? 'text-red-600' : '') }}">
+                                {{ $e->kontribusi_kinerja !== null ? ($e->kontribusi_kinerja > 0 ? '+' : '').number_format($e->kontribusi_kinerja, 2).'%' : '-' }}
+                            </td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $e->nilai_pasar ? 'Rp '.number_format($e->nilai_pasar, 0, ',', '.') : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $e->return_1m !== null ? number_format($e->return_1m, 2).'%' : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $e->return_3m !== null ? number_format($e->return_3m, 2).'%' : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $e->return_6m !== null ? number_format($e->return_6m, 2).'%' : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $e->return_1y !== null ? number_format($e->return_1y, 2).'%' : '-' }}</td>
+                            <td class="px-2 py-2 text-center text-xs">
+                                @if($e->top_10)
+                                    <span class="text-green-600 font-bold">&#10003; Ya</span>
+                                @else
+                                    <span class="text-muted">&#10007; Tidak</span>
+                                @endif
                             </td>
                         </tr>
                         @endforeach
@@ -289,28 +286,72 @@
 
             {{-- Obligasi --}}
             @if($analisa->obligasi->isNotEmpty())
-            <div class="bg-white rounded-xl border border-line p-6">
-                <h3 class="font-semibold text-primary mb-3">Obligasi (Durasi & Rating Risk)</h3>
+            <div class="bg-white rounded-xl border border-line p-6 overflow-x-auto">
+                <h3 class="font-semibold text-primary mb-3">Obligasi</h3>
                 <table class="w-full text-sm">
                     <thead class="bg-[#f8fafc] border-b border-line">
                         <tr>
-                            <th class="text-left px-3 py-2 font-semibold text-primary">Obligasi</th>
-                            <th class="text-right px-3 py-2 font-semibold text-primary">Bobot</th>
-                            <th class="text-right px-3 py-2 font-semibold text-primary">Durasi</th>
-                            <th class="text-center px-3 py-2 font-semibold text-primary">Rating</th>
+                            <th class="text-left px-2 py-2 font-semibold text-primary text-xs">Kode</th>
+                            <th class="text-left px-2 py-2 font-semibold text-primary text-xs">Nama Obligasi</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Bobot %</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Nilai Pasar</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Return 1M</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Return 3M</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Return 6M</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Return 1 Thn</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Durasi</th>
+                            <th class="text-center px-2 py-2 font-semibold text-primary text-xs">Rating</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-line">
                         @foreach($analisa->obligasi as $ob)
                         <tr>
-                            <td class="px-3 py-2">
-                                <div>{{ $ob->nama_obligasi }}</div>
-                                <div class="text-xs text-muted">{{ $ob->kode_obligasi }}</div>
-                            </td>
-                            <td class="px-3 py-2 text-right">{{ number_format($ob->bobot, 2) }}%</td>
-                            <td class="px-3 py-2 text-right">{{ $ob->durasi ? $ob->durasi.' thn' : '-' }}</td>
-                            <td class="px-3 py-2 text-center">
+                            <td class="px-2 py-2 font-mono text-xs">{{ $ob->kode_obligasi }}</td>
+                            <td class="px-2 py-2 text-xs">{{ $ob->nama_obligasi }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ number_format($ob->bobot, 2) }}%</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $ob->nilai_pasar ? 'Rp '.number_format($ob->nilai_pasar, 0, ',', '.') : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $ob->return_1m !== null ? number_format($ob->return_1m, 2).'%' : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $ob->return_3m !== null ? number_format($ob->return_3m, 2).'%' : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $ob->return_6m !== null ? number_format($ob->return_6m, 2).'%' : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $ob->return_1y !== null ? number_format($ob->return_1y, 2).'%' : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $ob->durasi ? $ob->durasi.' thn' : '-' }}</td>
+                            <td class="px-2 py-2 text-center">
                                 <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">{{ $ob->rating ?? '-' }}</span>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @endif
+
+            {{-- Sukuk --}}
+            @if($analisa->sukuk->isNotEmpty())
+            <div class="bg-white rounded-xl border border-line p-6 overflow-x-auto">
+                <h3 class="font-semibold text-primary mb-3">Sukuk</h3>
+                <table class="w-full text-sm">
+                    <thead class="bg-[#f8fafc] border-b border-line">
+                        <tr>
+                            <th class="text-left px-2 py-2 font-semibold text-primary text-xs">Kode</th>
+                            <th class="text-left px-2 py-2 font-semibold text-primary text-xs">Nama Sukuk</th>
+                            <th class="text-left px-2 py-2 font-semibold text-primary text-xs">Jenis</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Bobot %</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Yield %</th>
+                            <th class="text-center px-2 py-2 font-semibold text-primary text-xs">Jatuh Tempo</th>
+                            <th class="text-center px-2 py-2 font-semibold text-primary text-xs">Rating</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach($analisa->sukuk as $s)
+                        <tr>
+                            <td class="px-2 py-2 font-mono text-xs">{{ $s->kode_sukuk }}</td>
+                            <td class="px-2 py-2 text-xs">{{ $s->nama_sukuk }}</td>
+                            <td class="px-2 py-2 text-muted text-xs">{{ $s->jenis_sukuk ?? '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ number_format($s->bobot, 2) }}%</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $s->yield !== null ? number_format($s->yield, 4).'%' : '-' }}</td>
+                            <td class="px-2 py-2 text-center font-mono text-xs">{{ $s->jatuh_tempo ?? '-' }}</td>
+                            <td class="px-2 py-2 text-center">
+                                <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">{{ $s->rating ?? '-' }}</span>
                             </td>
                         </tr>
                         @endforeach
@@ -321,26 +362,38 @@
 
             {{-- Bank --}}
             @if($analisa->bank->isNotEmpty())
-            <div class="bg-white rounded-xl border border-line p-6">
-                <h3 class="font-semibold text-primary mb-3">Bank Risk</h3>
+            <div class="bg-white rounded-xl border border-line p-6 overflow-x-auto">
+                <h3 class="font-semibold text-primary mb-3">Bank</h3>
                 <table class="w-full text-sm">
                     <thead class="bg-[#f8fafc] border-b border-line">
                         <tr>
-                            <th class="text-left px-3 py-2 font-semibold text-primary">Bank</th>
-                            <th class="text-right px-3 py-2 font-semibold text-primary">Bobot</th>
-                            <th class="text-right px-3 py-2 font-semibold text-primary">CAR</th>
-                            <th class="text-right px-3 py-2 font-semibold text-primary">NPL</th>
-                            <th class="text-center px-3 py-2 font-semibold text-primary">Risiko</th>
+                            <th class="text-left px-2 py-2 font-semibold text-primary text-xs">Nama Bank</th>
+                            <th class="text-left px-2 py-2 font-semibold text-primary text-xs">Jenis Bank</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Bobot %</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Nilai Pasar</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">CAR %</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">NPL %</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Return 1M</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Return 3M</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Return 6M</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Return 1 Thn</th>
+                            <th class="text-center px-2 py-2 font-semibold text-primary text-xs">Klasifikasi Risiko</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-line">
                         @foreach($analisa->bank as $bank)
                         <tr>
-                            <td class="px-3 py-2 font-medium">{{ $bank->nama_bank }}</td>
-                            <td class="px-3 py-2 text-right">{{ number_format($bank->bobot, 2) }}%</td>
-                            <td class="px-3 py-2 text-right">{{ $bank->car ? $bank->car.'%' : '-' }}</td>
-                            <td class="px-3 py-2 text-right">{{ $bank->npl ? $bank->npl.'%' : '-' }}</td>
-                            <td class="px-3 py-2 text-center">
+                            <td class="px-2 py-2 text-xs font-medium">{{ $bank->nama_bank }}</td>
+                            <td class="px-2 py-2 text-muted text-xs">{{ $bank->jenis_bank ?? '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ number_format($bank->bobot, 2) }}%</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $bank->nilai_pasar ? 'Rp '.number_format($bank->nilai_pasar, 0, ',', '.') : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $bank->car ? number_format($bank->car, 2).'%' : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $bank->npl ? number_format($bank->npl, 2).'%' : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $bank->return_1m !== null ? number_format($bank->return_1m, 2).'%' : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $bank->return_3m !== null ? number_format($bank->return_3m, 2).'%' : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $bank->return_6m !== null ? number_format($bank->return_6m, 2).'%' : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $bank->return_1y !== null ? number_format($bank->return_1y, 2).'%' : '-' }}</td>
+                            <td class="px-2 py-2 text-center">
                                 @php
                                     $rc = match($bank->klasifikasi_risiko) {
                                         'Rendah' => 'bg-green-100 text-green-700',
@@ -393,14 +446,37 @@
 
             {{-- Info AUM --}}
             <div class="bg-white rounded-xl border border-line p-6 text-sm space-y-3">
-                <h3 class="font-semibold text-primary">Info AUM</h3>
+                <h3 class="font-semibold text-primary">Info Keuangan</h3>
                 <div class="flex justify-between">
                     <span class="text-muted">Total AUM</span>
                     <span class="font-medium">{{ $analisa->total_aum ? 'Rp '.number_format($analisa->total_aum, 0, ',', '.') : '-' }}</span>
                 </div>
                 <div class="flex justify-between">
-                    <span class="text-muted">MarCap 10 Efek</span>
+                    <span class="text-muted">Total MarCap 10 Saham Terbesar</span>
                     <span class="font-medium">{{ $analisa->total_marcap_10_efek ? 'Rp '.number_format($analisa->total_marcap_10_efek, 0, ',', '.') : '-' }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-muted">NAB/UP</span>
+                    <span class="font-medium">{{ $analisa->nab_per_unit ? number_format($analisa->nab_per_unit, 6, ',', '.') : '-' }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-muted">Unit Penyertaan</span>
+                    <span class="font-medium">{{ $analisa->unit_penyertaan ? number_format($analisa->unit_penyertaan, 4, ',', '.') : '-' }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-muted">Kalender FFS</span>
+                    <span class="font-medium">
+                        @if ($analisa->ffs_bulan && $analisa->ffs_tahun)
+                            {{ ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][$analisa->ffs_bulan - 1] }}
+                            {{ $analisa->ffs_tahun }}
+                        @else
+                            -
+                        @endif
+                    </span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-muted">Tanggal Data</span>
+                    <span class="font-medium">{{ $analisa->tanggal_data ? $analisa->tanggal_data->format('d M Y') : '-' }}</span>
                 </div>
             </div>
         </div>
@@ -441,6 +517,49 @@ new Chart(document.getElementById('chartKinerjaAdmin'), {
         plugins: { legend: { display: false } },
         scales: { y: { ticks: { callback: v => v + '%' } } }
     }
+});
+@endif
+
+@if($analisa->sukuk->isNotEmpty())
+@php
+    $sukukLabels = $analisa->sukuk->pluck('nama_sukuk');
+    $sukukBobot = $analisa->sukuk->pluck('bobot');
+    $sukukColors = ['#1e3a5f','#2563eb','#3b82f6','#60a5fa','#93c5fd','#bfdbfe','#dbeafe','#eff6ff'];
+    $jenisCounts = $analisa->sukuk->groupBy('jenis_sukuk')->map->count();
+    $ratingCounts = $analisa->sukuk->groupBy('rating')->map->count();
+    $jatuhTempoLabels = $analisa->sukuk->pluck('jatuh_tempo')->filter()->values();
+@endphp
+new Chart(document.getElementById('chartSukukKomposisi'), {
+    type: 'doughnut',
+    data: {
+        labels: {!! $sukukLabels !!},
+        datasets: [{ data: {!! $sukukBobot !!}, backgroundColor: {!! $sukukColors !!} }]
+    },
+    options: { plugins: { legend: { position: 'right' } }, cutout: '60%' }
+});
+new Chart(document.getElementById('chartSukukJenis'), {
+    type: 'doughnut',
+    data: {
+        labels: {!! $jenisCounts->keys() !!},
+        datasets: [{ data: {!! $jenisCounts->values() !!}, backgroundColor: ['#2563eb','#60a5fa'] }]
+    },
+    options: { plugins: { legend: { position: 'right' } }, cutout: '60%' }
+});
+new Chart(document.getElementById('chartSukukRating'), {
+    type: 'bar',
+    data: {
+        labels: {!! $ratingCounts->keys() !!},
+        datasets: [{ label: 'Jumlah', data: {!! $ratingCounts->values() !!}, backgroundColor: '#3b82f6' }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+new Chart(document.getElementById('chartSukukJatuhTempo'), {
+    type: 'bar',
+    data: {
+        labels: {!! $jatuhTempoLabels !!},
+        datasets: [{ label: 'Yield (%)', data: {!! $analisa->sukuk->whereNotNull('jatuh_tempo')->pluck('yield') !!}, backgroundColor: '#1e3a5f' }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => v + '%' } } } }
 });
 @endif
 </script>

@@ -123,6 +123,17 @@ Ekstrak data dari teks Fund Fact Sheet berikut. Kembalikan HANYA JSON valid deng
       "rating": "AAA" atau "AA+" atau "AA" atau "AA-" atau "A+" atau "A" atau "A-" atau "BBB+" atau "BBB" atau "BBB-" atau "BB" atau "B" atau "CCC" atau "D" atau null
     }
   ],
+  "sukuk": [
+    {
+      "kode_sukuk": "string misal SR019, PBS037, atau kosong",
+      "nama_sukuk": "string nama lengkap",
+      "jenis_sukuk": "Negara" atau "Korporasi" atau null,
+      "bobot": angka_persen,
+      "yield": angka_persen_imbal_hasil_atau_null,
+      "jatuh_tempo": "string tahun misal 2028 atau null",
+      "rating": "AAA" atau "AA+" atau "AA" atau "AA-" atau "A+" atau null
+    }
+  ],
   "bank": [
     {
       "nama_bank": "string",
@@ -196,6 +207,15 @@ Baca PDF Fund Fact Sheet berikut seperti analis yang melihat halaman PDF langsun
     "nama_obligasi": "string",
     "bobot": angka_persen,
     "durasi": angka_tahun_atau_null,
+    "rating": "string atau null"
+  }],
+  "sukuk": [{
+    "kode_sukuk": "string",
+    "nama_sukuk": "string",
+    "jenis_sukuk": "Negara atau Korporasi atau null",
+    "bobot": angka_persen,
+    "yield": angka_persen_atau_null,
+    "jatuh_tempo": "string tahun atau null",
     "rating": "string atau null"
   }],
   "bank": [{
@@ -300,6 +320,10 @@ PROMPT;
 
     public function generateNarasiLapkeuStructured(array $data, string $instrumen = 'Saham'): array
     {
+        if (!empty($data['data_tahunan']) && is_array($data['data_tahunan'])) {
+            return $this->generateNarasiLapkeuTahunanStructured($data, $instrumen, false);
+        }
+
         $fmt = fn($v) => $v !== null ? number_format((float)$v, 2, ',', '.') : 'N/A';
 
         $lines = [];
@@ -432,7 +456,8 @@ Berdasarkan data Input Manual lengkap di atas, buatkan analisa mendalam (Analisa
 {
   "ringkasan_utama": "Ringkasan eksekutif 2-3 paragraf dengan metrik kunci",
   "analisa_kinerja": "Analisa kinerja bulanan, Sharpe, RAR, dan tren return",
-  "analisa_risiko": "Analisa risiko obligasi, bank, durasi, rating, konsentrasi sektor",
+  "analisa_risiko": "Analisa risiko obligasi, sukuk, bank, durasi, rating, konsentrasi sektor",
+  "analisa_sukuk": "Analisa mendalam sukuk: komposisi Negara vs Korporasi, profil yield, distribusi rating, jatuh tempo, kontribusi terhadap portofolio, dan risiko syariah",
   "analisa_likuiditas": "Analisa likuiditas portofolio dan rasio AUM vs MarCap 10 efek",
   "rekomendasi_investor": "Rekomendasi investasi spesifik berdasarkan profil risiko",
   "metrik_saran": {
@@ -444,7 +469,7 @@ Berdasarkan data Input Manual lengkap di atas, buatkan analisa mendalam (Analisa
 }
 
 PETUNJUK:
-- Gunakan semua data sektor, efek, kinerja, obligasi, dan bank yang tersedia
+- Gunakan semua data sektor, efek, kinerja, obligasi, sukuk, dan bank yang tersedia
 - Jika metrik tidak bisa dihitung, jelaskan di narasi dan set null di metrik_saran
 - Output HANYA JSON valid tanpa markdown
 DEFAULT);
@@ -471,7 +496,7 @@ Berdasarkan data di atas, buatkan analisa dalam format JSON dengan struktur EXAC
   "daftar_efek": [
     {"kode_efek": "BBCA", "nama_efek": "Bank Central Asia Tbk.", "sektor": "Keuangan", "bobot": 12.5, "kontribusi_kinerja": 2.3}
   ],
-  "analisa_risiko": "Analisa risiko likuiditas, durasi, rating obligasi, dan bank dalam 1-2 paragraf",
+  "analisa_risiko": "Analisa risiko likuiditas, durasi, rating obligasi, sukuk, dan bank dalam 1-2 paragraf",
   "rekomendasi_investor": "Rekomendasi singkat untuk investor berdasarkan profil risiko dan kondisi portfolio"
 }
 
@@ -539,6 +564,14 @@ DEFAULT);
             }
         }
 
+        if ($analisa->sukuk->isNotEmpty()) {
+            $lines[] = "";
+            $lines[] = "SUKUK DALAM PORTOFOLIO";
+            foreach ($analisa->sukuk as $s) {
+                $lines[] = "- {$s->nama_sukuk} (Jenis: {$s->jenis_sukuk}, Rating: {$s->rating}, Yield: {$s->yield}%, Jatuh Tempo: {$s->jatuh_tempo}, Bobot: {$s->bobot}%)";
+            }
+        }
+
         if ($analisa->bank->isNotEmpty()) {
             $lines[] = "";
             $lines[] = "BANK DALAM PORTOFOLIO";
@@ -552,6 +585,10 @@ DEFAULT);
 
     public function generateNarasiLapkeuPlusStructured(array $data, string $instrumen = 'Saham'): array
     {
+        if (!empty($data['data_tahunan']) && is_array($data['data_tahunan'])) {
+            return $this->generateNarasiLapkeuTahunanStructured($data, $instrumen, true);
+        }
+
         $fmt = fn($v) => $v !== null ? number_format((float)$v, 2, ',', '.') : 'N/A';
 
         $lines = [];
@@ -641,6 +678,101 @@ PROMPT;
 
         return [
             'raw'    => implode("\n\n", $narasiParts),
+            'parsed' => $parsed,
+        ];
+    }
+
+    private function generateNarasiLapkeuTahunanStructured(array $data, string $instrumen, bool $plus): array
+    {
+        $fmt = fn($v) => $v !== null && $v !== '' ? number_format((float) $v, 2, ',', '.') : 'N/A';
+
+        $lines = [];
+        $lines[] = "INSTRUMEN: {$instrumen}";
+        if (!empty($data['nama'])) $lines[] = "Nama: {$data['nama']}";
+        if (!empty($data['kode'])) $lines[] = "Kode Emiten: {$data['kode']}";
+        if (!empty($data['tahun'])) $lines[] = "Tahun Analisa: {$data['tahun']}";
+        if (!empty($data['mata_uang'])) $lines[] = "Mata Uang: {$data['mata_uang']}";
+        if ($instrumen === 'Obligasi') {
+            if (!empty($data['rating'])) $lines[] = "Rating: {$data['rating']}";
+            if ($data['kupon'] ?? null) $lines[] = "Kupon: {$data['kupon']}%";
+            if ($data['ytm'] ?? null) $lines[] = "YTM: {$data['ytm']}%";
+        }
+
+        $lines[] = "";
+        $lines[] = "DATA LAPORAN KEUANGAN TAHUNAN";
+
+        foreach ($data['data_tahunan'] as $record) {
+            $periode = $record['periode'] ?? '-';
+            $lines[] = "Periode {$periode}:";
+            $lines[] = "  Total Aset: {$fmt($record['total_asset'] ?? null)}";
+            $lines[] = "  Total Liabilitas: {$fmt($record['total_liabilities'] ?? null)}";
+            $lines[] = "  Total Ekuitas: {$fmt($record['equity'] ?? null)}";
+            $lines[] = "  Pendapatan Bersih: {$fmt($record['net_revenue'] ?? null)}";
+            $lines[] = "  Laba Operasional: {$fmt($record['laba_operasional'] ?? null)}";
+            $lines[] = "  Beban Bunga: {$fmt($record['interest_expense'] ?? null)}";
+            $lines[] = "  Laba Bersih: {$fmt($record['net_income'] ?? null)}";
+            $lines[] = "  Arus Kas Operasi: {$fmt($record['cash_flows_operating_activities'] ?? null)}";
+        }
+
+        $dataSection = implode("\n", $lines);
+        $depth = $plus ? 'mendalam' : 'ringkas namun komprehensif';
+
+        $prompt = <<<PROMPT
+{$dataSection}
+
+Berdasarkan seluruh data laporan keuangan {$instrumen} dalam satu tahun di atas, buat analisa tahunan {$depth} dalam format JSON dengan struktur EXACT berikut:
+{
+  "ringkasan_utama": "Ringkasan kondisi keuangan tahunan",
+  "tren_pertumbuhan_aset": "Tren pertumbuhan aset antar periode",
+  "tren_pertumbuhan_pendapatan": "Tren pendapatan antar periode",
+  "tren_laba_bersih": "Tren laba bersih antar periode",
+  "perubahan_struktur_modal": "Perubahan komposisi liabilitas dan ekuitas",
+  "perubahan_leverage": "Perubahan leverage dan debt-to-equity jika data tersedia",
+  "perubahan_liabilitas": "Perubahan liabilitas dan indikasi risiko utang",
+  "konsistensi_kinerja": "Konsistensi kinerja perusahaan selama tahun berjalan",
+  "risiko_penurunan_performa": "Risiko penurunan performa yang terlihat dari data",
+  "kesehatan_keuangan_emiten": "Penilaian kesehatan keuangan emiten",
+  "kesimpulan_outlook": "Kesimpulan dan outlook"
+}
+
+PETUNJUK:
+- Bandingkan data berdasarkan urutan periode.
+- Hitung perubahan persentase jika angka awal dan akhir tersedia.
+- Jelaskan risiko kredit dan kesehatan keuangan emiten dengan Bahasa Indonesia profesional.
+- Output HANYA JSON valid tanpa markdown.
+PROMPT;
+
+        $promptKey = $instrumen === 'Obligasi'
+            ? ($plus ? 'system_analisa_obligasi_plus' : 'system_analisa_obligasi')
+            : ($plus ? 'system_analisa_saham_plus' : 'system_analisa_saham');
+        $systemPrompt = \App\Models\AiPrompt::get($promptKey, "Kamu adalah analis keuangan senior Indonesia. Keluarkan jawaban dalam format JSON valid tanpa teks tambahan.");
+
+        $raw = $this->callAi([
+            ['role' => 'system', 'content' => $systemPrompt],
+            ['role' => 'user', 'content' => $prompt],
+        ], $plus ? 120 : 90, 0.3);
+
+        $parsed = self::parseJsonOutput($raw);
+        $narasiParts = [];
+
+        foreach ([
+            'ringkasan_utama',
+            'tren_pertumbuhan_aset',
+            'tren_pertumbuhan_pendapatan',
+            'tren_laba_bersih',
+            'perubahan_struktur_modal',
+            'perubahan_leverage',
+            'perubahan_liabilitas',
+            'konsistensi_kinerja',
+            'risiko_penurunan_performa',
+            'kesehatan_keuangan_emiten',
+            'kesimpulan_outlook',
+        ] as $key) {
+            if (!empty($parsed[$key])) $narasiParts[] = $parsed[$key];
+        }
+
+        return [
+            'raw' => implode("\n\n", $narasiParts),
             'parsed' => $parsed,
         ];
     }

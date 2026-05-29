@@ -30,6 +30,7 @@ class FfsParserService
             'efek' => $this->safeExtract('extractEfek', [$lines, $fullText]),
             'kinerja' => $this->safeExtract('extractKinerja', [$lines, $fullText]),
             'obligasi' => $this->safeExtract('extractObligasi', [$lines, $fullText]),
+            'sukuk' => $this->safeExtract('extractSukuk', [$lines, $fullText]),
             'bank' => $this->safeExtract('extractBank', [$lines, $fullText]),
         ];
     }
@@ -59,6 +60,7 @@ class FfsParserService
             'efek' => $this->safeExtract('extractEfek', [$lines, $fullText]),
             'kinerja' => $this->safeExtract('extractKinerja', [$lines, $fullText]),
             'obligasi' => $this->safeExtract('extractObligasi', [$lines, $fullText]),
+            'sukuk' => $this->safeExtract('extractSukuk', [$lines, $fullText]),
             'bank' => $this->safeExtract('extractBank', [$lines, $fullText]),
         ];
 
@@ -74,7 +76,7 @@ class FfsParserService
 
     private function merge(array $regex, array $ai): array
     {
-        $arrayFields = ['alokasi_aset', 'sektor', 'efek', 'kinerja', 'obligasi', 'bank'];
+        $arrayFields = ['alokasi_aset', 'sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank'];
 
         foreach ($regex as $key => $value) {
             $aiValue = $ai[$key] ?? null;
@@ -130,6 +132,7 @@ class FfsParserService
 
         $identityKeys = [
             'obligasi' => ['kode_obligasi', 'nama_obligasi'],
+            'sukuk' => ['kode_sukuk', 'nama_sukuk'],
             'bank' => ['nama_bank'],
             'sektor' => ['nama_sektor'],
         ];
@@ -206,6 +209,7 @@ class FfsParserService
             'efek' => [],
             'kinerja' => [],
             'obligasi' => [],
+            'sukuk' => [],
             'bank' => [],
         ];
 
@@ -218,7 +222,7 @@ class FfsParserService
             $data['kategori'] = [];
         }
 
-        foreach (['alokasi_aset', 'sektor', 'efek', 'kinerja', 'obligasi', 'bank'] as $field) {
+        foreach (['alokasi_aset', 'sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank'] as $field) {
             $data[$field] = is_array($data[$field]) ? array_values($data[$field]) : [];
         }
 
@@ -634,6 +638,41 @@ class FfsParserService
         }
 
         return $obligasiData;
+    }
+
+    private function extractSukuk(array $lines, string $fullText): array
+    {
+        $sukukData = [];
+        $sukukKeywords = ['sukuk', 'sbsn', 'surat berharga syariah negara', 'sukuk ritel',
+                          'project based sukuk', 'pbs', 'sr', 'st'];
+
+        foreach ($lines as $i => $line) {
+            $lower = strtolower($line);
+
+            $isSukukLine = false;
+            foreach ($sukukKeywords as $keyword) {
+                if (str_contains($lower, $keyword)) {
+                    $isSukukLine = true;
+                    break;
+                }
+            }
+
+            if ($isSukukLine) {
+                // Format: KODE NAMA BOBOT YIELD JATUH_TEMPO RATING
+                if (preg_match('/^([A-Z0-9]+)\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+(\d{4})\s+([A-Z+]+)/', $line, $m)) {
+                    $sukukData[] = [
+                        'kode_sukuk'  => $m[1],
+                        'nama_sukuk'  => trim($m[2]),
+                        'bobot'       => (float) str_replace(',', '.', $m[3]),
+                        'yield'       => (float) str_replace(',', '.', $m[4]),
+                        'jatuh_tempo' => $m[5],
+                        'rating'      => $m[6],
+                    ];
+                }
+            }
+        }
+
+        return $sukukData;
     }
 
     private function extractBank(array $lines, string $fullText): array

@@ -11,7 +11,7 @@
 <div class="mb-6 flex items-center justify-between">
     <div>
         <h1 class="text-2xl font-bold text-primary">Daftar Obligasi</h1>
-        <p class="text-muted text-sm mt-1">Kelola data obligasi harga referensi dan bond</p>
+        <p class="text-muted text-sm mt-1">Kelola data obligasi harga referensi dan keuangan emiten</p>
     </div>
 </div>
 
@@ -31,7 +31,7 @@
         </a>
         <a href="{{ route('admin.obligasi.index', ['tab' => 'bond']) }}"
            class="px-4 py-2 rounded-lg text-sm font-semibold transition {{ $tab === 'bond' ? 'bg-white text-primary shadow-sm' : 'text-muted hover:text-primary' }}">
-            Obligasi Bond
+            Keuangan Emiten
         </a>
     </div>
 </div>

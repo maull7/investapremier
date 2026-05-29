@@ -43,17 +43,18 @@
             <input type="hidden" name="input_mode" :value="mode === 'link-website' ? 'manual' : mode">
             <input type="hidden" name="pdf_file" x-model="pdfFile">
             <input type="hidden" name="tanggal_data" :value="tanggalData">
-            <input type="hidden" name="ffs_bulan" :value="ffsBulan">
-            <input type="hidden" name="ffs_tahun" :value="ffsTahun">
+            <input type="hidden" name="ffs_bulan" :value="jenisLaporan === 'kalender_ffs' ? ffsBulan : ''">
+            <input type="hidden" name="ffs_tahun" :value="jenisLaporan === 'kalender_ffs' ? ffsTahun : ''">
+            <input type="hidden" name="jenis_laporan" :value="jenisLaporan">
 
             {{-- Info Dasar --}}
             <div class="bg-white rounded-xl border border-line p-6 space-y-4" x-show="mode !== 'link-website'" x-cloak>
                 <h3 class="font-semibold text-primary">Informasi Reksa Dana</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <x-input-label for="kode_reksa_dana" value="Kode Reksa Dana *" />
+                        <x-input-label for="kode_reksa_dana" value="Kode Reksa Dana" />
                         <x-text-input id="kode_reksa_dana" name="kode_reksa_dana" type="text" class="mt-1 block w-full"
-                            value="{{ old('kode_reksa_dana') }}" x-bind:required="mode !== 'link-website'"
+                            value="{{ old('kode_reksa_dana') }}"
                             @input.debounce.500ms="lookupReksaDana($event.target.value)" />
                         <x-input-error :messages="$errors->get('kode_reksa_dana')" class="mt-1" />
                         <p class="text-xs mt-1" :class="lookupOk ? 'text-emerald-600' : 'text-muted'"
@@ -115,6 +116,42 @@
                             class="mt-1 block w-full" value="{{ old('kebijakan_investasi') }}"
                             x-bind:required="mode !== 'link-website'" />
                         <x-input-error :messages="$errors->get('kebijakan_investasi')" class="mt-1" />
+                    </div>
+                </div>
+
+                <div class="border-t border-line pt-4">
+                    <x-input-label value="Pilih" />
+                    <div class="mt-2 flex flex-wrap gap-4 text-sm">
+                        <label class="inline-flex items-center gap-2">
+                            <input type="radio" value="kalender_ffs" x-model="jenisLaporan"
+                                class="text-primary focus:ring-primary/20">
+                            <span>Kalender FFS</span>
+                        </label>
+                        <label class="inline-flex items-center gap-2">
+                            <input type="radio" value="laporan_tahunan" x-model="jenisLaporan"
+                                class="text-primary focus:ring-primary/20">
+                            <span>Laporan Tahunan</span>
+                        </label>
+                    </div>
+                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4" x-show="jenisLaporan === 'kalender_ffs'">
+                        <div>
+                            <x-input-label for="periode_awal" value="Periode Awal" />
+                            <x-text-input id="periode_awal" name="periode_awal" type="text" maxlength="6"
+                                pattern="[0-9]{6}" placeholder="202401" class="mt-1 block w-full"
+                                x-model="periodeAwal" />
+                        </div>
+                        <div>
+                            <x-input-label for="periode_akhir" value="Periode Akhir" />
+                            <x-text-input id="periode_akhir" name="periode_akhir" type="text" maxlength="6"
+                                pattern="[0-9]{6}" placeholder="202412" class="mt-1 block w-full"
+                                x-model="periodeAkhir" />
+                        </div>
+                    </div>
+                    <div class="mt-4 max-w-xs" x-show="jenisLaporan === 'laporan_tahunan'" x-cloak>
+                        <x-input-label for="tahun_laporan" value="Tahun" />
+                        <x-text-input id="tahun_laporan" name="tahun_laporan" type="text" maxlength="4"
+                            pattern="[0-9]{4}" placeholder="2025" class="mt-1 block w-full"
+                            x-model="tahunLaporan" />
                     </div>
                 </div>
             </div>
@@ -224,7 +261,7 @@
                             <x-text-input id="nab_per_unit_lengkap" name="nab_per_unit" type="number" step="0.000001"
                                 class="mt-1 block w-full" x-model="nabPerUnit" />
                         </div>
-                        <div>
+                        <div x-show="jenisLaporan === 'kalender_ffs'">
                             <x-input-label value="Kalender FFS" />
                             <div class="mt-1 grid grid-cols-2 gap-2">
                                 <input type="number" min="1" max="12" x-model="ffsBulan"
@@ -456,6 +493,79 @@
                         </div>
                     </div>
 
+                    {{-- Sukuk --}}
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-semibold text-primary text-sm">Sukuk</h4>
+                            <button type="button" @click="addRow('sukuk')"
+                                class="text-xs text-primary hover:underline">+ Tambah Baris</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead class="bg-[#f8fafc]">
+                                    <tr>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Kode Sukuk</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nama Sukuk</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Jenis</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Yield %</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Jatuh Tempo</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Rating</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-line">
+                                    <template x-for="(row, i) in sukuk" :key="i">
+                                        <tr>
+                                            <td class="px-1 py-1"><input type="text"
+                                                    :name="`sukuk[${i}][kode_sukuk]`" x-model="row.kode_sukuk"
+                                                    placeholder="SR019"
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="text"
+                                                    :name="`sukuk[${i}][nama_sukuk]`" x-model="row.nama_sukuk"
+                                                    placeholder="Nama Sukuk"
+                                                    class="w-36 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1">
+                                                <select :name="`sukuk[${i}][jenis_sukuk]`" x-model="row.jenis_sukuk"
+                                                    class="border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20 w-24">
+                                                    <option value="">-</option>
+                                                    <option value="Negara">Negara</option>
+                                                    <option value="Korporasi">Korporasi</option>
+                                                </select>
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`sukuk[${i}][bobot]`"
+                                                    x-model="row.bobot" step="0.01"
+                                                    class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            <td class="px-1 py-1"><input type="number" :name="`sukuk[${i}][yield]`"
+                                                    x-model="row.yield" step="0.01"
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="text"
+                                                    :name="`sukuk[${i}][jatuh_tempo]`" x-model="row.jatuh_tempo"
+                                                    placeholder="2028"
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1">
+                                                <select :name="`sukuk[${i}][rating]`" x-model="row.rating"
+                                                    class="border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20">
+                                                    <option value="">-</option>
+                                                    @foreach (['AAA', 'AA+', 'AA', 'AA-', 'A+', 'A', 'A-', 'BBB+', 'BBB', 'BBB-', 'BB', 'B', 'CCC', 'D'] as $r)
+                                                        <option value="{{ $r }}">{{ $r }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </td>
+                                            <td class="px-1 py-1"><button type="button"
+                                                    @click="removeRow('sukuk', i)"
+                                                    class="text-red-400 hover:text-red-600 text-xs">✕</button></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     {{-- Bank --}}
                     <div>
                         <div class="flex items-center justify-between mb-3">
@@ -574,7 +684,7 @@
                             class="mt-1 block w-full text-sm text-muted border border-gray-300 rounded-lg px-3 py-2 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-primary file:text-white hover:file:bg-primary/90 cursor-pointer" />
                         <x-input-error :messages="$errors->get('file_excel')" class="mt-1" />
                         <p class="text-xs text-muted mt-1">Format: .xlsx atau .xls, maks 5MB. Sheet: Sektor, Efek, Kinerja,
-                            Obligasi, Bank.</p>
+                            Obligasi, Sukuk, Bank.</p>
                     </div>
                 </div>
 
@@ -671,6 +781,7 @@
                     $oldEfek = old('efek', [['kode_efek' => '', 'nama_efek' => '', 'sektor' => '', 'bobot' => '', 'kontribusi_kinerja' => '', 'market_cap' => '', 'nilai_pasar' => '', 'return_1m' => '', 'return_3m' => '', 'return_6m' => '', 'return_1y' => '', 'top_10' => false]]);
                     $oldKinerja = old('kinerja', [['periode' => '', 'return_pct' => ''], ['periode' => '', 'return_pct' => '']]);
                     $oldObligasi = old('obligasi', [['kode_obligasi' => '', 'nama_obligasi' => '', 'bobot' => '', 'durasi' => '', 'rating' => '', 'nilai_pasar' => '', 'return_1m' => '', 'return_3m' => '', 'return_6m' => '', 'return_1y' => '']]);
+                    $oldSukuk = old('sukuk', [['kode_sukuk' => '', 'nama_sukuk' => '', 'jenis_sukuk' => '', 'bobot' => '', 'yield' => '', 'jatuh_tempo' => '', 'rating' => '']]);
                     $oldBank = old('bank', [['nama_bank' => '', 'jenis_bank' => '', 'bobot' => '', 'nilai_pasar' => '', 'return_1m' => '', 'return_3m' => '', 'return_6m' => '', 'return_1y' => '', 'car' => '', 'npl' => '', 'klasifikasi_risiko' => '']]);
                     $oldAlokasiAset = old('alokasi_aset', [['nama_aset' => '', 'persentase' => '']]);
                     // Normalize top_10 checkbox (submitted as "1" string or absent)
@@ -723,6 +834,10 @@
                     tanggalData: @json(old('tanggal_data')),
                     ffsBulan: @json(old('ffs_bulan')),
                     ffsTahun: @json(old('ffs_tahun', now()->year)),
+                    jenisLaporan: @json(old('jenis_laporan', 'kalender_ffs')),
+                    periodeAwal: @json(old('periode_awal')),
+                    periodeAkhir: @json(old('periode_akhir')),
+                    tahunLaporan: @json(old('tahun_laporan', now()->year)),
                     unitPenyertaan: @json(old('unit_penyertaan')),
                     nabPerUnit: @json(old('nab_per_unit')),
                     totalAum: @json(old('total_aum')),
@@ -731,6 +846,7 @@
                     efek: @json($oldEfek),
                     kinerja: @json($oldKinerja),
                     obligasi: @json($oldObligasi),
+                    sukuk: @json($oldSukuk),
                     bank: @json($oldBank),
                     alokasi_aset: @json($oldAlokasiAset),
 
@@ -769,6 +885,15 @@
                                 return_6m: '',
                                 return_1y: '',
                                 durasi: '',
+                                rating: ''
+                            },
+                            sukuk: {
+                                kode_sukuk: '',
+                                nama_sukuk: '',
+                                jenis_sukuk: '',
+                                bobot: '',
+                                yield: '',
+                                jatuh_tempo: '',
                                 rating: ''
                             },
                             bank: {
@@ -974,7 +1099,7 @@
                         }
                         // Inject pdfData untuk field yang kosong (cek nilai, bukan hanya key)
                         if (this.pdfData) {
-                            const arrayFields = ['sektor', 'efek', 'kinerja', 'obligasi', 'bank', 'alokasi_aset'];
+                            const arrayFields = ['sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasi_aset'];
                             arrayFields.forEach(field => {
                                 const hasRealData = [...payload.entries()]
                                     .some(([k, v]) => k.startsWith(field + '[') && String(v).trim() !== '');
@@ -1106,6 +1231,17 @@
                                     setTimeout(() => this.lookupObligasiData(i), i * 600);
                                 });
                             });
+                        }
+                        if (data.sukuk?.length) {
+                            this.sukuk = data.sukuk.map(s => ({
+                                kode_sukuk: s.kode_sukuk || '',
+                                nama_sukuk: s.nama_sukuk || '',
+                                jenis_sukuk: s.jenis_sukuk || '',
+                                bobot: s.bobot ?? '',
+                                yield: s.yield ?? '',
+                                jatuh_tempo: s.jatuh_tempo || '',
+                                rating: s.rating || '',
+                            }));
                         }
                         if (data.bank?.length) {
                             this.bank = data.bank.map(b => ({
@@ -1355,8 +1491,9 @@
                             }];
                         }
 
-                        // Obligasi & bank — dari PDF
+                        // Obligasi, sukuk & bank — dari PDF
                         if (pdf.obligasi?.length) this.obligasi = pdf.obligasi;
+                        if (pdf.sukuk?.length) this.sukuk = pdf.sukuk;
                         if (pdf.bank?.length) this.bank = pdf.bank;
 
                         this.mode = 'manual';
@@ -1396,6 +1533,7 @@
                             data.efek?.length ||
                             data.kinerja?.length ||
                             data.obligasi?.length ||
+                            data.sukuk?.length ||
                             data.bank?.length
                         );
                     },
@@ -1470,6 +1608,17 @@
                                     setTimeout(() => this.lookupObligasiData(i), i * 600);
                                 });
                             });
+                        }
+                        if (data.sukuk?.length) {
+                            this.sukuk = data.sukuk.map(s => ({
+                                kode_sukuk: s.kode_sukuk || '',
+                                nama_sukuk: s.nama_sukuk || '',
+                                jenis_sukuk: s.jenis_sukuk || '',
+                                bobot: s.bobot ?? '',
+                                yield: s.yield ?? '',
+                                jatuh_tempo: s.jatuh_tempo || '',
+                                rating: s.rating || '',
+                            }));
                         }
                         if (data.bank?.length) {
                             this.bank = data.bank.map(b => ({

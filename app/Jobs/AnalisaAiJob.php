@@ -30,7 +30,7 @@ class AnalisaAiJob implements ShouldQueue
 
     public function handle(GroqService $groq): void
     {
-        $analisa = AnalisaReksaDana::with(['sektor', 'efek', 'kinerja', 'obligasi', 'bank'])
+        $analisa = AnalisaReksaDana::with(['sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank'])
             ->findOrFail($this->analisaId);
 
         if ($msg = $this->validateForStandardAi($analisa)) {
