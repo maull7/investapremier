@@ -12,25 +12,48 @@
         {{-- Filter Status --}}
         <div class="flex gap-2 text-sm flex-wrap">
             @foreach (['', 'submitted', 'reviewed', 'draft'] as $s)
-                <a href="{{ route('admin.analisa.index', array_filter(['status' => $s ?: null, 'kategori' => request('kategori')])) }}"
+                <a href="{{ route('admin.analisa.index', array_filter(['status' => $s ?: null, 'kategori' => request('kategori'), 'ffs_bulan' => request('ffs_bulan'), 'ffs_tahun' => request('ffs_tahun')])) }}"
                     class="px-3 py-1.5 rounded-lg border transition {{ request('status') === $s || (!request('status') && $s === '') ? 'bg-primary text-white border-primary' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
                     {{ match ($s) {'' => 'Semua','submitted' => 'Menunggu Review','reviewed' => 'Sudah Direview','draft' => 'Draft'} }}
                 </a>
             @endforeach
         </div>
 
-        {{-- Filter Kategori --}}
-        <div class="flex gap-2 text-xs flex-wrap">
-            <a href="{{ route('admin.analisa.index', array_filter(['status' => request('status')])) }}"
-                class="px-3 py-1.5 rounded-lg border transition {{ !request('kategori') ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
-                Semua Kategori
-            </a>
-            @foreach (['Konvensional', 'Syariah', 'index', 'ETF'] as $k)
-                <a href="{{ route('admin.analisa.index', array_filter(['status' => request('status'), 'kategori' => $k])) }}"
-                    class="px-3 py-1.5 rounded-lg border transition {{ request('kategori') === $k ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
-                    {{ $k }}
+        {{-- Filter Kategori + Kalender FFS --}}
+        <div class="flex flex-wrap items-center gap-3">
+            <div class="flex gap-2 text-xs flex-wrap">
+                <a href="{{ route('admin.analisa.index', array_filter(['status' => request('status'), 'ffs_bulan' => request('ffs_bulan'), 'ffs_tahun' => request('ffs_tahun')])) }}"
+                    class="px-3 py-1.5 rounded-lg border transition {{ !request('kategori') ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
+                    Semua Kategori
                 </a>
-            @endforeach
+                @foreach (['Konvensional', 'Syariah', 'index', 'ETF'] as $k)
+                    <a href="{{ route('admin.analisa.index', array_filter(['status' => request('status'), 'kategori' => $k, 'ffs_bulan' => request('ffs_bulan'), 'ffs_tahun' => request('ffs_tahun')])) }}"
+                        class="px-3 py-1.5 rounded-lg border transition {{ request('kategori') === $k ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
+                        {{ $k }}
+                    </a>
+                @endforeach
+            </div>
+
+            <div class="flex items-center gap-2 ml-auto">
+                <form method="GET" action="{{ route('admin.analisa.index') }}" class="flex items-center gap-2" id="ffs-filter-form">
+                    @if(request('status'))<input type="hidden" name="status" value="{{ request('status') }}">@endif
+                    @if(request('kategori'))<input type="hidden" name="kategori" value="{{ request('kategori') }}">@endif
+                    <select name="ffs_bulan" onchange="document.getElementById('ffs-filter-form').submit()"
+                        class="text-xs border-gray-300 rounded-lg px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20">
+                        <option value="">Semua Bulan FFS</option>
+                        @foreach (['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'] as $i => $bln)
+                            <option value="{{ $i + 1 }}" {{ request('ffs_bulan') == $i + 1 ? 'selected' : '' }}>{{ $bln }}</option>
+                        @endforeach
+                    </select>
+                    <select name="ffs_tahun" onchange="document.getElementById('ffs-filter-form').submit()"
+                        class="text-xs border-gray-300 rounded-lg px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20">
+                        <option value="">Semua Tahun FFS</option>
+                        @foreach ($tahunList as $thn)
+                            <option value="{{ $thn }}" {{ request('ffs_tahun') == $thn ? 'selected' : '' }}>{{ $thn }}</option>
+                        @endforeach
+                    </select>
+                </form>
+            </div>
         </div>
 
         <div class="bg-white rounded-xl border border-line overflow-hidden">
@@ -38,14 +61,17 @@
                 <div class="p-12 text-center text-muted text-sm">Belum ada data analisa.</div>
             @else
                 <table class="w-full text-sm">
+                    @php
+                        $bulanIndonesia = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+                    @endphp
                     <thead class="bg-[#f8fafc] border-b border-line">
                         <tr>
                             <th class="text-left px-5 py-3 font-semibold text-primary">User</th>
                             <th class="text-left px-5 py-3 font-semibold text-primary">Reksa Dana</th>
                             <th class="text-left px-5 py-3 font-semibold text-primary">Jenis</th>
                             <th class="text-left px-5 py-3 font-semibold text-primary">Kategori</th>
+                            <th class="text-left px-5 py-3 font-semibold text-primary">Kalender FFS</th>
                             <th class="text-left px-5 py-3 font-semibold text-primary">Status</th>
-                            <th class="text-left px-5 py-3 font-semibold text-primary">Tanggal</th>
                             <th class="px-5 py-3"></th>
                         </tr>
                     </thead>
@@ -70,6 +96,13 @@
                                         <span class="text-muted text-xs">—</span>
                                     @endif
                                 </td>
+                                <td class="px-5 py-3.5 text-muted">
+                                    @if ($analisa->ffs_bulan && $analisa->ffs_tahun)
+                                        {{ $bulanIndonesia[$analisa->ffs_bulan - 1] }} {{ $analisa->ffs_tahun }}
+                                    @else
+                                        <span class="text-muted text-xs">—</span>
+                                    @endif
+                                </td>
                                 <td class="px-5 py-3.5">
                                     @php
                                         $badge = match ($analisa->status) {
@@ -88,7 +121,6 @@
                                     <span
                                         class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium {{ $badge }}">{{ $label }}</span>
                                 </td>
-                                <td class="px-5 py-3.5 text-muted">{{ $analisa->created_at->format('d M Y') }}</td>
                                 <td class="px-5 py-3.5 text-right">
                                     <a href="{{ route('admin.analisa.show', $analisa) }}"
                                         class="px-3 py-1.5 text-xs font-medium text-primary border border-line rounded-lg hover:bg-[#f1f5f9] transition">

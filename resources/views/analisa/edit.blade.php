@@ -264,6 +264,57 @@
             </div>
         </div>
 
+        {{-- Sukuk --}}
+        <div class="bg-white rounded-xl border border-line p-6 space-y-3">
+            <div class="flex items-center justify-between">
+                <h3 class="font-semibold text-primary text-sm">Sukuk</h3>
+                <button type="button" @click="addRow('sukuk')" class="text-xs text-primary hover:underline">+ Tambah Baris</button>
+            </div>
+            <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-[#f8fafc]">
+                            <tr>
+                                <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Kode Sukuk</th>
+                                <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nama Sukuk</th>
+                                <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Jenis</th>
+                                <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
+                                <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Yield %</th>
+                                <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Jatuh Tempo</th>
+                                <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Rating</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-line">
+                            <template x-for="(row, i) in sukuk" :key="i">
+                                <tr>
+                                    <td class="px-1 py-1"><input type="text" :name="`sukuk[${i}][kode_sukuk]`" x-model="row.kode_sukuk" placeholder="SR019" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                    <td class="px-1 py-1"><input type="text" :name="`sukuk[${i}][nama_sukuk]`" x-model="row.nama_sukuk" placeholder="Nama Sukuk" class="w-36 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                    <td class="px-1 py-1">
+                                        <select :name="`sukuk[${i}][jenis_sukuk]`" x-model="row.jenis_sukuk" class="border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20 w-24">
+                                            <option value="">-</option>
+                                            <option value="Negara">Negara</option>
+                                            <option value="Korporasi">Korporasi</option>
+                                        </select>
+                                    </td>
+                                    <td class="px-1 py-1"><input type="number" :name="`sukuk[${i}][bobot]`" x-model="row.bobot" step="0.01" class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                    <td class="px-1 py-1"><input type="number" :name="`sukuk[${i}][yield]`" x-model="row.yield" step="0.01" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                    <td class="px-1 py-1"><input type="text" :name="`sukuk[${i}][jatuh_tempo]`" x-model="row.jatuh_tempo" placeholder="2028" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                    <td class="px-1 py-1">
+                                        <select :name="`sukuk[${i}][rating]`" x-model="row.rating" class="border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20">
+                                            <option value="">-</option>
+                                            @foreach(['AAA','AA+','AA','AA-','A+','A','A-','BBB+','BBB','BBB-','BB','B','CCC','D'] as $r)
+                                                <option value="{{ $r }}">{{ $r }}</option>
+                                            @endforeach
+                                        </select>
+                                    </td>
+                                    <td class="px-1 py-1"><button type="button" @click="removeRow('sukuk', i)" class="text-red-400 hover:text-red-600 text-xs">✕</button></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+            </div>
+        </div>
+
         {{-- Bank --}}
         <div class="bg-white rounded-xl border border-line p-6 space-y-3">
             <div class="flex items-center justify-between">
@@ -346,6 +397,7 @@ function editForm() {
         efek:     @json($editData['efek']),
         kinerja:  @json($editData['kinerja']),
         obligasi: @json($editData['obligasi']),
+        sukuk: @json($editData['sukuk']),
         bank:     @json($editData['bank']),
         alokasi_aset: @json($editData['alokasi_aset']),
 
@@ -365,6 +417,7 @@ function editForm() {
                 efek:     { kode_efek: '', nama_efek: '', sektor: '', bobot: '', kontribusi_kinerja: '', market_cap: '', nilai_pasar: '', return_1m: '', return_3m: '', return_6m: '', return_1y: '', effect_type: 'Saham', top_10: false },
                 kinerja:  { periode: '', return_pct: '' },
                 obligasi: { kode_obligasi: '', nama_obligasi: '', bobot: '', nilai_pasar: '', return_1m: '', return_3m: '', return_6m: '', return_1y: '', durasi: '', rating: '' },
+                sukuk: { kode_sukuk: '', nama_sukuk: '', jenis_sukuk: '', bobot: '', yield: '', jatuh_tempo: '', rating: '' },
                 bank:     { nama_bank: '', jenis_bank: '', bobot: '', nilai_pasar: '', return_1m: '', return_3m: '', return_6m: '', return_1y: '', car: '', npl: '', klasifikasi_risiko: '' },
                 alokasi_aset: { nama_aset: '', persentase: '' },
             };

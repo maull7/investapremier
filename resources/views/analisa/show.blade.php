@@ -183,6 +183,35 @@
             </table>
         </div>
         @endif
+        @if($analisa->sukuk->isNotEmpty())
+        <div class="bg-white rounded-xl border border-line p-6">
+            <h3 class="font-semibold text-primary mb-4">Sukuk — Yield & Rating</h3>
+            <table class="w-full text-sm">
+                <thead class="bg-[#f8fafc] border-b border-line">
+                    <tr>
+                        <th class="text-left px-4 py-2.5 font-semibold text-primary">Nama Sukuk</th>
+                        <th class="text-left px-4 py-2.5 font-semibold text-primary">Jenis</th>
+                        <th class="text-right px-4 py-2.5 font-semibold text-primary">Bobot (%)</th>
+                        <th class="text-right px-4 py-2.5 font-semibold text-primary">Yield (%)</th>
+                        <th class="text-center px-4 py-2.5 font-semibold text-primary">Jatuh Tempo</th>
+                        <th class="text-center px-4 py-2.5 font-semibold text-primary">Rating</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-line">
+                    @foreach($analisa->sukuk as $s)
+                    <tr class="hover:bg-[#f8fafc]">
+                        <td class="px-4 py-2.5">{{ $s->nama_sukuk }} <span class="text-xs text-muted">{{ $s->kode_sukuk }}</span></td>
+                        <td class="px-4 py-2.5 text-muted">{{ $s->jenis_sukuk ?? '-' }}</td>
+                        <td class="px-4 py-2.5 text-right">{{ number_format($s->bobot, 2) }}%</td>
+                        <td class="px-4 py-2.5 text-right">{{ $s->yield !== null ? number_format($s->yield, 4).'%' : '-' }}</td>
+                        <td class="px-4 py-2.5 text-center">{{ $s->jatuh_tempo ?? '-' }}</td>
+                        <td class="px-4 py-2.5 text-center">{{ $s->rating ?? '-' }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
     </div>
     </div>
 </div>

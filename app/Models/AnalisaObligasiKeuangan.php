@@ -17,6 +17,10 @@ class AnalisaObligasiKeuangan extends Model
         'rating',
         'mata_uang',
         'periode',
+        'jenis_analisa',
+        'sumber_data',
+        'tahun',
+        'data_tahunan',
         'kupon',
         'ytm',
         'current_asset',
@@ -118,6 +122,7 @@ class AnalisaObligasiKeuangan extends Model
         'cash_flows_financing' => 'decimal:2',
         'ai_output' => 'array',
         'ai_output_plus' => 'array',
+        'data_tahunan' => 'array',
     ];
 
     public function user(): BelongsTo

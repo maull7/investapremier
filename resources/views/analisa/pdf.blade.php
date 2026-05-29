@@ -298,6 +298,27 @@
         </div>
         @endif
 
+        {{-- Sukuk --}}
+        @if($analisa->sukuk->isNotEmpty())
+        <div class="section">
+            <div class="section-title">Sukuk — Yield & Rating</div>
+            <table>
+                <thead><tr><th>Nama Sukuk</th><th style="text-align:right">Bobot</th><th style="text-align:right">Yield</th><th style="text-align:center">Jatuh Tempo</th><th style="text-align:center">Rating</th></tr></thead>
+                <tbody>
+                    @foreach($analisa->sukuk as $s)
+                    <tr>
+                        <td>{{ $s->nama_sukuk }}<br><span style="color:#94a3b8;font-size:9px">{{ $s->kode_sukuk }}</span></td>
+                        <td style="text-align:right">{{ number_format($s->bobot, 2) }}%</td>
+                        <td style="text-align:right">{{ $s->yield !== null ? number_format($s->yield, 4).'%' : '-' }}</td>
+                        <td style="text-align:center">{{ $s->jatuh_tempo ?? '-' }}</td>
+                        <td style="text-align:center">{{ $s->rating ?? '-' }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
+
         {{-- Bank --}}
         @if($analisa->bank->isNotEmpty())
         <div class="section">

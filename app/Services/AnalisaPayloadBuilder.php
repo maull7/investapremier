@@ -9,6 +9,7 @@ use App\Models\AnalisaKinerjaBulanan;
 use App\Models\AnalisaObligasi;
 use App\Models\AnalisaReksaDana;
 use App\Models\AnalisaSektor;
+use App\Models\AnalisaSukuk;
 use Illuminate\Http\Request;
 
 class AnalisaPayloadBuilder
@@ -51,6 +52,18 @@ class AnalisaPayloadBuilder
             ->map(fn ($r) => new AnalisaKinerjaBulanan([
                 'periode'    => $r['periode'],
                 'return_pct' => $r['return_pct'],
+            ])));
+
+        $analisa->setRelation('sukuk', collect($request->input('sukuk', []))
+            ->filter(fn ($r) => !empty($r['kode_sukuk']) && !empty($r['nama_sukuk']))
+            ->map(fn ($r) => new AnalisaSukuk([
+                'kode_sukuk'  => $r['kode_sukuk'],
+                'nama_sukuk'  => $r['nama_sukuk'],
+                'jenis_sukuk' => $r['jenis_sukuk'] ?? null,
+                'bobot'       => $r['bobot'] ?? null,
+                'yield'       => $r['yield'] ?? null,
+                'jatuh_tempo' => $r['jatuh_tempo'] ?? null,
+                'rating'      => $r['rating'] ?? null,
             ])));
 
         $analisa->setRelation('obligasi', collect($request->input('obligasi', []))

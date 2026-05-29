@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\DataSourceLink;
 use App\Models\DataSourceSyncLog;
+use App\Models\HargaReksaDana;
 use App\Models\ReksaDana;
 use App\Imports\HargaReksaDanaImport;
 use App\Imports\HarianReksaDanaImport;
@@ -15,6 +16,10 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class DaftarReksaDanaController extends Controller
 {
+    private const JENIS_OPTIONS = ['Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang', 'Terproteksi', 'Global', 'DIRE-DINFRA', 'Penyertaan terbatas'];
+    private const KATEGORI_OPTIONS = ['Konvensional', 'Syariah', 'index', 'ETF'];
+    private const KATEGORI_PRODUK_OPTIONS = ['Konvensional', 'Syariah', 'Index', 'ETF'];
+
     public function index(Request $request)
     {
         $tab = $request->get('tab', 'harga');
@@ -35,6 +40,7 @@ class DaftarReksaDanaController extends Controller
         $dataSourceLinks = collect();
         $syncLogs = collect();
         $reksaDanaList = collect();
+        $reksaDanaOptions = ReksaDana::orderBy('nama_reksa_dana')->get(['id', 'kode_reksa_dana', 'nama_reksa_dana']);
         $editingLink = null;
 
         if ($tab === 'link-website') {
@@ -65,6 +71,7 @@ class DaftarReksaDanaController extends Controller
         return view('admin.daftar-reksa-dana.index', compact(
             'reksaDanas', 'harian', 'tab',
             'dataSourceLinks', 'syncLogs', 'reksaDanaList', 'editingLink',
+            'reksaDanaOptions',
         ));
     }
 
@@ -92,5 +99,125 @@ class DaftarReksaDanaController extends Controller
     public function downloadTemplateHarian()
     {
         return Excel::download(new HarianReksaDanaTemplateExport(), 'template-harian-reksa-dana.xlsx');
+    }
+
+    // ======================= CRUD HARGA (ReksaDana) =======================
+
+    public function storeHarga(Request $request)
+    {
+        $validated = $request->validate([
+            'kode_reksa_dana'       => 'nullable|string|max:20|unique:reksa_dana,kode_reksa_dana',
+            'nama_reksa_dana'       => 'required|string|max:255',
+            'nama_manajer_investasi'=> 'required|string|max:255',
+            'jenis'                 => 'required|string|in:' . implode(',', self::JENIS_OPTIONS),
+            'kategori'              => 'nullable|array',
+            'kategori.*'            => 'string|in:' . implode(',', self::KATEGORI_OPTIONS),
+            'kategori_produk'       => 'nullable|string|in:' . implode(',', self::KATEGORI_PRODUK_OPTIONS),
+            'benchmark'             => 'nullable|string|max:255',
+            'tujuan_investasi'      => 'nullable|string',
+            'kebijakan_investasi'   => 'nullable|string',
+            'mata_uang'             => 'nullable|string|max:10',
+            'nab_per_unit'          => 'nullable|numeric',
+            'tanggal_nab'           => 'nullable|date',
+        ]);
+
+        $validated['kategori'] = $validated['kategori'] ?? [];
+        $validated['mata_uang'] = $validated['mata_uang'] ?? 'IDR';
+
+        ReksaDana::create($validated);
+
+        return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harga'])
+            ->with('success', 'Reksa dana berhasil ditambahkan.');
+    }
+
+    public function updateHarga(Request $request, ReksaDana $reksaDana)
+    {
+        $validated = $request->validate([
+            'kode_reksa_dana'       => 'nullable|string|max:20|unique:reksa_dana,kode_reksa_dana,' . $reksaDana->id,
+            'nama_reksa_dana'       => 'required|string|max:255',
+            'nama_manajer_investasi'=> 'required|string|max:255',
+            'jenis'                 => 'required|string|in:' . implode(',', self::JENIS_OPTIONS),
+            'kategori'              => 'nullable|array',
+            'kategori.*'            => 'string|in:' . implode(',', self::KATEGORI_OPTIONS),
+            'kategori_produk'       => 'nullable|string|in:' . implode(',', self::KATEGORI_PRODUK_OPTIONS),
+            'benchmark'             => 'nullable|string|max:255',
+            'tujuan_investasi'      => 'nullable|string',
+            'kebijakan_investasi'   => 'nullable|string',
+            'mata_uang'             => 'nullable|string|max:10',
+            'nab_per_unit'          => 'nullable|numeric',
+            'tanggal_nab'           => 'nullable|date',
+        ]);
+
+        $validated['kategori'] = $validated['kategori'] ?? [];
+
+        $reksaDana->update($validated);
+
+        return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harga'])
+            ->with('success', 'Reksa dana berhasil diperbarui.');
+    }
+
+    public function destroyHarga(ReksaDana $reksaDana)
+    {
+        $reksaDana->delete();
+
+        return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harga'])
+            ->with('success', 'Reksa dana berhasil dihapus.');
+    }
+
+    // ======================= CRUD HARIAN (HargaReksaDana) =======================
+
+    public function storeHarian(Request $request)
+    {
+        $validated = $request->validate([
+            'reksa_dana_id' => 'required|exists:reksa_dana,id',
+            'tanggal'       => 'required|date',
+            'nab_per_unit'  => 'required|numeric',
+        ]);
+
+        $exists = HargaReksaDana::where('reksa_dana_id', $validated['reksa_dana_id'])
+            ->where('tanggal', $validated['tanggal'])
+            ->exists();
+
+        if ($exists) {
+            return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harian'])
+                ->with('error', 'Data untuk reksa dana dan tanggal tersebut sudah ada.');
+        }
+
+        HargaReksaDana::create($validated);
+
+        return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harian'])
+            ->with('success', 'Data harian berhasil ditambahkan.');
+    }
+
+    public function updateHarian(Request $request, HargaReksaDana $hargaReksaDana)
+    {
+        $validated = $request->validate([
+            'reksa_dana_id' => 'required|exists:reksa_dana,id',
+            'tanggal'       => 'required|date',
+            'nab_per_unit'  => 'required|numeric',
+        ]);
+
+        $exists = HargaReksaDana::where('reksa_dana_id', $validated['reksa_dana_id'])
+            ->where('tanggal', $validated['tanggal'])
+            ->where('id', '!=', $hargaReksaDana->id)
+            ->exists();
+
+        if ($exists) {
+            return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harian'])
+                ->with('error', 'Data untuk reksa dana dan tanggal tersebut sudah ada.');
+        }
+
+        $hargaReksaDana->update($validated);
+
+        return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harian'])
+            ->with('success', 'Data harian berhasil diperbarui.');
+    }
+
+    public function destroyHarian(HargaReksaDana $hargaReksaDana)
+    {
+        $hargaReksaDana->delete();
+
+        return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harian'])
+            ->with('success', 'Data harian berhasil dihapus.');
     }
 }

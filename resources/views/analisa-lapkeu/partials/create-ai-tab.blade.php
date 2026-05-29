@@ -1,10 +1,18 @@
 {{-- Tab: Analisa AI untuk Lapkeu (Saham / Obligasi) --}}
 <div x-show="mode==='ai'" class="p-6 space-y-4">
+    @if (($productLabel ?? '') === 'Obligasi')
+        @include('analisa-obligasi.partials.form-analisa-source')
+    @endif
+
     <div class="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
         <div>
-            Upload PDF laporan keuangan, lalu klik <strong>Jalankan Analisa AI</strong>.
-            Data akan otomatis diekstrak ke form Input Manual dan AI akan menganalisa.
+            @if (($productLabel ?? '') === 'Obligasi')
+                Isi Emiten dan Periode/Tahun, lalu klik <strong>Jalankan Analisa AI</strong>. PDF laporan keuangan dapat diupload jika ingin mengekstrak data terlebih dahulu.
+            @else
+                Upload PDF laporan keuangan, lalu klik <strong>Jalankan Analisa AI</strong>.
+                Data akan otomatis diekstrak ke form Input Manual dan AI akan menganalisa.
+            @endif
         </div>
     </div>
 
@@ -26,13 +34,17 @@
         </label>
     </div>
 
-    <button type="button" @click="runAiFromPdf()"
-        :disabled="aiLoading || !aiPdfFile"
+    <button type="button" @click="@if (($productLabel ?? '') === 'Obligasi') aiPdfFile ? runAiFromPdf() : runAiPreview() @else runAiFromPdf() @endif"
+        :disabled="aiLoading || @if (($productLabel ?? '') === 'Obligasi') !isAnalisaSourceReady() @else !aiPdfFile @endif"
         class="px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed">
         <span x-show="!aiLoading">Jalankan Analisa AI</span>
         <span x-show="aiLoading">Memproses...</span>
     </button>
-    <p x-show="!aiPdfFile" class="text-xs text-muted">Pilih file PDF terlebih dahulu.</p>
+    @if (($productLabel ?? '') === 'Obligasi')
+        <p x-show="!isAnalisaSourceReady()" class="text-xs text-muted">Isi Emiten dan Periode/Tahun terlebih dahulu.</p>
+    @else
+        <p x-show="!aiPdfFile" class="text-xs text-muted">Pilih file PDF terlebih dahulu.</p>
+    @endif
 
     <div x-show="aiParseLoading" class="flex items-center gap-2 text-sm text-muted">
         <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

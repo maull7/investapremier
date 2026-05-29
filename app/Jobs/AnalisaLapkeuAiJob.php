@@ -93,7 +93,7 @@ class AnalisaLapkeuAiJob implements ShouldQueue
     private function buildData($analisa): array
     {
         $lapkeuFields = [
-            'mata_uang', 'periode', 'catatan',
+            'mata_uang', 'periode', 'jenis_analisa', 'sumber_data', 'tahun', 'data_tahunan', 'catatan',
             'current_asset', 'cash_equivalents', 'account_receivable', 'inventories',
             'other_current_asset', 'fixed_asset', 'other_non_current_asset', 'total_asset',
             'current_liabilities', 'account_payable', 'accruals', 'short_term_loans',

@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\User;
 
+use App\Enums\AnalisaDataSource;
+use App\Enums\AnalisaType;
 use App\Http\Controllers\AnalisaLapkeuController;
 use App\Models\AnalisaObligasiKeuangan;
+use App\Services\KeuanganEmitenService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -32,6 +35,8 @@ class AnalisaObligasiController extends AnalisaLapkeuController
             'ytm' => 'nullable|numeric|min:0|max:100',
             'mata_uang' => 'nullable|string|max:10',
             'periode' => 'nullable|string|max:20',
+            'jenis_analisa' => 'nullable|in:' . AnalisaType::ANALISA_PERIODE->value . ',' . AnalisaType::ANALISA_TAHUNAN->value,
+            'tahun' => 'nullable|digits:4',
         ];
     }
 
@@ -42,16 +47,20 @@ class AnalisaObligasiController extends AnalisaLapkeuController
             'pdf_lapkeu' => 'nullable|file|mimes:pdf|max:20480',
         ]));
 
+        $preparedData = $this->prepareObligasiAnalysisData($request);
+
         $data = array_merge(
-            $this->extractLapkeuData($request),
+            $preparedData,
             [
                 'user_id' => auth()->id(),
                 'nama_obligasi' => $request->nama_obligasi,
                 'kode_obligasi' => $request->kode_obligasi,
                 'nama_emiten' => $request->nama_emiten,
                 'rating' => $request->rating,
+                'mata_uang' => $request->mata_uang,
                 'kupon' => $request->kupon,
                 'ytm' => $request->ytm,
+                'jenis_analisa' => $request->input('jenis_analisa', AnalisaType::ANALISA_PERIODE->value),
                 'status' => 'submitted',
             ]
         );
@@ -128,5 +137,143 @@ class AnalisaObligasiController extends AnalisaLapkeuController
         $analisa->delete();
 
         return redirect()->route($this->indexRouteName())->with('success', 'Data analisa obligasi berhasil dihapus.');
+    }
+
+    public function lookupKeuanganEmiten(Request $request, KeuanganEmitenService $service)
+    {
+        $request->validate([
+            'kode_obligasi' => 'required|string|max:50',
+            'jenis_analisa' => 'nullable|in:' . AnalisaType::ANALISA_PERIODE->value . ',' . AnalisaType::ANALISA_TAHUNAN->value,
+            'periode' => 'nullable|digits:6',
+            'tahun' => 'nullable|digits:4',
+        ]);
+
+        $jenisAnalisa = $request->input('jenis_analisa', AnalisaType::ANALISA_PERIODE->value);
+        $kode = $request->input('kode_obligasi');
+
+        if ($jenisAnalisa === AnalisaType::ANALISA_TAHUNAN->value) {
+            if (!$request->filled('tahun')) {
+                return response()->json([
+                    'found' => false,
+                    'message' => 'Isi Tahun dengan format YYYY.',
+                ], 422);
+            }
+
+            $records = $service->getByYear($kode, $request->tahun);
+            if ($records->isEmpty()) {
+                return response()->json([
+                    'found' => false,
+                    'message' => "Data Keuangan Emiten {$kode} untuk tahun {$request->tahun} tidak ditemukan.",
+                ], 404);
+            }
+
+            $latest = $records->last();
+
+            return response()->json([
+                'found' => true,
+                'message' => "{$records->count()} data Keuangan Emiten ditemukan dan siap diproses.",
+                'data' => array_merge($this->mapKeuanganEmitenRecord($latest), [
+                    'kode_obligasi' => strtoupper($kode),
+                    'tahun' => $request->tahun,
+                    'data_tahunan' => $records->map(fn ($record) => $this->mapKeuanganEmitenRecord($record))->values()->all(),
+                ]),
+            ]);
+        }
+
+        if (!$request->filled('periode')) {
+            return response()->json([
+                'found' => false,
+                'message' => 'Isi Periode LapKeu dengan format YYYYMM.',
+            ], 422);
+        }
+
+        $record = $service->getByPeriod($kode, $request->periode);
+        if (!$record) {
+            return response()->json([
+                'found' => false,
+                'message' => "Data Keuangan Emiten {$kode} periode {$request->periode} tidak ditemukan.",
+            ], 404);
+        }
+
+        return response()->json([
+            'found' => true,
+            'message' => 'Data Keuangan Emiten ditemukan dan sudah dimasukkan ke form analisa.',
+            'data' => array_merge($this->mapKeuanganEmitenRecord($record), [
+                'kode_obligasi' => strtoupper($kode),
+            ]),
+        ]);
+    }
+
+    protected function prepareObligasiAnalysisData(Request $request): array
+    {
+        $jenisAnalisa = $request->input('jenis_analisa', AnalisaType::ANALISA_PERIODE->value);
+        $kode = $request->input('kode_obligasi');
+
+        if (!$kode || !in_array($jenisAnalisa, [AnalisaType::ANALISA_PERIODE->value, AnalisaType::ANALISA_TAHUNAN->value], true)) {
+            return $this->extractLapkeuData($request);
+        }
+
+        $service = app(KeuanganEmitenService::class);
+
+        if ($jenisAnalisa === AnalisaType::ANALISA_TAHUNAN->value && $request->filled('tahun')) {
+            $records = $service->getByYear($kode, $request->tahun);
+
+            if ($records->isNotEmpty()) {
+                $latest = $records->last();
+
+                return array_merge(
+                    $this->mapKeuanganEmitenRecord($latest),
+                    [
+                        'periode' => $latest->periode,
+                        'tahun' => $request->tahun,
+                        'sumber_data' => AnalisaDataSource::DATABASE_KEUANGAN_EMITEN->value,
+                        'data_tahunan' => $records->map(fn ($record) => $this->mapKeuanganEmitenRecord($record))->values()->all(),
+                    ]
+                );
+            }
+        }
+
+        if ($jenisAnalisa === AnalisaType::ANALISA_PERIODE->value && $request->filled('periode')) {
+            $record = $service->getByPeriod($kode, $request->periode);
+
+            if ($record) {
+                return array_merge(
+                    $this->mapKeuanganEmitenRecord($record),
+                    [
+                        'periode' => $record->periode,
+                        'sumber_data' => AnalisaDataSource::DATABASE_KEUANGAN_EMITEN->value,
+                    ]
+                );
+            }
+        }
+
+        return array_merge(
+            $this->extractLapkeuData($request),
+            ['sumber_data' => AnalisaDataSource::UPLOAD_EXCEL->value]
+        );
+    }
+
+    protected function mapKeuanganEmitenRecord($record): array
+    {
+        $data = $record->only([
+            'kode', 'periode',
+            'current_asset', 'cash_equivalents', 'account_receivable', 'inventories',
+            'other_current_asset', 'fixed_asset', 'other_non_current_asset', 'total_asset',
+            'current_liabilities', 'account_payable', 'accruals', 'short_term_loans',
+            'current_maturities_of_long_term_loans', 'other_current_liabilities',
+            'long_term_loans', 'other_non_current_liabilities',
+            'total_non_current_liabilities', 'total_liabilities',
+            'share_capital', 'additional_paid_in_capital', 'retained_earning', 'others',
+            'non_controlling_interest', 'total_equity_equity_to_parent_entity', 'equity',
+            'net_revenue', 'cost_of_good_sold', 'gross_income', 'operational_expense',
+            'laba_operasional', 'other_income_expense', 'interest_expense', 'income_before_tax',
+            'taxes', 'ebit', 'ebitda', 'net_income_attributable_to_non_controlling_interest',
+            'net_income', 'cash_flows_operating_activities', 'cash_flows_investment',
+            'cash_flows_financing',
+        ]);
+
+        unset($data['kode']);
+
+        return $data;
     }
 }

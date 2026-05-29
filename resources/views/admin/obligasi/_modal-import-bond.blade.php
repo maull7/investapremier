@@ -5,7 +5,7 @@
     <div class="absolute inset-0 bg-black/40" @click="showImportBond = false"></div>
     <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6"
          x-transition:enter="transition duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
-        <h3 class="font-bold text-primary text-base mb-1">Import Obligasi Bond</h3>
+        <h3 class="font-bold text-primary text-base mb-1">Import Keuangan Emiten</h3>
         <p class="text-muted text-sm mb-4">Upload file Excel sesuai format template. Data dengan kode & periode yang sama akan diperbarui.</p>
         <form method="POST" action="{{ route('admin.obligasi.import-bond') }}" enctype="multipart/form-data">
             @csrf

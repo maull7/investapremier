@@ -34,15 +34,17 @@ class AnalisaObligasiController extends BaseAnalisaObligasiController
         ]));
 
         $data = array_merge(
-            $this->extractLapkeuData($request),
+            $this->prepareObligasiAnalysisData($request),
             [
                 'user_id'      => auth()->id(),
                 'nama_obligasi'=> $request->nama_obligasi,
                 'kode_obligasi'=> $request->kode_obligasi,
                 'nama_emiten'  => $request->nama_emiten,
                 'rating'       => $request->rating,
+                'mata_uang'    => $request->mata_uang,
                 'kupon'        => $request->kupon,
                 'ytm'          => $request->ytm,
+                'jenis_analisa'=> $request->input('jenis_analisa', \App\Enums\AnalisaType::ANALISA_PERIODE->value),
                 'status'       => 'reviewed',
             ]
         );

@@ -22,6 +22,7 @@ class WebDataFileParserService
             'efek' => [],
             'kinerja' => [],
             'obligasi' => [],
+            'sukuk' => [],
             'bank' => [],
         ];
 
@@ -41,6 +42,7 @@ class WebDataFileParserService
                 str_contains($title, 'efek') => $data['efek'] = array_merge($data['efek'], $this->parseEfek($headers, $rows)),
                 str_contains($title, 'kinerja') => $data['kinerja'] = array_merge($data['kinerja'], $this->parseKinerja($headers, $rows)),
                 str_contains($title, 'obligasi') => $data['obligasi'] = array_merge($data['obligasi'], $this->parseObligasi($headers, $rows)),
+                str_contains($title, 'sukuk') => $data['sukuk'] = array_merge($data['sukuk'], $this->parseSukuk($headers, $rows)),
                 str_contains($title, 'bank') => $data['bank'] = array_merge($data['bank'], $this->parseBank($headers, $rows)),
                 default => $this->parseGenericSheet($data, $headers, $rows),
             };
@@ -141,6 +143,28 @@ class WebDataFileParserService
                 'bobot' => $r['bobot'] ?? '',
                 'durasi' => $r['durasi'] ?? '',
                 'rating' => (string) ($r['rating'] ?? ''),
+            ];
+        }
+
+        return $items;
+    }
+
+    protected function parseSukuk(array $headers, array $rows): array
+    {
+        $items = [];
+        foreach ($rows as $row) {
+            $r = $this->rowAssoc($headers, $row);
+            if (empty($r['kode_sukuk']) && empty($r['nama_sukuk'])) {
+                continue;
+            }
+            $items[] = [
+                'kode_sukuk'  => (string) ($r['kode_sukuk'] ?? ''),
+                'nama_sukuk'  => (string) ($r['nama_sukuk'] ?? ''),
+                'jenis_sukuk' => (string) ($r['jenis_sukuk'] ?? ''),
+                'bobot'       => $r['bobot'] ?? '',
+                'yield'       => $r['yield'] ?? '',
+                'jatuh_tempo' => (string) ($r['jatuh_tempo'] ?? ''),
+                'rating'      => (string) ($r['rating'] ?? ''),
             ];
         }
 

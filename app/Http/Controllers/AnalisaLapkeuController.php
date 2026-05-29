@@ -81,6 +81,7 @@ abstract class AnalisaLapkeuController extends Controller
             'routePrefix'       => $prefix,
             'previewAiRoute'    => route($prefix . '.preview-ai'),
             'previewAiPlusRoute'=> $hasPlusRoute ? route($prefix . '.preview-ai-plus') : null,
+            'lookupKeuanganEmitenRoute' => \Illuminate\Support\Facades\Route::has($prefix . '.lookup-keuangan-emiten') ? route($prefix . '.lookup-keuangan-emiten') : null,
             'parsePdfRoute'         => route($prefix . '.parse-pdf'),
             'parsePdfVisionRoute'   => \Illuminate\Support\Facades\Route::has($prefix . '.parse-pdf-vision') ? route($prefix . '.parse-pdf-vision') : null,
             'parsePdfStatusRoute'   => route($prefix . '.parse-pdf-status', ['uuid' => '__UUID__']),
@@ -282,12 +283,13 @@ abstract class AnalisaLapkeuController extends Controller
         $request->validate([$nameField => 'required|string|max:255']);
 
         try {
+            $analysisData = $this->analysisDataFromRequest($request);
             $data = array_merge(
-                $this->extractLapkeuData($request),
+                $analysisData,
                 [
                     'nama'      => $request->input($nameField),
                     'kode'      => $request->input('kode_saham') ?? $request->input('kode_obligasi'),
-                    'periode'   => $request->input('periode'),
+                    'periode'   => $request->input('periode') ?: ($analysisData['periode'] ?? null),
                     'mata_uang' => $request->input('mata_uang'),
                     'rating'    => $request->input('rating'),
                     'kupon'     => $request->input('kupon'),
@@ -316,12 +318,13 @@ abstract class AnalisaLapkeuController extends Controller
         $nameField = array_key_first($basicRules);
         $request->validate([$nameField => 'required|string|max:255']);
 
+        $analysisData = $this->analysisDataFromRequest($request);
         $data = array_merge(
-            $this->extractLapkeuData($request),
+            $analysisData,
             [
                 'nama'      => $request->input($nameField),
                 'kode'      => $request->input('kode_saham') ?? $request->input('kode_obligasi'),
-                'periode'   => $request->input('periode'),
+                'periode'   => $request->input('periode') ?: ($analysisData['periode'] ?? null),
                 'mata_uang' => $request->input('mata_uang'),
                 'rating'    => $request->input('rating'),
                 'kupon'     => $request->input('kupon'),
@@ -414,7 +417,7 @@ abstract class AnalisaLapkeuController extends Controller
                 'ai_output_plus' => json_decode($request->ai_output_plus, true) ?: [],
             ]);
         } else {
-            $data = $this->extractLapkeuData($request);
+            $data = $this->analysisDataFromRequest($request);
             $data['nama_perusahaan'] = $request->input($this->namaField());
             $data['total_asset']     = $request->total_asset;
             $data['total_liabilities'] = $request->total_liabilities;
@@ -436,6 +439,15 @@ abstract class AnalisaLapkeuController extends Controller
                 ]);
             }
         }
+    }
+
+    protected function analysisDataFromRequest(Request $request): array
+    {
+        if ($this->instrumentType() === 'Obligasi' && method_exists($this, 'prepareObligasiAnalysisData')) {
+            return $this->prepareObligasiAnalysisData($request);
+        }
+
+        return $this->extractLapkeuData($request);
     }
 
     public function checkAiStatus($idOrAnalisa)
