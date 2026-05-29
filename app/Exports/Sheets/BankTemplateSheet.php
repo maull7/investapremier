@@ -14,14 +14,18 @@ class BankTemplateSheet implements FromArray, WithHeadings, WithTitle, WithStyle
 
     public function headings(): array
     {
-        return ['nama_bank', 'bobot', 'car', 'npl', 'klasifikasi_risiko'];
+        return [
+            'nama_bank', 'jenis_bank', 'bobot', 'nilai_pasar',
+            'return_1m', 'return_3m', 'return_6m', 'return_1y',
+            'car', 'npl', 'klasifikasi_risiko',
+        ];
     }
 
     public function array(): array
     {
         return [
-            ['Bank BCA', 20.00, 25.50, 1.20, 'Rendah'],
-            ['Bank Mandiri', 15.00, 21.30, 2.10, 'Rendah'],
+            ['Bank BCA', 'Bank Nasional', 20.00, '', '', '', '', '', 25.50, 1.20, 'Rendah'],
+            ['Bank Mandiri', 'Bank Nasional', 15.00, '', '', '', '', '', 21.30, 2.10, 'Rendah'],
         ];
     }
 

@@ -23,7 +23,7 @@
                             ]) || str_starts_with($key, 'urls.'),
                         )
                         ->flatten()
-                    : $errors->all();
+                    : collect($errors->all());
             @endphp
             @if ($displayErrors->isNotEmpty())
                 <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-6">
@@ -42,6 +42,9 @@
             @csrf
             <input type="hidden" name="input_mode" :value="mode === 'link-website' ? 'manual' : mode">
             <input type="hidden" name="pdf_file" x-model="pdfFile">
+            <input type="hidden" name="tanggal_data" :value="tanggalData">
+            <input type="hidden" name="ffs_bulan" :value="ffsBulan">
+            <input type="hidden" name="ffs_tahun" :value="ffsTahun">
 
             {{-- Info Dasar --}}
             <div class="bg-white rounded-xl border border-line p-6 space-y-4" x-show="mode !== 'link-website'" x-cloak>
@@ -53,7 +56,8 @@
                             value="{{ old('kode_reksa_dana') }}" x-bind:required="mode !== 'link-website'"
                             @input.debounce.500ms="lookupReksaDana($event.target.value)" />
                         <x-input-error :messages="$errors->get('kode_reksa_dana')" class="mt-1" />
-                        <p class="text-xs mt-1" :class="lookupOk ? 'text-emerald-600' : 'text-muted'" x-text="lookupMessage"></p>
+                        <p class="text-xs mt-1" :class="lookupOk ? 'text-emerald-600' : 'text-muted'"
+                            x-text="lookupMessage"></p>
                     </div>
                     <div>
                         <x-input-label for="nama_reksa_dana" value="Nama Reksa Dana *" />
@@ -62,32 +66,7 @@
                         <x-input-error :messages="$errors->get('nama_reksa_dana')" class="mt-1" />
                     </div>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                        <x-input-label for="tanggal_data" value="Tanggal Data *" />
-                        <x-text-input id="tanggal_data" name="tanggal_data" type="date" class="mt-1 block w-full"
-                            x-model="tanggalData" x-bind:required="mode !== 'link-website'" />
-                        <x-input-error :messages="$errors->get('tanggal_data')" class="mt-1" />
-                    </div>
-                    <div>
-                        <x-input-label for="ffs_bulan" value="Bulan FFS *" />
-                        <select id="ffs_bulan" name="ffs_bulan" x-model="ffsBulan"
-                            class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm"
-                            x-bind:required="mode !== 'link-website'">
-                            <option value="">Pilih Bulan</option>
-                            @foreach (range(1, 12) as $bulan)
-                                <option value="{{ $bulan }}">{{ \Carbon\Carbon::create()->month($bulan)->translatedFormat('F') }}</option>
-                            @endforeach
-                        </select>
-                        <x-input-error :messages="$errors->get('ffs_bulan')" class="mt-1" />
-                    </div>
-                    <div>
-                        <x-input-label for="ffs_tahun" value="Tahun FFS *" />
-                        <x-text-input id="ffs_tahun" name="ffs_tahun" type="number" min="2000" max="2100"
-                            class="mt-1 block w-full" x-model="ffsTahun" x-bind:required="mode !== 'link-website'" />
-                        <x-input-error :messages="$errors->get('ffs_tahun')" class="mt-1" />
-                    </div>
-                </div>
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <x-input-label value="Kategori" />
@@ -228,17 +207,17 @@
                                 class="mt-1 block w-full" x-model="totalAum" />
                         </div>
                         <div>
-                            <x-input-label for="total_marcap_10_efek" value="Total MarCap 10 Efek Terbesar (Rp)" />
+                            <x-input-label for="total_marcap_10_efek" value="Total MarCap 10 Saham Terbesar (Rp)" />
                             <x-text-input id="total_marcap_10_efek" name="total_marcap_10_efek" type="number"
-                                step="0.01" class="mt-1 block w-full" x-model="totalMarcap10Efek" />
+                                step="0.01" class="mt-1 block w-full bg-gray-50" x-model="totalMarcap10Efek" readonly />
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                             <x-input-label for="unit_penyertaan_lengkap" value="Jumlah Unit Penyertaan" />
-                            <x-text-input id="unit_penyertaan_lengkap" name="unit_penyertaan" type="number" step="0.0001"
-                                class="mt-1 block w-full" x-model="unitPenyertaan" />
+                            <x-text-input id="unit_penyertaan_lengkap" name="unit_penyertaan" type="number"
+                                step="0.0001" class="mt-1 block w-full" x-model="unitPenyertaan" />
                         </div>
                         <div>
                             <x-input-label for="nab_per_unit_lengkap" value="NAB/UP" />
@@ -298,9 +277,13 @@
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nama Efek</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Sektor</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Kontribusi % IHSG
                                         </th>
-                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Market Cap</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 1M</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 3M</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 6M</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 1 Thn</th>
                                         <th class="text-center px-2 py-2 text-xs font-semibold text-muted">Top 10</th>
                                         <th></th>
                                     </tr>
@@ -310,32 +293,54 @@
                                         <tr>
                                             <td class="px-1 py-1"><input type="text" :name="`efek[${i}][kode_efek]`"
                                                     x-model="row.kode_efek" placeholder="BBCA"
-                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20"
+                                                    @change.debounce.500ms="lookupEfekData(i)" />
                                             </td>
                                             <td class="px-1 py-1"><input type="text" :name="`efek[${i}][nama_efek]`"
                                                     x-model="row.nama_efek" placeholder="Nama Efek"
                                                     class="w-40 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
-                                            <td class="px-1 py-1"><input type="text" :name="`efek[${i}][sektor]`"
+                                            <td class="px-1 py-1">
+                                                <input type="hidden" :name="`efek[${i}][effect_type]`" x-model="row.effect_type" />
+                                                <input type="text" :name="`efek[${i}][sektor]`"
                                                     x-model="row.sektor" placeholder="Sektor"
                                                     class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`efek[${i}][bobot]`"
                                                     x-model="row.bobot" step="0.01"
-                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20"
+                                                    @input="hitungNilaiPasarEfek(i)" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][nilai_pasar]`"
+                                                    x-model="row.nilai_pasar" step="0.01" readonly
+                                                    class="w-28 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number"
                                                     :name="`efek[${i}][kontribusi_kinerja]`"
                                                     x-model="row.kontribusi_kinerja" step="0.0001"
-                                                    class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                                    class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20"
+                                                    @change="hitungTotalMarcap10" />
                                             </td>
-                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][market_cap]`"
-                                                    x-model="row.market_cap" step="1"
-                                                    class="w-32 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_1m]`"
+                                                    x-model="row.return_1m" step="0.0001" readonly
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_3m]`"
+                                                    x-model="row.return_3m" step="0.0001" readonly
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_6m]`"
+                                                    x-model="row.return_6m" step="0.0001" readonly
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_1y]`"
+                                                    x-model="row.return_1y" step="0.0001" readonly
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1 text-center"><input type="checkbox"
                                                     :name="`efek[${i}][top_10]`" x-model="row.top_10" value="1"
-                                                    class="rounded border-gray-300 text-primary focus:ring-primary" /></td>
+                                                    class="rounded border-gray-300 text-primary focus:ring-primary"
+                                                    @change="hitungTotalMarcap10" /></td>
                                             <td class="px-1 py-1"><button type="button" @click="removeRow('efek', i)"
                                                     class="text-red-400 hover:text-red-600 text-xs">✕</button></td>
                                         </tr>
@@ -346,26 +351,18 @@
                     </div>
 
                     {{-- Kinerja Bulanan --}}
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <h4 class="font-semibold text-primary text-sm">Kinerja Bulanan <span
-                                    class="text-xs font-normal text-muted">(min. 2 bulan)</span></h4>
-                            <button type="button" @click="addRow('kinerja')"
-                                class="text-xs text-primary hover:underline">+ Tambah Baris</button>
-                        </div>
-                        <div class="space-y-2">
-                            <template x-for="(row, i) in kinerja" :key="i">
-                                <div class="flex gap-2 items-center">
-                                    <input type="month" :name="`kinerja[${i}][periode]`" x-model="row.periode"
-                                        class="border-gray-300 rounded-lg text-sm px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20" />
-                                    <input type="number" :name="`kinerja[${i}][return_pct]`" x-model="row.return_pct"
-                                        placeholder="Return %" step="0.0001"
-                                        class="w-36 border-gray-300 rounded-lg text-sm px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20" />
-                                    <button type="button" @click="removeRow('kinerja', i)"
-                                        class="text-red-400 hover:text-red-600 px-1">✕</button>
-                                </div>
-                            </template>
-                        </div>
+                    {{-- HIDE: section tidak ditampilkan di form create/edit, data lama tetap dipertahankan --}}
+                    {{-- @php $showKinerja = false; @endphp --}}
+                    <div x-show="false" style="display:none">
+                        <template x-for="(row, i) in kinerja" :key="i">
+                            <div class="flex gap-2 items-center">
+                                <input type="month" :name="`kinerja[${i}][periode]`" x-model="row.periode"
+                                    class="border-gray-300 rounded-lg text-sm px-3 py-2" />
+                                <input type="number" :name="`kinerja[${i}][return_pct]`" x-model="row.return_pct"
+                                    placeholder="Return %" step="0.0001"
+                                    class="w-36 border-gray-300 rounded-lg text-sm px-3 py-2" />
+                            </div>
+                        </template>
                     </div>
 
                     {{-- Obligasi --}}
@@ -382,6 +379,11 @@
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Kode</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nama Obligasi</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 1M</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 3M</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 6M</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 1 Thn</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Durasi (thn)</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Rating</th>
                                         <th></th>
@@ -393,20 +395,47 @@
                                             <td class="px-1 py-1"><input type="text"
                                                     :name="`obligasi[${i}][kode_obligasi]`" x-model="row.kode_obligasi"
                                                     placeholder="FR0091"
-                                                    class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20"
+                                                    @change.debounce.500ms="lookupObligasiData(i)" />
                                             </td>
                                             <td class="px-1 py-1"><input type="text"
                                                     :name="`obligasi[${i}][nama_obligasi]`" x-model="row.nama_obligasi"
                                                     placeholder="Nama Obligasi"
-                                                    class="w-48 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                                    class="w-36 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`obligasi[${i}][bobot]`"
                                                     x-model="row.bobot" step="0.01"
-                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                                    class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20"
+                                                    @input="hitungNilaiPasarObligasi(i)" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`obligasi[${i}][nilai_pasar]`" x-model="row.nilai_pasar"
+                                                    step="0.01" readonly
+                                                    class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`obligasi[${i}][return_1m]`" x-model="row.return_1m"
+                                                    step="0.0001" readonly
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`obligasi[${i}][return_3m]`" x-model="row.return_3m"
+                                                    step="0.0001" readonly
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`obligasi[${i}][return_6m]`" x-model="row.return_6m"
+                                                    step="0.0001" readonly
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`obligasi[${i}][return_1y]`" x-model="row.return_1y"
+                                                    step="0.0001" readonly
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`obligasi[${i}][durasi]`"
                                                     x-model="row.durasi" step="0.01"
-                                                    class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1">
                                                 <select :name="`obligasi[${i}][rating]`" x-model="row.rating"
@@ -439,7 +468,13 @@
                                 <thead class="bg-[#f8fafc]">
                                     <tr>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nama Bank</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Jenis Bank</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 1M</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 3M</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 6M</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 1 Thn</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">CAR %</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">NPL %</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Klasifikasi KBMI
@@ -452,19 +487,51 @@
                                         <tr>
                                             <td class="px-1 py-1"><input type="text" :name="`bank[${i}][nama_bank]`"
                                                     x-model="row.nama_bank" placeholder="Nama Bank"
-                                                    class="w-36 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                                    class="w-28 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20"
+                                                    @change.debounce.500ms="lookupBankData(i)" />
+                                            </td>
+                                            <td class="px-1 py-1">
+                                                <select :name="`bank[${i}][jenis_bank]`" x-model="row.jenis_bank"
+                                                    class="border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20 w-28">
+                                                    <option value="">-</option>
+                                                    <option value="Bank Nasional">Bank Nasional</option>
+                                                    <option value="Bank Asing">Bank Asing</option>
+                                                    <option value="BPD">BPD</option>
+                                                    <option value="BPR">BPR</option>
+                                                </select>
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`bank[${i}][bobot]`"
                                                     x-model="row.bobot" step="0.01"
-                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                                    class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20"
+                                                    @input="hitungNilaiPasarBank(i)" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`bank[${i}][nilai_pasar]`"
+                                                    x-model="row.nilai_pasar" step="0.01" readonly
+                                                    class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`bank[${i}][return_1m]`"
+                                                    x-model="row.return_1m" step="0.0001" readonly
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`bank[${i}][return_3m]`"
+                                                    x-model="row.return_3m" step="0.0001" readonly
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`bank[${i}][return_6m]`"
+                                                    x-model="row.return_6m" step="0.0001" readonly
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`bank[${i}][return_1y]`"
+                                                    x-model="row.return_1y" step="0.0001" readonly
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`bank[${i}][car]`"
                                                     x-model="row.car" step="0.01"
-                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                                    class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`bank[${i}][npl]`"
                                                     x-model="row.npl" step="0.01"
-                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                                    class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1">
                                                 <select :name="`bank[${i}][klasifikasi_risiko]`"
@@ -601,10 +668,10 @@
             function analisaForm() {
                 @php
                     $oldSektor = old('sektor', [['nama_sektor' => '', 'bobot' => '']]);
-                    $oldEfek = old('efek', [['kode_efek' => '', 'nama_efek' => '', 'sektor' => '', 'bobot' => '', 'kontribusi_kinerja' => '', 'market_cap' => '', 'top_10' => false]]);
+                    $oldEfek = old('efek', [['kode_efek' => '', 'nama_efek' => '', 'sektor' => '', 'bobot' => '', 'kontribusi_kinerja' => '', 'market_cap' => '', 'nilai_pasar' => '', 'return_1m' => '', 'return_3m' => '', 'return_6m' => '', 'return_1y' => '', 'top_10' => false]]);
                     $oldKinerja = old('kinerja', [['periode' => '', 'return_pct' => ''], ['periode' => '', 'return_pct' => '']]);
-                    $oldObligasi = old('obligasi', [['kode_obligasi' => '', 'nama_obligasi' => '', 'bobot' => '', 'durasi' => '', 'rating' => '']]);
-                    $oldBank = old('bank', [['nama_bank' => '', 'bobot' => '', 'car' => '', 'npl' => '', 'klasifikasi_risiko' => '']]);
+                    $oldObligasi = old('obligasi', [['kode_obligasi' => '', 'nama_obligasi' => '', 'bobot' => '', 'durasi' => '', 'rating' => '', 'nilai_pasar' => '', 'return_1m' => '', 'return_3m' => '', 'return_6m' => '', 'return_1y' => '']]);
+                    $oldBank = old('bank', [['nama_bank' => '', 'jenis_bank' => '', 'bobot' => '', 'nilai_pasar' => '', 'return_1m' => '', 'return_3m' => '', 'return_6m' => '', 'return_1y' => '', 'car' => '', 'npl' => '', 'klasifikasi_risiko' => '']]);
                     $oldAlokasiAset = old('alokasi_aset', [['nama_aset' => '', 'persentase' => '']]);
                     // Normalize top_10 checkbox (submitted as "1" string or absent)
                     $oldEfek = array_map(function ($e) {
@@ -644,6 +711,11 @@
                     previewAiUrl: @json($formRoutes['preview_ai']),
                     previewAiPlusUrl: @json($formRoutes['preview_ai_plus']),
                     lookupKodeUrl: @json($formRoutes['lookup_kode']),
+                    lookupSektorUrl: @json($formRoutes['lookup_sektor']),
+                    lookupIhsgUrl: @json($formRoutes['lookup_ihsg']),
+                    lookupReturnUrl: @json($formRoutes['lookup_return']),
+                    lookupBondReturnUrl: @json($formRoutes['lookup_bond_return']),
+                    lookupBankDataUrl: @json($formRoutes['lookup_bank_data']),
                     parsePdfVisionUrl: @json($formRoutes['parse_pdf_vision']),
                     plusRequiredLabels: @json($plusLabels),
                     lookupMessage: '',
@@ -675,6 +747,12 @@
                                 bobot: '',
                                 kontribusi_kinerja: '',
                                 market_cap: '',
+                                nilai_pasar: '',
+                                return_1m: '',
+                                return_3m: '',
+                                return_6m: '',
+                                return_1y: '',
+                                effect_type: 'Saham',
                                 top_10: false
                             },
                             kinerja: {
@@ -685,12 +763,23 @@
                                 kode_obligasi: '',
                                 nama_obligasi: '',
                                 bobot: '',
+                                nilai_pasar: '',
+                                return_1m: '',
+                                return_3m: '',
+                                return_6m: '',
+                                return_1y: '',
                                 durasi: '',
                                 rating: ''
                             },
                             bank: {
                                 nama_bank: '',
+                                jenis_bank: '',
                                 bobot: '',
+                                nilai_pasar: '',
+                                return_1m: '',
+                                return_3m: '',
+                                return_6m: '',
+                                return_1y: '',
                                 car: '',
                                 npl: '',
                                 klasifikasi_risiko: ''
@@ -714,8 +803,145 @@
                     },
 
                     alokasiAsetTotalValid() {
-                        const filled = this.alokasi_aset.some(row => String(row.nama_aset || '').trim() !== '' || String(row.persentase || '').trim() !== '');
+                        const filled = this.alokasi_aset.some(row => String(row.nama_aset || '').trim() !== '' || String(row
+                            .persentase || '').trim() !== '');
                         return !filled || Math.abs(this.alokasiAsetTotal() - 100) <= 0.01;
+                    },
+
+                    totalAumValue() {
+                        return parseFloat(this.totalAum || document.getElementById('total_aum')?.value || 0);
+                    },
+
+                    tanggalDataValue() {
+                        return this.tanggalData || document.getElementById('tanggal_data')?.value || '';
+                    },
+
+                    hitungNilaiPasarEfek(i) {
+                        const aum = this.totalAumValue();
+                        const bobot = parseFloat(this.efek[i]?.bobot) || 0;
+                        this.efek[i].nilai_pasar = (aum > 0 && bobot > 0) ? (bobot / 100 * aum).toFixed(2) : '';
+                    },
+
+                    hitungNilaiPasarObligasi(i) {
+                        const aum = this.totalAumValue();
+                        const bobot = parseFloat(this.obligasi[i]?.bobot) || 0;
+                        this.obligasi[i].nilai_pasar = (aum > 0 && bobot > 0) ? (bobot / 100 * aum).toFixed(2) : '';
+                    },
+
+                    hitungNilaiPasarBank(i) {
+                        const aum = this.totalAumValue();
+                        const bobot = parseFloat(this.bank[i]?.bobot) || 0;
+                        this.bank[i].nilai_pasar = (aum > 0 && bobot > 0) ? (bobot / 100 * aum).toFixed(2) : '';
+                    },
+
+                    hitungTotalMarcap10() {
+                        const total = this.efek
+                            .filter(e => !e.effect_type || e.effect_type === '' || e.effect_type === 'Saham')
+                            .reduce((sum, e) => sum + (parseFloat(e.kontribusi_kinerja) || 0), 0);
+                        this.totalMarcap10Efek = total > 0 ? total.toFixed(4) : '';
+                    },
+
+                    lookupEfekData(i) {
+                        const kode = String(this.efek[i]?.kode_efek || '').trim().toUpperCase();
+                        const tanggal = this.tanggalDataValue();
+                        if (!kode || kode.length < 2) return;
+
+                        this.efek[i].effect_type = 'Saham';
+
+                        if (this.lookupSektorUrl) {
+                            fetch(this.lookupSektorUrl + '?kode_efek=' + encodeURIComponent(kode) + '&tanggal=' +
+                                    encodeURIComponent(tanggal), {
+                                        headers: {
+                                            Accept: 'application/json'
+                                        }
+                                    })
+                                .then(r => r.json())
+                                .then(resp => {
+                                    if (resp.found) this.efek[i].sektor = resp.sektor;
+                                })
+                                .catch(() => {});
+                        }
+
+                        if (tanggal && this.lookupIhsgUrl) {
+                            fetch(this.lookupIhsgUrl + '?kode_efek=' + encodeURIComponent(kode) + '&tanggal=' +
+                                    encodeURIComponent(tanggal), {
+                                        headers: {
+                                            Accept: 'application/json'
+                                        }
+                                    })
+                                .then(r => r.json())
+                                .then(resp => {
+                                    if (resp.found) {
+                                        this.efek[i].kontribusi_kinerja = resp.kontribusi;
+                                        this.hitungTotalMarcap10();
+                                    }
+                                })
+                                .catch(() => {});
+                        }
+
+                        if (tanggal && this.lookupReturnUrl) {
+                            fetch(this.lookupReturnUrl + '?kode_efek=' + encodeURIComponent(kode) + '&tanggal=' +
+                                    encodeURIComponent(tanggal), {
+                                        headers: {
+                                            Accept: 'application/json'
+                                        }
+                                    })
+                                .then(r => r.json())
+                                .then(resp => {
+                                    if (resp.found) {
+                                        this.efek[i].return_1m = resp.return_1m ?? '';
+                                        this.efek[i].return_3m = resp.return_3m ?? '';
+                                        this.efek[i].return_6m = resp.return_6m ?? '';
+                                        this.efek[i].return_1y = resp.return_1y ?? '';
+                                    }
+                                })
+                                .catch(() => {});
+                        }
+                    },
+
+                    lookupObligasiData(i) {
+                        const kode = String(this.obligasi[i]?.kode_obligasi || '').trim().toUpperCase();
+                        const tanggal = this.tanggalDataValue();
+                        if (!kode || kode.length < 2 || !tanggal || !this.lookupBondReturnUrl) return;
+
+                        fetch(this.lookupBondReturnUrl + '?kode_obligasi=' + encodeURIComponent(kode) + '&tanggal=' +
+                                encodeURIComponent(tanggal), {
+                                    headers: {
+                                        Accept: 'application/json'
+                                    }
+                                })
+                            .then(r => r.json())
+                            .then(resp => {
+                                if (resp.found) {
+                                    this.obligasi[i].return_1m = resp.return_1m ?? '';
+                                    this.obligasi[i].return_3m = resp.return_3m ?? '';
+                                    this.obligasi[i].return_6m = resp.return_6m ?? '';
+                                    this.obligasi[i].return_1y = resp.return_1y ?? '';
+                                }
+                            })
+                            .catch(() => {});
+                    },
+
+                    lookupBankData(i) {
+                        const nama = String(this.bank[i]?.nama_bank || '').trim();
+                        const tanggal = this.tanggalDataValue();
+                        if (!nama || !tanggal || !this.lookupBankDataUrl) return;
+
+                        fetch(this.lookupBankDataUrl + '?nama_bank=' + encodeURIComponent(nama) + '&tanggal=' +
+                                encodeURIComponent(tanggal), {
+                                    headers: {
+                                        Accept: 'application/json'
+                                    }
+                                })
+                            .then(r => r.json())
+                            .then(resp => {
+                                if (resp.found) {
+                                    if (resp.car !== null && resp.car !== undefined) this.bank[i].car = resp.car;
+                                    if (resp.npl !== null && resp.npl !== undefined) this.bank[i].npl = resp.npl;
+                                    if (resp.klasifikasi_risiko) this.bank[i].klasifikasi_risiko = resp.klasifikasi_risiko;
+                                }
+                            })
+                            .catch(() => {});
                     },
 
                     analisaFormEl() {
@@ -836,10 +1062,72 @@
                         this.ffsTahun = data.ffs_tahun ?? this.ffsTahun;
                         this.applyKategori(data.kategori || []);
                         if (data.sektor?.length) this.sektor = data.sektor;
-                        if (data.efek?.length) this.efek = data.efek;
+                        if (data.efek?.length) {
+                            this.efek = data.efek.map(e => ({
+                                kode_efek: e.kode_efek || '',
+                                nama_efek: e.nama_efek || '',
+                                sektor: e.sektor || '',
+                                bobot: e.bobot ?? '',
+                                kontribusi_kinerja: e.kontribusi_kinerja ?? '',
+                                market_cap: e.market_cap ?? '',
+                                nilai_pasar: e.nilai_pasar ?? '',
+                                return_1m: e.return_1m ?? '',
+                                return_3m: e.return_3m ?? '',
+                                return_6m: e.return_6m ?? '',
+                                return_1y: e.return_1y ?? '',
+                                ihsg_contribution: e.ihsg_contribution ?? '',
+                                effect_type: e.effect_type || 'Saham',
+                                top_10: e.top_10 === true || e.top_10 === 'Ya',
+                            }));
+                            this.$nextTick(() => {
+                                this.efek.forEach((_, i) => {
+                                    this.hitungNilaiPasarEfek(i);
+                                    setTimeout(() => this.lookupEfekData(i), i * 600);
+                                });
+                            });
+                        }
                         if (data.kinerja?.length) this.kinerja = data.kinerja;
-                        if (data.obligasi?.length) this.obligasi = data.obligasi;
-                        if (data.bank?.length) this.bank = data.bank;
+                        if (data.obligasi?.length) {
+                            this.obligasi = data.obligasi.map(o => ({
+                                kode_obligasi: o.kode_obligasi || '',
+                                nama_obligasi: o.nama_obligasi || '',
+                                bobot: o.bobot ?? '',
+                                nilai_pasar: o.nilai_pasar ?? '',
+                                return_1m: o.return_1m ?? '',
+                                return_3m: o.return_3m ?? '',
+                                return_6m: o.return_6m ?? '',
+                                return_1y: o.return_1y ?? '',
+                                durasi: o.durasi ?? '',
+                                rating: o.rating || '',
+                            }));
+                            this.$nextTick(() => {
+                                this.obligasi.forEach((_, i) => {
+                                    this.hitungNilaiPasarObligasi(i);
+                                    setTimeout(() => this.lookupObligasiData(i), i * 600);
+                                });
+                            });
+                        }
+                        if (data.bank?.length) {
+                            this.bank = data.bank.map(b => ({
+                                nama_bank: b.nama_bank || '',
+                                jenis_bank: b.jenis_bank || '',
+                                bobot: b.bobot ?? '',
+                                nilai_pasar: b.nilai_pasar ?? '',
+                                return_1m: b.return_1m ?? '',
+                                return_3m: b.return_3m ?? '',
+                                return_6m: b.return_6m ?? '',
+                                return_1y: b.return_1y ?? '',
+                                car: b.car ?? '',
+                                npl: b.npl ?? '',
+                                klasifikasi_risiko: b.klasifikasi_risiko || '',
+                            }));
+                            this.$nextTick(() => {
+                                this.bank.forEach((_, i) => {
+                                    this.hitungNilaiPasarBank(i);
+                                    setTimeout(() => this.lookupBankData(i), i * 600);
+                                });
+                            });
+                        }
                         if (data.alokasi_aset?.length) this.alokasi_aset = data.alokasi_aset;
                     },
 
@@ -1031,12 +1319,29 @@
                                     bobot: e.bobot ?? '',
                                     kontribusi_kinerja: e.kontribusi_kinerja ?? '',
                                     market_cap: e.market_cap ?? '',
+                                    nilai_pasar: '',
+                                    return_1m: '',
+                                    return_3m: '',
+                                    return_6m: '',
+                                    return_1y: '',
+                                    effect_type: 'Saham',
                                     top_10: i < 10,
                                 }));
                         } else if (pdf.efek?.length) {
                             this.efek = pdf.efek.map((e, i) => ({
-                                ...e,
-                                top_10: i < 10
+                                kode_efek: e.kode_efek || '',
+                                nama_efek: e.nama_efek || '',
+                                sektor: e.sektor || '',
+                                bobot: e.bobot ?? '',
+                                kontribusi_kinerja: e.kontribusi_kinerja ?? '',
+                                market_cap: e.market_cap ?? '',
+                                nilai_pasar: e.nilai_pasar ?? '',
+                                return_1m: e.return_1m ?? '',
+                                return_3m: e.return_3m ?? '',
+                                return_6m: e.return_6m ?? '',
+                                return_1y: e.return_1y ?? '',
+                                effect_type: e.effect_type || 'Saham',
+                                top_10: i < 10,
                             }));
                         }
 
@@ -1074,7 +1379,8 @@
                         data.alokasi_aset = data.alokasi_aset.map(row => ({
                             nama_aset: row.nama_aset || row.nama || row.kategori || '',
                             persentase: row.persentase ?? row.bobot ?? '',
-                        })).filter(row => String(row.nama_aset || '').trim() !== '' || String(row.persentase || '').trim() !== '');
+                        })).filter(row => String(row.nama_aset || '').trim() !== '' || String(row.persentase || '')
+                            .trim() !== '');
 
                         return data;
                     },
@@ -1116,9 +1422,26 @@
                         if (data.sektor?.length) this.sektor = data.sektor;
                         if (data.efek?.length) {
                             this.efek = data.efek.map(e => ({
-                                ...e,
+                                kode_efek: e.kode_efek || '',
+                                nama_efek: e.nama_efek || '',
+                                sektor: e.sektor || '',
+                                bobot: e.bobot ?? '',
+                                kontribusi_kinerja: e.kontribusi_kinerja ?? '',
+                                market_cap: e.market_cap ?? '',
+                                nilai_pasar: e.nilai_pasar ?? '',
+                                return_1m: e.return_1m ?? '',
+                                return_3m: e.return_3m ?? '',
+                                return_6m: e.return_6m ?? '',
+                                return_1y: e.return_1y ?? '',
+                                effect_type: e.effect_type || 'Saham',
                                 top_10: e.top_10 === 'Ya' || e.top_10 === true,
                             }));
+                            this.$nextTick(() => {
+                                this.efek.forEach((_, i) => {
+                                    this.hitungNilaiPasarEfek(i);
+                                    setTimeout(() => this.lookupEfekData(i), i * 600);
+                                });
+                            });
                         }
                         if (data.kinerja?.length >= 2) {
                             this.kinerja = data.kinerja;
@@ -1128,8 +1451,47 @@
                                 return_pct: ''
                             }];
                         }
-                        if (data.obligasi?.length) this.obligasi = data.obligasi;
-                        if (data.bank?.length) this.bank = data.bank;
+                        if (data.obligasi?.length) {
+                            this.obligasi = data.obligasi.map(o => ({
+                                kode_obligasi: o.kode_obligasi || '',
+                                nama_obligasi: o.nama_obligasi || '',
+                                bobot: o.bobot ?? '',
+                                nilai_pasar: o.nilai_pasar ?? '',
+                                return_1m: o.return_1m ?? '',
+                                return_3m: o.return_3m ?? '',
+                                return_6m: o.return_6m ?? '',
+                                return_1y: o.return_1y ?? '',
+                                durasi: o.durasi ?? '',
+                                rating: o.rating || '',
+                            }));
+                            this.$nextTick(() => {
+                                this.obligasi.forEach((_, i) => {
+                                    this.hitungNilaiPasarObligasi(i);
+                                    setTimeout(() => this.lookupObligasiData(i), i * 600);
+                                });
+                            });
+                        }
+                        if (data.bank?.length) {
+                            this.bank = data.bank.map(b => ({
+                                nama_bank: b.nama_bank || '',
+                                jenis_bank: b.jenis_bank || '',
+                                bobot: b.bobot ?? '',
+                                nilai_pasar: b.nilai_pasar ?? '',
+                                return_1m: b.return_1m ?? '',
+                                return_3m: b.return_3m ?? '',
+                                return_6m: b.return_6m ?? '',
+                                return_1y: b.return_1y ?? '',
+                                car: b.car ?? '',
+                                npl: b.npl ?? '',
+                                klasifikasi_risiko: b.klasifikasi_risiko || '',
+                            }));
+                            this.$nextTick(() => {
+                                this.bank.forEach((_, i) => {
+                                    this.hitungNilaiPasarBank(i);
+                                    setTimeout(() => this.lookupBankData(i), i * 600);
+                                });
+                            });
+                        }
                         if (data.alokasi_aset?.length) this.alokasi_aset = data.alokasi_aset;
                         this.applyKategori(data.kategori || []);
                         this.mode = preferredMode;
@@ -1309,7 +1671,8 @@
                                 const extractedData = this.normalizeExtractedData(resp.data || {});
                                 this.pdfData = extractedData;
                                 this.pdfFile = resp.pdf_file || '';
-                                this.applyExtractedData(extractedData, this.hasFullInputData(extractedData) ? 'lengkap' : 'manual');
+                                this.applyExtractedData(extractedData, this.hasFullInputData(extractedData) ? 'lengkap' :
+                                    'manual');
                                 this.pdfSuccess = true;
                                 this.pdfResult = resp.message;
                             })

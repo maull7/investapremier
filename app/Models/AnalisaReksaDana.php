@@ -81,6 +81,14 @@ class AnalisaReksaDana extends Model
         return $this->hasMany(AnalisaAlokasiAset::class, 'analisa_reksa_dana_id');
     }
 
+    // Total MarCap 10 Saham Terbesar = SUM ihsg_contribution untuk efek Top 10 + Saham
+    public function getTotalMarcap10SahamTerbesarAttribute(): ?float
+    {
+        return $this->efek
+            ->filter(fn($e) => $e->top_10 && (!$e->effect_type || $e->effect_type === 'Saham'))
+            ->sum('ihsg_contribution');
+    }
+
     // Hitung Sharpe Ratio dari data kinerja bulanan
     public function getSharpeRatioAttribute(): ?float
     {

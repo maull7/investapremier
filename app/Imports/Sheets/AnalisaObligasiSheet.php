@@ -19,6 +19,11 @@ class AnalisaObligasiSheet implements ToCollection, WithHeadingRow
                 'kode_obligasi' => $row['kode_obligasi'],
                 'nama_obligasi' => $row['nama_obligasi'] ?? '',
                 'bobot'         => $row['bobot'] ?? 0,
+                'nilai_pasar'   => $row['nilai_pasar'] ?? null,
+                'return_1m'     => $row['return_1m'] ?? null,
+                'return_3m'     => $row['return_3m'] ?? null,
+                'return_6m'     => $row['return_6m'] ?? null,
+                'return_1y'     => $row['return_1y'] ?? null,
                 'durasi'        => $row['durasi'] ?? null,
                 'rating'        => $row['rating'] ?? null,
             ]);

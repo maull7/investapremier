@@ -10,8 +10,11 @@ use App\Models\DataSourceLink;
 use App\Models\ReksaDana;
 use App\Models\StockPrice;
 use App\Services\AnalisaPayloadBuilder;
+use App\Services\BankDataService;
+use App\Services\BondMarketService;
 use App\Services\DataSourceAutoDownloadService;
 use App\Services\FfsParserService;
+use App\Services\IdxMarketService;
 use App\Services\WebDataFileParserService;
 use App\Services\WebScraperService;
 use App\Services\AnalisaAiValidator;
@@ -78,6 +81,11 @@ class AnalisaController extends Controller
             'preview_ai'      => route("{$prefix}.preview-ai"),
             'preview_ai_plus' => route("{$prefix}.preview-ai-plus"),
             'lookup_kode'     => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-kode") ? route("{$prefix}.lookup-kode") : null,
+            'lookup_sektor'   => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-sektor") ? route("{$prefix}.lookup-sektor") : null,
+            'lookup_ihsg'     => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-ihsg") ? route("{$prefix}.lookup-ihsg") : null,
+            'lookup_return'   => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-return") ? route("{$prefix}.lookup-return") : null,
+            'lookup_bond_return' => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-bond-return") ? route("{$prefix}.lookup-bond-return") : null,
+            'lookup_bank_data' => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-bank-data") ? route("{$prefix}.lookup-bank-data") : null,
             'parse_web_file'  => route("{$prefix}.parse-web-file"),
             'scrape_web'      => $scrapeWebBase,
             'scrape_url'      => $scrapeUrlBase,
@@ -176,6 +184,94 @@ class AnalisaController extends Controller
                 'tanggal_data'        => $master->tanggal_nab?->format('Y-m-d'),
             ] : null,
             'last_analisa' => $lastAnalisa ? $this->serializeAnalisaForForm($lastAnalisa) : null,
+        ]);
+    }
+
+    public function lookupSektor(Request $request, IdxMarketService $idx)
+    {
+        $request->validate([
+            'kode_efek'  => 'required|string|max:20',
+            'tanggal'    => 'nullable|date',
+        ]);
+
+        $kode = strtoupper(trim($request->kode_efek));
+        $sektor = $idx->getStockSector($kode);
+
+        return response()->json([
+            'found'  => $sektor !== null,
+            'sektor' => $sektor,
+        ]);
+    }
+
+    public function lookupIhsg(Request $request, IdxMarketService $idx)
+    {
+        $request->validate([
+            'kode_efek' => 'required|string|max:20',
+            'tanggal'   => 'required|date',
+        ]);
+
+        $kode = strtoupper(trim($request->kode_efek));
+        $kontribusi = $idx->getIHSGContribution($kode, $request->tanggal);
+
+        return response()->json([
+            'found'         => $kontribusi !== null,
+            'kontribusi'    => $kontribusi,
+        ]);
+    }
+
+    public function lookupReturn(Request $request, IdxMarketService $idx)
+    {
+        $request->validate([
+            'kode_efek' => 'required|string|max:20',
+            'tanggal'   => 'required|date',
+        ]);
+
+        $kode = strtoupper(trim($request->kode_efek));
+        $tanggal = $request->tanggal;
+
+        return response()->json([
+            'found'     => true,
+            'return_1m' => $idx->getStockReturn($kode, $tanggal, 1),
+            'return_3m' => $idx->getStockReturn($kode, $tanggal, 3),
+            'return_6m' => $idx->getStockReturn($kode, $tanggal, 6),
+            'return_1y' => $idx->getStockReturn($kode, $tanggal, 12),
+        ]);
+    }
+
+    public function lookupBondReturn(Request $request, BondMarketService $bond)
+    {
+        $request->validate([
+            'kode_obligasi' => 'required|string|max:20',
+            'tanggal'       => 'required|date',
+        ]);
+
+        $kode = strtoupper(trim($request->kode_obligasi));
+        $tanggal = $request->tanggal;
+
+        return response()->json([
+            'found'     => true,
+            'return_1m' => $bond->getBondReturn($kode, $tanggal, 1),
+            'return_3m' => $bond->getBondReturn($kode, $tanggal, 3),
+            'return_6m' => $bond->getBondReturn($kode, $tanggal, 6),
+            'return_1y' => $bond->getBondReturn($kode, $tanggal, 12),
+        ]);
+    }
+
+    public function lookupBankData(Request $request, BankDataService $bankData)
+    {
+        $request->validate([
+            'nama_bank' => 'required|string|max:255',
+            'tanggal'   => 'required|date',
+        ]);
+
+        $nama = trim($request->nama_bank);
+        $tanggal = $request->tanggal;
+
+        return response()->json([
+            'found'             => true,
+            'car'               => $bankData->getCar($nama, $tanggal),
+            'npl'               => $bankData->getNpl($nama, $tanggal),
+            'klasifikasi_risiko' => $bankData->getKlasifikasiRisiko($nama, $tanggal),
         ]);
     }
 
@@ -439,10 +535,10 @@ class AnalisaController extends Controller
             'unit_penyertaan'      => 'nullable|numeric|min:0',
             'nab_per_unit'         => 'required_if:input_mode,manual,lengkap|nullable|numeric|min:0',
             'total_marcap_10_efek' => 'nullable|numeric|min:0',
-            'tanggal_data'         => 'required|date',
-            'ffs_bulan'            => 'required|integer|min:1|max:12',
-            'ffs_tahun'            => 'required|integer|min:2000|max:2100',
-            'input_mode'           => 'required|in:manual,lengkap,excel,pdf,ai,ai-plus,link-website',
+            'tanggal_data'         => 'nullable|date',
+            'ffs_bulan'            => 'nullable|integer|min:1|max:12',
+            'ffs_tahun'            => 'nullable|integer|min:2000|max:2100',
+            'input_mode'           => 'nullable|in:manual,lengkap,excel,pdf,ai,ai-plus,link-website',
             'pdf_file'             => 'nullable|string',
             'ai_narasi'            => 'nullable|string',
             'ai_output'            => 'nullable|string',
@@ -472,9 +568,17 @@ class AnalisaController extends Controller
             'efek'                      => 'nullable|array',
             'efek.*.kode_efek'          => 'nullable|string',
             'efek.*.nama_efek'          => 'nullable|string',
+            'efek.*.sektor'             => 'nullable|string',
             'efek.*.bobot'              => 'nullable|numeric',
             'efek.*.kontribusi_kinerja' => 'nullable|numeric',
             'efek.*.market_cap'         => 'nullable|numeric',
+            'efek.*.nilai_pasar'        => 'nullable|numeric',
+            'efek.*.return_1m'          => 'nullable|numeric',
+            'efek.*.return_3m'          => 'nullable|numeric',
+            'efek.*.return_6m'          => 'nullable|numeric',
+            'efek.*.return_1y'          => 'nullable|numeric',
+            'efek.*.ihsg_contribution'  => 'nullable|numeric',
+            'efek.*.effect_type'        => 'nullable|string',
             'kinerja'                   => 'nullable|array',
             'kinerja.*.periode'         => 'nullable|date',
             'kinerja.*.return_pct'      => 'nullable|numeric',
@@ -484,12 +588,23 @@ class AnalisaController extends Controller
             'obligasi.*.bobot'          => 'nullable|numeric',
             'obligasi.*.durasi'         => 'nullable|numeric',
             'obligasi.*.rating'         => 'nullable|string',
+            'obligasi.*.nilai_pasar'    => 'nullable|numeric',
+            'obligasi.*.return_1m'      => 'nullable|numeric',
+            'obligasi.*.return_3m'      => 'nullable|numeric',
+            'obligasi.*.return_6m'      => 'nullable|numeric',
+            'obligasi.*.return_1y'      => 'nullable|numeric',
             'bank'                      => 'nullable|array',
             'bank.*.nama_bank'          => 'nullable|string',
             'bank.*.bobot'              => 'nullable|numeric',
             'bank.*.car'                => 'nullable|numeric',
             'bank.*.npl'                => 'nullable|numeric',
             'bank.*.klasifikasi_risiko' => 'nullable|string',
+            'bank.*.jenis_bank'         => 'nullable|string|in:Bank Nasional,Bank Asing,BPD,BPR',
+            'bank.*.nilai_pasar'        => 'nullable|numeric',
+            'bank.*.return_1m'          => 'nullable|numeric',
+            'bank.*.return_3m'          => 'nullable|numeric',
+            'bank.*.return_6m'          => 'nullable|numeric',
+            'bank.*.return_1y'          => 'nullable|numeric',
             'alokasi_aset'              => 'nullable|array',
             'alokasi_aset.*.nama_aset'  => 'nullable|string',
             'alokasi_aset.*.persentase' => 'nullable|numeric',
@@ -682,10 +797,48 @@ class AnalisaController extends Controller
             'ffs_bulan'            => $analisa->ffs_bulan,
             'ffs_tahun'            => $analisa->ffs_tahun,
             'sektor'               => $analisa->sektor->map(fn($s) => ['nama_sektor' => $s->nama_sektor, 'bobot' => $s->bobot])->values(),
-            'efek'                 => $analisa->efek->map(fn($e) => ['kode_efek' => $e->kode_efek, 'nama_efek' => $e->nama_efek, 'sektor' => $e->sektor, 'bobot' => $e->bobot, 'kontribusi_kinerja' => $e->kontribusi_kinerja, 'market_cap' => $e->market_cap, 'top_10' => $e->top_10])->values(),
+            'efek'                 => $analisa->efek->map(fn($e) => [
+                'kode_efek' => $e->kode_efek,
+                'nama_efek' => $e->nama_efek,
+                'sektor' => $e->sektor,
+                'bobot' => $e->bobot,
+                'kontribusi_kinerja' => $e->kontribusi_kinerja,
+                'market_cap' => $e->market_cap,
+                'nilai_pasar' => $e->nilai_pasar,
+                'return_1m' => $e->return_1m,
+                'return_3m' => $e->return_3m,
+                'return_6m' => $e->return_6m,
+                'return_1y' => $e->return_1y,
+                'ihsg_contribution' => $e->ihsg_contribution,
+                'effect_type' => $e->effect_type,
+                'top_10' => $e->top_10,
+            ])->values(),
             'kinerja'              => $analisa->kinerja->map(fn($k) => ['periode' => \Carbon\Carbon::parse($k->periode)->format('Y-m'), 'return_pct' => $k->return_pct])->values(),
-            'obligasi'             => $analisa->obligasi->map(fn($o) => ['kode_obligasi' => $o->kode_obligasi, 'nama_obligasi' => $o->nama_obligasi, 'bobot' => $o->bobot, 'durasi' => $o->durasi, 'rating' => $o->rating])->values(),
-            'bank'                 => $analisa->bank->map(fn($b) => ['nama_bank' => $b->nama_bank, 'bobot' => $b->bobot, 'car' => $b->car, 'npl' => $b->npl, 'klasifikasi_risiko' => $b->klasifikasi_risiko])->values(),
+            'obligasi'             => $analisa->obligasi->map(fn($o) => [
+                'kode_obligasi' => $o->kode_obligasi,
+                'nama_obligasi' => $o->nama_obligasi,
+                'bobot' => $o->bobot,
+                'durasi' => $o->durasi,
+                'rating' => $o->rating,
+                'nilai_pasar' => $o->nilai_pasar,
+                'return_1m' => $o->return_1m,
+                'return_3m' => $o->return_3m,
+                'return_6m' => $o->return_6m,
+                'return_1y' => $o->return_1y,
+            ])->values(),
+            'bank'                 => $analisa->bank->map(fn($b) => [
+                'nama_bank' => $b->nama_bank,
+                'bobot' => $b->bobot,
+                'car' => $b->car,
+                'npl' => $b->npl,
+                'klasifikasi_risiko' => $b->klasifikasi_risiko,
+                'jenis_bank' => $b->jenis_bank,
+                'nilai_pasar' => $b->nilai_pasar,
+                'return_1m' => $b->return_1m,
+                'return_3m' => $b->return_3m,
+                'return_6m' => $b->return_6m,
+                'return_1y' => $b->return_1y,
+            ])->values(),
             'alokasi_aset'         => $analisa->alokasiAset->map(fn($a) => ['nama_aset' => $a->nama_aset, 'persentase' => $a->persentase])->values(),
         ];
     }
@@ -699,14 +852,52 @@ class AnalisaController extends Controller
 
         $editData = [
             'sektor'   => $analisa->sektor->map(fn($s) => ['nama_sektor' => $s->nama_sektor, 'bobot' => $s->bobot])->values(),
-            'efek'     => $analisa->efek->map(fn($e) => ['kode_efek' => $e->kode_efek, 'nama_efek' => $e->nama_efek, 'sektor' => $e->sektor, 'bobot' => $e->bobot, 'kontribusi_kinerja' => $e->kontribusi_kinerja, 'market_cap' => $e->market_cap, 'top_10' => $e->top_10])->values(),
+            'efek'     => $analisa->efek->map(fn($e) => [
+                'kode_efek' => $e->kode_efek,
+                'nama_efek' => $e->nama_efek,
+                'sektor' => $e->sektor,
+                'bobot' => $e->bobot,
+                'kontribusi_kinerja' => $e->kontribusi_kinerja,
+                'market_cap' => $e->market_cap,
+                'nilai_pasar' => $e->nilai_pasar,
+                'return_1m' => $e->return_1m,
+                'return_3m' => $e->return_3m,
+                'return_6m' => $e->return_6m,
+                'return_1y' => $e->return_1y,
+                'ihsg_contribution' => $e->ihsg_contribution,
+                'effect_type' => $e->effect_type,
+                'top_10' => $e->top_10,
+            ])->values(),
             'kinerja'  => $analisa->kinerja->map(fn($k) => ['periode' => \Carbon\Carbon::parse($k->periode)->format('Y-m'), 'return_pct' => $k->return_pct])->values(),
-            'obligasi' => $analisa->obligasi->map(fn($o) => ['kode_obligasi' => $o->kode_obligasi, 'nama_obligasi' => $o->nama_obligasi, 'bobot' => $o->bobot, 'durasi' => $o->durasi, 'rating' => $o->rating])->values(),
-            'bank'     => $analisa->bank->map(fn($b) => ['nama_bank' => $b->nama_bank, 'bobot' => $b->bobot, 'car' => $b->car, 'npl' => $b->npl, 'klasifikasi_risiko' => $b->klasifikasi_risiko])->values(),
+            'obligasi' => $analisa->obligasi->map(fn($o) => [
+                'kode_obligasi' => $o->kode_obligasi,
+                'nama_obligasi' => $o->nama_obligasi,
+                'bobot' => $o->bobot,
+                'durasi' => $o->durasi,
+                'rating' => $o->rating,
+                'nilai_pasar' => $o->nilai_pasar,
+                'return_1m' => $o->return_1m,
+                'return_3m' => $o->return_3m,
+                'return_6m' => $o->return_6m,
+                'return_1y' => $o->return_1y,
+            ])->values(),
+            'bank'     => $analisa->bank->map(fn($b) => [
+                'nama_bank' => $b->nama_bank,
+                'bobot' => $b->bobot,
+                'car' => $b->car,
+                'npl' => $b->npl,
+                'klasifikasi_risiko' => $b->klasifikasi_risiko,
+                'jenis_bank' => $b->jenis_bank,
+                'nilai_pasar' => $b->nilai_pasar,
+                'return_1m' => $b->return_1m,
+                'return_3m' => $b->return_3m,
+                'return_6m' => $b->return_6m,
+                'return_1y' => $b->return_1y,
+            ])->values(),
             'alokasi_aset' => $analisa->alokasiAset->map(fn($a) => ['nama_aset' => $a->nama_aset, 'persentase' => $a->persentase])->values(),
         ];
 
-        return view('analisa.edit', compact('analisa', 'editData'));
+        return view('analisa.edit', array_merge(compact('analisa', 'editData'), ['formRoutes' => $this->formRoutes()]));
     }
 
     public function update(Request $request, AnalisaReksaDana $analisa)
@@ -733,6 +924,26 @@ class AnalisaController extends Controller
         ]);
 
         $this->validateAlokasiAsetTotal($request);
+
+        $request->validate([
+            'efek.*.nilai_pasar'       => 'nullable|numeric',
+            'efek.*.return_1m'         => 'nullable|numeric',
+            'efek.*.return_3m'         => 'nullable|numeric',
+            'efek.*.return_6m'         => 'nullable|numeric',
+            'efek.*.return_1y'         => 'nullable|numeric',
+            'efek.*.ihsg_contribution' => 'nullable|numeric',
+            'obligasi.*.nilai_pasar'   => 'nullable|numeric',
+            'obligasi.*.return_1m'     => 'nullable|numeric',
+            'obligasi.*.return_3m'     => 'nullable|numeric',
+            'obligasi.*.return_6m'     => 'nullable|numeric',
+            'obligasi.*.return_1y'     => 'nullable|numeric',
+            'bank.*.jenis_bank'        => 'nullable|string|in:Bank Nasional,Bank Asing,BPD,BPR',
+            'bank.*.nilai_pasar'       => 'nullable|numeric',
+            'bank.*.return_1m'         => 'nullable|numeric',
+            'bank.*.return_3m'         => 'nullable|numeric',
+            'bank.*.return_6m'         => 'nullable|numeric',
+            'bank.*.return_1y'         => 'nullable|numeric',
+        ]);
 
         DB::transaction(function () use ($request, $analisa) {
             $analisa->update([
