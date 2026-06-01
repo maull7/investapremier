@@ -7,11 +7,14 @@ use App\Models\DataSourceLink;
 use App\Models\DataSourceSyncLog;
 use App\Models\HargaReksaDana;
 use App\Models\ReksaDana;
+use App\Models\ReksaDanaDocument;
 use App\Imports\HargaReksaDanaImport;
 use App\Imports\HarianReksaDanaImport;
 use App\Exports\HargaReksaDanaTemplateExport;
 use App\Exports\HarianReksaDanaTemplateExport;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 
 class DaftarReksaDanaController extends Controller
@@ -24,14 +27,12 @@ class DaftarReksaDanaController extends Controller
     {
         $tab = $request->get('tab', 'harga');
 
-        // Tab Harga (master)
         $hargaQuery = ReksaDana::latest();
         if ($request->jenis) $hargaQuery->where('jenis', $request->jenis);
         if ($request->search) $hargaQuery->where('nama_reksa_dana', 'like', '%' . $request->search . '%');
         $reksaDanas = $hargaQuery->paginate(20, ['*'], 'harga_page')->withQueryString();
 
-        // Tab Harian
-        $harianQuery = \App\Models\HargaReksaDana::with('reksaDana')->latest('tanggal');
+        $harianQuery = HargaReksaDana::with('reksaDana')->latest('tanggal');
         if ($request->search) {
             $harianQuery->whereHas('reksaDana', fn($q) => $q->where('nama_reksa_dana', 'like', '%' . $request->search . '%'));
         }
@@ -42,6 +43,8 @@ class DaftarReksaDanaController extends Controller
         $reksaDanaList = collect();
         $reksaDanaOptions = ReksaDana::orderBy('nama_reksa_dana')->get(['id', 'kode_reksa_dana', 'nama_reksa_dana']);
         $editingLink = null;
+        $documents = collect();
+        $documentFunds = collect();
 
         if ($tab === 'link-website') {
             $linkQuery = DataSourceLink::global()->with(['reksaDana', 'urls'])->latest();
@@ -68,10 +71,159 @@ class DaftarReksaDanaController extends Controller
             }
         }
 
+        if ($tab === 'prospektus-ffs') {
+            $documentFundQuery = ReksaDana::with(['documents.uploader'])->latest();
+            if ($request->search) {
+                $documentFundQuery->where(function ($query) use ($request) {
+                    $query
+                    ->where('nama_reksa_dana', 'like', '%' . $request->search . '%')
+                    ->orWhere('kode_reksa_dana', 'like', '%' . $request->search . '%');
+                });
+            }
+
+            $documentFunds = $documentFundQuery->paginate(20, ['*'], 'document_page')->withQueryString();
+        }
+
         return view('admin.daftar-reksa-dana.index', compact(
             'reksaDanas', 'harian', 'tab',
             'dataSourceLinks', 'syncLogs', 'reksaDanaList', 'editingLink',
             'reksaDanaOptions',
+            'documents', 'documentFunds',
+        ));
+    }
+
+    public function storeDocument(Request $request)
+    {
+        $validated = $request->validate([
+            'reksa_dana_id' => 'required|exists:reksa_dana,id',
+            'document_type' => 'required|in:prospektus,ffs',
+            'ffs_month' => 'required_if:document_type,ffs|nullable|integer|min:1|max:12',
+            'ffs_year' => 'required_if:document_type,ffs|nullable|integer|min:2000|max:2100',
+            'file' => 'required|file|mimes:pdf|max:20480',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $file = $request->file('file');
+        $filename = now()->format('Ymd-His') . '-' . Str::random(10) . '.pdf';
+        $path = $file->storeAs('reksa-dana-documents/' . $validated['reksa_dana_id'], $filename, 'public');
+
+        ReksaDanaDocument::create([
+            ...$validated,
+            'uploaded_by' => $request->user()->id,
+            'original_name' => $file->getClientOriginalName(),
+            'file_path' => $path,
+            'mime_type' => $file->getClientMimeType(),
+            'file_size' => $file->getSize(),
+        ]);
+
+        return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs'])
+            ->with('success', 'Dokumen berhasil diupload.');
+    }
+
+    public function viewDocument(ReksaDanaDocument $document)
+    {
+        $this->ensureDocumentExists($document);
+
+        return response()->file(Storage::disk('public')->path($document->file_path), [
+            'Content-Type' => $document->mime_type ?: 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . addslashes($document->original_name) . '"',
+        ]);
+    }
+
+    public function downloadDocument(ReksaDanaDocument $document)
+    {
+        $this->ensureDocumentExists($document);
+
+        return Storage::disk('public')->download($document->file_path, $document->original_name);
+    }
+
+    public function destroyDocument(ReksaDanaDocument $document)
+    {
+        $document->deleteStoredFile();
+        $document->delete();
+
+        return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs'])
+            ->with('success', 'Dokumen berhasil dihapus.');
+    }
+
+    private function ensureDocumentExists(ReksaDanaDocument $document): void
+    {
+        abort_if(!$document->file_path || !Storage::disk('public')->exists($document->file_path), 404, 'Dokumen tidak ditemukan.');
+    }
+
+    public function show($id)
+    {
+        $fund = ReksaDana::with([
+            'harga' => fn($q) => $q->orderBy('tanggal'),
+            'assetAllocations' => fn($q) => $q->orderBy('period_date'),
+            'portfolioCompositions' => fn($q) => $q->orderBy('period_date'),
+            'managementTeams',
+        ])->findOrFail($id);
+
+        $range = request('range', '1y');
+        $dateLimit = match ($range) {
+            '1m'   => now()->subMonth(),
+            '3m'   => now()->subMonths(3),
+            '6m'   => now()->subMonths(6),
+            'ytd'  => now()->startOfYear(),
+            '1y'   => now()->subYear(),
+            '3y'   => now()->subYears(3),
+            '5y'   => now()->subYears(5),
+            'all'  => now()->subYears(50),
+            default => now()->subYear(),
+        };
+
+        $navHistory = $fund->harga()->where('tanggal', '>=', $dateLimit)->orderBy('tanggal')->get();
+        $navLabels = $navHistory->pluck('tanggal')->map(fn($d) => $d->format('d M Y'));
+        $navValues = $navHistory->pluck('nab_per_unit');
+        $aumValues = $navHistory->pluck('aum');
+        $upValues = $navHistory->pluck('unit_participation');
+
+        $aaTimeline = $fund->assetAllocations()->orderBy('period_date')->get();
+        $aaLabels = $aaTimeline->pluck('period_date')->map(fn($d) => $d->format('M Y'));
+
+        $latestPeriodDate = $fund->portfolioCompositions()->max('period_date');
+        $topHoldings = collect();
+        if ($latestPeriodDate) {
+            $topHoldings = $fund->portfolioCompositions()
+                ->where('period_date', $latestPeriodDate)
+                ->orderByDesc('weight_percent')
+                ->get();
+        }
+
+        $portfolioTimeline = $fund->portfolioCompositions()
+            ->selectRaw('reksa_dana_id, period_date, security_name, security_type, weight_percent')
+            ->orderBy('period_date')
+            ->get()
+            ->groupBy('period_date');
+
+        $latestNav = $navHistory->last();
+        $firstNav = $navHistory->first();
+        $returnDaily = null;
+        $returnMonthly = null;
+        $returnYearly = null;
+
+        if ($latestNav && $firstNav && $firstNav->nab_per_unit > 0) {
+            $returnYearly = (($latestNav->nab_per_unit - $firstNav->nab_per_unit) / $firstNav->nab_per_unit) * 100;
+        }
+
+        $prevDayNav = null;
+        if ($latestNav) {
+            $prevDayNav = $fund->harga()->where('tanggal', '<', $latestNav->tanggal)->orderByDesc('tanggal')->first();
+        }
+        if ($latestNav && $prevDayNav && $prevDayNav->nab_per_unit > 0) {
+            $returnDaily = (($latestNav->nab_per_unit - $prevDayNav->nab_per_unit) / $prevDayNav->nab_per_unit) * 100;
+        }
+
+        $prevMonthNav = $fund->harga()->where('tanggal', '<=', now()->subMonth())->orderByDesc('tanggal')->first();
+        if ($latestNav && $prevMonthNav && $prevMonthNav->nab_per_unit > 0) {
+            $returnMonthly = (($latestNav->nab_per_unit - $prevMonthNav->nab_per_unit) / $prevMonthNav->nab_per_unit) * 100;
+        }
+
+        return view('admin.daftar-reksa-dana.show', compact(
+            'fund', 'navHistory', 'navLabels', 'navValues', 'aumValues', 'upValues',
+            'aaTimeline', 'aaLabels', 'topHoldings', 'portfolioTimeline',
+            'latestNav', 'returnDaily', 'returnMonthly', 'returnYearly', 'range',
         ));
     }
 
@@ -100,8 +252,6 @@ class DaftarReksaDanaController extends Controller
     {
         return Excel::download(new HarianReksaDanaTemplateExport(), 'template-harian-reksa-dana.xlsx');
     }
-
-    // ======================= CRUD HARGA (ReksaDana) =======================
 
     public function storeHarga(Request $request)
     {
@@ -163,8 +313,6 @@ class DaftarReksaDanaController extends Controller
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harga'])
             ->with('success', 'Reksa dana berhasil dihapus.');
     }
-
-    // ======================= CRUD HARIAN (HargaReksaDana) =======================
 
     public function storeHarian(Request $request)
     {

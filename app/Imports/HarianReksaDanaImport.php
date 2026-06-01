@@ -27,7 +27,6 @@ class HarianReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows
             return null;
         }
 
-        // Update NAB terbaru di master jika tanggal lebih baru
         if (!$reksaDana->tanggal_nab || $tanggal >= $reksaDana->tanggal_nab->toDateString()) {
             $reksaDana->update([
                 'nab_per_unit' => $row['nab_per_unit'],
@@ -35,9 +34,23 @@ class HarianReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows
             ]);
         }
 
+        $aum = null;
+        if (!empty($row['total_dana_kelolaan'])) {
+            $aum = is_numeric($row['total_dana_kelolaan']) ? $row['total_dana_kelolaan'] : null;
+        }
+
+        $up = null;
+        if (!empty($row['unit_penyertaan'])) {
+            $up = is_numeric($row['unit_penyertaan']) ? $row['unit_penyertaan'] : null;
+        }
+
         return HargaReksaDana::updateOrCreate(
             ['reksa_dana_id' => $reksaDana->id, 'tanggal' => $tanggal],
-            ['nab_per_unit' => $row['nab_per_unit']]
+            [
+                'nab_per_unit' => $row['nab_per_unit'],
+                'aum' => $aum,
+                'unit_participation' => $up,
+            ]
         );
     }
 }

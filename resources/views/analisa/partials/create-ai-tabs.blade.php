@@ -111,11 +111,11 @@
 
 {{-- Tab: Analisa AI Plus --}}
 <div x-show="mode==='ai-plus'" class="p-6 space-y-4">
-    <p class="text-sm text-muted">Analisa AI Plus membutuhkan data <strong>Input Manual yang lengkap</strong> (AUM, sektor, efek, dan kinerja bulanan).</p>
+    <p class="text-sm text-muted">Analisa AI Plus memakai data dari tab <strong>Input Lengkap</strong> sebagai acuan utama: AUM, MarCap 10 saham terbesar, alokasi sektor, komposisi sektor, dan daftar efek.</p>
 
     <div x-show="!isPlusManualReady()" class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-900 space-y-2">
-        <p class="font-semibold">Data Input Manual belum lengkap</p>
-        <p class="text-amber-800">Lengkapi bagian berikut di tab <strong>Input Manual</strong> sebelum menjalankan Analisa AI Plus:</p>
+        <p class="font-semibold">Data Input Lengkap belum lengkap</p>
+        <p class="text-amber-800">Lengkapi bagian berikut di tab <strong>Input Lengkap</strong> sebelum menjalankan Analisa AI Plus:</p>
         <ul class="list-disc list-inside space-y-1 text-amber-900">
             <template x-for="item in plusMissingList()" :key="item">
                 <li x-text="item"></li>

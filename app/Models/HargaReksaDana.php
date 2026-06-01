@@ -13,11 +13,15 @@ class HargaReksaDana extends Model
         'reksa_dana_id',
         'tanggal',
         'nab_per_unit',
+        'aum',
+        'unit_participation',
     ];
 
     protected $casts = [
-        'tanggal'      => 'date',
-        'nab_per_unit' => 'decimal:6',
+        'tanggal'            => 'date',
+        'nab_per_unit'       => 'decimal:6',
+        'aum'                => 'decimal:2',
+        'unit_participation' => 'decimal:2',
     ];
 
     public function reksaDana(): BelongsTo

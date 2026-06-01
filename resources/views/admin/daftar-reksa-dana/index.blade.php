@@ -48,6 +48,10 @@
             class="px-5 py-2.5 text-sm font-semibold border-b-2 transition -mb-px {{ $tab === 'link-website' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-muted hover:text-primary' }}">
             Link Website
         </a>
+        <a href="{{ route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs']) }}"
+            class="px-5 py-2.5 text-sm font-semibold border-b-2 transition -mb-px {{ $tab === 'prospektus-ffs' ? 'border-emerald-700 text-emerald-700' : 'border-transparent text-muted hover:text-primary' }}">
+            Prospektus dan FFS
+        </a>
     </div>
 
     {{-- ===================== TAB HARGA ===================== --}}
@@ -147,7 +151,9 @@
                         @forelse($reksaDanas as $rd)
                             <tr class="hover:bg-[#f8fafc] transition-colors">
                                 <td class="px-4 py-3.5 font-mono text-xs text-muted">{{ $rd->kode_reksa_dana ?? '—' }}</td>
-                                <td class="px-4 py-3.5 font-semibold text-primary">{{ $rd->nama_reksa_dana }}</td>
+                                 <td class="px-4 py-3.5 font-semibold text-primary">
+                                    <a href="{{ route('admin.daftar-reksa-dana.show', $rd) }}" class="hover:underline text-primary">{{ $rd->nama_reksa_dana }}</a>
+                                </td>
                                 <td class="px-4 py-3.5 text-muted text-xs">{{ $rd->nama_manajer_investasi }}</td>
                                 <td class="px-4 py-3.5">
                                     @php
@@ -191,7 +197,7 @@
                                 </td>
                                 <td class="px-4 py-3.5 text-xs text-muted">{{ $rd->mata_uang }}</td>
                                 <td class="px-4 py-3.5 text-right text-xs font-semibold text-primary">
-                                    {{ $rd->nab_per_unit ? number_format($rd->nab_per_unit, 2, ',', '.') : '—' }}
+                                     {{ $rd->nab_per_unit ? number_format($rd->nab_per_unit, 4, ',', '.') : '—' }}
                                 </td>
                                 <td class="px-4 py-3.5 text-xs text-muted">
                                     {{ $rd->tanggal_nab ? $rd->tanggal_nab->format('d M Y') : '—' }}
@@ -327,8 +333,9 @@
                     <thead>
                         <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide">
                             <th class="px-4 py-3.5 font-semibold">Tanggal</th>
+                            <th class="px-4 py-3.5 font-semibold">Kode</th>
                             <th class="px-4 py-3.5 font-semibold">Reksadana</th>
-                            <th class="px-4 py-3.5 font-semibold text-right">NAB</th>
+                            <th class="px-4 py-3.5 font-semibold text-right">NAB/UP</th>
                             <th class="px-4 py-3.5 font-semibold text-center">Aksi</th>
                         </tr>
                     </thead>
@@ -336,10 +343,12 @@
                         @forelse($harian as $h)
                             <tr class="hover:bg-[#f8fafc] transition-colors">
                                 <td class="px-4 py-3.5 text-xs text-muted">{{ $h->tanggal->format('d M Y') }}</td>
+                                <td class="px-4 py-3.5 font-mono text-xs text-muted">{{ $h->reksaDana->kode_reksa_dana ?? '—' }}</td>
                                 <td class="px-4 py-3.5 font-semibold text-primary text-sm">
-                                    {{ $h->reksaDana->nama_reksa_dana ?? '—' }}</td>
+                                    <a href="{{ $h->reksaDana ? route('admin.daftar-reksa-dana.show', $h->reksaDana) : '#' }}" class="hover:underline text-primary">{{ $h->reksaDana->nama_reksa_dana ?? '—' }}</a>
+                                </td>
                                 <td class="px-4 py-3.5 text-right text-xs font-semibold text-primary">
-                                    {{ number_format($h->nab_per_unit, 2, ',', '.') }}
+                                    {{ number_format($h->nab_per_unit, 4, ',', '.') }}
                                 </td>
                                 <td class="px-4 py-3.5 text-center">
                                     <div class="flex items-center justify-center gap-1">
@@ -363,7 +372,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="px-6 py-12 text-center text-muted">
+                                <td colspan="5" class="px-6 py-12 text-center text-muted">
                                     <p class="font-medium">Belum ada data harian</p>
                                     <p class="text-xs mt-1">Upload file excel menggunakan form di atas</p>
                                 </td>
@@ -408,6 +417,8 @@
         {{-- ===================== TAB LINK WEBSITE ===================== --}}
     @elseif($tab === 'link-website')
         @include('admin.daftar-reksa-dana.partials.tab-link-website')
+    @elseif($tab === 'prospektus-ffs')
+        @include('admin.daftar-reksa-dana.partials.tab-prospektus-ffs')
     @endif
 {{-- ===================== MODAL HARGA CREATE ===================== --}}
 <div id="modal-harga-create" class="fixed inset-0 z-50 hidden bg-black/40 flex items-center justify-center p-4" onclick="if(event.target===this)closeModal('modal-harga-create')">

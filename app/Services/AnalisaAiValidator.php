@@ -6,7 +6,7 @@ use App\Models\AnalisaReksaDana;
 
 class AnalisaAiValidator
 {
-    public const MSG_PLUS_HEADER = 'Data Input Manual belum lengkap. Lengkapi bagian berikut di tab Input Manual sebelum menjalankan Analisa AI Plus:';
+    public const MSG_PLUS_HEADER = 'Data Input Lengkap belum lengkap. Lengkapi bagian berikut di tab Input Lengkap sebelum menjalankan Analisa AI Plus:';
 
     public static function hasPlusManualData(AnalisaReksaDana $analisa): bool
     {
@@ -40,13 +40,6 @@ class AnalisaAiValidator
         );
         if (!$hasEfek) {
             $missing[] = 'Daftar efek (minimal 1 baris: kode, nama, bobot %)';
-        }
-
-        $kinerjaCount = $analisa->kinerja->filter(
-            fn ($k) => filled($k->periode) && is_numeric($k->return_pct)
-        )->count();
-        if ($kinerjaCount < 2) {
-            $missing[] = 'Kinerja bulanan (minimal 2 bulan dengan return %)';
         }
 
         return $missing;

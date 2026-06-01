@@ -42,7 +42,7 @@
             @csrf
             <input type="hidden" name="input_mode" :value="mode === 'link-website' ? 'manual' : mode">
             <input type="hidden" name="pdf_file" x-model="pdfFile">
-            <input type="hidden" name="tanggal_data" :value="tanggalData">
+            <input type="hidden" name="tanggal_data" :value="tanggalDataValue()">
             <input type="hidden" name="ffs_bulan" :value="jenisLaporan === 'kalender_ffs' ? ffsBulan : ''">
             <input type="hidden" name="ffs_tahun" :value="jenisLaporan === 'kalender_ffs' ? ffsTahun : ''">
             <input type="hidden" name="jenis_laporan" :value="jenisLaporan">
@@ -135,16 +135,19 @@
                     </div>
                     <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4" x-show="jenisLaporan === 'kalender_ffs'">
                         <div>
-                            <x-input-label for="periode_awal" value="Periode Awal" />
-                            <x-text-input id="periode_awal" name="periode_awal" type="text" maxlength="6"
-                                pattern="[0-9]{6}" placeholder="202401" class="mt-1 block w-full"
-                                x-model="periodeAwal" />
+                            <x-input-label for="ffs_bulan_top" value="Bulan" />
+                            <select id="ffs_bulan_top" x-model="ffsBulan"
+                                class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
+                                <option value="">Pilih Bulan</option>
+                                @foreach (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $index => $bulan)
+                                    <option value="{{ $index + 1 }}">{{ $bulan }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         <div>
-                            <x-input-label for="periode_akhir" value="Periode Akhir" />
-                            <x-text-input id="periode_akhir" name="periode_akhir" type="text" maxlength="6"
-                                pattern="[0-9]{6}" placeholder="202412" class="mt-1 block w-full"
-                                x-model="periodeAkhir" />
+                            <x-input-label for="ffs_tahun_top" value="Tahun" />
+                            <x-text-input id="ffs_tahun_top" type="number" min="2000" max="2100"
+                                placeholder="2026" class="mt-1 block w-full" x-model="ffsTahun" />
                         </div>
                     </div>
                     <div class="mt-4 max-w-xs" x-show="jenisLaporan === 'laporan_tahunan'" x-cloak>
@@ -205,39 +208,168 @@
 
                 {{-- TAB: MANUAL --}}
                 <div x-show="mode==='manual'" class="p-6 space-y-8">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <x-input-label for="tanggal_data_manual" value="Tanggal Data" />
-                            <x-text-input id="tanggal_data_manual" type="date" class="mt-1 block w-full"
-                                x-model="tanggalData" />
+                            <x-input-label for="total_aum_manual" value="Total AUM (Rp)" />
+                            <x-text-input id="total_aum_manual" name="total_aum" type="number" step="0.01"
+                                class="mt-1 block w-full" x-model="totalAum" />
                         </div>
                         <div>
-                            <x-input-label for="unit_penyertaan" value="Jumlah Unit Penyertaan" />
-                            <x-text-input id="unit_penyertaan" name="unit_penyertaan" type="number" step="0.0001"
+                            <x-input-label for="total_marcap_10_efek_manual" value="Total MarCap 10 Saham Terbesar (Rp)" />
+                            <x-text-input id="total_marcap_10_efek_manual" name="total_marcap_10_efek" type="number"
+                                step="0.01" class="mt-1 block w-full" x-model="totalMarcap10Efek" />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <x-input-label for="unit_penyertaan_manual" value="Jumlah Unit Penyertaan" />
+                            <x-text-input id="unit_penyertaan_manual" name="unit_penyertaan" type="number" step="0.0001"
                                 class="mt-1 block w-full" x-model="unitPenyertaan" />
                             <x-input-error :messages="$errors->get('unit_penyertaan')" class="mt-1" />
                         </div>
                         <div>
-                            <x-input-label for="nab_per_unit" value="NAB/UP *" />
-                            <x-text-input id="nab_per_unit" name="nab_per_unit" type="number" step="0.000001"
-                                class="mt-1 block w-full" x-model="nabPerUnit" x-bind:required="mode === 'manual'" />
+                            <x-input-label for="nab_per_unit_manual" value="NAB/UP" />
+                            <x-text-input id="nab_per_unit_manual" name="nab_per_unit" type="number" step="0.000001"
+                                class="mt-1 block w-full" x-model="nabPerUnit" />
                             <x-input-error :messages="$errors->get('nab_per_unit')" class="mt-1" />
+                        </div>
+                        <div x-show="jenisLaporan === 'kalender_ffs'">
+                            <x-input-label value="Kalender FFS" />
+                            <div class="mt-1 grid grid-cols-2 gap-2">
+                                <select x-model="ffsBulan"
+                                    class="border-gray-300 rounded-lg text-sm px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20"
+                                    aria-label="Bulan FFS">
+                                    <option value="">Bulan</option>
+                                    @foreach (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $index => $bulan)
+                                        <option value="{{ $index + 1 }}">{{ $bulan }}</option>
+                                    @endforeach
+                                </select>
+                                <input type="number" min="2000" max="2100" x-model="ffsTahun"
+                                    class="border-gray-300 rounded-lg text-sm px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20"
+                                    placeholder="2026" />
+                            </div>
                         </div>
                     </div>
 
                     @include('analisa.partials.form-alokasi-aset')
+
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-semibold text-primary text-sm">Komposisi Sektor</h4>
+                            <button type="button" @click="addRow('sektor')"
+                                class="text-xs text-primary hover:underline">+
+                                Tambah Baris</button>
+                        </div>
+                        <div class="space-y-2">
+                            <template x-for="(row, i) in sektor" :key="i">
+                                <div class="flex gap-2 items-center">
+                                    <input type="text" :name="`sektor[${i}][nama_sektor]`" x-model="row.nama_sektor"
+                                        placeholder="Nama Sektor"
+                                        class="flex-1 border-gray-300 rounded-lg text-sm px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20" />
+                                    <input type="number" :name="`sektor[${i}][bobot]`" x-model="row.bobot"
+                                        placeholder="Bobot %" step="0.01"
+                                        class="w-28 border-gray-300 rounded-lg text-sm px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20" />
+                                    <button type="button" @click="removeRow('sektor', i)"
+                                        class="text-red-400 hover:text-red-600 px-1">✕</button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-semibold text-primary text-sm">Daftar Efek</h4>
+                            <button type="button" @click="addRow('efek')" class="text-xs text-primary hover:underline">+
+                                Tambah Baris</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead class="bg-[#f8fafc]">
+                                    <tr>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Kode</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nama Efek</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Sektor</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Kontribusi % IHSG
+                                        </th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 1M</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 3M</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 6M</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 1 Thn</th>
+                                        <th class="text-center px-2 py-2 text-xs font-semibold text-muted">Top 10</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-line">
+                                    <template x-for="(row, i) in efek" :key="i">
+                                        <tr>
+                                            <td class="px-1 py-1"><input type="text" :name="`efek[${i}][kode_efek]`"
+                                                    x-model="row.kode_efek" placeholder="BBCA"
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20"
+                                                    @change.debounce.500ms="lookupEfekData(i)" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="text" :name="`efek[${i}][nama_efek]`"
+                                                    x-model="row.nama_efek" placeholder="Nama Efek"
+                                                    class="w-40 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1">
+                                                <input type="hidden" :name="`efek[${i}][effect_type]`" x-model="row.effect_type" />
+                                                <input type="text" :name="`efek[${i}][sektor]`"
+                                                    x-model="row.sektor" placeholder="Sektor"
+                                                    class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][bobot]`"
+                                                    x-model="row.bobot" step="0.01"
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20"
+                                                    @input="hitungNilaiPasarEfek(i)" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][nilai_pasar]`"
+                                                    x-model="row.nilai_pasar" step="0.01" readonly
+                                                    class="w-28 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`efek[${i}][kontribusi_kinerja]`"
+                                                    x-model="row.kontribusi_kinerja" step="0.0001"
+                                                    class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20"
+                                                    @change="hitungTotalMarcap10" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_1m]`"
+                                                    x-model="row.return_1m" step="0.0001" readonly
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_3m]`"
+                                                    x-model="row.return_3m" step="0.0001" readonly
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_6m]`"
+                                                    x-model="row.return_6m" step="0.0001" readonly
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_1y]`"
+                                                    x-model="row.return_1y" step="0.0001" readonly
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1 text-center"><input type="checkbox"
+                                                    :name="`efek[${i}][top_10]`" x-model="row.top_10" value="1"
+                                                    class="rounded border-gray-300 text-primary focus:ring-primary"
+                                                    @change="hitungTotalMarcap10" /></td>
+                                            <td class="px-1 py-1"><button type="button" @click="removeRow('efek', i)"
+                                                    class="text-red-400 hover:text-red-600 text-xs">✕</button></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 {{-- TAB: INPUT LENGKAP --}}
                 <div x-show="mode==='lengkap'" class="p-6 space-y-8">
 
                     {{-- Sektor --}}
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div>
-                            <x-input-label for="tanggal_data_lengkap" value="Tanggal Data" />
-                            <x-text-input id="tanggal_data_lengkap" type="date" class="mt-1 block w-full"
-                                x-model="tanggalData" />
-                        </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <x-input-label for="total_aum" value="Total AUM (Rp)" />
                             <x-text-input id="total_aum" name="total_aum" type="number" step="0.01"
@@ -264,12 +396,17 @@
                         <div x-show="jenisLaporan === 'kalender_ffs'">
                             <x-input-label value="Kalender FFS" />
                             <div class="mt-1 grid grid-cols-2 gap-2">
-                                <input type="number" min="1" max="12" x-model="ffsBulan"
+                                <select x-model="ffsBulan"
                                     class="border-gray-300 rounded-lg text-sm px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20"
-                                    placeholder="Bulan" />
+                                    aria-label="Bulan FFS">
+                                    <option value="">Bulan</option>
+                                    @foreach (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $index => $bulan)
+                                        <option value="{{ $index + 1 }}">{{ $bulan }}</option>
+                                    @endforeach
+                                </select>
                                 <input type="number" min="2000" max="2100" x-model="ffsTahun"
                                     class="border-gray-300 rounded-lg text-sm px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20"
-                                    placeholder="Tahun" />
+                                    placeholder="2026" />
                             </div>
                         </div>
                     </div>
@@ -389,7 +526,6 @@
 
                     {{-- Kinerja Bulanan --}}
                     {{-- HIDE: section tidak ditampilkan di form create/edit, data lama tetap dipertahankan --}}
-                    {{-- @php $showKinerja = false; @endphp --}}
                     <div x-show="false" style="display:none">
                         <template x-for="(row, i) in kinerja" :key="i">
                             <div class="flex gap-2 items-center">
@@ -795,7 +931,6 @@
                         'marcap' => 'Total MarCap 10 efek terbesar',
                         'sektor' => 'Komposisi sektor (minimal 1 baris dengan bobot %)',
                         'efek' => 'Daftar efek (minimal 1 baris: kode, nama, bobot %)',
-                        'kinerja' => 'Kinerja bulanan (minimal 2 bulan dengan return %)',
                     ];
                 @endphp
 
@@ -937,8 +1072,13 @@
                         return parseFloat(this.totalAum || document.getElementById('total_aum')?.value || 0);
                     },
 
+                    ffsDateValue() {
+                        if (!this.ffsBulan || !this.ffsTahun) return '';
+                        return `${this.ffsTahun}-${String(this.ffsBulan).padStart(2, '0')}-01`;
+                    },
+
                     tanggalDataValue() {
-                        return this.tanggalData || document.getElementById('tanggal_data')?.value || '';
+                        return this.tanggalData || this.ffsDateValue();
                     },
 
                     hitungNilaiPasarEfek(i) {
@@ -1088,7 +1228,7 @@
                         for (const [key, val] of fd.entries()) {
                             if (key === 'kategori[]' || key.startsWith('kategori[') || key.startsWith('sektor[') || key
                                 .startsWith('efek[') || key.startsWith('kinerja[') || key.startsWith('obligasi[') || key
-                                .startsWith('alokasi_aset[') || key
+                                .startsWith('sukuk[') || key.startsWith('alokasi_aset[') || key
                                 .startsWith('bank[')) {
                                 payload.append(key, val);
                             }
@@ -1313,7 +1453,7 @@
                             });
                     },
 
-                    msgPlusIncomplete: 'Lengkapi data sektor/efek di tab Input Manual terlebih dahulu.',
+                    msgPlusIncomplete: 'Lengkapi data sektor/efek di tab Input Lengkap terlebih dahulu.',
 
                     isPlusManualReady() {
                         return (this.plusRequiredLabels?.aum ? String(this.totalAum || document.getElementById('total_aum')
@@ -1323,9 +1463,7 @@
                             this.sektor.some(r => String(r.nama_sektor || '').trim() !== '' && r.bobot !== '' && r.bobot !=
                                 null) &&
                             this.efek.some(r => String(r.kode_efek || '').trim() !== '' && String(r.nama_efek || '').trim() !==
-                                '' && r.bobot !== '' && r.bobot != null) &&
-                            this.kinerja.filter(r => String(r.periode || '').trim() !== '' && r.return_pct !== '' && r
-                                .return_pct != null).length >= 2;
+                                '' && r.bobot !== '' && r.bobot != null);
                     },
 
                     plusMissingList() {
@@ -1346,10 +1484,6 @@
                         if (this.plusRequiredLabels?.efek && !this.efek.some(r => String(r.kode_efek || '').trim() !== '' &&
                                 String(r.nama_efek || '').trim() !== '' && r.bobot !== '' && r.bobot != null)) {
                             missing.push(this.plusRequiredLabels.efek);
-                        }
-                        if (this.plusRequiredLabels?.kinerja && this.kinerja.filter(r => String(r.periode || '').trim() !==
-                                '' && r.return_pct !== '' && r.return_pct != null).length < 2) {
-                            missing.push(this.plusRequiredLabels.kinerja);
                         }
                         return missing;
                     },
