@@ -6,9 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class StockPrice extends Model
 {
-    protected $fillable = ['kode_efek', 'nama_efek', 'jenis', 'harga', 'tanggal', 'sumber'];
+    protected $fillable = ['stock_id', 'kode_efek', 'nama_efek', 'jenis', 'harga', 'open', 'high', 'low', 'close', 'volume', 'tanggal', 'sumber'];
 
-    protected $casts = ['tanggal' => 'date', 'harga' => 'decimal:2'];
+    protected $casts = ['tanggal' => 'date', 'harga' => 'decimal:2', 'open' => 'decimal:2', 'high' => 'decimal:2', 'low' => 'decimal:2', 'close' => 'decimal:2'];
 
     /**
      * Ambil harga terbaru (T-1) untuk kode efek tertentu.

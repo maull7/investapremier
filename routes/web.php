@@ -38,6 +38,7 @@ use App\Http\Controllers\User\AnalisaUlController as UserAnalisaUlController;
 use App\Http\Controllers\User\PerencanaanInvestasiController;
 use App\Http\Controllers\ReksaDanaController;
 use App\Http\Controllers\Auth\SocialAuthController;
+use App\Http\Controllers\StockDetailController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -134,6 +135,12 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
     // Daftar & Analisa Saham
     Route::resource('saham', StockController::class)->except(['show']);
+    Route::get('saham/{stock}', [StockDetailController::class, 'show'])->name('saham.show');
+    Route::post('saham/{stock}/summarize-news', [StockDetailController::class, 'summarizeNews'])->name('saham.summarize-news');
+    Route::post('saham/{stock}/summarize-broker-research', [StockDetailController::class, 'summarizeBrokerResearch'])->name('saham.summarize-broker-research');
+    Route::post('saham/{stock}/sync-yahoo-prices', [StockDetailController::class, 'syncYahooPrices'])->name('saham.sync-yahoo-prices');
+    Route::get('saham/{stock}/broker-research/{research}/view', [StockDetailController::class, 'viewResearch'])->name('saham.broker-research.view');
+    Route::get('saham/{stock}/broker-research/{research}/download', [StockDetailController::class, 'downloadResearch'])->name('saham.broker-research.download');
     Route::get('saham-template', [StockController::class, 'downloadTemplate'])->name('saham.template');
     Route::post('saham-import', [StockController::class, 'import'])->name('saham.import');
     Route::get('analisa-saham', [AdminMonitorAnalisaSahamController::class, 'index'])->name('analisa-saham.index');
@@ -182,6 +189,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('analisa-obligasi/lookup-keuangan-emiten', [AdminAnalisaObligasiController::class, 'lookupKeuanganEmiten'])->name('analisa-obligasi.lookup-keuangan-emiten');
     Route::post('analisa-obligasi/preview-ai', [AdminAnalisaObligasiController::class, 'previewAi'])->name('analisa-obligasi.preview-ai');
     Route::post('analisa-obligasi/preview-ai-plus', [AdminAnalisaObligasiController::class, 'previewAiPlus'])->name('analisa-obligasi.preview-ai-plus');
+    Route::post('analisa-obligasi/resolve-ai-plus-data', [AdminAnalisaObligasiController::class, 'resolveAiPlusData'])->name('analisa-obligasi.resolve-ai-plus-data');
     Route::get('analisa-obligasi/{analisa}', [AdminMonitorAnalisaObligasiController::class, 'show'])->name('analisa-obligasi.show');
     Route::get('analisa-obligasi/{analisa}/pdf', [AdminMonitorAnalisaObligasiController::class, 'exportPdf'])->name('analisa-obligasi.pdf');
     Route::get('analisa-obligasi/{analisa}/download-lapkeu', [AdminMonitorAnalisaObligasiController::class, 'downloadLapkeu'])->name('analisa-obligasi.download-lapkeu');
@@ -191,6 +199,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
     // Manajer Investasi
     Route::resource('investment-managers', AdminInvestmentManagerController::class)->except(['show']);
+    Route::get('investment-managers/{investmentManager}', [AdminInvestmentManagerController::class, 'show'])->name('investment-managers.show');
     Route::get('investment-managers-template', [AdminInvestmentManagerController::class, 'downloadTemplate'])->name('investment-managers.template');
     Route::post('investment-managers-import', [AdminInvestmentManagerController::class, 'import'])->name('investment-managers.import');
     Route::delete('investment-managers-period/{investmentManagerPeriod}', [AdminInvestmentManagerController::class, 'destroyPeriod'])->name('investment-managers.period-destroy');
@@ -288,6 +297,12 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
 
     // Daftar & Analisa Saham
     Route::resource('/saham', UserStockController::class)->except(['show']);
+    Route::get('/saham/{stock}', [StockDetailController::class, 'show'])->name('saham.show');
+    Route::post('/saham/{stock}/summarize-news', [StockDetailController::class, 'summarizeNews'])->name('saham.summarize-news');
+    Route::post('/saham/{stock}/summarize-broker-research', [StockDetailController::class, 'summarizeBrokerResearch'])->name('saham.summarize-broker-research');
+    Route::post('/saham/{stock}/sync-yahoo-prices', [StockDetailController::class, 'syncYahooPrices'])->name('saham.sync-yahoo-prices');
+    Route::get('/saham/{stock}/broker-research/{research}/view', [StockDetailController::class, 'viewResearch'])->name('saham.broker-research.view');
+    Route::get('/saham/{stock}/broker-research/{research}/download', [StockDetailController::class, 'downloadResearch'])->name('saham.broker-research.download');
     // Route::get('/saham-template', [UserStockController::class, 'downloadTemplate'])->name('saham.template');
     // Route::post('/saham-import', [UserStockController::class, 'import'])->name('saham.import');
     Route::get('/analisa-saham', [UserAnalisaSahamController::class, 'index'])->name('analisa-saham.index');
@@ -321,6 +336,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/analisa-obligasi/lookup-keuangan-emiten', [UserAnalisaObligasiController::class, 'lookupKeuanganEmiten'])->name('analisa-obligasi.lookup-keuangan-emiten');
     Route::post('/analisa-obligasi/preview-ai', [UserAnalisaObligasiController::class, 'previewAi'])->name('analisa-obligasi.preview-ai');
     Route::post('/analisa-obligasi/preview-ai-plus', [UserAnalisaObligasiController::class, 'previewAiPlus'])->name('analisa-obligasi.preview-ai-plus');
+    Route::post('/analisa-obligasi/resolve-ai-plus-data', [UserAnalisaObligasiController::class, 'resolveAiPlusData'])->name('analisa-obligasi.resolve-ai-plus-data');
     Route::get('/analisa-obligasi/{analisa}', [UserAnalisaObligasiController::class, 'show'])->name('analisa-obligasi.show');
     Route::get('/analisa-obligasi/{analisa}/pdf', [UserAnalisaObligasiController::class, 'exportPdf'])->name('analisa-obligasi.pdf');
     Route::get('/analisa-obligasi/{analisa}/download-lapkeu', [UserAnalisaObligasiController::class, 'downloadLapkeu'])->name('analisa-obligasi.download-lapkeu');

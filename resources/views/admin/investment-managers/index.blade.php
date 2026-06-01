@@ -38,15 +38,36 @@
 
 <div class="mb-5">
     <form method="GET" action="{{ route('admin.investment-managers.index') }}">
-        <div class="flex items-center gap-3">
-            <div class="relative flex-1 max-w-md">
+        <div class="flex flex-wrap items-end gap-3">
+            <div class="relative flex-1 min-w-[200px]">
                 <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 <input type="text" name="search" value="{{ request('search') }}"
                        class="w-full pl-10 pr-4 py-2.5 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
-                       placeholder="Cari nama manajer investasi...">
+                       placeholder="Cari nama / kode MI / kode OJK...">
             </div>
+            <select name="mata_uang" class="px-3 py-2.5 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
+                <option value="">Mata Uang</option>
+                <option value="IDR" {{ request('mata_uang') == 'IDR' ? 'selected' : '' }}>IDR</option>
+                <option value="USD" {{ request('mata_uang') == 'USD' ? 'selected' : '' }}>USD</option>
+            </select>
+            <select name="tahun" class="px-3 py-2.5 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
+                <option value="">Tahun</option>
+                @foreach($tahunList as $th)
+                <option value="{{ $th }}" {{ request('tahun') == $th ? 'selected' : '' }}>{{ $th }}</option>
+                @endforeach
+            </select>
+            <select name="kuartal" class="px-3 py-2.5 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
+                <option value="">Kuartal</option>
+                @foreach([1,2,3,4] as $q)
+                <option value="{{ $q }}" {{ request('kuartal') == $q ? 'selected' : '' }}>Q{{ $q }}</option>
+                @endforeach
+            </select>
             <button type="submit" class="px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition">Cari</button>
-            @if(request('search'))<a href="{{ route('admin.investment-managers.index') }}" class="px-4 py-2.5 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary transition">Reset</a>@endif
+            @if(request()->anyFilled(['search','mata_uang','tahun','kuartal']))
+            <a href="{{ route('admin.investment-managers.index') }}" class="px-4 py-2.5 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary transition">Reset</a>
+            @endif
+            <button type="button" disabled class="px-4 py-2.5 border border-line text-muted/50 rounded-xl text-sm font-semibold cursor-not-allowed">Download</button>
+            <button type="button" disabled class="px-4 py-2.5 border border-line text-muted/50 rounded-xl text-sm font-semibold cursor-not-allowed">Custom</button>
         </div>
     </form>
 </div>
@@ -62,10 +83,15 @@
 <div class="bg-white rounded-2xl border border-line overflow-hidden shadow-sm mb-4">
     <div class="px-5 py-3 border-b border-line flex items-center justify-between bg-gradient-to-r from-primary to-primary-light">
         <h3 class="font-bold text-white flex items-center gap-2 text-sm">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-            {{ $m->name }}
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            <a href="{{ route('admin.investment-managers.show', $m) }}" class="hover:underline text-white">
+                {{ $m->name }}
+            </a>
             @if($m->kode_mi)
                 <span class="text-xs bg-white/20 text-white px-2 py-0.5 rounded font-mono">{{ $m->kode_mi }}</span>
+            @endif
+            @if($m->kode_ojk)
+                <span class="text-xs bg-yellow-300/20 text-yellow-200 px-2 py-0.5 rounded font-mono">{{ $m->kode_ojk }}</span>
             @endif
         </h3>
         <div class="flex items-center gap-2">
@@ -85,7 +111,7 @@
                 <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide">
                     <th class="px-4 py-3 font-semibold">Periode</th>
                     <th class="px-4 py-3 font-semibold text-right">AUM (Rp)</th>
-                    <th class="px-4 py-3 font-semibold text-right">UP</th>
+                    <th class="px-4 py-3 font-semibold text-right">UP / Unit Penyertaan</th>
                     <th class="px-4 py-3 font-semibold text-right w-20">Aksi</th>
                 </tr>
             </thead>
@@ -97,6 +123,12 @@
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                             {{ $p->period_date->format('d M Y') }}
                         </span>
+                        @if($p->mata_uang)
+                            <span class="text-xs text-muted ml-1">{{ $p->mata_uang }}</span>
+                        @endif
+                        @if($p->tahun)
+                            <span class="text-xs text-muted ml-1">{{ $p->tahun }} Q{{ $p->kuartal }}</span>
+                        @endif
                     </td>
                     <td class="px-4 py-3 text-right text-xs font-semibold text-primary tabular-nums">
                         {{ $p->aum ? 'Rp' . number_format($p->aum, 0, ',', '.') : '-' }}
@@ -128,6 +160,9 @@
         <span class="text-muted text-xs">Tampilkan:</span>
         <form method="GET" action="{{ route('admin.investment-managers.index') }}">
             @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
+            @if(request('mata_uang')) <input type="hidden" name="mata_uang" value="{{ request('mata_uang') }}"> @endif
+            @if(request('tahun')) <input type="hidden" name="tahun" value="{{ request('tahun') }}"> @endif
+            @if(request('kuartal')) <input type="hidden" name="kuartal" value="{{ request('kuartal') }}"> @endif
             <select name="per_page" onchange="this.form.submit()"
                     class="text-xs border border-line rounded-lg px-2 py-1 focus:outline-none cursor-pointer">
                 @foreach([10, 25, 50] as $n)

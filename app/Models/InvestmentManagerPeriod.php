@@ -6,7 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class InvestmentManagerPeriod extends Model
 {
-    protected $fillable = ['investment_manager_id', 'period_date', 'aum', 'up'];
+    protected $fillable = [
+        'investment_manager_id', 'period_date', 'aum', 'up',
+        'mata_uang', 'tahun', 'kuartal',
+    ];
 
     protected $casts = [
         'period_date' => 'date',

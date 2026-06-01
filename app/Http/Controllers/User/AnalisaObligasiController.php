@@ -7,6 +7,8 @@ use App\Enums\AnalisaType;
 use App\Http\Controllers\AnalisaLapkeuController;
 use App\Models\AnalisaObligasiKeuangan;
 use App\Services\KeuanganEmitenService;
+use App\Services\FinancialDataResolverService;
+use App\Services\GroqService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -201,6 +203,71 @@ class AnalisaObligasiController extends AnalisaLapkeuController
             'data' => array_merge($this->mapKeuanganEmitenRecord($record), [
                 'kode_obligasi' => strtoupper($kode),
             ]),
+        ]);
+    }
+
+    public function resolveAiPlusData(Request $request, FinancialDataResolverService $resolver)
+    {
+        $resolved = $this->resolvedFinancialData($request, $resolver);
+
+        return response()->json([
+            'complete' => $resolver->isComplete($resolved),
+            'missing' => $resolver->missingFields($resolved),
+            'data' => $resolved,
+        ]);
+    }
+
+    public function previewAiPlus(Request $request, GroqService $groq)
+    {
+        $request->validate(['nama_obligasi' => 'required|string|max:255']);
+
+        $resolver = app(FinancialDataResolverService::class);
+        $resolved = $this->resolvedFinancialData($request, $resolver);
+        if (!$resolver->isComplete($resolved)) {
+            $missing = $resolver->missingFields($resolved);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Data Analisa AI Plus belum lengkap: ' . implode(', ', $missing) . '.',
+                'missing' => $missing,
+                'resolved_data' => $resolved,
+            ], 422);
+        }
+
+        try {
+            $data = array_merge($this->analysisDataFromRequest($request), $resolver->toAnalysisData($resolved), [
+                'nama' => $request->nama_obligasi,
+                'kode' => $request->kode_obligasi,
+                'periode' => $request->periode,
+                'mata_uang' => $request->mata_uang,
+                'rating' => $request->rating,
+                'kupon' => $request->kupon,
+                'ytm' => $request->ytm,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Analisa AI Plus berhasil dibuat.',
+                'data' => $groq->generateNarasiLapkeuPlusStructured($data, $this->instrumentType()),
+                'resolved_data' => $resolved,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat Analisa AI Plus: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    protected function resolvedFinancialData(Request $request, FinancialDataResolverService $resolver): array
+    {
+        $sources = json_decode((string) $request->input('financial_data_sources', '{}'), true);
+
+        return $resolver->resolveObligationData($request->input('kode_obligasi'), [
+            'draft' => $this->extractLapkeuData($request),
+            'sources' => is_array($sources) ? $sources : [],
+            'pdf_path' => $request->input('pdf_lapkeu_path'),
+            'periode' => $request->input('periode'),
         ]);
     }
 

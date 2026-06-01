@@ -156,7 +156,8 @@
                                             {{ $s->kode }}</div>
                                     </td>
                                     <td class="px-4 py-3">
-                                        <p class="font-semibold text-primary leading-snug">{{ $s->nama }}</p>
+                                        <a href="{{ route('admin.saham.show', $s) }}"
+                                            class="font-semibold text-primary leading-snug hover:underline">{{ $s->nama }}</a>
                                     </td>
                                     <td class="px-4 py-3">
                                         <span class="text-xs text-muted">{{ $s->sektor }}</span>

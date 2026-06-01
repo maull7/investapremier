@@ -81,6 +81,7 @@ abstract class AnalisaLapkeuController extends Controller
             'routePrefix'       => $prefix,
             'previewAiRoute'    => route($prefix . '.preview-ai'),
             'previewAiPlusRoute'=> $hasPlusRoute ? route($prefix . '.preview-ai-plus') : null,
+            'resolveAiPlusDataRoute' => \Illuminate\Support\Facades\Route::has($prefix . '.resolve-ai-plus-data') ? route($prefix . '.resolve-ai-plus-data') : null,
             'lookupKeuanganEmitenRoute' => \Illuminate\Support\Facades\Route::has($prefix . '.lookup-keuangan-emiten') ? route($prefix . '.lookup-keuangan-emiten') : null,
             'parsePdfRoute'         => route($prefix . '.parse-pdf'),
             'parsePdfVisionRoute'   => \Illuminate\Support\Facades\Route::has($prefix . '.parse-pdf-vision') ? route($prefix . '.parse-pdf-vision') : null,
@@ -424,6 +425,14 @@ abstract class AnalisaLapkeuController extends Controller
             $data['equity']          = $request->equity;
             $data['net_revenue']     = $request->net_revenue;
             $data['net_income']      = $request->net_income;
+
+            if ($instrumen === 'Obligasi' && method_exists($this, 'resolvedFinancialData')) {
+                $resolver = app(\App\Services\FinancialDataResolverService::class);
+                $resolved = $this->resolvedFinancialData($request, $resolver);
+                $resolvedData = $resolver->toAnalysisData($resolved);
+                $data = array_merge($data, $resolvedData);
+                $analisa->update(array_filter($resolvedData, fn ($value) => $value !== null && $value !== ''));
+            }
 
             $plusCheck = self::assessPlusManualData($data, $instrumen);
 
