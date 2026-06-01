@@ -14,6 +14,10 @@ class InvestmentManagerTemplateExport implements FromArray, WithHeadings, WithSt
         return [
             'nama_investment_manager',
             'kode_mi',
+            'kode_ojk',
+            'mata_uang',
+            'tahun',
+            'kuartal',
             'aum 30 Apr 2026',
             'up 30 Apr 2026',
             'aum 31 May 2026',
@@ -29,6 +33,10 @@ class InvestmentManagerTemplateExport implements FromArray, WithHeadings, WithSt
             [
                 'Allianz Global Investors Asset Management Indonesia, PT',
                 'GR003',
+                'KEP-123/D.04/2021',
+                'IDR',
+                2026,
+                1,
                 4145645132526, 3971685648.74,
                 null, null,
                 null, null,
@@ -36,6 +44,10 @@ class InvestmentManagerTemplateExport implements FromArray, WithHeadings, WithSt
             [
                 'Alpha Aset Manajemen, PT',
                 null,
+                null,
+                'IDR',
+                2026,
+                2,
                 10904451518, 9901468.63,
                 null, null,
                 null, null,

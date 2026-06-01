@@ -1,0 +1,152 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\AnalisaSaham;
+use App\Models\Stock;
+use App\Models\StockBrokerResearch;
+use App\Services\AIAnalysisService;
+use App\Services\YahooStockDataService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
+
+class StockDetailController extends Controller
+{
+    public function show(Request $request, Stock $stock)
+    {
+        $startDate = $this->timeframeStart($request->input('timeframe', '1M'));
+        $stock->load(['profile', 'corporateActions', 'financialReports', 'news', 'brokerResearches']);
+
+        $prices = $stock->prices()
+            ->where('tanggal', '>=', $startDate)
+            ->get()
+            ->map(fn ($price) => [
+                'tanggal' => $price->tanggal->format('Y-m-d'),
+                'open' => $price->open ?? $price->harga,
+                'high' => $price->high ?? $price->harga,
+                'low' => $price->low ?? $price->harga,
+                'close' => $price->close ?? $price->harga,
+                'volume' => $price->volume,
+            ]);
+
+        if ($prices->isEmpty()) {
+            $prices = \App\Models\StockPrice::query()
+                ->whereRaw('UPPER(kode_efek) = ?', [strtoupper($stock->kode)])
+                ->where('tanggal', '>=', $startDate)
+                ->oldest('tanggal')
+                ->get()
+                ->map(fn ($price) => [
+                    'tanggal' => $price->tanggal->format('Y-m-d'),
+                    'open' => $price->open ?? $price->harga,
+                    'high' => $price->high ?? $price->harga,
+                    'low' => $price->low ?? $price->harga,
+                    'close' => $price->close ?? $price->harga,
+                    'volume' => $price->volume,
+                ]);
+        }
+
+        $legacyResearches = AnalisaSaham::query()
+            ->whereRaw('UPPER(kode_saham) = ?', [strtoupper($stock->kode)])
+            ->with('brokerResearchDocuments')
+            ->get()
+            ->flatMap(fn ($analysis) => $analysis->brokerResearchDocuments->map(fn ($document) => [
+                'analysis' => $analysis,
+                'document' => $document,
+            ]));
+
+        $targets = $stock->brokerResearches->pluck('target_price')->filter()->map(fn ($value) => (float) $value);
+        $consensus = [
+            'highest' => $targets->max(),
+            'lowest' => $targets->min(),
+            'average' => $targets->isNotEmpty() ? $targets->avg() : null,
+            'upside' => $targets->isNotEmpty() && $stock->harga_terbaru
+                ? (($targets->avg() - (float) $stock->harga_terbaru) / (float) $stock->harga_terbaru) * 100
+                : null,
+        ];
+
+        return view('saham.detail', [
+            'layout' => $request->routeIs('admin.*') ? 'layouts.admin' : 'layouts.user',
+            'routePrefix' => $request->routeIs('admin.*') ? 'admin' : 'user',
+            'stock' => $stock,
+            'prices' => $prices,
+            'legacyResearches' => $legacyResearches,
+            'consensus' => $consensus,
+            'timeframe' => $request->input('timeframe', '1M'),
+        ]);
+    }
+
+    public function summarizeNews(Request $request, Stock $stock, AIAnalysisService $service)
+    {
+        return $this->summarize($request, fn () => $service->summarizeStockNews($stock->id), 'berita');
+    }
+
+    public function summarizeBrokerResearch(Request $request, Stock $stock, AIAnalysisService $service)
+    {
+        return $this->summarize($request, fn () => $service->summarizeBrokerResearch($stock->id), 'riset-broker');
+    }
+
+    public function viewResearch(Request $request, Stock $stock, StockBrokerResearch $research)
+    {
+        $this->ensureResearch($stock, $research);
+        abort_if(!$research->pdf_file || !Storage::disk('public')->exists($research->pdf_file), 404);
+
+        return response()->file(Storage::disk('public')->path($research->pdf_file));
+    }
+
+    public function downloadResearch(Request $request, Stock $stock, StockBrokerResearch $research)
+    {
+        $this->ensureResearch($stock, $research);
+        abort_if(!$research->pdf_file || !Storage::disk('public')->exists($research->pdf_file), 404);
+
+        return Storage::disk('public')->download($research->pdf_file);
+    }
+
+    public function syncYahooPrices(Request $request, Stock $stock, YahooStockDataService $service)
+    {
+        $request->validate([
+            'range' => 'nullable|in:5d,1mo,3mo,6mo,ytd,1y,2y,5y',
+        ]);
+
+        try {
+            $result = $service->syncPrices($stock, $request->input('range', '1y'));
+
+            return back()
+                ->with('success', "Sync Yahoo {$result['symbol']} berhasil. {$result['saved']} data harga tersimpan.")
+                ->with('active_tab', 'grafik');
+        } catch (\Throwable $e) {
+            return back()
+                ->with('error', 'Sync Yahoo gagal: ' . $e->getMessage())
+                ->with('active_tab', 'grafik');
+        }
+    }
+
+    private function summarize(Request $request, callable $callback, string $tab)
+    {
+        try {
+            $callback();
+
+            return back()->with('success', 'AI Summary berhasil dibuat.')->with('active_tab', $tab);
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage())->with('active_tab', $tab);
+        }
+    }
+
+    private function ensureResearch(Stock $stock, StockBrokerResearch $research): void
+    {
+        abort_if($research->stock_id !== $stock->id, 404);
+    }
+
+    private function timeframeStart(string $timeframe): Carbon
+    {
+        return match ($timeframe) {
+            '1D' => now()->subDay(),
+            '1W' => now()->subWeek(),
+            '3M' => now()->subMonths(3),
+            '6M' => now()->subMonths(6),
+            'YTD' => now()->startOfYear(),
+            '1Y' => now()->subYear(),
+            default => now()->subMonth(),
+        };
+    }
+}

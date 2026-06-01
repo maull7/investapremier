@@ -19,12 +19,59 @@ class InvestmentManagerController extends Controller
 
         if ($request->search) {
             $s = $request->search;
-            $query->where('name', 'like', "%{$s}%");
+            $query->where(function ($q) use ($s) {
+                $q->where('name', 'like', "%{$s}%")
+                  ->orWhere('kode_mi', 'like', "%{$s}%")
+                  ->orWhere('kode_ojk', 'like', "%{$s}%");
+            });
+        }
+
+        if ($request->filled('mata_uang')) {
+            $query->whereHas('periods', function ($q) use ($request) {
+                $q->where('mata_uang', $request->mata_uang);
+            });
+        }
+
+        if ($request->filled('tahun')) {
+            $query->whereHas('periods', function ($q) use ($request) {
+                $q->where('tahun', $request->tahun);
+            });
+        }
+
+        if ($request->filled('kuartal')) {
+            $query->whereHas('periods', function ($q) use ($request) {
+                $q->where('kuartal', $request->kuartal);
+            });
         }
 
         $managers = $query->orderBy('name')->paginate($perPage)->withQueryString();
 
-        return view('admin.investment-managers.index', compact('managers', 'perPage'));
+        $tahunList = InvestmentManagerPeriod::select('tahun')->distinct()->whereNotNull('tahun')->orderBy('tahun', 'desc')->pluck('tahun');
+
+        return view('admin.investment-managers.index', compact('managers', 'perPage', 'tahunList'));
+    }
+
+    public function show($id)
+    {
+        $manager = InvestmentManager::with('periods')->findOrFail($id);
+        $manager->load('funds');
+
+        $chartPeriods = $manager->periods()
+            ->when(request('chart_tahun'), fn($q, $v) => $q->where('tahun', $v))
+            ->when(request('chart_kuartal'), fn($q, $v) => $q->where('kuartal', $v))
+            ->when(request('chart_mata_uang'), fn($q, $v) => $q->where('mata_uang', $v))
+            ->orderBy('period_date')
+            ->get();
+
+        $chartLabels = $chartPeriods->pluck('period_date')->map(fn($d) => $d->format('M Y'));
+        $chartAum = $chartPeriods->pluck('aum');
+        $chartUp = $chartPeriods->pluck('up');
+
+        $tahunList = InvestmentManagerPeriod::select('tahun')->distinct()->whereNotNull('tahun')->orderBy('tahun', 'desc')->pluck('tahun');
+
+        return view('admin.investment-managers.show', compact(
+            'manager', 'chartPeriods', 'chartLabels', 'chartAum', 'chartUp', 'tahunList'
+        ));
     }
 
     public function create()

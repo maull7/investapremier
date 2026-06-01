@@ -1,7 +1,7 @@
 @extends($layout ?? 'layouts.user')
 
 @section('content')
-    <div class="max-w-5xl" x-data="lapkeuForm('{{ $previewAiRoute }}', '{{ $previewAiPlusRoute }}', '{{ $parsePdfRoute }}', '{{ $parsePdfVisionRoute }}', '{{ $parsePdfStatusRoute }}', '{{ $lookupKeuanganEmitenRoute }}')">
+    <div class="max-w-5xl" x-data="lapkeuForm('{{ $previewAiRoute }}', '{{ $previewAiPlusRoute }}', '{{ $parsePdfRoute }}', '{{ $parsePdfVisionRoute }}', '{{ $parsePdfStatusRoute }}', '{{ $lookupKeuanganEmitenRoute }}', '{{ $resolveAiPlusDataRoute }}')">
         <div class="mb-6">
             <h1 class="text-xl font-bold text-primary">Submit Analisa {{ $productLabel }}</h1>
             <p class="text-sm text-muted mt-0.5">Isi data laporan keuangan obligasi secara manual atau upload Excel</p>
@@ -31,6 +31,7 @@
             <input type="hidden" name="jenis_analisa" :value="jenisAnalisa">
             <input type="hidden" name="periode" :value="jenisAnalisa === 'periode' ? periodeAnalisa : ''">
             <input type="hidden" name="tahun" :value="jenisAnalisa === 'tahunan' ? tahunAnalisa : ''">
+            <input type="hidden" name="financial_data_sources" :value="JSON.stringify(financialDataSources)">
 
             {{-- Info Dasar --}}
             <div class="bg-white rounded-xl border border-line p-6 space-y-4">
@@ -137,14 +138,13 @@
 
                 {{-- TAB: AI PLUS --}}
                 <div x-show="mode==='ai-plus'" class="p-6 space-y-4">
-                    <p class="text-sm text-muted">Analisa AI Plus membutuhkan data <strong>Input Manual yang
-                            lengkap</strong> (Neraca, Laba Rugi, dan Arus Kas).</p>
+                    <p class="text-sm text-muted">Analisa AI Plus memakai data terbaik yang tersedia dengan prioritas:
+                        Input Manual, Upload Excel, PDF Lapkeu, lalu Master Obligasi.</p>
 
-                    <div x-show="!isPlusManualReady()"
+                    <div x-show="plusResolvedChecked && !plusResolvedComplete"
                         class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-900 space-y-2">
-                        <p class="font-semibold">Data Input Manual belum lengkap</p>
-                        <p class="text-amber-800">Lengkapi bagian berikut di tab <strong>Input Manual</strong> sebelum
-                            menjalankan Analisa AI Plus:</p>
+                        <p class="font-semibold">Data keuangan belum lengkap</p>
+                        <p class="text-amber-800">Field berikut belum tersedia dari seluruh sumber data:</p>
                         <ul class="list-disc list-inside space-y-1 text-amber-900">
                             <template x-for="item in plusMissingList()" :key="item">
                                 <li x-text="item"></li>
@@ -152,13 +152,30 @@
                         </ul>
                     </div>
 
-                    <button type="button" @click="runAiPlusPreview()" :disabled="aiPlusLoading || !isPlusManualReady()"
+                    <button type="button" @click="runAiPlusPreview()" :disabled="aiPlusLoading"
                         class="px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed">
                         <span x-show="!aiPlusLoading">Jalankan Analisa AI Plus</span>
                         <span x-show="aiPlusLoading">Memproses...</span>
                     </button>
-                    <p x-show="!isPlusManualReady()" class="text-xs text-muted">Tombol aktif setelah semua data di atas
-                        terisi.</p>
+                    <button type="button" @click="resolvePlusData()" :disabled="plusResolveLoading"
+                        class="ml-2 px-4 py-2.5 border border-line rounded-lg text-sm font-semibold hover:bg-[#f8fafc] disabled:opacity-50">
+                        <span x-show="!plusResolveLoading">Cek Kelengkapan Data</span>
+                        <span x-show="plusResolveLoading">Memeriksa...</span>
+                    </button>
+
+                    <div x-show="plusResolvedChecked && Object.keys(plusResolvedData).length"
+                        class="border border-line rounded-lg overflow-hidden text-sm">
+                        <div class="px-4 py-3 bg-[#f8fafc] font-semibold text-primary">Sumber Data AI Plus</div>
+                        <template x-for="(item, key) in plusResolvedData" :key="key">
+                            <div class="px-4 py-2 border-t border-line flex justify-between gap-4">
+                                <span x-text="plusRequiredLabels[key] || key"></span>
+                                <span class="text-right">
+                                    <span x-text="formatExtractedValue(item.value)"></span>
+                                    <span class="ml-2 text-xs text-muted" x-text="sourceLabel(item.source)"></span>
+                                </span>
+                            </div>
+                        </template>
+                    </div>
 
                     <div x-show="aiPlusError"
                         class="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 whitespace-pre-line"
@@ -218,7 +235,7 @@
                                 <button type="button" @click="mode='manual'"
                                     class="px-3 py-1.5 text-xs font-semibold border border-line rounded-lg hover:bg-white transition">Review/Edit
                                     Input Manual</button>
-                                <button type="button" @click="mode='ai-plus'" :disabled="!isPlusManualReady()"
+                                <button type="button" @click="mode='ai-plus'; resolvePlusData()"
                                     class="px-3 py-1.5 text-xs font-semibold bg-primary text-white rounded-lg disabled:opacity-50 transition">Continue
                                     to AI Plus</button>
                             </div>
@@ -265,13 +282,13 @@
 
     @push('scripts')
         <script>
-            function lapkeuForm(previewAiUrl, previewAiPlusUrl, parsePdfUrl, parsePdfVisionUrl, parsePdfStatusUrl, lookupKeuanganEmitenUrl) {
+            function lapkeuForm(previewAiUrl, previewAiPlusUrl, parsePdfUrl, parsePdfVisionUrl, parsePdfStatusUrl, lookupKeuanganEmitenUrl, resolveAiPlusDataUrl) {
                 @php
                     $plusLabels = [
                         'total_asset' => 'Total Aset',
                         'total_liabilities' => 'Total Liabilitas',
-                        'equity' => 'Total Ekuitas',
-                        'net_revenue' => 'Pendapatan Bersih',
+                        'total_equity' => 'Total Ekuitas',
+                        'revenue' => 'Pendapatan Bersih',
                         'net_income' => 'Laba Bersih',
                     ];
                 @endphp
@@ -298,6 +315,14 @@
                     aiPlusError: '',
                     aiPlusResult: null,
                     previewAiPlusUrl: previewAiPlusUrl,
+                    resolveAiPlusDataUrl: resolveAiPlusDataUrl,
+                    plusResolveLoading: false,
+                    plusResolvedChecked: false,
+                    plusResolvedComplete: false,
+                    plusResolvedData: {},
+                    plusResolvedMissing: [],
+                    financialDataSources: {},
+                    financialFieldNames: ['total_asset', 'total_liabilities', 'equity', 'net_revenue', 'net_income'],
                     pdfLoading: false,
                     pdfError: '',
                     pdfSuccess: '',
@@ -355,13 +380,22 @@
                     parsePdfVisionUrl: parsePdfVisionUrl,
                     parsePdfStatusUrl: parsePdfStatusUrl,
 
+                    init() {
+                        document.addEventListener('input', (event) => {
+                            const name = event.target?.name;
+                            if (this.financialFieldNames.includes(name)) {
+                                this.financialDataSources[name] = 'input_manual';
+                            }
+                        });
+                    },
+
                     onPdfSelected(event) {
                         this.aiPdfFile = event.target?.files?.[0] || null;
                         this.aiParseError = '';
                         this.aiParseSuccess = '';
                     },
 
-                    fillLapkeuFormFromData(d) {
+                    fillLapkeuFormFromData(d, source = 'pdf_lapkeu') {
                         const set = (name, val) => {
                             const el = document.querySelector(`[name="${name}"]`);
                             if (el && val != null) el.value = val;
@@ -397,7 +431,12 @@
                             'net_income_attributable_to_non_controlling_interest', 'net_income', 'eps',
                             'cash_flows_operating_activities', 'cash_flows_investment', 'cash_flows_financing'
                         ];
-                        numFields.forEach(f => set(f, d[f]));
+                        numFields.forEach(f => {
+                            set(f, d[f]);
+                            if (d[f] !== null && d[f] !== undefined && d[f] !== '') {
+                                this.financialDataSources[f] = source;
+                            }
+                        });
                     },
 
                     formatExtractedValue(value) {
@@ -511,7 +550,7 @@
                                 }
                                 if (d.pdf_lapkeu_path) this.pdfPath = d.pdf_lapkeu_path;
                                 this.extractedData = d;
-                                this.fillLapkeuFormFromData(d);
+                                this.fillLapkeuFormFromData(d, 'pdf_lapkeu');
                                 this.aiParseLoading = false;
                                 const nama = document.getElementById('nama_obligasi')?.value?.trim();
                                 if (!nama) {
@@ -579,7 +618,7 @@
                                 }
                                 if (d.pdf_lapkeu_path) this.pdfPath = d.pdf_lapkeu_path;
                                 this.extractedData = d;
-                                this.fillLapkeuFormFromData(d);
+                                this.fillLapkeuFormFromData(d, 'pdf_lapkeu');
                                 this.pdfSuccess =
                                     'Data berhasil diekstrak dari PDF dan mengisi Input Manual sebagai draft. Review/edit data sebelum Save atau lanjutkan ke AI Plus.';
                             })
@@ -637,21 +676,17 @@
                         return el ? el.value?.trim() : '';
                     },
 
-                    isPlusManualReady() {
-                        if (!this.previewAiPlusUrl) return false;
-                        const required = ['total_asset', 'total_liabilities', 'equity', 'net_revenue', 'net_income'];
-                        return required.every(f => {
-                            const v = this.getFormValue(f);
-                            return v !== '' && v != null && !isNaN(Number(v)) && Number(v) !== 0;
-                        });
+                    plusMissingList() {
+                        return this.plusResolvedMissing.map(f => this.plusRequiredLabels[f] || f);
                     },
 
-                    plusMissingList() {
-                        const required = ['total_asset', 'total_liabilities', 'equity', 'net_revenue', 'net_income'];
-                        return required.filter(f => {
-                            const v = this.getFormValue(f);
-                            return v === '' || v == null || isNaN(Number(v)) || Number(v) === 0;
-                        }).map(f => this.plusRequiredLabels[f] || f);
+                    sourceLabel(source) {
+                        return {
+                            input_manual: 'Input Manual',
+                            upload_excel: 'Upload Excel',
+                            pdf_lapkeu: 'PDF Lapkeu',
+                            master_obligasi: 'Master Obligasi',
+                        }[source] || 'Belum tersedia';
                     },
 
                     isAnalisaSourceReady() {
@@ -696,7 +731,7 @@
                                     throw new Error(resp.message || 'Data Keuangan Emiten tidak ditemukan.');
                                 }
 
-                                this.fillLapkeuFormFromData(resp.data || {});
+                                this.fillLapkeuFormFromData(resp.data || {}, 'master_obligasi');
                                 this.extractedData = resp.data || null;
                                 this.sourceOk = true;
                                 this.sourceMessage = resp.message || 'Data Keuangan Emiten berhasil diproses.';
@@ -711,10 +746,6 @@
                     },
 
                     runAiPlusPreview() {
-                        if (!this.isPlusManualReady()) {
-                            this.aiPlusError = 'Lengkapi semua data Input Manual terlebih dahulu.';
-                            return;
-                        }
                         this.aiPlusLoading = true;
                         this.aiPlusError = '';
                         const form = document.getElementById('lapkeu-form');
@@ -738,13 +769,37 @@
                                     return;
                                 }
                                 this.aiPlusResult = resp.data;
+                                this.applyResolvedResponse(resp);
                             })
                             .catch(e => {
                                 this.aiPlusError = e.message || 'Gagal memproses';
                             })
                             .finally(() => {
-                                this.aiLoading = false;
+                                this.aiPlusLoading = false;
                             });
+                    },
+
+                    applyResolvedResponse(resp) {
+                        if (!resp.resolved_data && !resp.data) return;
+                        this.plusResolvedData = resp.resolved_data || resp.data || {};
+                        this.plusResolvedMissing = resp.missing || [];
+                        this.plusResolvedComplete = resp.complete ?? this.plusResolvedMissing.length === 0;
+                        this.plusResolvedChecked = true;
+                    },
+
+                    resolvePlusData() {
+                        if (!this.resolveAiPlusDataUrl) return;
+                        this.plusResolveLoading = true;
+                        const fd = new FormData(document.getElementById('lapkeu-form'));
+                        fetch(this.resolveAiPlusDataUrl, {
+                                method: 'POST',
+                                headers: { 'Accept': 'application/json' },
+                                body: fd,
+                            })
+                            .then(r => r.json())
+                            .then(resp => this.applyResolvedResponse(resp))
+                            .catch(e => this.aiPlusError = e.message || 'Gagal memeriksa kelengkapan data.')
+                            .finally(() => this.plusResolveLoading = false);
                     },
                 };
             }

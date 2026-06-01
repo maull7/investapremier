@@ -19,7 +19,7 @@ class InvestmentManagerImport implements ToCollection, WithHeadingRow, WithCalcu
 
         $headings = array_keys($rows->first()->toArray());
 
-        $periods = []; // [date => [aumKey, upKey, originalHeadingAUM, originalHeadingUP]]
+        $periods = [];
         foreach ($headings as $h) {
             if (preg_match('/^(aum|up)[\s_]+(.+)$/i', $h, $m)) {
                 $type = strtolower($m[1]);
@@ -36,14 +36,21 @@ class InvestmentManagerImport implements ToCollection, WithHeadingRow, WithCalcu
             if (empty($name)) continue;
 
             $kodeMi = trim($row['kode_mi'] ?? $row['kode'] ?? '');
+            $kodeOjk = trim($row['kode_ojk'] ?? $row['ojk'] ?? '');
 
             $manager = InvestmentManager::firstOrCreate(
                 ['name' => $name],
-                ['kode_mi' => $kodeMi ?: null]
+                [
+                    'kode_mi' => $kodeMi ?: null,
+                    'kode_ojk' => $kodeOjk ?: null,
+                ]
             );
 
             if ($kodeMi && !$manager->kode_mi) {
                 $manager->update(['kode_mi' => $kodeMi]);
+            }
+            if ($kodeOjk && !$manager->kode_ojk) {
+                $manager->update(['kode_ojk' => $kodeOjk]);
             }
 
             foreach ($periods as $date => $keys) {
@@ -51,15 +58,32 @@ class InvestmentManagerImport implements ToCollection, WithHeadingRow, WithCalcu
                 $up = $this->parseIdr($row[$keys['up']] ?? null);
 
                 if ($aum !== null || $up !== null) {
+                    $data = [
+                        'aum' => $aum,
+                        'up' => $up,
+                    ];
+
+                    $mataUang = trim($row['mata_uang'] ?? '');
+                    if ($mataUang) {
+                        $data['mata_uang'] = strtoupper($mataUang);
+                    }
+
+                    $tahun = trim($row['tahun'] ?? '');
+                    if ($tahun !== '' && is_numeric($tahun)) {
+                        $data['tahun'] = (int) $tahun;
+                    }
+
+                    $kuartal = trim($row['kuartal'] ?? '');
+                    if ($kuartal !== '' && is_numeric($kuartal)) {
+                        $data['kuartal'] = (int) $kuartal;
+                    }
+
                     InvestmentManagerPeriod::updateOrCreate(
                         [
                             'investment_manager_id' => $manager->id,
                             'period_date' => $date,
                         ],
-                        [
-                            'aum' => $aum,
-                            'up' => $up,
-                        ]
+                        $data
                     );
                 }
             }

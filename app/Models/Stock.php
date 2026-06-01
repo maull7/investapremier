@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Stock extends Model
 {
@@ -24,4 +26,34 @@ class Stock extends Model
         'market_capital' => 'decimal:2',
         'last_update' => 'date',
     ];
+
+    public function profile(): HasOne
+    {
+        return $this->hasOne(StockProfile::class);
+    }
+
+    public function corporateActions(): HasMany
+    {
+        return $this->hasMany(StockCorporateAction::class)->latest('action_date');
+    }
+
+    public function prices(): HasMany
+    {
+        return $this->hasMany(StockPrice::class)->oldest('tanggal');
+    }
+
+    public function financialReports(): HasMany
+    {
+        return $this->hasMany(StockFinancialReport::class)->latest('report_year');
+    }
+
+    public function news(): HasMany
+    {
+        return $this->hasMany(StockNews::class)->latest('published_at');
+    }
+
+    public function brokerResearches(): HasMany
+    {
+        return $this->hasMany(StockBrokerResearch::class)->latest('research_date');
+    }
 }
