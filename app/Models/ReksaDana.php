@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ReksaDana extends Model
 {
@@ -11,6 +12,7 @@ class ReksaDana extends Model
 
     protected $fillable = [
         'kode_reksa_dana',
+        'investment_manager_id',
         'nama_reksa_dana',
         'nama_manajer_investasi',
         'jenis',
@@ -19,16 +21,42 @@ class ReksaDana extends Model
         'benchmark',
         'tujuan_investasi',
         'kebijakan_investasi',
+        'description',
+        'custodian_bank',
+        'launch_date',
         'mata_uang',
+        'risk_category',
+        'subscription_fee',
+        'redemption_fee',
+        'switching_fee',
+        'management_fee',
+        'custodian_fee',
+        'minimum_subscription',
+        'minimum_topup',
+        'minimum_redemption',
         'nab_per_unit',
         'tanggal_nab',
     ];
 
     protected $casts = [
-        'kategori'    => 'array',
-        'tanggal_nab' => 'date',
-        'nab_per_unit' => 'decimal:6',
+        'kategori'              => 'array',
+        'tanggal_nab'           => 'date',
+        'launch_date'           => 'date',
+        'nab_per_unit'          => 'decimal:6',
+        'subscription_fee'      => 'decimal:2',
+        'redemption_fee'        => 'decimal:2',
+        'switching_fee'         => 'decimal:2',
+        'management_fee'        => 'decimal:2',
+        'custodian_fee'         => 'decimal:2',
+        'minimum_subscription'  => 'decimal:2',
+        'minimum_topup'         => 'decimal:2',
+        'minimum_redemption'    => 'decimal:2',
     ];
+
+    public function investmentManager(): BelongsTo
+    {
+        return $this->belongsTo(InvestmentManager::class, 'investment_manager_id');
+    }
 
     public function harga(): HasMany
     {
@@ -40,8 +68,35 @@ class ReksaDana extends Model
         return $this->hasMany(DataSourceLink::class, 'reksa_dana_id');
     }
 
+    public function documents(): HasMany
+    {
+        return $this->hasMany(ReksaDanaDocument::class, 'reksa_dana_id')->latest();
+    }
+
+    public function assetAllocations(): HasMany
+    {
+        return $this->hasMany(MutualFundAssetAllocation::class, 'reksa_dana_id');
+    }
+
+    public function portfolioCompositions(): HasMany
+    {
+        return $this->hasMany(MutualFundPortfolioComposition::class, 'reksa_dana_id');
+    }
+
+    public function managementTeams(): HasMany
+    {
+        return $this->hasMany(MutualFundManagementTeam::class, 'reksa_dana_id');
+    }
+
     public function getKategoriLabelAttribute(): string
     {
         return is_array($this->kategori) ? implode(', ', $this->kategori) : ($this->kategori ?? '—');
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (ReksaDana $reksaDana) {
+            $reksaDana->documents()->get()->each->deleteStoredFile();
+        });
     }
 }

@@ -98,6 +98,11 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
     // Daftar Reksa Dana (master data + harga harian)
     Route::get('daftar-reksa-dana', [DaftarReksaDanaController::class, 'index'])->name('daftar-reksa-dana.index');
+    Route::post('daftar-reksa-dana/documents', [DaftarReksaDanaController::class, 'storeDocument'])->name('daftar-reksa-dana.documents.store');
+    Route::get('daftar-reksa-dana/documents/{document}/view', [DaftarReksaDanaController::class, 'viewDocument'])->name('daftar-reksa-dana.documents.view');
+    Route::get('daftar-reksa-dana/documents/{document}/download', [DaftarReksaDanaController::class, 'downloadDocument'])->name('daftar-reksa-dana.documents.download');
+    Route::delete('daftar-reksa-dana/documents/{document}', [DaftarReksaDanaController::class, 'destroyDocument'])->name('daftar-reksa-dana.documents.destroy');
+    Route::get('daftar-reksa-dana/{reksaDana}', [DaftarReksaDanaController::class, 'show'])->name('daftar-reksa-dana.show');
     Route::post('daftar-reksa-dana/upload-harga', [DaftarReksaDanaController::class, 'uploadHarga'])->name('daftar-reksa-dana.upload-harga');
     Route::post('daftar-reksa-dana/upload-harian', [DaftarReksaDanaController::class, 'uploadHarian'])->name('daftar-reksa-dana.upload-harian');
     Route::get('daftar-reksa-dana/template-harga', [DaftarReksaDanaController::class, 'downloadTemplateHarga'])->name('daftar-reksa-dana.template-harga');

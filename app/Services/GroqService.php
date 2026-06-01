@@ -526,6 +526,14 @@ DEFAULT);
         $lines[] = "Liquidity Ratio (AUM/MarCap): ".($analisa->liquidity_ratio ? number_format($analisa->liquidity_ratio * 100, 2).'%' : 'N/A');
         $lines[] = "Durasi Rata-rata Obligasi: ".($analisa->durasi_rata_rata ? $analisa->durasi_rata_rata.' tahun' : 'N/A');
 
+        if ($analisa->relationLoaded('alokasiAset') && $analisa->alokasiAset->isNotEmpty()) {
+            $lines[] = "";
+            $lines[] = "ALOKASI ASET / PORTOFOLIO";
+            foreach ($analisa->alokasiAset->sortByDesc('persentase') as $aset) {
+                $lines[] = "- {$aset->nama_aset}: {$aset->persentase}%";
+            }
+        }
+
         if ($analisa->sektor->isNotEmpty()) {
             $lines[] = "";
             $lines[] = "KOMPOSISI SEKTOR";
@@ -535,14 +543,30 @@ DEFAULT);
         }
 
         $top10 = $analisa->efek->where('top_10', true)->sortByDesc('bobot');
-        if ($top10->isNotEmpty()) {
+        $efekAcuan = $top10->isNotEmpty()
+            ? $top10
+            : $analisa->efek->sortByDesc('bobot');
+        if ($efekAcuan->isNotEmpty()) {
             $lines[] = "";
-            $lines[] = "10 EFEK TERBESAR";
-            foreach ($top10 as $e) {
+            $lines[] = $top10->isNotEmpty() ? "10 EFEK TERBESAR" : "DAFTAR EFEK";
+            foreach ($efekAcuan as $e) {
                 $kontribusi = $e->kontribusi_kinerja !== null
                     ? ($e->kontribusi_kinerja >= 0 ? '+' : '').$e->kontribusi_kinerja.'%'
                     : 'N/A';
-                $lines[] = "- {$e->kode_efek} ({$e->nama_efek}): bobot {$e->bobot}%, kontribusi {$kontribusi}";
+                $detail = "- {$e->kode_efek} ({$e->nama_efek}): bobot {$e->bobot}%, sektor ".($e->sektor ?: 'N/A').", kontribusi IHSG {$kontribusi}";
+                if ($e->nilai_pasar !== null) {
+                    $detail .= ', nilai pasar Rp '.number_format((float) $e->nilai_pasar, 0, ',', '.');
+                }
+                $returns = [];
+                foreach (['return_1m' => '1M', 'return_3m' => '3M', 'return_6m' => '6M', 'return_1y' => '1Y'] as $key => $label) {
+                    if ($e->{$key} !== null) {
+                        $returns[] = "{$label}: {$e->{$key}}%";
+                    }
+                }
+                if ($returns !== []) {
+                    $detail .= ', return '.implode(', ', $returns);
+                }
+                $lines[] = $detail;
             }
         }
 

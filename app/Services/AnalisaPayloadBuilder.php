@@ -44,6 +44,13 @@ class AnalisaPayloadBuilder
                 'bobot'               => $r['bobot'] ?? null,
                 'kontribusi_kinerja'  => $r['kontribusi_kinerja'] ?? null,
                 'market_cap'          => $r['market_cap'] ?? null,
+                'nilai_pasar'         => $r['nilai_pasar'] ?? null,
+                'return_1m'           => $r['return_1m'] ?? null,
+                'return_3m'           => $r['return_3m'] ?? null,
+                'return_6m'           => $r['return_6m'] ?? null,
+                'return_1y'           => $r['return_1y'] ?? null,
+                'ihsg_contribution'   => $r['ihsg_contribution'] ?? null,
+                'effect_type'         => $r['effect_type'] ?? null,
                 'top_10'              => !empty($r['top_10']),
             ])));
 
