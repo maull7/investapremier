@@ -32,17 +32,30 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows
         }
 
         $nama = trim($row['nama_reksa_dana']);
-        $existing = ReksaDana::where('nama_reksa_dana', $nama)->first();
+
+        // Cari existing: prioritas kode, fallback nama
+        $existing = null;
+        if (!empty($row['kode_reksa_dana'])) {
+            $existing = ReksaDana::where('kode_reksa_dana', trim($row['kode_reksa_dana']))->first();
+        }
+        if (!$existing) {
+            $existing = ReksaDana::where('nama_reksa_dana', $nama)->first();
+        }
 
         if ($existing) {
-            $existing->update([
+            $updateData = [
+                'nama_reksa_dana'        => $nama,
                 'nama_manajer_investasi' => trim($row['nama_manajer_investasi'] ?? ''),
                 'jenis'                  => trim($row['jenis'] ?? ''),
                 'kategori'               => array_filter($kategori),
                 'mata_uang'              => strtoupper(trim($row['mata_uang'] ?? 'IDR')),
                 'nab_per_unit'           => $row['nab_per_unit'] ?? null,
                 'tanggal_nab'            => $tanggal,
-            ]);
+            ];
+            if (!empty($row['kode_reksa_dana'])) {
+                $updateData['kode_reksa_dana'] = trim($row['kode_reksa_dana']);
+            }
+            $existing->update($updateData);
             return $existing;
         }
 
