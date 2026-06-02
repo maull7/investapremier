@@ -102,7 +102,6 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('daftar-reksa-dana/documents/{document}/view', [DaftarReksaDanaController::class, 'viewDocument'])->name('daftar-reksa-dana.documents.view');
     Route::get('daftar-reksa-dana/documents/{document}/download', [DaftarReksaDanaController::class, 'downloadDocument'])->name('daftar-reksa-dana.documents.download');
     Route::delete('daftar-reksa-dana/documents/{document}', [DaftarReksaDanaController::class, 'destroyDocument'])->name('daftar-reksa-dana.documents.destroy');
-    Route::get('daftar-reksa-dana/{reksaDana}', [DaftarReksaDanaController::class, 'show'])->name('daftar-reksa-dana.show');
     Route::post('daftar-reksa-dana/upload-harga', [DaftarReksaDanaController::class, 'uploadHarga'])->name('daftar-reksa-dana.upload-harga');
     Route::post('daftar-reksa-dana/upload-harian', [DaftarReksaDanaController::class, 'uploadHarian'])->name('daftar-reksa-dana.upload-harian');
     Route::get('daftar-reksa-dana/template-harga', [DaftarReksaDanaController::class, 'downloadTemplateHarga'])->name('daftar-reksa-dana.template-harga');
@@ -113,6 +112,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('daftar-reksa-dana/harian/store', [DaftarReksaDanaController::class, 'storeHarian'])->name('daftar-reksa-dana.harian.store');
     Route::post('daftar-reksa-dana/harian/update/{hargaReksaDana}', [DaftarReksaDanaController::class, 'updateHarian'])->name('daftar-reksa-dana.harian.update');
     Route::delete('daftar-reksa-dana/harian/destroy/{hargaReksaDana}', [DaftarReksaDanaController::class, 'destroyHarian'])->name('daftar-reksa-dana.harian.destroy');
+    Route::get('daftar-reksa-dana/{reksaDana}', [DaftarReksaDanaController::class, 'show'])->name('daftar-reksa-dana.show');
 
     Route::post('data-source-links', [DataSourceLinkController::class, 'store'])->name('data-source-links.store');
     Route::put('data-source-links/{dataSourceLink}', [DataSourceLinkController::class, 'update'])->name('data-source-links.update');
