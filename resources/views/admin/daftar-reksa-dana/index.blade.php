@@ -319,11 +319,17 @@
                     </button>
                     <form method="GET" action="{{ route('admin.daftar-reksa-dana.index') }}" class="flex gap-2">
                         <input type="hidden" name="tab" value="harian">
+                        <input type="date" name="harian_tanggal" value="{{ $harianTanggal }}"
+                            class="text-xs border border-white/30 bg-white/10 text-white rounded-lg px-3 py-1.5 focus:outline-none focus:bg-white/20 [color-scheme:dark]">
                         <input type="text" name="search" value="{{ request('search') }}"
                             placeholder="Cari nama reksa dana..."
                             class="text-xs border border-white/30 bg-white/10 text-white placeholder-white/50 rounded-lg px-3 py-1.5 w-44 focus:outline-none focus:bg-white/20">
                         <button type="submit"
                             class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition">Cari</button>
+                        @if($harianTanggal || request('search'))
+                            <a href="{{ route('admin.daftar-reksa-dana.index', ['tab' => 'harian']) }}"
+                                class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-semibold transition">Reset</a>
+                        @endif
                     </form>
                 </div>
             </div>
@@ -646,7 +652,13 @@
 <div id="modal-harian-edit" class="fixed inset-0 z-50 hidden bg-black/40 flex items-center justify-center p-4" onclick="if(event.target===this)closeModal('modal-harian-edit')">
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg">
         <div class="flex items-center justify-between px-6 py-4 border-b border-line">
-            <h3 class="font-bold text-primary">Edit Data Harian</h3>
+            <div>
+                <h3 class="font-bold text-primary">Edit Data Harian</h3>
+                <p class="text-xs text-muted mt-0.5">
+                    Kode: <span id="edit-harian-info-kode" class="font-semibold text-primary">—</span>
+                    &nbsp;·&nbsp; Tanggal: <span id="edit-harian-info-tanggal" class="font-semibold text-primary">—</span>
+                </p>
+            </div>
             <button type="button" onclick="closeModal('modal-harian-edit')" class="p-1 hover:bg-[#f1f5f9] rounded-lg transition">
                 <svg class="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
@@ -662,7 +674,11 @@
                     @endforeach
                 </select>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Kode</label>
+                    <input type="text" id="edit-harian-kode" readonly class="w-full border border-line rounded-lg px-3 py-2 text-sm bg-[#f8fafc] text-muted">
+                </div>
                 <div>
                     <label class="block text-xs font-semibold text-primary mb-1">Tanggal <span class="text-red-500">*</span></label>
                     <input type="date" name="tanggal" id="edit-harian-tanggal" required class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-accent focus:ring focus:ring-accent/20">
@@ -718,8 +734,13 @@ function openEditHarian(data) {
     form.action = '{{ route("admin.daftar-reksa-dana.harian.update", "REPLACE_ID") }}'.replace('REPLACE_ID', data.id);
 
     document.getElementById('edit-harian-rd').value = data.reksa_dana_id;
-    document.getElementById('edit-harian-tanggal').value = data.tanggal;
+    document.getElementById('edit-harian-tanggal').value = (data.tanggal || '').substring(0, 10);
     document.getElementById('edit-harian-nab').value = data.nab_per_unit;
+    document.getElementById('edit-harian-kode').value = data.reksa_dana?.kode_reksa_dana || '—';
+
+    // Update header info juga
+    document.getElementById('edit-harian-info-kode').textContent = data.reksa_dana?.kode_reksa_dana || '—';
+    document.getElementById('edit-harian-info-tanggal').textContent = (data.tanggal || '').substring(0, 10);
 
     openModal('modal-harian-edit');
 }

@@ -10,6 +10,69 @@ class AIAnalysisService
     {
     }
 
+    public function generateNewsFromAI(int $stockId): int
+    {
+        $stock = Stock::with('profile')->findOrFail($stockId);
+        $namaPerusahaan = $stock->nama ?? $stock->profile?->company_name ?? $stock->kode;
+
+        $prompt = <<<PROMPT
+Kamu adalah jurnalis keuangan Indonesia. Buatkan 10 berita fiksi yang realistis tentang saham {$stock->kode} ({$namaPerusahaan}) dari berbagai media terkemuka Indonesia dan internasional.
+
+Media yang digunakan (satu berita per media):
+1. Kontan
+2. Bisnis Indonesia
+3. CNBC Indonesia
+4. Detik Finance
+5. Tempo Bisnis
+6. IDX Channel
+7. Investor Daily
+8. Bloomberg
+9. Reuters
+10. The Edge Markets
+
+Format output HANYA JSON array, tidak ada teks lain sebelum atau sesudah:
+[
+  {
+    "title": "judul berita",
+    "source": "nama media",
+    "published_at": "YYYY-MM-DD",
+    "summary": "ringkasan 2-3 kalimat dalam bahasa Indonesia"
+  }
+]
+
+Gunakan tanggal dalam 30 hari terakhir dari hari ini. Konten harus relevan dengan kondisi perusahaan, industri, dan pasar saham Indonesia. Jangan menyebut berita ini fiktif.
+PROMPT;
+
+        $raw = $this->ai->callAi([
+            ['role' => 'system', 'content' => 'Kamu adalah jurnalis keuangan. Balas HANYA dengan JSON array valid, tanpa markdown, tanpa penjelasan.'],
+            ['role' => 'user', 'content' => $prompt],
+        ], 60, 0.7);
+
+        // Ekstrak JSON dari respons
+        preg_match('/\[.*\]/s', $raw, $matches);
+        $items = json_decode($matches[0] ?? $raw, true);
+
+        if (!is_array($items) || empty($items)) {
+            throw new \RuntimeException('Gagal mem-parse respons AI. Coba lagi.');
+        }
+
+        $count = 0;
+        foreach ($items as $item) {
+            if (empty($item['title'])) continue;
+            \App\Models\StockNews::create([
+                'stock_id'     => $stockId,
+                'title'        => $item['title'],
+                'source'       => $item['source'] ?? null,
+                'published_at' => isset($item['published_at']) ? \Carbon\Carbon::parse($item['published_at'])->toDateTimeString() : now(),
+                'summary'      => $item['summary'] ?? null,
+                'ai_summary'   => null,
+            ]);
+            $count++;
+        }
+
+        return $count;
+    }
+
     public function summarizeStockNews($stockId): string
     {
         $stock = Stock::with('news')->findOrFail($stockId);

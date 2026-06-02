@@ -81,6 +81,16 @@ class StockDetailController extends Controller
         return $this->summarize($request, fn() => $service->summarizeStockNews($stock->id), 'berita');
     }
 
+    public function generateNews(Request $request, Stock $stock, AIAnalysisService $service)
+    {
+        try {
+            $count = $service->generateNewsFromAI($stock->id);
+            return back()->with('success', "{$count} berita berhasil di-generate oleh AI.")->with('active_tab', 'berita');
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage())->with('active_tab', 'berita');
+        }
+    }
+
     public function summarizeBrokerResearch(Request $request, Stock $stock, AIAnalysisService $service)
     {
         return $this->summarize($request, fn() => $service->summarizeBrokerResearch($stock->id), 'riset-broker');

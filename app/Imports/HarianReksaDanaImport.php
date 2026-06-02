@@ -43,15 +43,28 @@ class HarianReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows
 
     private function findReksaDana(array $row): ?ReksaDana
     {
+        $kode = !empty($row['kode_reksa_dana']) ? trim($row['kode_reksa_dana']) : null;
+        $nama = !empty($row['nama_reksa_dana']) ? trim($row['nama_reksa_dana']) : null;
+
         // Prioritas: kode_reksa_dana jika ada
-        if (!empty($row['kode_reksa_dana'])) {
-            $found = ReksaDana::where('kode_reksa_dana', trim($row['kode_reksa_dana']))->first();
+        if ($kode) {
+            $found = ReksaDana::where('kode_reksa_dana', $kode)->first();
             if ($found) return $found;
         }
 
-        // Fallback: nama_reksa_dana
-        if (!empty($row['nama_reksa_dana'])) {
-            return ReksaDana::where('nama_reksa_dana', trim($row['nama_reksa_dana']))->first();
+        // Fallback: cari by nama
+        if ($nama) {
+            $found = ReksaDana::where('nama_reksa_dana', $nama)->first();
+            if ($found) return $found;
+
+            // Tidak ditemukan: buat baru
+            return ReksaDana::create([
+                'nama_reksa_dana'        => $nama,
+                'kode_reksa_dana'        => $kode,
+                'nama_manajer_investasi' => '',
+                'jenis'                  => '',
+                'kategori'               => [],
+            ]);
         }
 
         return null;
