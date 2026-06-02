@@ -145,6 +145,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('saham/{stock}/summarize-broker-research', [StockDetailController::class, 'summarizeBrokerResearch'])->name('saham.summarize-broker-research');
     Route::post('saham/{stock}/sync-yahoo-prices', [StockDetailController::class, 'syncYahooPrices'])->name('saham.sync-yahoo-prices');
     Route::get('saham/{stock}/fetch-yahoo', [StockDetailController::class, 'fetchYahoo'])->name('saham.fetch-yahoo');
+    Route::get('saham/{stock}/fetch-summary', [StockDetailController::class, 'fetchSummary'])->name('saham.fetch-summary');
     Route::get('saham/{stock}/broker-research/{research}/view', [StockDetailController::class, 'viewResearch'])->name('saham.broker-research.view');
     Route::get('saham/{stock}/broker-research/{research}/download', [StockDetailController::class, 'downloadResearch'])->name('saham.broker-research.download');
     Route::get('saham-template', [StockController::class, 'downloadTemplate'])->name('saham.template');
@@ -308,6 +309,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::post('/saham/{stock}/summarize-broker-research', [StockDetailController::class, 'summarizeBrokerResearch'])->name('saham.summarize-broker-research');
     Route::post('/saham/{stock}/sync-yahoo-prices', [StockDetailController::class, 'syncYahooPrices'])->name('saham.sync-yahoo-prices');
     Route::get('/saham/{stock}/fetch-yahoo', [StockDetailController::class, 'fetchYahoo'])->name('saham.fetch-yahoo');
+    Route::get('/saham/{stock}/fetch-summary', [StockDetailController::class, 'fetchSummary'])->name('saham.fetch-summary');
     Route::get('/saham/{stock}/broker-research/{research}/view', [StockDetailController::class, 'viewResearch'])->name('saham.broker-research.view');
     Route::get('/saham/{stock}/broker-research/{research}/download', [StockDetailController::class, 'downloadResearch'])->name('saham.broker-research.download');
     // Route::get('/saham-template', [UserStockController::class, 'downloadTemplate'])->name('saham.template');

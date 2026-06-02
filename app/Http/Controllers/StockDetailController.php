@@ -102,6 +102,15 @@ class StockDetailController extends Controller
         return Storage::disk('public')->download($research->pdf_file);
     }
 
+    public function fetchSummary(Request $request, Stock $stock, YahooStockDataService $service)
+    {
+        try {
+            return response()->json(['success' => true, 'data' => $service->fetchSummary($stock)]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
     public function fetchYahoo(Request $request, Stock $stock, YahooStockDataService $service)
     {
         $range = $request->input('range', '1d');

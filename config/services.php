@@ -41,6 +41,15 @@ return [
         'redirect'      => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
     ],
 
+    'yfapi' => [
+        'key' => env('YFAPI_KEY'),
+        'url' => env('YFAPI_URL', 'https://yfapi.net'),
+    ],
+
+    'yahoo_finance' => [
+        'search_url' => env('YAHOO_FINANCE_SEARCH_URL', 'https://query1.finance.yahoo.com/v1/finance/search'),
+    ],
+
     'groq' => [
         'key'   => env('GROQ_API_KEY'),
         'model' => env('GROQ_MODEL', 'llama-3.3-70b-versatile'),
