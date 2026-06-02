@@ -20,8 +20,8 @@ class StockController extends Controller
             $s = $request->search;
             $query->where(function ($q) use ($s) {
                 $q->where('kode', 'like', "%{$s}%")
-                  ->orWhere('nama', 'like', "%{$s}%")
-                  ->orWhere('sektor', 'like', "%{$s}%");
+                    ->orWhere('nama', 'like', "%{$s}%")
+                    ->orWhere('sektor', 'like', "%{$s}%");
             });
         }
 

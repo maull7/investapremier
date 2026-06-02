@@ -13,14 +13,38 @@ class MonitorAnalisaSahamController extends AnalisaLapkeuController
     protected bool $isAdminContext = true;
     protected string $productLabel = 'Saham';
 
-    protected function getModel(): string { return AnalisaSaham::class; }
-    protected function indexRouteName(): string { return 'admin.analisa-saham.index'; }
-    protected function routePrefix(): string { return 'admin.analisa-saham'; }
-    protected function createView(): string { return 'analisa-saham.create'; }
-    protected function indexView(): string { return 'admin.analisa-saham.index'; }
-    protected function showView(): string { return 'admin.analisa-saham.show'; }
-    protected function pdfView(): string { return 'analisa-saham.pdf'; }
-    protected function namaField(): string { return 'nama_perusahaan'; }
+    protected function getModel(): string
+    {
+        return AnalisaSaham::class;
+    }
+    protected function indexRouteName(): string
+    {
+        return 'admin.analisa-saham.index';
+    }
+    protected function routePrefix(): string
+    {
+        return 'admin.analisa-saham';
+    }
+    protected function createView(): string
+    {
+        return 'analisa-saham.create';
+    }
+    protected function indexView(): string
+    {
+        return 'admin.analisa-saham.index';
+    }
+    protected function showView(): string
+    {
+        return 'admin.analisa-saham.show';
+    }
+    protected function pdfView(): string
+    {
+        return 'analisa-saham.pdf';
+    }
+    protected function namaField(): string
+    {
+        return 'nama_perusahaan';
+    }
 
     protected function validateBasicFields(Request $request): array
     {
