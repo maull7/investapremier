@@ -21,7 +21,7 @@ class StockDetailController extends Controller
         $prices = $stock->prices()
             ->where('tanggal', '>=', $startDate)
             ->get()
-            ->map(fn ($price) => [
+            ->map(fn($price) => [
                 'tanggal' => $price->tanggal->format('Y-m-d'),
                 'open' => $price->open ?? $price->harga,
                 'high' => $price->high ?? $price->harga,
@@ -36,7 +36,7 @@ class StockDetailController extends Controller
                 ->where('tanggal', '>=', $startDate)
                 ->oldest('tanggal')
                 ->get()
-                ->map(fn ($price) => [
+                ->map(fn($price) => [
                     'tanggal' => $price->tanggal->format('Y-m-d'),
                     'open' => $price->open ?? $price->harga,
                     'high' => $price->high ?? $price->harga,
@@ -50,12 +50,12 @@ class StockDetailController extends Controller
             ->whereRaw('UPPER(kode_saham) = ?', [strtoupper($stock->kode)])
             ->with('brokerResearchDocuments')
             ->get()
-            ->flatMap(fn ($analysis) => $analysis->brokerResearchDocuments->map(fn ($document) => [
+            ->flatMap(fn($analysis) => $analysis->brokerResearchDocuments->map(fn($document) => [
                 'analysis' => $analysis,
                 'document' => $document,
             ]));
 
-        $targets = $stock->brokerResearches->pluck('target_price')->filter()->map(fn ($value) => (float) $value);
+        $targets = $stock->brokerResearches->pluck('target_price')->filter()->map(fn($value) => (float) $value);
         $consensus = [
             'highest' => $targets->max(),
             'lowest' => $targets->min(),
@@ -78,12 +78,12 @@ class StockDetailController extends Controller
 
     public function summarizeNews(Request $request, Stock $stock, AIAnalysisService $service)
     {
-        return $this->summarize($request, fn () => $service->summarizeStockNews($stock->id), 'berita');
+        return $this->summarize($request, fn() => $service->summarizeStockNews($stock->id), 'berita');
     }
 
     public function summarizeBrokerResearch(Request $request, Stock $stock, AIAnalysisService $service)
     {
-        return $this->summarize($request, fn () => $service->summarizeBrokerResearch($stock->id), 'riset-broker');
+        return $this->summarize($request, fn() => $service->summarizeBrokerResearch($stock->id), 'riset-broker');
     }
 
     public function viewResearch(Request $request, Stock $stock, StockBrokerResearch $research)
@@ -100,6 +100,23 @@ class StockDetailController extends Controller
         abort_if(!$research->pdf_file || !Storage::disk('public')->exists($research->pdf_file), 404);
 
         return Storage::disk('public')->download($research->pdf_file);
+    }
+
+    public function fetchYahoo(Request $request, Stock $stock, YahooStockDataService $service)
+    {
+        $range = $request->input('range', '1d');
+        $allowed = ['1d', '5d', '1mo', '3mo', '6mo', '1y'];
+        if (!in_array($range, $allowed)) {
+            $range = '1d';
+        }
+
+        try {
+            $data = $service->fetchYahooData($stock, $range);
+
+            return response()->json(['success' => true, 'data' => $data]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 
     public function syncYahooPrices(Request $request, Stock $stock, YahooStockDataService $service)

@@ -95,7 +95,81 @@ class YahooStockDataService
         ];
     }
 
-    private function fetchChart(string $symbol, string $range): array
+    public function fetchYahooData(Stock $stock, string $range = '1d', string $interval = '1m'): array
+    {
+        $symbol = $this->symbol($stock->kode);
+        $intervalMap = [
+            '1d' => '1m',
+            '5d' => '5m',
+            '1mo' => '1h',
+            '3mo' => '1d',
+            '6mo' => '1d',
+            '1y' => '1d',
+        ];
+        $interval = $intervalMap[$range] ?? '1m';
+
+        $raw = $this->fetchChartFast($symbol, $range, $interval);
+        $meta = $raw['meta'] ?? [];
+        $timestamps = $raw['timestamp'] ?? [];
+        $quotes = $raw['indicators']['quote'][0] ?? [];
+
+        $chartData = [];
+        foreach ($timestamps as $i => $ts) {
+            $close = $quotes['close'][$i] ?? null;
+            if ($close === null) {
+                continue;
+            }
+            $chartData[] = [
+                'time' => $ts,
+                'open' => $quotes['open'][$i] ?? $close,
+                'high' => $quotes['high'][$i] ?? $close,
+                'low' => $quotes['low'][$i] ?? $close,
+                'close' => $close,
+                'volume' => $quotes['volume'][$i] ?? null,
+            ];
+        }
+
+        return [
+            'meta' => $meta,
+            'chart' => $chartData,
+        ];
+    }
+
+    // Single-attempt fetch, no retry/sleep, for live preview
+    private function fetchChartFast(string $symbol, string $range, string $interval): array
+    {
+        foreach ($this->baseUrls as $baseUrl) {
+            try {
+                $response = Http::withHeaders($this->headers())
+                    ->timeout(10)
+                    ->get($baseUrl . '/v8/finance/chart/' . $symbol, [
+                        'range' => $range,
+                        'interval' => $interval,
+                        'events' => 'history',
+                    ]);
+
+                if ($response->failed()) {
+                    continue;
+                }
+
+                $data = $response->json();
+                if ($data['chart']['error'] ?? null) {
+                    continue;
+                }
+
+                $result = $data['chart']['result'][0] ?? null;
+                if ($result) {
+                    return $result;
+                }
+            } catch (\Throwable $e) {
+                continue;
+            }
+        }
+
+        throw new \RuntimeException('Tidak dapat mengambil data dari Yahoo Finance untuk symbol ' . $symbol . '.');
+    }
+
+    private function fetchChartRaw(string $symbol, string $range, string $interval): array
     {
         $lastStatus = null;
         $lastMessage = null;
@@ -106,8 +180,8 @@ class YahooStockDataService
                     $response = Http::withHeaders($this->headers())
                         ->timeout((int) config('idx.timeout', 15))
                         ->get($baseUrl . '/v8/finance/chart/' . $symbol, [
-                            'range' => $this->normalizeRange($range),
-                            'interval' => '1d',
+                            'range' => $range,
+                            'interval' => $interval,
                             'events' => 'history',
                         ]);
 
@@ -133,8 +207,8 @@ class YahooStockDataService
                     }
 
                     $result = $data['chart']['result'][0] ?? null;
-                    if (!$result || empty($result['timestamp'])) {
-                        $lastMessage = 'Data harga Yahoo Finance tidak tersedia untuk symbol ' . $symbol . '.';
+                    if (!$result) {
+                        $lastMessage = 'Data Yahoo Finance tidak tersedia untuk symbol ' . $symbol . '.';
                         break;
                     }
 
@@ -149,10 +223,21 @@ class YahooStockDataService
         }
 
         if ($lastStatus === 429) {
-            throw new \RuntimeException('Yahoo Finance sedang rate-limit request dari server ini. Tunggu 1-5 menit lalu coba lagi, atau sync range yang lebih pendek seperti 1 Bulan.');
+            throw new \RuntimeException('Yahoo Finance sedang rate-limit. Tunggu 1-5 menit lalu coba lagi.');
         }
 
         throw new \RuntimeException('Yahoo Finance gagal merespons: ' . ($lastMessage ?: 'unknown error'));
+    }
+
+    private function fetchChart(string $symbol, string $range): array
+    {
+        $result = $this->fetchChartRaw($symbol, $this->normalizeRange($range), '1d');
+
+        if (empty($result['timestamp'])) {
+            throw new \RuntimeException('Data harga Yahoo Finance tidak tersedia untuk symbol ' . $symbol . '.');
+        }
+
+        return $result;
     }
 
     private function headers(): array
