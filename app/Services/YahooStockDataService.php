@@ -285,12 +285,12 @@ class YahooStockDataService
                 ->map(fn (array $news) => [
                     'title'       => $news['title'] ?? null,
                     'source'      => $news['publisher'] ?? null,
-                    'url'         => $news['link'] ?? null,
+                    'url'         => $this->externalUrl($news['link'] ?? null),
                     'publishedAt' => isset($news['providerPublishTime'])
                         ? Carbon::createFromTimestamp($news['providerPublishTime'])->toIso8601String()
                         : null,
                 ])
-                ->filter(fn (array $news) => filled($news['title']))
+                ->filter(fn (array $news) => filled($news['title']) && filled($news['url']))
                 ->values()
                 ->all();
         } catch (\Throwable $e) {
@@ -361,6 +361,15 @@ class YahooStockDataService
     private function raw(array $data, string $key): mixed
     {
         return $data[$key]['raw'] ?? null;
+    }
+
+    private function externalUrl(?string $url): ?string
+    {
+        if (!$url || !filter_var($url, FILTER_VALIDATE_URL)) {
+            return null;
+        }
+
+        return in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true) ? $url : null;
     }
 
     private function symbol(string $code): string

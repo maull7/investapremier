@@ -366,19 +366,51 @@
 
             <div x-show="tab==='berita'" class="p-6 space-y-4">
                 <div x-show="(summary?.news ?? []).length > 0" class="space-y-4">
-                    <h3 class="font-semibold text-primary">Berita Yahoo Finance</h3>
-                    <template x-for="news in (summary?.news ?? [])" :key="news.url || news.title">
-                        <div class="border border-line rounded-xl p-4 text-sm">
-                            <h3 class="font-semibold text-primary" x-text="news.title"></h3>
-                            <p class="text-xs text-muted mt-1">
-                                <span x-text="news.source || '-'"></span>
-                                <span> · </span>
-                                <span x-text="formatDate(news.publishedAt)"></span>
-                            </p>
-                            <a x-show="news.url" :href="news.url" target="_blank"
-                                class="inline-block mt-3 text-primary font-semibold">Buka Link</a>
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h3 class="font-semibold text-primary">Berita Yahoo Finance</h3>
+                            <p class="text-xs text-muted mt-0.5">Berita terbaru dari sumber eksternal terverifikasi.</p>
                         </div>
-                    </template>
+                        <span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold"
+                            x-text="`${(summary?.news ?? []).length} artikel`"></span>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <template x-for="news in (summary?.news ?? [])" :key="news.url || news.title">
+                            <article
+                                class="group relative overflow-hidden border border-line rounded-2xl bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition duration-200">
+                                <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary to-emerald-400"></div>
+                                <div class="p-5">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <span
+                                                class="w-9 h-9 shrink-0 rounded-xl bg-primary/10 text-primary grid place-items-center font-bold"
+                                                x-text="sourceInitial(news.source)"></span>
+                                            <div class="min-w-0">
+                                                <p class="text-xs font-semibold text-primary truncate"
+                                                    x-text="news.source || 'Sumber berita'"></p>
+                                                <p class="text-[11px] text-muted" x-text="formatDate(news.publishedAt)"></p>
+                                            </div>
+                                        </div>
+                                        <span class="shrink-0 px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold uppercase">
+                                            Live API
+                                        </span>
+                                    </div>
+                                    <h3 class="mt-4 text-base leading-snug font-bold text-primary">
+                                        <a x-show="news.url" :href="news.url" target="_blank" rel="noopener noreferrer"
+                                            class="group-hover:text-accent transition" x-text="news.title"></a>
+                                        <span x-show="!news.url" x-text="news.title"></span>
+                                    </h3>
+                                    <div class="mt-5 pt-4 border-t border-line flex items-center justify-between">
+                                        <span class="text-xs text-muted">Artikel eksternal</span>
+                                        <a x-show="news.url" :href="news.url" target="_blank" rel="noopener noreferrer"
+                                            class="inline-flex items-center gap-1.5 text-xs text-primary font-bold hover:text-accent transition">
+                                            Baca selengkapnya <span aria-hidden="true">→</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </article>
+                        </template>
+                    </div>
                 </div>
                 <div x-show="summaryLoading" class="text-xs text-muted">Memuat berita terkait...</div>
                 @if ($routePrefix === 'admin')
@@ -397,20 +429,84 @@
                         </form>
                     </div>
                 @endif
-                @forelse ($stock->news as $news)
-                    <div class="border border-line rounded-xl p-4 text-sm">
-                        <h3 class="font-semibold text-primary">{{ $news->title }}</h3>
-                        <p class="text-xs text-muted mt-1">{{ $news->source ?: '-' }} ·
-                            {{ optional($news->published_at)->format('d/m/Y') ?: '-' }}</p>
-                        <p class="mt-3">{{ $news->summary ?: '-' }}</p>
-                        @if ($news->ai_summary)
-                            <p class="mt-3 p-3 bg-blue-50 rounded-lg text-blue-800">{{ $news->ai_summary }}</p>
-                        @endif
-                        @if ($news->url)
-                            <a href="{{ $news->url }}" target="_blank"
-                                class="inline-block mt-3 text-primary font-semibold">Buka Link</a>
-                        @endif
+                @php
+                    $newsSources = $stock->news
+                        ->filter(fn($news) => filter_var($news->url, FILTER_VALIDATE_URL)
+                            && in_array(parse_url($news->url, PHP_URL_SCHEME), ['http', 'https'], true))
+                        ->unique('url');
+                @endphp
+                @if ($newsSources->isNotEmpty())
+                    <div class="border border-line rounded-2xl p-4 text-sm bg-slate-50/70">
+                        <h3 class="font-semibold text-primary">Sumber Website Berita Tersimpan</h3>
+                        <div class="flex flex-wrap gap-2 mt-3">
+                            @foreach ($newsSources as $source)
+                                <a href="{{ $source->url }}" target="_blank" rel="noopener noreferrer"
+                                    class="px-3 py-1.5 border border-line bg-white rounded-full text-primary font-semibold hover:border-primary/40 hover:shadow-sm transition">
+                                    {{ $source->source ?: parse_url($source->url, PHP_URL_HOST) }}
+                                </a>
+                            @endforeach
+                        </div>
                     </div>
+                @endif
+                @forelse ($stock->news as $news)
+                    @php
+                        $newsUrl = filter_var($news->url, FILTER_VALIDATE_URL)
+                            && in_array(parse_url($news->url, PHP_URL_SCHEME), ['http', 'https'], true)
+                            ? $news->url
+                            : null;
+                        $isAiGeneratedNews = str_contains($news->summary ?? '', 'Konten dibuat oleh AI.');
+                    @endphp
+                    <article
+                        class="relative overflow-hidden border border-line rounded-2xl bg-white shadow-sm hover:shadow-md transition duration-200">
+                        <div class="absolute inset-y-0 left-0 w-1 {{ $isAiGeneratedNews ? 'bg-amber-400' : 'bg-primary' }}"></div>
+                        <div class="p-5 pl-6">
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        class="w-9 h-9 rounded-xl {{ $isAiGeneratedNews ? 'bg-amber-50 text-amber-700' : 'bg-primary/10 text-primary' }} grid place-items-center font-bold">
+                                        {{ strtoupper(mb_substr($news->source ?: 'S', 0, 1)) }}
+                                    </span>
+                                    <div>
+                                        <p class="text-xs font-bold text-primary">{{ $news->source ?: 'Sumber berita' }}</p>
+                                        <p class="text-[11px] text-muted">
+                                            {{ optional($news->published_at)->format('d M Y') ?: 'Tanggal tidak tersedia' }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <span
+                                    class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase {{ $isAiGeneratedNews ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700' }}">
+                                    {{ $isAiGeneratedNews ? 'Konten AI' : 'Berita Tersimpan' }}
+                                </span>
+                            </div>
+                            <h3 class="mt-4 text-base leading-snug font-bold text-primary">
+                                @if ($newsUrl)
+                                    <a href="{{ $newsUrl }}" target="_blank" rel="noopener noreferrer"
+                                        class="hover:text-accent transition">{{ $news->title }}</a>
+                                @else
+                                    {{ $news->title }}
+                                @endif
+                            </h3>
+                            <p class="mt-3 text-sm text-gray-600 leading-relaxed whitespace-pre-line">{{ $news->summary ?: '-' }}</p>
+                            @if ($news->ai_summary)
+                                <div class="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-800">
+                                    <p class="text-[10px] uppercase font-bold tracking-wide text-blue-600 mb-1">AI Summary</p>
+                                    <p>{{ $news->ai_summary }}</p>
+                                </div>
+                            @endif
+                            <div class="mt-5 pt-4 border-t border-line flex items-center justify-between gap-3">
+                                <span class="text-xs text-muted">{{ $isAiGeneratedNews ? 'Referensi media' : 'Sumber artikel' }}</span>
+                                @if ($newsUrl)
+                                    <a href="{{ $newsUrl }}" target="_blank" rel="noopener noreferrer"
+                                        class="inline-flex items-center gap-1.5 text-xs text-primary font-bold hover:text-accent transition">
+                                        {{ $isAiGeneratedNews ? 'Kunjungi website' : 'Baca selengkapnya' }}
+                                        <span aria-hidden="true">→</span>
+                                    </a>
+                                @else
+                                    <span class="text-xs text-muted">Website tidak tersedia</span>
+                                @endif
+                            </div>
+                        </div>
+                    </article>
                 @empty
                     <div x-show="!summaryLoading && (summary?.news ?? []).length === 0"
                         class="p-12 text-center text-muted border border-line rounded-xl">Berita terkait belum tersedia.
@@ -589,6 +685,10 @@
                 formatDate(value) {
                     if (!value) return '-';
                     return new Date(value).toLocaleDateString('id-ID');
+                },
+
+                sourceInitial(value) {
+                    return (value || 'S').trim().charAt(0).toUpperCase();
                 },
 
                 formatEpoch(value) {

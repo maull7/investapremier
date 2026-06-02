@@ -82,6 +82,11 @@ class YahooStockDataServiceTest extends TestCase
                     'publisher' => 'Example News',
                     'link' => 'https://example.test/news',
                     'providerPublishTime' => 1767139200,
+                ], [
+                    'title' => 'Payload dengan URL tidak aman',
+                    'publisher' => 'Invalid Source',
+                    'link' => 'javascript:alert(1)',
+                    'providerPublishTime' => 1767139200,
                 ]],
             ]),
         ]);
@@ -95,6 +100,7 @@ class YahooStockDataServiceTest extends TestCase
         $this->assertSame('buy', $summary['analysts']['recommendationKey']);
         $this->assertSame('Broker A', $summary['analysts']['upgradesDowngrades'][0]['firm']);
         $this->assertSame('BBCA mencatat pertumbuhan laba', $summary['news'][0]['title']);
+        $this->assertCount(1, $summary['news']);
 
         Http::assertSent(fn ($request) => str_contains($request->url(), '/quoteSummary/BBCA.JK')
             && str_contains($request->url(), 'recommendationTrend'));

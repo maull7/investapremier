@@ -6,6 +6,19 @@ use App\Models\Stock;
 
 class AIAnalysisService
 {
+    private const MEDIA_WEBSITES = [
+        'Kontan' => 'https://www.kontan.co.id',
+        'Bisnis Indonesia' => 'https://www.bisnis.com',
+        'CNBC Indonesia' => 'https://www.cnbcindonesia.com',
+        'Detik Finance' => 'https://finance.detik.com',
+        'Tempo Bisnis' => 'https://bisnis.tempo.co',
+        'IDX Channel' => 'https://www.idxchannel.com',
+        'Investor Daily' => 'https://investor.id',
+        'Bloomberg' => 'https://www.bloomberg.com',
+        'Reuters' => 'https://www.reuters.com',
+        'The Edge Markets' => 'https://theedgemalaysia.com',
+    ];
+
     public function __construct(private readonly GroqService $ai)
     {
     }
@@ -40,7 +53,8 @@ Format output HANYA JSON array, tidak ada teks lain sebelum atau sesudah:
   }
 ]
 
-Gunakan tanggal dalam 30 hari terakhir dari hari ini. Konten harus relevan dengan kondisi perusahaan, industri, dan pasar saham Indonesia. Jangan menyebut berita ini fiktif.
+Gunakan nama media PERSIS seperti daftar di atas agar website referensinya dapat ditautkan.
+Gunakan tanggal dalam 30 hari terakhir dari hari ini. Konten harus relevan dengan kondisi perusahaan, industri, dan pasar saham Indonesia.
 PROMPT;
 
         $raw = $this->ai->callAi([
@@ -58,13 +72,16 @@ PROMPT;
 
         $count = 0;
         foreach ($items as $item) {
-            if (empty($item['title'])) continue;
+            if (empty($item['title']) || empty($item['source'])) continue;
+
+            $sourceUrl = self::MEDIA_WEBSITES[$item['source']] ?? null;
             \App\Models\StockNews::create([
                 'stock_id'     => $stockId,
                 'title'        => $item['title'],
-                'source'       => $item['source'] ?? null,
+                'source'       => $item['source'],
+                'url'          => $sourceUrl,
                 'published_at' => isset($item['published_at']) ? \Carbon\Carbon::parse($item['published_at'])->toDateTimeString() : now(),
-                'summary'      => $item['summary'] ?? null,
+                'summary'      => trim(($item['summary'] ?? '') . "\n\nKonten dibuat oleh AI. Tautan mengarah ke website referensi media, bukan artikel asli."),
                 'ai_summary'   => null,
             ]);
             $count++;
@@ -81,6 +98,7 @@ PROMPT;
             'media' => $news->source,
             'tanggal' => optional($news->published_at)->format('Y-m-d'),
             'ringkasan' => $news->summary,
+            'url_sumber' => $news->url,
         ])->values()->all();
 
         if ($items === []) {
