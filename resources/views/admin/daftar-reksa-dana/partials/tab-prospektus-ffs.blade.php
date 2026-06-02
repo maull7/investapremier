@@ -33,6 +33,11 @@
                 <input type="file" name="file" accept="application/pdf" required
                     class="w-full text-xs border border-line rounded-lg px-3 py-2 file:mr-2 file:rounded file:border-0 file:bg-emerald-50 file:px-2 file:py-1 file:text-emerald-700">
             </div>
+            <div x-show="type === 'prospektus'">
+                <label class="block text-xs font-semibold text-muted mb-1">Tahun Prospektus *</label>
+                <input type="number" name="prospektus_year" min="2000" max="2100" value="{{ old('prospektus_year', now()->year) }}"
+                    :required="type === 'prospektus'" class="w-full text-sm border border-line rounded-lg px-3 py-2">
+            </div>
             <div x-show="type === 'ffs'">
                 <label class="block text-xs font-semibold text-muted mb-1">Bulan FFS *</label>
                 <select name="ffs_month" :required="type === 'ffs'" class="w-full text-sm border border-line rounded-lg px-3 py-2">
@@ -94,7 +99,7 @@
                         </td>
                         <td class="px-4 py-4 min-w-72">
                             @forelse ($prospectuses as $document)
-                                @include('admin.daftar-reksa-dana.partials.document-actions', ['document' => $document, 'label' => $document->original_name])
+                                @include('admin.daftar-reksa-dana.partials.document-actions', ['document' => $document, 'label' => $document->ffs_year ?? $document->original_name])
                             @empty
                                 <p class="text-xs text-muted">Prospektus belum tersedia.</p>
                             @endforelse

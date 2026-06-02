@@ -32,7 +32,25 @@ class DaftarReksaDanaController extends Controller
         if ($request->search) $hargaQuery->where('nama_reksa_dana', 'like', '%' . $request->search . '%');
         $reksaDanas = $hargaQuery->paginate(20, ['*'], 'harga_page')->withQueryString();
 
-        $harianQuery = HargaReksaDana::with('reksaDana')->latest('tanggal');
+        $harianTanggal = $request->get('harian_tanggal');
+
+        // Subquery: ambil tanggal terakhir per reksa_dana_id
+        $latestPerRd = HargaReksaDana::selectRaw('reksa_dana_id, MAX(tanggal) as max_tanggal')
+            ->groupBy('reksa_dana_id');
+
+        $harianQuery = HargaReksaDana::with('reksaDana')
+            ->joinSub($latestPerRd, 'latest', function ($join) {
+                $join->on('harga_reksa_dana.reksa_dana_id', '=', 'latest.reksa_dana_id')
+                    ->whereColumn('harga_reksa_dana.tanggal', 'latest.max_tanggal');
+            })
+            ->select('harga_reksa_dana.*')
+            ->orderByDesc('harga_reksa_dana.tanggal')
+            ->orderBy('harga_reksa_dana.reksa_dana_id');
+
+        if ($harianTanggal) {
+            $harianQuery->where('harga_reksa_dana.tanggal', $harianTanggal);
+        }
+
         if ($request->search) {
             $harianQuery->whereHas('reksaDana', fn($q) => $q->where('nama_reksa_dana', 'like', '%' . $request->search . '%'));
         }
@@ -89,6 +107,7 @@ class DaftarReksaDanaController extends Controller
             'dataSourceLinks', 'syncLogs', 'reksaDanaList', 'editingLink',
             'reksaDanaOptions',
             'documents', 'documentFunds',
+            'harianTanggal',
         ));
     }
 
@@ -97,6 +116,7 @@ class DaftarReksaDanaController extends Controller
         $validated = $request->validate([
             'reksa_dana_id' => 'required|exists:reksa_dana,id',
             'document_type' => 'required|in:prospektus,ffs',
+            'prospektus_year' => 'required_if:document_type,prospektus|nullable|integer|min:2000|max:2100',
             'ffs_month' => 'required_if:document_type,ffs|nullable|integer|min:1|max:12',
             'ffs_year' => 'required_if:document_type,ffs|nullable|integer|min:2000|max:2100',
             'file' => 'required|file|mimes:pdf|max:20480',
@@ -106,6 +126,12 @@ class DaftarReksaDanaController extends Controller
         $file = $request->file('file');
         $filename = now()->format('Ymd-His') . '-' . Str::random(10) . '.pdf';
         $path = $file->storeAs('reksa-dana-documents/' . $validated['reksa_dana_id'], $filename, 'public');
+
+        // Untuk prospektus, simpan tahun ke ffs_year
+        if ($validated['document_type'] === 'prospektus' && !empty($validated['prospektus_year'])) {
+            $validated['ffs_year'] = $validated['prospektus_year'];
+        }
+        unset($validated['prospektus_year']);
 
         ReksaDanaDocument::create([
             ...$validated,

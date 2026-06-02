@@ -142,6 +142,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::resource('saham', StockController::class)->except(['show']);
     Route::get('saham/{stock}', [StockDetailController::class, 'show'])->name('saham.show');
     Route::post('saham/{stock}/summarize-news', [StockDetailController::class, 'summarizeNews'])->name('saham.summarize-news');
+    Route::post('saham/{stock}/generate-news', [StockDetailController::class, 'generateNews'])->name('saham.generate-news');
     Route::post('saham/{stock}/summarize-broker-research', [StockDetailController::class, 'summarizeBrokerResearch'])->name('saham.summarize-broker-research');
     Route::post('saham/{stock}/sync-yahoo-prices', [StockDetailController::class, 'syncYahooPrices'])->name('saham.sync-yahoo-prices');
     Route::get('saham/{stock}/fetch-yahoo', [StockDetailController::class, 'fetchYahoo'])->name('saham.fetch-yahoo');
@@ -306,6 +307,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::resource('/saham', UserStockController::class)->except(['show']);
     Route::get('/saham/{stock}', [StockDetailController::class, 'show'])->name('saham.show');
     Route::post('/saham/{stock}/summarize-news', [StockDetailController::class, 'summarizeNews'])->name('saham.summarize-news');
+    Route::post('/saham/{stock}/generate-news', [StockDetailController::class, 'generateNews'])->name('saham.generate-news');
     Route::post('/saham/{stock}/summarize-broker-research', [StockDetailController::class, 'summarizeBrokerResearch'])->name('saham.summarize-broker-research');
     Route::post('/saham/{stock}/sync-yahoo-prices', [StockDetailController::class, 'syncYahooPrices'])->name('saham.sync-yahoo-prices');
     Route::get('/saham/{stock}/fetch-yahoo', [StockDetailController::class, 'fetchYahoo'])->name('saham.fetch-yahoo');
