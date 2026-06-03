@@ -128,8 +128,273 @@
             </div>
         </div>
 
+        {{-- Informasi Umum --}}
+        <div class="bg-white rounded-xl border border-line p-6 space-y-4">
+            <h4 class="font-semibold text-primary text-sm">Informasi Umum</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <x-input-label for="manajer_investasi" value="Manajer Investasi" />
+                    <x-text-input id="manajer_investasi" name="manajer_investasi" type="text" class="mt-1 block w-full"
+                        value="{{ old('manajer_investasi', $analisa->manajer_investasi) }}" />
+                </div>
+                <div>
+                    <x-input-label for="bank_kustodian" value="Bank Kustodian" />
+                    <x-text-input id="bank_kustodian" name="bank_kustodian" type="text" class="mt-1 block w-full"
+                        value="{{ old('bank_kustodian', $analisa->bank_kustodian) }}" />
+                </div>
+                <div>
+                    <x-input-label for="tanggal_peluncuran" value="Tanggal Peluncuran" />
+                    <x-text-input id="tanggal_peluncuran" name="tanggal_peluncuran" type="date" class="mt-1 block w-full"
+                        value="{{ old('tanggal_peluncuran', $analisa->tanggal_peluncuran?->format('Y-m-d')) }}" />
+                </div>
+            </div>
+        </div>
+
+        {{-- Kinerja --}}
+        <div class="bg-white rounded-xl border border-line p-6 space-y-4">
+            <h4 class="font-semibold text-primary text-sm">Kinerja</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <x-input-label for="return_ytd" value="Return YTD (%)" />
+                    <x-text-input id="return_ytd" name="return_ytd" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('return_ytd', $analisa->return_ytd) }}" />
+                </div>
+                <div>
+                    <x-input-label for="return_1y" value="Return 1 Tahun (%)" />
+                    <x-text-input id="return_1y" name="return_1y" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('return_1y', $analisa->return_1y) }}" />
+                </div>
+            </div>
+        </div>
+
+        {{-- Rasio Keuangan --}}
+        <div class="bg-white rounded-xl border border-line p-6 space-y-4">
+            <h4 class="font-semibold text-primary text-sm">Rasio Keuangan</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <x-input-label for="total_return" value="Total Return (%)" />
+                    <x-text-input id="total_return" name="total_return" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('total_return', $analisa->total_return) }}" />
+                </div>
+                <div>
+                    <x-input-label for="biaya_operasi" value="Biaya Operasi (%)" />
+                    <x-text-input id="biaya_operasi" name="biaya_operasi" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('biaya_operasi', $analisa->biaya_operasi) }}" />
+                </div>
+                <div>
+                    <x-input-label for="portfolio_turnover_ratio" value="Portfolio Turnover Ratio" />
+                    <x-text-input id="portfolio_turnover_ratio" name="portfolio_turnover_ratio" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('portfolio_turnover_ratio', $analisa->portfolio_turnover_ratio) }}" />
+                </div>
+            </div>
+        </div>
+
+        {{-- Biaya --}}
+        <div class="bg-white rounded-xl border border-line p-6 space-y-4">
+            <h4 class="font-semibold text-primary text-sm">Biaya</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <x-input-label for="management_fee" value="Management Fee (%)" />
+                    <x-text-input id="management_fee" name="management_fee" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('management_fee', $analisa->management_fee) }}" />
+                </div>
+                <div>
+                    <x-input-label for="custodian_fee" value="Custodian Fee (%)" />
+                    <x-text-input id="custodian_fee" name="custodian_fee" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('custodian_fee', $analisa->custodian_fee) }}" />
+                </div>
+            </div>
+        </div>
+
         <div class="bg-white rounded-xl border border-line p-6 space-y-3">
             @include('analisa.partials.form-alokasi-aset')
+        </div>
+
+        {{-- Laporan Keuangan - Neraca --}}
+        <div class="bg-white rounded-xl border border-line p-6 space-y-4">
+            <h4 class="font-semibold text-primary text-sm">Laporan Keuangan — Neraca</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <x-input-label for="total_aset" value="Total Aset (Rp)" />
+                    <x-text-input id="total_aset" name="total_aset" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('total_aset', $analisa->total_aset) }}" />
+                </div>
+                <div>
+                    <x-input-label for="total_liabilitas" value="Total Liabilitas (Rp)" />
+                    <x-text-input id="total_liabilitas" name="total_liabilitas" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('total_liabilitas', $analisa->total_liabilitas) }}" />
+                </div>
+                <div>
+                    <x-input-label for="kas_dan_bank" value="Kas dan Bank (Rp)" />
+                    <x-text-input id="kas_dan_bank" name="kas_dan_bank" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('kas_dan_bank', $analisa->kas_dan_bank) }}" />
+                </div>
+                <div>
+                    <x-input-label for="piutang_bunga" value="Piutang Bunga (Rp)" />
+                    <x-text-input id="piutang_bunga" name="piutang_bunga" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('piutang_bunga', $analisa->piutang_bunga) }}" />
+                </div>
+                <div>
+                    <x-input-label for="piutang_dividen" value="Piutang Dividen (Rp)" />
+                    <x-text-input id="piutang_dividen" name="piutang_dividen" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('piutang_dividen', $analisa->piutang_dividen) }}" />
+                </div>
+                <div>
+                    <x-input-label for="piutang_lain" value="Piutang Lain-lain (Rp)" />
+                    <x-text-input id="piutang_lain" name="piutang_lain" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('piutang_lain', $analisa->piutang_lain) }}" />
+                </div>
+                <div>
+                    <x-input-label for="utang_pajak" value="Utang Pajak (Rp)" />
+                    <x-text-input id="utang_pajak" name="utang_pajak" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('utang_pajak', $analisa->utang_pajak) }}" />
+                </div>
+                <div>
+                    <x-input-label for="utang_lain" value="Utang Lain-lain (Rp)" />
+                    <x-text-input id="utang_lain" name="utang_lain" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('utang_lain', $analisa->utang_lain) }}" />
+                </div>
+            </div>
+        </div>
+
+        {{-- Laporan Keuangan - Laba Rugi --}}
+        <div class="bg-white rounded-xl border border-line p-6 space-y-4">
+            <h4 class="font-semibold text-primary text-sm">Laporan Keuangan — Laba Rugi</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <x-input-label for="pendapatan_bunga" value="Pendapatan Bunga (Rp)" />
+                    <x-text-input id="pendapatan_bunga" name="pendapatan_bunga" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('pendapatan_bunga', $analisa->pendapatan_bunga) }}" />
+                </div>
+                <div>
+                    <x-input-label for="pendapatan_dividen" value="Pendapatan Dividen (Rp)" />
+                    <x-text-input id="pendapatan_dividen" name="pendapatan_dividen" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('pendapatan_dividen', $analisa->pendapatan_dividen) }}" />
+                </div>
+                <div>
+                    <x-input-label for="gain_realized" value="Gain Realized (Rp)" />
+                    <x-text-input id="gain_realized" name="gain_realized" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('gain_realized', $analisa->gain_realized) }}" />
+                </div>
+                <div>
+                    <x-input-label for="gain_unrealized" value="Gain Unrealized (Rp)" />
+                    <x-text-input id="gain_unrealized" name="gain_unrealized" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('gain_unrealized', $analisa->gain_unrealized) }}" />
+                </div>
+                <div>
+                    <x-input-label for="beban_mi" value="Beban Manajer Investasi (Rp)" />
+                    <x-text-input id="beban_mi" name="beban_mi" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('beban_mi', $analisa->beban_mi) }}" />
+                </div>
+                <div>
+                    <x-input-label for="beban_kustodian" value="Beban Kustodian (Rp)" />
+                    <x-text-input id="beban_kustodian" name="beban_kustodian" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('beban_kustodian', $analisa->beban_kustodian) }}" />
+                </div>
+                <div>
+                    <x-input-label for="beban_lain" value="Beban Lain-lain (Rp)" />
+                    <x-text-input id="beban_lain" name="beban_lain" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('beban_lain', $analisa->beban_lain) }}" />
+                </div>
+                <div>
+                    <x-input-label for="laba_bersih" value="Laba Bersih (Rp)" />
+                    <x-text-input id="laba_bersih" name="laba_bersih" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('laba_bersih', $analisa->laba_bersih) }}" />
+                </div>
+            </div>
+        </div>
+
+        {{-- Laporan Keuangan - Arus Kas --}}
+        <div class="bg-white rounded-xl border border-line p-6 space-y-4">
+            <h4 class="font-semibold text-primary text-sm">Laporan Keuangan — Arus Kas</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <x-input-label for="arus_kas_operasi" value="Arus Kas Operasi (Rp)" />
+                    <x-text-input id="arus_kas_operasi" name="arus_kas_operasi" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('arus_kas_operasi', $analisa->arus_kas_operasi) }}" />
+                </div>
+                <div>
+                    <x-input-label for="arus_kas_pendanaan" value="Arus Kas Pendanaan (Rp)" />
+                    <x-text-input id="arus_kas_pendanaan" name="arus_kas_pendanaan" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('arus_kas_pendanaan', $analisa->arus_kas_pendanaan) }}" />
+                </div>
+                <div>
+                    <x-input-label for="kas_awal_tahun" value="Kas Awal Tahun (Rp)" />
+                    <x-text-input id="kas_awal_tahun" name="kas_awal_tahun" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('kas_awal_tahun', $analisa->kas_awal_tahun) }}" />
+                </div>
+                <div>
+                    <x-input-label for="kas_akhir_tahun" value="Kas Akhir Tahun (Rp)" />
+                    <x-text-input id="kas_akhir_tahun" name="kas_akhir_tahun" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('kas_akhir_tahun', $analisa->kas_akhir_tahun) }}" />
+                </div>
+            </div>
+        </div>
+
+        {{-- Rasio Keuangan Lengkap --}}
+        <div class="bg-white rounded-xl border border-line p-6 space-y-4">
+            <h4 class="font-semibold text-primary text-sm">Rasio Keuangan</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <x-input-label for="total_hasil_investasi" value="Total Hasil Investasi (%)" />
+                    <x-text-input id="total_hasil_investasi" name="total_hasil_investasi" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('total_hasil_investasi', $analisa->total_hasil_investasi) }}" />
+                </div>
+                <div>
+                    <x-input-label for="hasil_investasi_setelah_biaya" value="Hasil Investasi Setelah Biaya Pemasaran (%)" />
+                    <x-text-input id="hasil_investasi_setelah_biaya" name="hasil_investasi_setelah_biaya" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('hasil_investasi_setelah_biaya', $analisa->hasil_investasi_setelah_biaya) }}" />
+                </div>
+                <div>
+                    <x-input-label for="persentase_pph" value="Persentase Penghasilan Kena Pajak (%)" />
+                    <x-text-input id="persentase_pph" name="persentase_pph" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('persentase_pph', $analisa->persentase_pph) }}" />
+                </div>
+            </div>
+        </div>
+
+        {{-- Fair Value --}}
+        <div class="bg-white rounded-xl border border-line p-6 space-y-4">
+            <h4 class="font-semibold text-primary text-sm">Fair Value / Pengukuran Nilai Wajar</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <x-input-label for="fair_value_level_1" value="Level 1 (Rp)" />
+                    <x-text-input id="fair_value_level_1" name="fair_value_level_1" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('fair_value_level_1', $analisa->fair_value_level_1) }}" />
+                </div>
+                <div>
+                    <x-input-label for="fair_value_level_2" value="Level 2 (Rp)" />
+                    <x-text-input id="fair_value_level_2" name="fair_value_level_2" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('fair_value_level_2', $analisa->fair_value_level_2) }}" />
+                </div>
+                <div>
+                    <x-input-label for="fair_value_level_3" value="Level 3 (Rp)" />
+                    <x-text-input id="fair_value_level_3" name="fair_value_level_3" type="number" step="0.01" class="mt-1 block w-full"
+                        value="{{ old('fair_value_level_3', $analisa->fair_value_level_3) }}" />
+                </div>
+            </div>
+        </div>
+
+        {{-- Unit Penyertaan --}}
+        <div class="bg-white rounded-xl border border-line p-6 space-y-4">
+            <h4 class="font-semibold text-primary text-sm">Unit Penyertaan</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <x-input-label for="unit_milik_investor" value="Unit Milik Investor" />
+                    <x-text-input id="unit_milik_investor" name="unit_milik_investor" type="number" step="0.0001" class="mt-1 block w-full"
+                        value="{{ old('unit_milik_investor', $analisa->unit_milik_investor) }}" />
+                </div>
+                <div>
+                    <x-input-label for="unit_milik_mi" value="Unit Milik Manajer Investasi" />
+                    <x-text-input id="unit_milik_mi" name="unit_milik_mi" type="number" step="0.0001" class="mt-1 block w-full"
+                        value="{{ old('unit_milik_mi', $analisa->unit_milik_mi) }}" />
+                </div>
+                <div>
+                    <x-input-label for="total_unit_beredar" value="Total Unit Beredar" />
+                    <x-text-input id="total_unit_beredar" name="total_unit_beredar" type="number" step="0.0001" class="mt-1 block w-full"
+                        value="{{ old('total_unit_beredar', $analisa->total_unit_beredar) }}" />
+                </div>
+            </div>
         </div>
 
         {{-- Sektor --}}
@@ -168,6 +433,8 @@
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Sektor</th>
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
+                                <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Harga Perolehan</th>
+                                <th class="text-left px-2 py-2 text-xs font-semibold text-muted">% thd NAB</th>
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Kontribusi %</th>
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 1M</th>
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 3M</th>
@@ -188,6 +455,8 @@
                                     </td>
                                     <td class="px-1 py-1"><input type="number" :name="`efek[${i}][bobot]`" x-model="row.bobot" step="0.01" class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" @input="hitungNilaiPasarEfek(i)" /></td>
                                     <td class="px-1 py-1"><input type="number" :name="`efek[${i}][nilai_pasar]`" x-model="row.nilai_pasar" step="0.01" readonly class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                    <td class="px-1 py-1"><input type="number" :name="`efek[${i}][harga_perolehan]`" x-model="row.harga_perolehan" step="0.01" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                    <td class="px-1 py-1"><input type="number" :name="`efek[${i}][persen_nab]`" x-model="row.persen_nab" step="0.01" class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
                                     <td class="px-1 py-1"><input type="number" :name="`efek[${i}][kontribusi_kinerja]`" x-model="row.kontribusi_kinerja" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" @change="hitungTotalMarcap10" /></td>
                                     <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_1m]`" x-model="row.return_1m" step="0.0001" readonly class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" /></td>
                                     <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_3m]`" x-model="row.return_3m" step="0.0001" readonly class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" /></td>
@@ -227,6 +496,11 @@
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nama Obligasi</th>
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
+                                <th class="text-left px-2 py-2 text-xs font-semibold text-muted">YTM (%)</th>
+                                <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Kupon (%)</th>
+                                <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Jatuh Tempo</th>
+                                <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Penerbit</th>
+                                <th class="text-left px-2 py-2 text-xs font-semibold text-muted">% thd NAB</th>
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 1M</th>
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 3M</th>
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 6M</th>
@@ -243,6 +517,11 @@
                                     <td class="px-1 py-1"><input type="text" :name="`obligasi[${i}][nama_obligasi]`" x-model="row.nama_obligasi" placeholder="Nama Obligasi" class="w-32 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
                                     <td class="px-1 py-1"><input type="number" :name="`obligasi[${i}][bobot]`" x-model="row.bobot" step="0.01" class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" @input="hitungNilaiPasarObligasi(i)" /></td>
                                     <td class="px-1 py-1"><input type="number" :name="`obligasi[${i}][nilai_pasar]`" x-model="row.nilai_pasar" step="0.01" readonly class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                    <td class="px-1 py-1"><input type="number" :name="`obligasi[${i}][ytm]`" x-model="row.ytm" step="0.01" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                    <td class="px-1 py-1"><input type="number" :name="`obligasi[${i}][kupon]`" x-model="row.kupon" step="0.01" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                    <td class="px-1 py-1"><input type="date" :name="`obligasi[${i}][tanggal_jatuh_tempo]`" x-model="row.tanggal_jatuh_tempo" class="w-28 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                    <td class="px-1 py-1"><input type="text" :name="`obligasi[${i}][penerbit]`" x-model="row.penerbit" placeholder="Penerbit" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                    <td class="px-1 py-1"><input type="number" :name="`obligasi[${i}][persen_nab]`" x-model="row.persen_nab" step="0.01" class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
                                     <td class="px-1 py-1"><input type="number" :name="`obligasi[${i}][return_1m]`" x-model="row.return_1m" step="0.0001" readonly class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" /></td>
                                     <td class="px-1 py-1"><input type="number" :name="`obligasi[${i}][return_3m]`" x-model="row.return_3m" step="0.0001" readonly class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" /></td>
                                     <td class="px-1 py-1"><input type="number" :name="`obligasi[${i}][return_6m]`" x-model="row.return_6m" step="0.0001" readonly class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" /></td>
@@ -281,6 +560,7 @@
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Yield %</th>
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Jatuh Tempo</th>
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Rating</th>
+                                <th class="text-left px-2 py-2 text-xs font-semibold text-muted">% thd NAB</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -307,6 +587,7 @@
                                             @endforeach
                                         </select>
                                     </td>
+                                    <td class="px-1 py-1"><input type="number" :name="`sukuk[${i}][persen_nab]`" x-model="row.persen_nab" step="0.01" class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
                                     <td class="px-1 py-1"><button type="button" @click="removeRow('sukuk', i)" class="text-red-400 hover:text-red-600 text-xs">✕</button></td>
                                 </tr>
                             </template>
@@ -329,6 +610,9 @@
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Jenis Bank</th>
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
+                                <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Tingkat Bunga</th>
+                                <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Jangka Waktu</th>
+                                <th class="text-left px-2 py-2 text-xs font-semibold text-muted">% thd NAB</th>
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 1M</th>
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 3M</th>
                                 <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 6M</th>
@@ -354,6 +638,9 @@
                                     </td>
                                     <td class="px-1 py-1"><input type="number" :name="`bank[${i}][bobot]`" x-model="row.bobot" step="0.01" class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" @input="hitungNilaiPasarBank(i)" /></td>
                                     <td class="px-1 py-1"><input type="number" :name="`bank[${i}][nilai_pasar]`" x-model="row.nilai_pasar" step="0.01" readonly class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                    <td class="px-1 py-1"><input type="number" :name="`bank[${i}][tingkat_bunga]`" x-model="row.tingkat_bunga" step="0.01" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                    <td class="px-1 py-1"><input type="text" :name="`bank[${i}][jangka_waktu]`" x-model="row.jangka_waktu" placeholder="1 bln" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                    <td class="px-1 py-1"><input type="number" :name="`bank[${i}][persen_nab]`" x-model="row.persen_nab" step="0.01" class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
                                     <td class="px-1 py-1"><input type="number" :name="`bank[${i}][return_1m]`" x-model="row.return_1m" step="0.0001" readonly class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" /></td>
                                     <td class="px-1 py-1"><input type="number" :name="`bank[${i}][return_3m]`" x-model="row.return_3m" step="0.0001" readonly class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" /></td>
                                     <td class="px-1 py-1"><input type="number" :name="`bank[${i}][return_6m]`" x-model="row.return_6m" step="0.0001" readonly class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" /></td>
@@ -405,6 +692,50 @@ function editForm() {
         totalMarcap10Efek: @json(old('total_marcap_10_efek', $analisa->total_marcap_10_efek)),
         tanggalData: @json(old('tanggal_data', $analisa->tanggal_data?->format('Y-m-d'))),
 
+        manajerInvestasi: @json(old('manajer_investasi', $analisa->manajer_investasi)),
+        bankKustodian: @json(old('bank_kustodian', $analisa->bank_kustodian)),
+        tanggalPeluncuran: @json(old('tanggal_peluncuran', $analisa->tanggal_peluncuran?->format('Y-m-d'))),
+        mataUang: @json(old('mata_uang', $analisa->mata_uang)),
+        benchmark: @json(old('benchmark', $analisa->benchmark)),
+        tujuanInvestasi: @json(old('tujuan_investasi', $analisa->tujuan_investasi)),
+        kebijakanInvestasi: @json(old('kebijakan_investasi', $analisa->kebijakan_investasi)),
+        returnYtd: @json(old('return_ytd', $analisa->return_ytd)),
+        return1y: @json(old('return_1y', $analisa->return_1y)),
+        totalReturn: @json(old('total_return', $analisa->total_return)),
+        biayaOperasi: @json(old('biaya_operasi', $analisa->biaya_operasi)),
+        portfolioTurnover: @json(old('portfolio_turnover_ratio', $analisa->portfolio_turnover_ratio)),
+        managementFee: @json(old('management_fee', $analisa->management_fee)),
+        custodianFee: @json(old('custodian_fee', $analisa->custodian_fee)),
+        totalAset: @json(old('total_aset', $analisa->total_aset)),
+        totalLiabilitas: @json(old('total_liabilitas', $analisa->total_liabilitas)),
+        kasDanBank: @json(old('kas_dan_bank', $analisa->kas_dan_bank)),
+        piutangBunga: @json(old('piutang_bunga', $analisa->piutang_bunga)),
+        piutangDividen: @json(old('piutang_dividen', $analisa->piutang_dividen)),
+        piutangLain: @json(old('piutang_lain', $analisa->piutang_lain)),
+        utangPajak: @json(old('utang_pajak', $analisa->utang_pajak)),
+        utangLain: @json(old('utang_lain', $analisa->utang_lain)),
+        pendapatanBunga: @json(old('pendapatan_bunga', $analisa->pendapatan_bunga)),
+        pendapatanDividen: @json(old('pendapatan_dividen', $analisa->pendapatan_dividen)),
+        gainRealized: @json(old('gain_realized', $analisa->gain_realized)),
+        gainUnrealized: @json(old('gain_unrealized', $analisa->gain_unrealized)),
+        bebanMi: @json(old('beban_mi', $analisa->beban_mi)),
+        bebanKustodian: @json(old('beban_kustodian', $analisa->beban_kustodian)),
+        bebanLain: @json(old('beban_lain', $analisa->beban_lain)),
+        labaBersih: @json(old('laba_bersih', $analisa->laba_bersih)),
+        arusKasOperasi: @json(old('arus_kas_operasi', $analisa->arus_kas_operasi)),
+        arusKasPendanaan: @json(old('arus_kas_pendanaan', $analisa->arus_kas_pendanaan)),
+        kasAwalTahun: @json(old('kas_awal_tahun', $analisa->kas_awal_tahun)),
+        kasAkhirTahun: @json(old('kas_akhir_tahun', $analisa->kas_akhir_tahun)),
+        totalHasilInvestasi: @json(old('total_hasil_investasi', $analisa->total_hasil_investasi)),
+        hasilInvestasiSetelahBiaya: @json(old('hasil_investasi_setelah_biaya', $analisa->hasil_investasi_setelah_biaya)),
+        persentasePph: @json(old('persentase_pph', $analisa->persentase_pph)),
+        fairValueLevel1: @json(old('fair_value_level_1', $analisa->fair_value_level_1)),
+        fairValueLevel2: @json(old('fair_value_level_2', $analisa->fair_value_level_2)),
+        fairValueLevel3: @json(old('fair_value_level_3', $analisa->fair_value_level_3)),
+        unitMilikInvestor: @json(old('unit_milik_investor', $analisa->unit_milik_investor)),
+        unitMilikMi: @json(old('unit_milik_mi', $analisa->unit_milik_mi)),
+        totalUnitBeredar: @json(old('total_unit_beredar', $analisa->total_unit_beredar)),
+
         lookupSektorUrl: @json($formRoutes['lookup_sektor'] ?? null),
         lookupIhsgUrl: @json($formRoutes['lookup_ihsg'] ?? null),
         lookupReturnUrl: @json($formRoutes['lookup_return'] ?? null),
@@ -414,11 +745,11 @@ function editForm() {
         addRow(type) {
             const defaults = {
                 sektor:   { nama_sektor: '', bobot: '' },
-                efek:     { kode_efek: '', nama_efek: '', sektor: '', bobot: '', kontribusi_kinerja: '', market_cap: '', nilai_pasar: '', return_1m: '', return_3m: '', return_6m: '', return_1y: '', effect_type: 'Saham', top_10: false },
+                efek:     { kode_efek: '', nama_efek: '', sektor: '', bobot: '', kontribusi_kinerja: '', market_cap: '', nilai_pasar: '', harga_perolehan: '', persen_nab: '', return_1m: '', return_3m: '', return_6m: '', return_1y: '', effect_type: 'Saham', top_10: false },
                 kinerja:  { periode: '', return_pct: '' },
-                obligasi: { kode_obligasi: '', nama_obligasi: '', bobot: '', nilai_pasar: '', return_1m: '', return_3m: '', return_6m: '', return_1y: '', durasi: '', rating: '' },
-                sukuk: { kode_sukuk: '', nama_sukuk: '', jenis_sukuk: '', bobot: '', yield: '', jatuh_tempo: '', rating: '' },
-                bank:     { nama_bank: '', jenis_bank: '', bobot: '', nilai_pasar: '', return_1m: '', return_3m: '', return_6m: '', return_1y: '', car: '', npl: '', klasifikasi_risiko: '' },
+                obligasi: { kode_obligasi: '', nama_obligasi: '', bobot: '', nilai_pasar: '', ytm: '', kupon: '', tanggal_jatuh_tempo: '', penerbit: '', persen_nab: '', return_1m: '', return_3m: '', return_6m: '', return_1y: '', durasi: '', rating: '' },
+                sukuk: { kode_sukuk: '', nama_sukuk: '', jenis_sukuk: '', bobot: '', yield: '', jatuh_tempo: '', rating: '', persen_nab: '' },
+                bank:     { nama_bank: '', jenis_bank: '', bobot: '', nilai_pasar: '', tingkat_bunga: '', jangka_waktu: '', persen_nab: '', return_1m: '', return_3m: '', return_6m: '', return_1y: '', car: '', npl: '', klasifikasi_risiko: '' },
                 alokasi_aset: { nama_aset: '', persentase: '' },
             };
             this[type].push({ ...defaults[type] });

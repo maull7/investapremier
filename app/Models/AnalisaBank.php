@@ -10,9 +10,8 @@ class AnalisaBank extends Model
     protected $table = 'analisa_bank';
     protected $fillable = [
         'analisa_reksa_dana_id', 'nama_bank', 'bobot',
-        'car', 'npl', 'klasifikasi_risiko',
-        'jenis_bank', 'nilai_pasar',
-        'return_1m', 'return_3m', 'return_6m', 'return_1y',
+        'car', 'npl', 'tingkat_bunga', 'jangka_waktu', 'persen_nab', 'klasifikasi_risiko',
+        'jenis_bank', 'nilai_pasar', 'return_1m', 'return_3m', 'return_6m', 'return_1y',
     ];
     protected $casts = [
         'nilai_pasar' => 'decimal:2',

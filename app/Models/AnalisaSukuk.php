@@ -10,7 +10,7 @@ class AnalisaSukuk extends Model
     protected $table = 'analisa_reksadana_sukuk';
     protected $fillable = [
         'analisa_reksa_dana_id', 'kode_sukuk', 'nama_sukuk',
-        'jenis_sukuk', 'bobot', 'yield', 'jatuh_tempo', 'rating',
+        'jenis_sukuk', 'bobot', 'yield', 'jatuh_tempo', 'rating', 'persen_nab',
     ];
     protected $casts = [
         'yield' => 'decimal:4',

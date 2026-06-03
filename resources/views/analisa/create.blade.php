@@ -252,13 +252,76 @@
                         </div>
                     </div>
 
+                    {{-- Informasi Umum --}}
+                    <div class="border-t border-line pt-4">
+                        <h4 class="font-semibold text-primary text-sm mb-3">Informasi Umum</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <x-input-label for="manajer_investasi_manual" value="Manajer Investasi" />
+                                <x-text-input id="manajer_investasi_manual" name="manajer_investasi" type="text" class="mt-1 block w-full" x-model="manajerInvestasi" />
+                            </div>
+                            <div>
+                                <x-input-label for="bank_kustodian_manual" value="Bank Kustodian" />
+                                <x-text-input id="bank_kustodian_manual" name="bank_kustodian" type="text" class="mt-1 block w-full" x-model="bankKustodian" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Kinerja --}}
+                    <div class="border-t border-line pt-4">
+                        <h4 class="font-semibold text-primary text-sm mb-3">Kinerja</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <x-input-label for="return_ytd_manual" value="Return YTD (%)" />
+                                <x-text-input id="return_ytd_manual" name="return_ytd" type="number" step="0.01" class="mt-1 block w-full" x-model="returnYtd" />
+                            </div>
+                            <div>
+                                <x-input-label for="return_1y_manual" value="Return 1 Tahun (%)" />
+                                <x-text-input id="return_1y_manual" name="return_1y" type="number" step="0.01" class="mt-1 block w-full" x-model="return1y" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Rasio Keuangan --}}
+                    <div class="border-t border-line pt-4">
+                        <h4 class="font-semibold text-primary text-sm mb-3">Rasio Keuangan</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <x-input-label for="total_return_manual" value="Total Return (%)" />
+                                <x-text-input id="total_return_manual" name="total_return" type="number" step="0.01" class="mt-1 block w-full" x-model="totalReturn" />
+                            </div>
+                            <div>
+                                <x-input-label for="biaya_operasi_manual" value="Biaya Operasi (%)" />
+                                <x-text-input id="biaya_operasi_manual" name="biaya_operasi" type="number" step="0.01" class="mt-1 block w-full" x-model="biayaOperasi" />
+                            </div>
+                            <div>
+                                <x-input-label for="portfolio_turnover_manual" value="Portfolio Turnover Ratio" />
+                                <x-text-input id="portfolio_turnover_manual" name="portfolio_turnover_ratio" type="number" step="0.01" class="mt-1 block w-full" x-model="portfolioTurnover" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Biaya --}}
+                    <div class="border-t border-line pt-4">
+                        <h4 class="font-semibold text-primary text-sm mb-3">Biaya</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <x-input-label for="management_fee_manual" value="Management Fee (%)" />
+                                <x-text-input id="management_fee_manual" name="management_fee" type="number" step="0.01" class="mt-1 block w-full" x-model="managementFee" />
+                            </div>
+                            <div>
+                                <x-input-label for="custodian_fee_manual" value="Custodian Fee (%)" />
+                                <x-text-input id="custodian_fee_manual" name="custodian_fee" type="number" step="0.01" class="mt-1 block w-full" x-model="custodianFee" />
+                            </div>
+                        </div>
+                    </div>
+
                     @include('analisa.partials.form-alokasi-aset')
 
                     <div>
                         <div class="flex items-center justify-between mb-3">
                             <h4 class="font-semibold text-primary text-sm">Komposisi Sektor</h4>
-                            <button type="button" @click="addRow('sektor')"
-                                class="text-xs text-primary hover:underline">+
+                            <button type="button" @click="addRow('sektor')" class="text-xs text-primary hover:underline">+
                                 Tambah Baris</button>
                         </div>
                         <div class="space-y-2">
@@ -292,6 +355,8 @@
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Sektor</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Harga Perolehan</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">% thd NAB</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Kontribusi % IHSG
                                         </th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 1M</th>
@@ -328,6 +393,16 @@
                                             <td class="px-1 py-1"><input type="number" :name="`efek[${i}][nilai_pasar]`"
                                                     x-model="row.nilai_pasar" step="0.01" readonly
                                                     class="w-28 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`efek[${i}][harga_perolehan]`"
+                                                    x-model="row.harga_perolehan" step="0.01"
+                                                    class="w-28 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`efek[${i}][persen_nab]`"
+                                                    x-model="row.persen_nab" step="0.01"
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number"
                                                     :name="`efek[${i}][kontribusi_kinerja]`"
@@ -405,8 +480,201 @@
                                     @endforeach
                                 </select>
                                 <input type="number" min="2000" max="2100" x-model="ffsTahun"
-                                    class="border-gray-300 rounded-lg text-sm px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20"
+                                    class="border-gray-300 rounded text-sm px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20"
                                     placeholder="2026" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Informasi Reksa Dana Lengkap --}}
+                    <div class="border-t border-line pt-4">
+                        <h4 class="font-semibold text-primary text-sm mb-3">Informasi Reksa Dana</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <x-input-label for="benchmark_lengkap" value="Benchmark" />
+                                <x-text-input id="benchmark_lengkap" name="benchmark" type="text" class="mt-1 block w-full" x-model="benchmark" />
+                            </div>
+                            <div>
+                                <x-input-label for="manajer_investasi_lengkap" value="Manajer Investasi" />
+                                <x-text-input id="manajer_investasi_lengkap" name="manajer_investasi" type="text" class="mt-1 block w-full" x-model="manajerInvestasi" />
+                            </div>
+                            <div>
+                                <x-input-label for="bank_kustodian_lengkap" value="Bank Kustodian" />
+                                <x-text-input id="bank_kustodian_lengkap" name="bank_kustodian" type="text" class="mt-1 block w-full" x-model="bankKustodian" />
+                            </div>
+                            <div>
+                                <x-input-label for="tanggal_peluncuran_lengkap" value="Tanggal Peluncuran" />
+                                <x-text-input id="tanggal_peluncuran_lengkap" name="tanggal_peluncuran" type="date" class="mt-1 block w-full" x-model="tanggalPeluncuran" />
+                            </div>
+                            <div>
+                                <x-input-label for="mata_uang_lengkap" value="Mata Uang" />
+                                <x-text-input id="mata_uang_lengkap" name="mata_uang" type="text" class="mt-1 block w-full" x-model="mataUang" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Laporan Keuangan - Neraca --}}
+                    <div class="border-t border-line pt-4">
+                        <h4 class="font-semibold text-primary text-sm mb-3">Laporan Keuangan — Neraca</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <x-input-label for="total_aset" value="Total Aset (Rp)" />
+                                <x-text-input id="total_aset" name="total_aset" type="number" step="0.01" class="mt-1 block w-full" x-model="totalAset" />
+                            </div>
+                            <div>
+                                <x-input-label for="total_liabilitas" value="Total Liabilitas (Rp)" />
+                                <x-text-input id="total_liabilitas" name="total_liabilitas" type="number" step="0.01" class="mt-1 block w-full" x-model="totalLiabilitas" />
+                            </div>
+                            <div>
+                                <x-input-label for="kas_dan_bank" value="Kas dan Bank (Rp)" />
+                                <x-text-input id="kas_dan_bank" name="kas_dan_bank" type="number" step="0.01" class="mt-1 block w-full" x-model="kasDanBank" />
+                            </div>
+                            <div>
+                                <x-input-label for="piutang_bunga" value="Piutang Bunga (Rp)" />
+                                <x-text-input id="piutang_bunga" name="piutang_bunga" type="number" step="0.01" class="mt-1 block w-full" x-model="piutangBunga" />
+                            </div>
+                            <div>
+                                <x-input-label for="piutang_dividen" value="Piutang Dividen (Rp)" />
+                                <x-text-input id="piutang_dividen" name="piutang_dividen" type="number" step="0.01" class="mt-1 block w-full" x-model="piutangDividen" />
+                            </div>
+                            <div>
+                                <x-input-label for="piutang_lain" value="Piutang Lain-lain (Rp)" />
+                                <x-text-input id="piutang_lain" name="piutang_lain" type="number" step="0.01" class="mt-1 block w-full" x-model="piutangLain" />
+                            </div>
+                            <div>
+                                <x-input-label for="utang_pajak" value="Utang Pajak (Rp)" />
+                                <x-text-input id="utang_pajak" name="utang_pajak" type="number" step="0.01" class="mt-1 block w-full" x-model="utangPajak" />
+                            </div>
+                            <div>
+                                <x-input-label for="utang_lain" value="Utang Lain-lain (Rp)" />
+                                <x-text-input id="utang_lain" name="utang_lain" type="number" step="0.01" class="mt-1 block w-full" x-model="utangLain" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Laporan Keuangan - Laba Rugi --}}
+                    <div class="border-t border-line pt-4">
+                        <h4 class="font-semibold text-primary text-sm mb-3">Laporan Keuangan — Laba Rugi</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <x-input-label for="pendapatan_bunga" value="Pendapatan Bunga (Rp)" />
+                                <x-text-input id="pendapatan_bunga" name="pendapatan_bunga" type="number" step="0.01" class="mt-1 block w-full" x-model="pendapatanBunga" />
+                            </div>
+                            <div>
+                                <x-input-label for="pendapatan_dividen" value="Pendapatan Dividen (Rp)" />
+                                <x-text-input id="pendapatan_dividen" name="pendapatan_dividen" type="number" step="0.01" class="mt-1 block w-full" x-model="pendapatanDividen" />
+                            </div>
+                            <div>
+                                <x-input-label for="gain_realized" value="Gain Realized (Rp)" />
+                                <x-text-input id="gain_realized" name="gain_realized" type="number" step="0.01" class="mt-1 block w-full" x-model="gainRealized" />
+                            </div>
+                            <div>
+                                <x-input-label for="gain_unrealized" value="Gain Unrealized (Rp)" />
+                                <x-text-input id="gain_unrealized" name="gain_unrealized" type="number" step="0.01" class="mt-1 block w-full" x-model="gainUnrealized" />
+                            </div>
+                            <div>
+                                <x-input-label for="beban_mi" value="Beban Manajer Investasi (Rp)" />
+                                <x-text-input id="beban_mi" name="beban_mi" type="number" step="0.01" class="mt-1 block w-full" x-model="bebanMi" />
+                            </div>
+                            <div>
+                                <x-input-label for="beban_kustodian" value="Beban Kustodian (Rp)" />
+                                <x-text-input id="beban_kustodian" name="beban_kustodian" type="number" step="0.01" class="mt-1 block w-full" x-model="bebanKustodian" />
+                            </div>
+                            <div>
+                                <x-input-label for="beban_lain" value="Beban Lain-lain (Rp)" />
+                                <x-text-input id="beban_lain" name="beban_lain" type="number" step="0.01" class="mt-1 block w-full" x-model="bebanLain" />
+                            </div>
+                            <div>
+                                <x-input-label for="laba_bersih" value="Laba Bersih (Rp)" />
+                                <x-text-input id="laba_bersih" name="laba_bersih" type="number" step="0.01" class="mt-1 block w-full" x-model="labaBersih" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Laporan Keuangan - Arus Kas --}}
+                    <div class="border-t border-line pt-4">
+                        <h4 class="font-semibold text-primary text-sm mb-3">Laporan Keuangan — Arus Kas</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <x-input-label for="arus_kas_operasi" value="Arus Kas Operasi (Rp)" />
+                                <x-text-input id="arus_kas_operasi" name="arus_kas_operasi" type="number" step="0.01" class="mt-1 block w-full" x-model="arusKasOperasi" />
+                            </div>
+                            <div>
+                                <x-input-label for="arus_kas_pendanaan" value="Arus Kas Pendanaan (Rp)" />
+                                <x-text-input id="arus_kas_pendanaan" name="arus_kas_pendanaan" type="number" step="0.01" class="mt-1 block w-full" x-model="arusKasPendanaan" />
+                            </div>
+                            <div>
+                                <x-input-label for="kas_awal_tahun" value="Kas Awal Tahun (Rp)" />
+                                <x-text-input id="kas_awal_tahun" name="kas_awal_tahun" type="number" step="0.01" class="mt-1 block w-full" x-model="kasAwalTahun" />
+                            </div>
+                            <div>
+                                <x-input-label for="kas_akhir_tahun" value="Kas Akhir Tahun (Rp)" />
+                                <x-text-input id="kas_akhir_tahun" name="kas_akhir_tahun" type="number" step="0.01" class="mt-1 block w-full" x-model="kasAkhirTahun" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Rasio Keuangan Lengkap --}}
+                    <div class="border-t border-line pt-4">
+                        <h4 class="font-semibold text-primary text-sm mb-3">Rasio Keuangan</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <x-input-label for="total_hasil_investasi" value="Total Hasil Investasi (%)" />
+                                <x-text-input id="total_hasil_investasi" name="total_hasil_investasi" type="number" step="0.01" class="mt-1 block w-full" x-model="totalHasilInvestasi" />
+                            </div>
+                            <div>
+                                <x-input-label for="hasil_investasi_setelah_biaya" value="Hasil Investasi Setelah Biaya Pemasaran (%)" />
+                                <x-text-input id="hasil_investasi_setelah_biaya" name="hasil_investasi_setelah_biaya" type="number" step="0.01" class="mt-1 block w-full" x-model="hasilInvestasiSetelahBiaya" />
+                            </div>
+                            <div>
+                                <x-input-label for="biaya_operasi_lengkap" value="Biaya Operasi (%)" />
+                                <x-text-input id="biaya_operasi_lengkap" name="biaya_operasi" type="number" step="0.01" class="mt-1 block w-full" x-model="biayaOperasi" />
+                            </div>
+                            <div>
+                                <x-input-label for="portfolio_turnover_lengkap" value="Portfolio Turnover Ratio" />
+                                <x-text-input id="portfolio_turnover_lengkap" name="portfolio_turnover_ratio" type="number" step="0.01" class="mt-1 block w-full" x-model="portfolioTurnover" />
+                            </div>
+                            <div>
+                                <x-input-label for="persentase_pph" value="Persentase Penghasilan Kena Pajak (%)" />
+                                <x-text-input id="persentase_pph" name="persentase_pph" type="number" step="0.01" class="mt-1 block w-full" x-model="persentasePph" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Fair Value --}}
+                    <div class="border-t border-line pt-4">
+                        <h4 class="font-semibold text-primary text-sm mb-3">Fair Value / Pengukuran Nilai Wajar</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <x-input-label for="fair_value_level_1" value="Level 1 (Rp)" />
+                                <x-text-input id="fair_value_level_1" name="fair_value_level_1" type="number" step="0.01" class="mt-1 block w-full" x-model="fairValueLevel1" />
+                            </div>
+                            <div>
+                                <x-input-label for="fair_value_level_2" value="Level 2 (Rp)" />
+                                <x-text-input id="fair_value_level_2" name="fair_value_level_2" type="number" step="0.01" class="mt-1 block w-full" x-model="fairValueLevel2" />
+                            </div>
+                            <div>
+                                <x-input-label for="fair_value_level_3" value="Level 3 (Rp)" />
+                                <x-text-input id="fair_value_level_3" name="fair_value_level_3" type="number" step="0.01" class="mt-1 block w-full" x-model="fairValueLevel3" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Unit Penyertaan --}}
+                    <div class="border-t border-line pt-4">
+                        <h4 class="font-semibold text-primary text-sm mb-3">Unit Penyertaan</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <x-input-label for="unit_milik_investor" value="Unit Milik Investor" />
+                                <x-text-input id="unit_milik_investor" name="unit_milik_investor" type="number" step="0.0001" class="mt-1 block w-full" x-model="unitMilikInvestor" />
+                            </div>
+                            <div>
+                                <x-input-label for="unit_milik_mi" value="Unit Milik Manajer Investasi" />
+                                <x-text-input id="unit_milik_mi" name="unit_milik_mi" type="number" step="0.0001" class="mt-1 block w-full" x-model="unitMilikMi" />
+                            </div>
+                            <div>
+                                <x-input-label for="total_unit_beredar" value="Total Unit Beredar" />
+                                <x-text-input id="total_unit_beredar" name="total_unit_beredar" type="number" step="0.0001" class="mt-1 block w-full" x-model="totalUnitBeredar" />
                             </div>
                         </div>
                     </div>
@@ -452,6 +720,8 @@
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Sektor</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Harga Perolehan</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">% thd NAB</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Kontribusi % IHSG
                                         </th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 1M</th>
@@ -488,6 +758,16 @@
                                             <td class="px-1 py-1"><input type="number" :name="`efek[${i}][nilai_pasar]`"
                                                     x-model="row.nilai_pasar" step="0.01" readonly
                                                     class="w-28 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`efek[${i}][harga_perolehan]`"
+                                                    x-model="row.harga_perolehan" step="0.01"
+                                                    class="w-28 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`efek[${i}][persen_nab]`"
+                                                    x-model="row.persen_nab" step="0.01"
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number"
                                                     :name="`efek[${i}][kontribusi_kinerja]`"
@@ -553,6 +833,11 @@
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nama Obligasi</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">YTM (%)</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Kupon (%)</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Jatuh Tempo</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Penerbit</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">% thd NAB</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 1M</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 3M</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 6M</th>
@@ -585,6 +870,29 @@
                                                     :name="`obligasi[${i}][nilai_pasar]`" x-model="row.nilai_pasar"
                                                     step="0.01" readonly
                                                     class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`obligasi[${i}][ytm]`" x-model="row.ytm" step="0.01"
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`obligasi[${i}][kupon]`" x-model="row.kupon" step="0.01"
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="date"
+                                                    :name="`obligasi[${i}][tanggal_jatuh_tempo]`"
+                                                    x-model="row.tanggal_jatuh_tempo"
+                                                    class="w-28 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="text"
+                                                    :name="`obligasi[${i}][penerbit]`" x-model="row.penerbit"
+                                                    placeholder="Penerbit"
+                                                    class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`obligasi[${i}][persen_nab]`"
+                                                    x-model="row.persen_nab" step="0.01"
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number"
                                                     :name="`obligasi[${i}][return_1m]`" x-model="row.return_1m"
@@ -647,6 +955,7 @@
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Yield %</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Jatuh Tempo</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Rating</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">% thd NAB</th>
                                         <th></th>
                                     </tr>
                                 </thead>
@@ -674,6 +983,7 @@
                                             <td class="px-1 py-1"><input type="number" :name="`sukuk[${i}][bobot]`"
                                                     x-model="row.bobot" step="0.01"
                                                     class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
                                             <td class="px-1 py-1"><input type="number" :name="`sukuk[${i}][yield]`"
                                                     x-model="row.yield" step="0.01"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
@@ -691,6 +1001,11 @@
                                                         <option value="{{ $r }}">{{ $r }}</option>
                                                     @endforeach
                                                 </select>
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`sukuk[${i}][persen_nab]`"
+                                                    x-model="row.persen_nab" step="0.01"
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><button type="button"
                                                     @click="removeRow('sukuk', i)"
@@ -717,6 +1032,9 @@
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Jenis Bank</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Tingkat Bunga</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Jangka Waktu</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">% thd NAB</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 1M</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 3M</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 6M</th>
@@ -754,6 +1072,21 @@
                                             <td class="px-1 py-1"><input type="number" :name="`bank[${i}][nilai_pasar]`"
                                                     x-model="row.nilai_pasar" step="0.01" readonly
                                                     class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`bank[${i}][tingkat_bunga]`"
+                                                    x-model="row.tingkat_bunga" step="0.01"
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="text"
+                                                    :name="`bank[${i}][jangka_waktu]`"
+                                                    x-model="row.jangka_waktu" placeholder="1 bln"
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`bank[${i}][persen_nab]`"
+                                                    x-model="row.persen_nab" step="0.01"
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`bank[${i}][return_1m]`"
                                                     x-model="row.return_1m" step="0.0001" readonly
@@ -914,11 +1247,11 @@
             function analisaForm() {
                 @php
                     $oldSektor = old('sektor', [['nama_sektor' => '', 'bobot' => '']]);
-                    $oldEfek = old('efek', [['kode_efek' => '', 'nama_efek' => '', 'sektor' => '', 'bobot' => '', 'kontribusi_kinerja' => '', 'market_cap' => '', 'nilai_pasar' => '', 'return_1m' => '', 'return_3m' => '', 'return_6m' => '', 'return_1y' => '', 'top_10' => false]]);
+                    $oldEfek = old('efek', [['kode_efek' => '', 'nama_efek' => '', 'sektor' => '', 'bobot' => '', 'kontribusi_kinerja' => '', 'market_cap' => '', 'nilai_pasar' => '', 'harga_perolehan' => '', 'persen_nab' => '', 'return_1m' => '', 'return_3m' => '', 'return_6m' => '', 'return_1y' => '', 'top_10' => false]]);
                     $oldKinerja = old('kinerja', [['periode' => '', 'return_pct' => ''], ['periode' => '', 'return_pct' => '']]);
-                    $oldObligasi = old('obligasi', [['kode_obligasi' => '', 'nama_obligasi' => '', 'bobot' => '', 'durasi' => '', 'rating' => '', 'nilai_pasar' => '', 'return_1m' => '', 'return_3m' => '', 'return_6m' => '', 'return_1y' => '']]);
-                    $oldSukuk = old('sukuk', [['kode_sukuk' => '', 'nama_sukuk' => '', 'jenis_sukuk' => '', 'bobot' => '', 'yield' => '', 'jatuh_tempo' => '', 'rating' => '']]);
-                    $oldBank = old('bank', [['nama_bank' => '', 'jenis_bank' => '', 'bobot' => '', 'nilai_pasar' => '', 'return_1m' => '', 'return_3m' => '', 'return_6m' => '', 'return_1y' => '', 'car' => '', 'npl' => '', 'klasifikasi_risiko' => '']]);
+                    $oldObligasi = old('obligasi', [['kode_obligasi' => '', 'nama_obligasi' => '', 'bobot' => '', 'durasi' => '', 'rating' => '', 'ytm' => '', 'kupon' => '', 'tanggal_jatuh_tempo' => '', 'penerbit' => '', 'persen_nab' => '', 'nilai_pasar' => '', 'return_1m' => '', 'return_3m' => '', 'return_6m' => '', 'return_1y' => '']]);
+                    $oldSukuk = old('sukuk', [['kode_sukuk' => '', 'nama_sukuk' => '', 'jenis_sukuk' => '', 'bobot' => '', 'yield' => '', 'jatuh_tempo' => '', 'rating' => '', 'persen_nab' => '']]);
+                    $oldBank = old('bank', [['nama_bank' => '', 'jenis_bank' => '', 'bobot' => '', 'nilai_pasar' => '', 'tingkat_bunga' => '', 'jangka_waktu' => '', 'persen_nab' => '', 'return_1m' => '', 'return_3m' => '', 'return_6m' => '', 'return_1y' => '', 'car' => '', 'npl' => '', 'klasifikasi_risiko' => '']]);
                     $oldAlokasiAset = old('alokasi_aset', [['nama_aset' => '', 'persentase' => '']]);
                     // Normalize top_10 checkbox (submitted as "1" string or absent)
                     $oldEfek = array_map(function ($e) {
@@ -985,6 +1318,50 @@
                     bank: @json($oldBank),
                     alokasi_aset: @json($oldAlokasiAset),
 
+                    manajerInvestasi: @json(old('manajer_investasi')),
+                    bankKustodian: @json(old('bank_kustodian')),
+                    tanggalPeluncuran: @json(old('tanggal_peluncuran')),
+                    mataUang: @json(old('mata_uang')),
+                    benchmark: @json(old('benchmark')),
+                    tujuanInvestasi: @json(old('tujuan_investasi')),
+                    kebijakanInvestasi: @json(old('kebijakan_investasi')),
+                    returnYtd: @json(old('return_ytd')),
+                    return1y: @json(old('return_1y')),
+                    totalReturn: @json(old('total_return')),
+                    biayaOperasi: @json(old('biaya_operasi')),
+                    portfolioTurnover: @json(old('portfolio_turnover_ratio')),
+                    managementFee: @json(old('management_fee')),
+                    custodianFee: @json(old('custodian_fee')),
+                    totalAset: @json(old('total_aset')),
+                    totalLiabilitas: @json(old('total_liabilitas')),
+                    kasDanBank: @json(old('kas_dan_bank')),
+                    piutangBunga: @json(old('piutang_bunga')),
+                    piutangDividen: @json(old('piutang_dividen')),
+                    piutangLain: @json(old('piutang_lain')),
+                    utangPajak: @json(old('utang_pajak')),
+                    utangLain: @json(old('utang_lain')),
+                    pendapatanBunga: @json(old('pendapatan_bunga')),
+                    pendapatanDividen: @json(old('pendapatan_dividen')),
+                    gainRealized: @json(old('gain_realized')),
+                    gainUnrealized: @json(old('gain_unrealized')),
+                    bebanMi: @json(old('beban_mi')),
+                    bebanKustodian: @json(old('beban_kustodian')),
+                    bebanLain: @json(old('beban_lain')),
+                    labaBersih: @json(old('laba_bersih')),
+                    arusKasOperasi: @json(old('arus_kas_operasi')),
+                    arusKasPendanaan: @json(old('arus_kas_pendanaan')),
+                    kasAwalTahun: @json(old('kas_awal_tahun')),
+                    kasAkhirTahun: @json(old('kas_akhir_tahun')),
+                    totalHasilInvestasi: @json(old('total_hasil_investasi')),
+                    hasilInvestasiSetelahBiaya: @json(old('hasil_investasi_setelah_biaya')),
+                    persentasePph: @json(old('persentase_pph')),
+                    fairValueLevel1: @json(old('fair_value_level_1')),
+                    fairValueLevel2: @json(old('fair_value_level_2')),
+                    fairValueLevel3: @json(old('fair_value_level_3')),
+                    unitMilikInvestor: @json(old('unit_milik_investor')),
+                    unitMilikMi: @json(old('unit_milik_mi')),
+                    totalUnitBeredar: @json(old('total_unit_beredar')),
+
                     addRow(type) {
                         const defaults = {
                             sektor: {
@@ -999,6 +1376,8 @@
                                 kontribusi_kinerja: '',
                                 market_cap: '',
                                 nilai_pasar: '',
+                                harga_perolehan: '',
+                                persen_nab: '',
                                 return_1m: '',
                                 return_3m: '',
                                 return_6m: '',
@@ -1015,6 +1394,11 @@
                                 nama_obligasi: '',
                                 bobot: '',
                                 nilai_pasar: '',
+                                ytm: '',
+                                kupon: '',
+                                tanggal_jatuh_tempo: '',
+                                penerbit: '',
+                                persen_nab: '',
                                 return_1m: '',
                                 return_3m: '',
                                 return_6m: '',
@@ -1029,13 +1413,17 @@
                                 bobot: '',
                                 yield: '',
                                 jatuh_tempo: '',
-                                rating: ''
+                                rating: '',
+                                persen_nab: ''
                             },
                             bank: {
                                 nama_bank: '',
                                 jenis_bank: '',
                                 bobot: '',
                                 nilai_pasar: '',
+                                tingkat_bunga: '',
+                                jangka_waktu: '',
+                                persen_nab: '',
                                 return_1m: '',
                                 return_3m: '',
                                 return_6m: '',
@@ -1358,6 +1746,11 @@
                                 nama_obligasi: o.nama_obligasi || '',
                                 bobot: o.bobot ?? '',
                                 nilai_pasar: o.nilai_pasar ?? '',
+                                ytm: o.ytm ?? '',
+                                kupon: o.kupon ?? '',
+                                tanggal_jatuh_tempo: o.tanggal_jatuh_tempo || '',
+                                penerbit: o.penerbit || '',
+                                persen_nab: o.persen_nab ?? '',
                                 return_1m: o.return_1m ?? '',
                                 return_3m: o.return_3m ?? '',
                                 return_6m: o.return_6m ?? '',
@@ -1380,6 +1773,7 @@
                                 bobot: s.bobot ?? '',
                                 yield: s.yield ?? '',
                                 jatuh_tempo: s.jatuh_tempo || '',
+                                persen_nab: s.persen_nab ?? '',
                                 rating: s.rating || '',
                             }));
                         }
@@ -1389,6 +1783,9 @@
                                 jenis_bank: b.jenis_bank || '',
                                 bobot: b.bobot ?? '',
                                 nilai_pasar: b.nilai_pasar ?? '',
+                                tingkat_bunga: b.tingkat_bunga ?? '',
+                                jangka_waktu: b.jangka_waktu ?? '',
+                                persen_nab: b.persen_nab ?? '',
                                 return_1m: b.return_1m ?? '',
                                 return_3m: b.return_3m ?? '',
                                 return_6m: b.return_6m ?? '',
@@ -1677,6 +2074,10 @@
                         const fields = {
                             nama_reksa_dana: 'nama_reksa_dana',
                             jenis_reksa_dana: 'jenis_reksa_dana',
+                            manajer_investasi: 'manajer_investasi',
+                            bank_kustodian: 'bank_kustodian',
+                            tanggal_peluncuran: 'tanggal_peluncuran',
+                            mata_uang: 'mata_uang',
                             benchmark: 'benchmark',
                             tujuan_investasi: 'tujuan_investasi',
                             kebijakan_investasi: 'kebijakan_investasi',
@@ -1691,6 +2092,42 @@
                         this.nabPerUnit = data.nab_per_unit ?? this.nabPerUnit;
                         this.ffsBulan = data.ffs_bulan ?? this.ffsBulan;
                         this.ffsTahun = data.ffs_tahun ?? this.ffsTahun;
+                        this.returnYtd = data.return_ytd ?? this.returnYtd;
+                        this.return1y = data.return_1y ?? this.return1y;
+                        this.totalReturn = data.total_return ?? this.totalReturn;
+                        this.biayaOperasi = data.biaya_operasi ?? this.biayaOperasi;
+                        this.portfolioTurnoverRatio = data.portfolio_turnover_ratio ?? this.portfolioTurnoverRatio;
+                        this.managementFee = data.management_fee ?? this.managementFee;
+                        this.custodianFee = data.custodian_fee ?? this.custodianFee;
+                        this.totalAset = data.total_aset ?? this.totalAset;
+                        this.totalLiabilitas = data.total_liabilitas ?? this.totalLiabilitas;
+                        this.kasDanBank = data.kas_dan_bank ?? this.kasDanBank;
+                        this.piutangBunga = data.piutang_bunga ?? this.piutangBunga;
+                        this.piutangDividen = data.piutang_dividen ?? this.piutangDividen;
+                        this.piutangLain = data.piutang_lain ?? this.piutangLain;
+                        this.utangPajak = data.utang_pajak ?? this.utangPajak;
+                        this.utangLain = data.utang_lain ?? this.utangLain;
+                        this.pendapatanBunga = data.pendapatan_bunga ?? this.pendapatanBunga;
+                        this.pendapatanDividen = data.pendapatan_dividen ?? this.pendapatanDividen;
+                        this.gainRealized = data.gain_realized ?? this.gainRealized;
+                        this.gainUnrealized = data.gain_unrealized ?? this.gainUnrealized;
+                        this.bebanMi = data.beban_mi ?? this.bebanMi;
+                        this.bebanKustodian = data.beban_kustodian ?? this.bebanKustodian;
+                        this.bebanLain = data.beban_lain ?? this.bebanLain;
+                        this.labaBersih = data.laba_bersih ?? this.labaBersih;
+                        this.arusKasOperasi = data.arus_kas_operasi ?? this.arusKasOperasi;
+                        this.arusKasPendanaan = data.arus_kas_pendanaan ?? this.arusKasPendanaan;
+                        this.kasAwalTahun = data.kas_awal_tahun ?? this.kasAwalTahun;
+                        this.kasAkhirTahun = data.kas_akhir_tahun ?? this.kasAkhirTahun;
+                        this.totalHasilInvestasi = data.total_hasil_investasi ?? this.totalHasilInvestasi;
+                        this.hasilInvestasiSetelahBiaya = data.hasil_investasi_setelah_biaya ?? this.hasilInvestasiSetelahBiaya;
+                        this.persentasePph = data.persentase_pph ?? this.persentasePph;
+                        this.fairValueLevel1 = data.fair_value_level_1 ?? this.fairValueLevel1;
+                        this.fairValueLevel2 = data.fair_value_level_2 ?? this.fairValueLevel2;
+                        this.fairValueLevel3 = data.fair_value_level_3 ?? this.fairValueLevel3;
+                        this.unitMilikInvestor = data.unit_milik_investor ?? this.unitMilikInvestor;
+                        this.unitMilikMi = data.unit_milik_mi ?? this.unitMilikMi;
+                        this.totalUnitBeredar = data.total_unit_beredar ?? this.totalUnitBeredar;
                         if (data.sektor?.length) this.sektor = data.sektor;
                         if (data.efek?.length) {
                             this.efek = data.efek.map(e => ({
@@ -1701,6 +2138,8 @@
                                 kontribusi_kinerja: e.kontribusi_kinerja ?? '',
                                 market_cap: e.market_cap ?? '',
                                 nilai_pasar: e.nilai_pasar ?? '',
+                                harga_perolehan: e.harga_perolehan ?? '',
+                                persen_nab: e.persen_nab ?? '',
                                 return_1m: e.return_1m ?? '',
                                 return_3m: e.return_3m ?? '',
                                 return_6m: e.return_6m ?? '',
@@ -1729,6 +2168,11 @@
                                 nama_obligasi: o.nama_obligasi || '',
                                 bobot: o.bobot ?? '',
                                 nilai_pasar: o.nilai_pasar ?? '',
+                                ytm: o.ytm ?? '',
+                                kupon: o.kupon ?? '',
+                                tanggal_jatuh_tempo: o.tanggal_jatuh_tempo || '',
+                                penerbit: o.penerbit || '',
+                                persen_nab: o.persen_nab ?? '',
                                 return_1m: o.return_1m ?? '',
                                 return_3m: o.return_3m ?? '',
                                 return_6m: o.return_6m ?? '',
@@ -1751,6 +2195,7 @@
                                 bobot: s.bobot ?? '',
                                 yield: s.yield ?? '',
                                 jatuh_tempo: s.jatuh_tempo || '',
+                                persen_nab: s.persen_nab ?? '',
                                 rating: s.rating || '',
                             }));
                         }
@@ -1760,6 +2205,9 @@
                                 jenis_bank: b.jenis_bank || '',
                                 bobot: b.bobot ?? '',
                                 nilai_pasar: b.nilai_pasar ?? '',
+                                tingkat_bunga: b.tingkat_bunga ?? '',
+                                jangka_waktu: b.jangka_waktu ?? '',
+                                persen_nab: b.persen_nab ?? '',
                                 return_1m: b.return_1m ?? '',
                                 return_3m: b.return_3m ?? '',
                                 return_6m: b.return_6m ?? '',
