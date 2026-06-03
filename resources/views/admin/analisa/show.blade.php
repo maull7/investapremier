@@ -111,6 +111,102 @@
         @endforeach
     </div>
 
+    {{-- Informasi Umum --}}
+    @if($analisa->manajer_investasi || $analisa->bank_kustodian || $analisa->tanggal_peluncuran || $analisa->benchmark || $analisa->tujuan_investasi || $analisa->kebijakan_investasi)
+    <div class="bg-white rounded-xl border border-line p-6">
+        <h3 class="font-semibold text-primary mb-4">Informasi Reksa Dana</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-sm">
+            @if($analisa->manajer_investasi)
+            <div>
+                <p class="text-muted text-xs">Manajer Investasi</p>
+                <p class="font-medium mt-0.5">{{ $analisa->manajer_investasi }}</p>
+            </div>
+            @endif
+            @if($analisa->bank_kustodian)
+            <div>
+                <p class="text-muted text-xs">Bank Kustodian</p>
+                <p class="font-medium mt-0.5">{{ $analisa->bank_kustodian }}</p>
+            </div>
+            @endif
+            @if($analisa->tanggal_peluncuran)
+            <div>
+                <p class="text-muted text-xs">Tanggal Peluncuran</p>
+                <p class="font-medium mt-0.5">{{ $analisa->tanggal_peluncuran->format('d M Y') }}</p>
+            </div>
+            @endif
+            @if($analisa->benchmark)
+            <div>
+                <p class="text-muted text-xs">Benchmark</p>
+                <p class="font-medium mt-0.5">{{ $analisa->benchmark }}</p>
+            </div>
+            @endif
+            @if($analisa->tujuan_investasi)
+            <div class="col-span-2">
+                <p class="text-muted text-xs">Tujuan Investasi</p>
+                <p class="font-medium mt-0.5">{{ $analisa->tujuan_investasi }}</p>
+            </div>
+            @endif
+            @if($analisa->kebijakan_investasi)
+            <div class="col-span-2">
+                <p class="text-muted text-xs">Kebijakan Investasi</p>
+                <p class="font-medium mt-0.5">{{ $analisa->kebijakan_investasi }}</p>
+            </div>
+            @endif
+        </div>
+    </div>
+    @endif
+
+    {{-- Kinerja & Rasio --}}
+    @if($analisa->return_ytd || $analisa->return_1y || $analisa->total_return || $analisa->biaya_operasi || $analisa->portfolio_turnover_ratio || $analisa->management_fee || $analisa->custodian_fee)
+    <div class="bg-white rounded-xl border border-line p-6">
+        <h3 class="font-semibold text-primary mb-4">Kinerja & Rasio</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-sm">
+            @if($analisa->return_ytd)
+            <div>
+                <p class="text-muted text-xs">Return YTD</p>
+                <p class="font-medium mt-0.5">{{ number_format($analisa->return_ytd, 2) }}%</p>
+            </div>
+            @endif
+            @if($analisa->return_1y)
+            <div>
+                <p class="text-muted text-xs">Return 1 Tahun</p>
+                <p class="font-medium mt-0.5">{{ number_format($analisa->return_1y, 2) }}%</p>
+            </div>
+            @endif
+            @if($analisa->total_return)
+            <div>
+                <p class="text-muted text-xs">Total Return</p>
+                <p class="font-medium mt-0.5">{{ number_format($analisa->total_return, 2) }}%</p>
+            </div>
+            @endif
+            @if($analisa->biaya_operasi)
+            <div>
+                <p class="text-muted text-xs">Biaya Operasi</p>
+                <p class="font-medium mt-0.5">{{ number_format($analisa->biaya_operasi, 2) }}%</p>
+            </div>
+            @endif
+            @if($analisa->portfolio_turnover_ratio)
+            <div>
+                <p class="text-muted text-xs">Portfolio Turnover</p>
+                <p class="font-medium mt-0.5">{{ number_format($analisa->portfolio_turnover_ratio, 2) }}</p>
+            </div>
+            @endif
+            @if($analisa->management_fee)
+            <div>
+                <p class="text-muted text-xs">Management Fee</p>
+                <p class="font-medium mt-0.5">{{ number_format($analisa->management_fee, 2) }}%</p>
+            </div>
+            @endif
+            @if($analisa->custodian_fee)
+            <div>
+                <p class="text-muted text-xs">Custodian Fee</p>
+                <p class="font-medium mt-0.5">{{ number_format($analisa->custodian_fee, 2) }}%</p>
+            </div>
+            @endif
+        </div>
+    </div>
+    @endif
+
     {{-- Informasi Keuangan --}}
     <div class="bg-white rounded-xl border border-line p-6">
         <h3 class="font-semibold text-primary mb-4">Informasi Keuangan</h3>
@@ -246,8 +342,10 @@
                             <th class="text-left px-2 py-2 font-semibold text-primary text-xs">Nama Efek</th>
                             <th class="text-left px-2 py-2 font-semibold text-primary text-xs">Sektor</th>
                             <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Bobot %</th>
-                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Kontribusi % IHSG</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Kontribusi %</th>
                             <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Nilai Pasar</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Harga Perolehan</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">% thd NAB</th>
                             <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Return 1M</th>
                             <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Return 3M</th>
                             <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Return 6M</th>
@@ -266,6 +364,8 @@
                                 {{ $e->kontribusi_kinerja !== null ? ($e->kontribusi_kinerja > 0 ? '+' : '').number_format($e->kontribusi_kinerja, 2).'%' : '-' }}
                             </td>
                             <td class="px-2 py-2 text-right font-mono text-xs">{{ $e->nilai_pasar ? 'Rp '.number_format($e->nilai_pasar, 0, ',', '.') : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $e->harga_perolehan ? 'Rp '.number_format($e->harga_perolehan, 0, ',', '.') : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $e->persen_nab !== null ? number_format($e->persen_nab, 2).'%' : '-' }}</td>
                             <td class="px-2 py-2 text-right font-mono text-xs">{{ $e->return_1m !== null ? number_format($e->return_1m, 2).'%' : '-' }}</td>
                             <td class="px-2 py-2 text-right font-mono text-xs">{{ $e->return_3m !== null ? number_format($e->return_3m, 2).'%' : '-' }}</td>
                             <td class="px-2 py-2 text-right font-mono text-xs">{{ $e->return_6m !== null ? number_format($e->return_6m, 2).'%' : '-' }}</td>
@@ -300,6 +400,11 @@
                             <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Return 6M</th>
                             <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Return 1 Thn</th>
                             <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Durasi</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">YTM %</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Kupon %</th>
+                            <th class="text-center px-2 py-2 font-semibold text-primary text-xs">Jatuh Tempo</th>
+                            <th class="text-left px-2 py-2 font-semibold text-primary text-xs">Penerbit</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">% thd NAB</th>
                             <th class="text-center px-2 py-2 font-semibold text-primary text-xs">Rating</th>
                         </tr>
                     </thead>
@@ -315,6 +420,11 @@
                             <td class="px-2 py-2 text-right font-mono text-xs">{{ $ob->return_6m !== null ? number_format($ob->return_6m, 2).'%' : '-' }}</td>
                             <td class="px-2 py-2 text-right font-mono text-xs">{{ $ob->return_1y !== null ? number_format($ob->return_1y, 2).'%' : '-' }}</td>
                             <td class="px-2 py-2 text-right font-mono text-xs">{{ $ob->durasi ? $ob->durasi.' thn' : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $ob->ytm !== null ? number_format($ob->ytm, 2).'%' : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $ob->kupon !== null ? number_format($ob->kupon, 2).'%' : '-' }}</td>
+                            <td class="px-2 py-2 text-center font-mono text-xs">{{ $ob->tanggal_jatuh_tempo ? $ob->tanggal_jatuh_tempo->format('d/m/Y') : ($ob->jatuh_tempo ?? '-') }}</td>
+                            <td class="px-2 py-2 text-xs">{{ $ob->penerbit ?? '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $ob->persen_nab !== null ? number_format($ob->persen_nab, 2).'%' : '-' }}</td>
                             <td class="px-2 py-2 text-center">
                                 <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">{{ $ob->rating ?? '-' }}</span>
                             </td>
@@ -337,6 +447,7 @@
                             <th class="text-left px-2 py-2 font-semibold text-primary text-xs">Jenis</th>
                             <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Bobot %</th>
                             <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Yield %</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">% thd NAB</th>
                             <th class="text-center px-2 py-2 font-semibold text-primary text-xs">Jatuh Tempo</th>
                             <th class="text-center px-2 py-2 font-semibold text-primary text-xs">Rating</th>
                         </tr>
@@ -349,6 +460,7 @@
                             <td class="px-2 py-2 text-muted text-xs">{{ $s->jenis_sukuk ?? '-' }}</td>
                             <td class="px-2 py-2 text-right font-mono text-xs">{{ number_format($s->bobot, 2) }}%</td>
                             <td class="px-2 py-2 text-right font-mono text-xs">{{ $s->yield !== null ? number_format($s->yield, 4).'%' : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $s->persen_nab !== null ? number_format($s->persen_nab, 2).'%' : '-' }}</td>
                             <td class="px-2 py-2 text-center font-mono text-xs">{{ $s->jatuh_tempo ?? '-' }}</td>
                             <td class="px-2 py-2 text-center">
                                 <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">{{ $s->rating ?? '-' }}</span>
@@ -371,6 +483,9 @@
                             <th class="text-left px-2 py-2 font-semibold text-primary text-xs">Jenis Bank</th>
                             <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Bobot %</th>
                             <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Nilai Pasar</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Tingkat Bunga %</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Jangka Waktu (hari)</th>
+                            <th class="text-right px-2 py-2 font-semibold text-primary text-xs">% thd NAB</th>
                             <th class="text-right px-2 py-2 font-semibold text-primary text-xs">CAR %</th>
                             <th class="text-right px-2 py-2 font-semibold text-primary text-xs">NPL %</th>
                             <th class="text-right px-2 py-2 font-semibold text-primary text-xs">Return 1M</th>
@@ -387,6 +502,9 @@
                             <td class="px-2 py-2 text-muted text-xs">{{ $bank->jenis_bank ?? '-' }}</td>
                             <td class="px-2 py-2 text-right font-mono text-xs">{{ number_format($bank->bobot, 2) }}%</td>
                             <td class="px-2 py-2 text-right font-mono text-xs">{{ $bank->nilai_pasar ? 'Rp '.number_format($bank->nilai_pasar, 0, ',', '.') : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $bank->tingkat_bunga !== null ? number_format($bank->tingkat_bunga, 2).'%' : '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $bank->jangka_waktu ?? '-' }}</td>
+                            <td class="px-2 py-2 text-right font-mono text-xs">{{ $bank->persen_nab !== null ? number_format($bank->persen_nab, 2).'%' : '-' }}</td>
                             <td class="px-2 py-2 text-right font-mono text-xs">{{ $bank->car ? number_format($bank->car, 2).'%' : '-' }}</td>
                             <td class="px-2 py-2 text-right font-mono text-xs">{{ $bank->npl ? number_format($bank->npl, 2).'%' : '-' }}</td>
                             <td class="px-2 py-2 text-right font-mono text-xs">{{ $bank->return_1m !== null ? number_format($bank->return_1m, 2).'%' : '-' }}</td>
@@ -408,6 +526,89 @@
                         @endforeach
                     </tbody>
                 </table>
+            </div>
+            @endif
+
+            {{-- Laporan Keuangan — Neraca --}}
+            @if($analisa->total_aset || $analisa->total_liabilitas || $analisa->kas_dan_bank || $analisa->piutang_bunga || $analisa->piutang_dividen || $analisa->piutang_lain || $analisa->utang_pajak || $analisa->utang_lain)
+            <div class="bg-white rounded-xl border border-line p-6">
+                <h3 class="font-semibold text-primary mb-4">Laporan Keuangan — Neraca</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    @if($analisa->total_aset)<div><p class="text-muted text-xs">Total Aset</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->total_aset, 0, ',', '.') }}</p></div>@endif
+                    @if($analisa->total_liabilitas)<div><p class="text-muted text-xs">Total Liabilitas</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->total_liabilitas, 0, ',', '.') }}</p></div>@endif
+                    @if($analisa->kas_dan_bank)<div><p class="text-muted text-xs">Kas dan Bank</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->kas_dan_bank, 0, ',', '.') }}</p></div>@endif
+                    @if($analisa->piutang_bunga)<div><p class="text-muted text-xs">Piutang Bunga</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->piutang_bunga, 0, ',', '.') }}</p></div>@endif
+                    @if($analisa->piutang_dividen)<div><p class="text-muted text-xs">Piutang Dividen</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->piutang_dividen, 0, ',', '.') }}</p></div>@endif
+                    @if($analisa->piutang_lain)<div><p class="text-muted text-xs">Piutang Lain</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->piutang_lain, 0, ',', '.') }}</p></div>@endif
+                    @if($analisa->utang_pajak)<div><p class="text-muted text-xs">Utang Pajak</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->utang_pajak, 0, ',', '.') }}</p></div>@endif
+                    @if($analisa->utang_lain)<div><p class="text-muted text-xs">Utang Lain</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->utang_lain, 0, ',', '.') }}</p></div>@endif
+                </div>
+            </div>
+            @endif
+
+            {{-- Laporan Keuangan — Laba Rugi --}}
+            @if($analisa->pendapatan_bunga || $analisa->pendapatan_dividen || $analisa->gain_realized || $analisa->gain_unrealized || $analisa->beban_mi || $analisa->beban_kustodian || $analisa->beban_lain || $analisa->laba_bersih)
+            <div class="bg-white rounded-xl border border-line p-6">
+                <h3 class="font-semibold text-primary mb-4">Laporan Keuangan — Laba Rugi</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    @if($analisa->pendapatan_bunga)<div><p class="text-muted text-xs">Pendapatan Bunga</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->pendapatan_bunga, 0, ',', '.') }}</p></div>@endif
+                    @if($analisa->pendapatan_dividen)<div><p class="text-muted text-xs">Pendapatan Dividen</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->pendapatan_dividen, 0, ',', '.') }}</p></div>@endif
+                    @if($analisa->gain_realized)<div><p class="text-muted text-xs">Gain Realized</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->gain_realized, 0, ',', '.') }}</p></div>@endif
+                    @if($analisa->gain_unrealized)<div><p class="text-muted text-xs">Gain Unrealized</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->gain_unrealized, 0, ',', '.') }}</p></div>@endif
+                    @if($analisa->beban_mi)<div><p class="text-muted text-xs">Beban MI</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->beban_mi, 0, ',', '.') }}</p></div>@endif
+                    @if($analisa->beban_kustodian)<div><p class="text-muted text-xs">Beban Kustodian</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->beban_kustodian, 0, ',', '.') }}</p></div>@endif
+                    @if($analisa->beban_lain)<div><p class="text-muted text-xs">Beban Lain</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->beban_lain, 0, ',', '.') }}</p></div>@endif
+                    @if($analisa->laba_bersih)<div><p class="text-muted text-xs">Laba Bersih</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->laba_bersih, 0, ',', '.') }}</p></div>@endif
+                </div>
+            </div>
+            @endif
+
+            {{-- Laporan Keuangan — Arus Kas --}}
+            @if($analisa->arus_kas_operasi || $analisa->arus_kas_pendanaan || $analisa->kas_awal_tahun || $analisa->kas_akhir_tahun)
+            <div class="bg-white rounded-xl border border-line p-6">
+                <h3 class="font-semibold text-primary mb-4">Laporan Keuangan — Arus Kas</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    @if($analisa->arus_kas_operasi)<div><p class="text-muted text-xs">Arus Kas Operasi</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->arus_kas_operasi, 0, ',', '.') }}</p></div>@endif
+                    @if($analisa->arus_kas_pendanaan)<div><p class="text-muted text-xs">Arus Kas Pendanaan</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->arus_kas_pendanaan, 0, ',', '.') }}</p></div>@endif
+                    @if($analisa->kas_awal_tahun)<div><p class="text-muted text-xs">Kas Awal Tahun</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->kas_awal_tahun, 0, ',', '.') }}</p></div>@endif
+                    @if($analisa->kas_akhir_tahun)<div><p class="text-muted text-xs">Kas Akhir Tahun</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->kas_akhir_tahun, 0, ',', '.') }}</p></div>@endif
+                </div>
+            </div>
+            @endif
+
+            {{-- Rasio Keuangan Lengkap --}}
+            @if($analisa->total_hasil_investasi || $analisa->hasil_investasi_setelah_biaya || $analisa->persentase_pph)
+            <div class="bg-white rounded-xl border border-line p-6">
+                <h3 class="font-semibold text-primary mb-4">Rasio Keuangan</h3>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                    @if($analisa->total_hasil_investasi)<div><p class="text-muted text-xs">Total Hasil Investasi</p><p class="font-medium mt-0.5">{{ number_format($analisa->total_hasil_investasi, 2) }}%</p></div>@endif
+                    @if($analisa->hasil_investasi_setelah_biaya)<div><p class="text-muted text-xs">Hasil Investasi (Setelah Biaya)</p><p class="font-medium mt-0.5">{{ number_format($analisa->hasil_investasi_setelah_biaya, 2) }}%</p></div>@endif
+                    @if($analisa->persentase_pph)<div><p class="text-muted text-xs">PPH</p><p class="font-medium mt-0.5">{{ number_format($analisa->persentase_pph, 2) }}%</p></div>@endif
+                </div>
+            </div>
+            @endif
+
+            {{-- Fair Value --}}
+            @if($analisa->fair_value_level_1 || $analisa->fair_value_level_2 || $analisa->fair_value_level_3)
+            <div class="bg-white rounded-xl border border-line p-6">
+                <h3 class="font-semibold text-primary mb-4">Fair Value / Pengukuran Nilai Wajar</h3>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                    @if($analisa->fair_value_level_1)<div><p class="text-muted text-xs">Level 1</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->fair_value_level_1, 0, ',', '.') }}</p></div>@endif
+                    @if($analisa->fair_value_level_2)<div><p class="text-muted text-xs">Level 2</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->fair_value_level_2, 0, ',', '.') }}</p></div>@endif
+                    @if($analisa->fair_value_level_3)<div><p class="text-muted text-xs">Level 3</p><p class="font-medium mt-0.5">Rp {{ number_format($analisa->fair_value_level_3, 0, ',', '.') }}</p></div>@endif
+                </div>
+            </div>
+            @endif
+
+            {{-- Unit Penyertaan --}}
+            @if($analisa->unit_milik_investor || $analisa->unit_milik_mi || $analisa->total_unit_beredar)
+            <div class="bg-white rounded-xl border border-line p-6">
+                <h3 class="font-semibold text-primary mb-4">Unit Penyertaan</h3>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                    @if($analisa->unit_milik_investor)<div><p class="text-muted text-xs">Unit Milik Investor</p><p class="font-medium mt-0.5">{{ number_format($analisa->unit_milik_investor, 4) }}</p></div>@endif
+                    @if($analisa->unit_milik_mi)<div><p class="text-muted text-xs">Unit Milik MI</p><p class="font-medium mt-0.5">{{ number_format($analisa->unit_milik_mi, 4) }}</p></div>@endif
+                    @if($analisa->total_unit_beredar)<div><p class="text-muted text-xs">Total Unit Beredar</p><p class="font-medium mt-0.5">{{ number_format($analisa->total_unit_beredar, 4) }}</p></div>@endif
+                </div>
             </div>
             @endif
         </div>

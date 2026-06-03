@@ -9,6 +9,7 @@ use App\Models\AnalisaObligasiKeuangan;
 use App\Services\KeuanganEmitenService;
 use App\Services\FinancialDataResolverService;
 use App\Services\GroqService;
+use App\Services\ShadowRatingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -33,8 +34,10 @@ class AnalisaObligasiController extends AnalisaLapkeuController
             'kode_obligasi' => 'nullable|string|max:50',
             'nama_emiten' => 'nullable|string|max:255',
             'rating' => 'nullable|string|max:20',
+            'official_rating' => 'nullable|string|max:20',
             'kupon' => 'nullable|numeric|min:0|max:100',
             'ytm' => 'nullable|numeric|min:0|max:100',
+            'tenor_bulan' => 'nullable|integer|min:1',
             'mata_uang' => 'nullable|string|max:10',
             'periode' => 'nullable|string|max:20',
             'jenis_analisa' => 'nullable|in:' . AnalisaType::ANALISA_PERIODE->value . ',' . AnalisaType::ANALISA_TAHUNAN->value,
@@ -59,9 +62,11 @@ class AnalisaObligasiController extends AnalisaLapkeuController
                 'kode_obligasi' => $request->kode_obligasi,
                 'nama_emiten' => $request->nama_emiten,
                 'rating' => $request->rating,
+                'official_rating' => $request->official_rating,
                 'mata_uang' => $request->mata_uang,
                 'kupon' => $request->kupon,
                 'ytm' => $request->ytm,
+                'tenor_bulan' => $request->tenor_bulan,
                 'jenis_analisa' => $request->input('jenis_analisa', AnalisaType::ANALISA_PERIODE->value),
                 'status' => 'submitted',
             ]
@@ -79,6 +84,9 @@ class AnalisaObligasiController extends AnalisaLapkeuController
         $analisa = AnalisaObligasiKeuangan::create($data);
 
         $this->persistLapkeuAiFromRequest($request, $analisa);
+
+        $this->calculateShadowRating($analisa);
+        $this->calculateYtmSpread($analisa);
 
         return redirect()->route($this->routePrefix() . '.show', $analisa->id)
             ->with('success', 'Data analisa obligasi berhasil disubmit. Analisa AI sedang diproses.');
@@ -241,15 +249,38 @@ class AnalisaObligasiController extends AnalisaLapkeuController
                 'periode' => $request->periode,
                 'mata_uang' => $request->mata_uang,
                 'rating' => $request->rating,
+                'official_rating' => $request->official_rating,
                 'kupon' => $request->kupon,
                 'ytm' => $request->ytm,
+                'tenor_bulan' => $request->tenor_bulan,
+                'kode_obligasi' => $request->kode_obligasi,
             ]);
+
+            $tempModel = new AnalisaObligasiKeuangan();
+            $fillable = $tempModel->getFillable();
+            $tempModel->forceFill(array_intersect_key($data, array_flip($fillable)));
+
+            $shadowService = app(ShadowRatingService::class);
+            $shadowResult = $shadowService->calculate($tempModel);
+
+            $data = array_merge($data, [
+                'shadow_rating' => $shadowResult['shadow_rating'],
+                'shadow_score' => $shadowResult['shadow_score'],
+                'shadow_confidence' => $shadowResult['shadow_confidence'],
+                'rating_source' => $request->official_rating ? 'official' : ($request->rating ? 'manual' : 'shadow'),
+            ]);
+
+            $ytmSpread = $shadowService->calculateYtmSpread($tempModel);
+            if ($ytmSpread['ytm_normal'] !== null) {
+                $data = array_merge($data, $ytmSpread);
+            }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Analisa AI Plus berhasil dibuat.',
                 'data' => $groq->generateNarasiLapkeuPlusStructured($data, $this->instrumentType()),
                 'resolved_data' => $resolved,
+                'shadow_rating' => $shadowResult,
             ]);
         } catch (\Throwable $e) {
             return response()->json([
@@ -342,5 +373,53 @@ class AnalisaObligasiController extends AnalisaLapkeuController
         unset($data['kode']);
 
         return $data;
+    }
+
+    protected function calculateShadowRating(AnalisaObligasiKeuangan $analisa): void
+    {
+        try {
+            $service = app(ShadowRatingService::class);
+            $result = $service->calculate($analisa);
+
+            $analisa->update([
+                'shadow_rating' => $result['shadow_rating'],
+                'shadow_score' => $result['shadow_score'],
+                'shadow_confidence' => $result['shadow_confidence'],
+                'rating_source' => $this->determineRatingSource($analisa, $result),
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Shadow rating calculation failed', [
+                'analisa_id' => $analisa->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    protected function calculateYtmSpread(AnalisaObligasiKeuangan $analisa): void
+    {
+        try {
+            $service = app(ShadowRatingService::class);
+            $result = $service->calculateYtmSpread($analisa);
+
+            if ($result['ytm_normal'] !== null) {
+                $analisa->update([
+                    'ytm_normal' => $result['ytm_normal'],
+                    'ytm_spread' => $result['ytm_spread'],
+                ]);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('YTM spread calculation failed', [
+                'analisa_id' => $analisa->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function determineRatingSource(AnalisaObligasiKeuangan $analisa, array $shadowResult): ?string
+    {
+        if ($analisa->official_rating) return 'official';
+        if ($analisa->rating) return 'manual';
+        if (!empty($shadowResult['shadow_rating'])) return 'shadow';
+        return null;
     }
 }

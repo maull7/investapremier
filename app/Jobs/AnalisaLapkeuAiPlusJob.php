@@ -130,8 +130,16 @@ class AnalisaLapkeuAiPlusJob implements ShouldQueue
 
         if ($this->instrumen === 'Obligasi') {
             $data['rating'] = $analisa->rating;
+            $data['official_rating'] = $analisa->official_rating;
+            $data['shadow_rating'] = $analisa->shadow_rating;
+            $data['shadow_score'] = $analisa->shadow_score;
+            $data['shadow_confidence'] = $analisa->shadow_confidence;
+            $data['rating_source'] = $analisa->rating_source;
             $data['kupon']  = $analisa->kupon;
             $data['ytm']    = $analisa->ytm;
+            $data['tenor_bulan'] = $analisa->tenor_bulan;
+            $data['ytm_normal'] = $analisa->ytm_normal;
+            $data['ytm_spread'] = $analisa->ytm_spread;
         }
 
         $data['nama_perusahaan'] = $analisa->nama_perusahaan;

@@ -9,6 +9,11 @@
         ['Kupon', $fmtPct($analisa->kupon)],
         ['YTM', $fmtPct($analisa->ytm)],
         ['Rating', $analisa->rating ?? '—'],
+        ['Official Rating', $analisa->official_rating ?? '—'],
+        ['Shadow Rating', $analisa->shadow_rating ? $analisa->shadow_rating . ' (Skor: ' . number_format((float)($analisa->shadow_score ?? 0), 2) . ')' : '—'],
+        ['Rating Source', $analisa->rating_source ? ucfirst($analisa->rating_source) : '—'],
+        ['YTM Normal', $fmtPct($analisa->ytm_normal)],
+        ['YTM Spread', $analisa->ytm_spread !== null ? ($analisa->ytm_spread > 0 ? '+' : '') . number_format((float)$analisa->ytm_spread, 4) . '%' : '—'],
         ['Nama Emiten', $analisa->nama_emiten ?? '—'],
     ] as [$label, $value])
     <div class="bg-white rounded-xl border border-line p-4">

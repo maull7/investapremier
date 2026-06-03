@@ -36,16 +36,18 @@ class AnalisaObligasiController extends BaseAnalisaObligasiController
         $data = array_merge(
             $this->prepareObligasiAnalysisData($request),
             [
-                'user_id'      => auth()->id(),
-                'nama_obligasi'=> $request->nama_obligasi,
-                'kode_obligasi'=> $request->kode_obligasi,
-                'nama_emiten'  => $request->nama_emiten,
-                'rating'       => $request->rating,
-                'mata_uang'    => $request->mata_uang,
-                'kupon'        => $request->kupon,
-                'ytm'          => $request->ytm,
-                'jenis_analisa'=> $request->input('jenis_analisa', \App\Enums\AnalisaType::ANALISA_PERIODE->value),
-                'status'       => 'reviewed',
+                'user_id'         => auth()->id(),
+                'nama_obligasi'   => $request->nama_obligasi,
+                'kode_obligasi'   => $request->kode_obligasi,
+                'nama_emiten'     => $request->nama_emiten,
+                'rating'          => $request->rating,
+                'official_rating' => $request->official_rating,
+                'mata_uang'       => $request->mata_uang,
+                'kupon'           => $request->kupon,
+                'ytm'             => $request->ytm,
+                'tenor_bulan'     => $request->tenor_bulan,
+                'jenis_analisa'   => $request->input('jenis_analisa', \App\Enums\AnalisaType::ANALISA_PERIODE->value),
+                'status'          => 'reviewed',
             ]
         );
 
@@ -61,6 +63,9 @@ class AnalisaObligasiController extends BaseAnalisaObligasiController
         $analisa = \App\Models\AnalisaObligasiKeuangan::create($data);
 
         $this->persistLapkeuAiFromRequest($request, $analisa);
+
+        $this->calculateShadowRating($analisa);
+        $this->calculateYtmSpread($analisa);
 
         return redirect()->route($this->routePrefix() . '.show', $analisa->id)
             ->with('success', 'Data analisa obligasi berhasil disimpan. Analisa AI sedang diproses.');

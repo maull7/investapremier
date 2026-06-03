@@ -60,6 +60,40 @@
                 };
             @endphp
             <span class="inline-flex px-3 py-1 rounded-full text-xs font-medium {{ $badge }}">{{ $statusLabel }}</span>
+            @php
+                $ratingBadge = fn($r) => match(true) {
+                    in_array($r, ['AAA', 'AA+', 'AA', 'AA-']) => 'bg-green-100 text-green-700',
+                    in_array($r, ['A+', 'A', 'A-']) => 'bg-blue-100 text-blue-700',
+                    in_array($r, ['BBB+', 'BBB', 'BBB-']) => 'bg-amber-100 text-amber-700',
+                    default => 'bg-red-100 text-red-700',
+                };
+            @endphp
+            @if($analisa->shadow_rating)
+                <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium {{ $ratingBadge($analisa->shadow_rating) }}"
+                    title="Shadow Rating: skor {{ $analisa->shadow_score }}, confidence {{ $analisa->shadow_confidence }}%">
+                    SR: {{ $analisa->shadow_rating }}
+                </span>
+            @endif
+            @if($analisa->official_rating)
+                <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium {{ $ratingBadge($analisa->official_rating) }}">
+                    Official: {{ $analisa->official_rating }}
+                </span>
+            @elseif($analisa->rating)
+                <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium {{ $ratingBadge($analisa->rating) }}">
+                    Rating: {{ $analisa->rating }}
+                </span>
+            @endif
+            @if($analisa->ytm_spread !== null)
+                <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium {{ $analisa->ytm_spread > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' }}"
+                    title="YTM {{ $analisa->ytm }}% - Normal {{ $analisa->ytm_normal }}%">
+                    Spread: {{ $analisa->ytm_spread > 0 ? '+' : '' }}{{ number_format($analisa->ytm_spread, 4) }}%
+                </span>
+            @endif
+            @if($analisa->rating_source)
+                <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                    {{ ucfirst($analisa->rating_source) }}
+                </span>
+            @endif
             @if($analisa->pdf_path)
                 <a href="{{ route('admin.analisa-obligasi.download-lapkeu', $analisa) }}"
                    class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition">
