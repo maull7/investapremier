@@ -63,6 +63,10 @@
                     :class="tab === 'riset-broker' ? 'border-b-2 border-primary text-primary font-semibold' :
                         'text-muted hover:text-primary'"
                     class="px-5 py-3.5 text-sm whitespace-nowrap transition">Riset Broker Terkait</button>
+                <button type="button" @click="tab='detail-broker'"
+                    :class="tab === 'detail-broker' ? 'border-b-2 border-primary text-primary font-semibold' :
+                        'text-muted hover:text-primary'"
+                    class="px-5 py-3.5 text-sm whitespace-nowrap transition">Detail Broker</button>
             </div>
 
             <div x-show="tab==='info'" class="p-6 space-y-6">
@@ -644,6 +648,66 @@
                         </div>
                     </div>
                 @endforeach
+            </div>
+
+            <div x-show="tab==='detail-broker'" class="p-6 space-y-6">
+                @if ($routePrefix === 'admin')
+                    <div class="border border-line rounded-xl p-5">
+                        <h3 class="font-semibold text-primary mb-4">Upload Dokumen Broker</h3>
+                        <form method="POST" action="{{ route('admin.saham.broker-documents.store', $stock) }}" enctype="multipart/form-data" class="space-y-4">
+                            @csrf
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs text-muted mb-1">Nama Broker <span class="text-red-500">*</span></label>
+                                    <input type="text" name="broker_name" value="{{ old('broker_name') }}" required
+                                        class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-muted mb-1">Judul <span class="text-red-500">*</span></label>
+                                    <input type="text" name="judul" value="{{ old('judul') }}" required
+                                        class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-muted mb-1">Tanggal <span class="text-red-500">*</span></label>
+                                    <input type="date" name="tanggal" value="{{ old('tanggal') }}" required
+                                        class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-muted mb-1">Upload Dokumen <span class="text-red-500">*</span></label>
+                                    <input type="file" name="dokumen" required accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                                        class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                                    <p class="text-xs text-muted mt-1">PDF, Word, Excel, PPT · Maks. 20MB</p>
+                                </div>
+                            </div>
+                            <button type="submit" class="px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold">Upload Dokumen</button>
+                        </form>
+                    </div>
+                @endif
+
+                @forelse ($stock->brokerDocuments as $doc)
+                    <div class="border border-line rounded-xl p-4 text-sm flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <p class="font-semibold text-primary">{{ $doc->broker_name }}</p>
+                            <p class="text-muted text-xs mt-0.5">{{ $doc->judul }} · {{ $doc->tanggal->format('d/m/Y') }}</p>
+                            <p class="text-xs text-muted mt-0.5">{{ $doc->original_name }}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <a href="{{ route($routePrefix . '.saham.broker-documents.view', [$stock, $doc]) }}" target="_blank"
+                                class="px-3 py-1.5 border border-line rounded-lg text-xs hover:border-primary transition">Lihat</a>
+                            <a href="{{ route($routePrefix . '.saham.broker-documents.view', [$stock, $doc]) }}" download="{{ $doc->original_name }}"
+                                class="px-3 py-1.5 border border-line rounded-lg text-xs hover:border-primary transition">Download</a>
+                            @if ($routePrefix === 'admin')
+                                <form method="POST" action="{{ route('admin.saham.broker-documents.destroy', [$stock, $doc]) }}"
+                                    onsubmit="return confirm('Hapus dokumen ini?')">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="px-3 py-1.5 border border-red-200 text-red-600 rounded-lg text-xs hover:bg-red-50 transition">Hapus</button>
+                                </form>
+                            @endif
+                        </div>
+                    </div>
+                @empty
+                    <div class="p-12 text-center text-muted border border-line rounded-xl">Belum ada dokumen broker tersedia.</div>
+                @endforelse
             </div>
         </div>
     </div>

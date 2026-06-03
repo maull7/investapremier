@@ -149,6 +149,9 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('saham/{stock}/fetch-summary', [StockDetailController::class, 'fetchSummary'])->name('saham.fetch-summary');
     Route::get('saham/{stock}/broker-research/{research}/view', [StockDetailController::class, 'viewResearch'])->name('saham.broker-research.view');
     Route::get('saham/{stock}/broker-research/{research}/download', [StockDetailController::class, 'downloadResearch'])->name('saham.broker-research.download');
+    Route::post('saham/{stock}/broker-documents', [StockDetailController::class, 'storeBrokerDocument'])->name('saham.broker-documents.store');
+    Route::delete('saham/{stock}/broker-documents/{document}', [StockDetailController::class, 'deleteBrokerDocument'])->name('saham.broker-documents.destroy');
+    Route::get('saham/{stock}/broker-documents/{document}', [StockDetailController::class, 'viewBrokerDocument'])->name('saham.broker-documents.view');
     Route::get('saham-template', [StockController::class, 'downloadTemplate'])->name('saham.template');
     Route::post('saham-import', [StockController::class, 'import'])->name('saham.import');
     Route::get('analisa-saham', [AdminMonitorAnalisaSahamController::class, 'index'])->name('analisa-saham.index');
@@ -208,6 +211,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     // Manajer Investasi
     Route::resource('investment-managers', AdminInvestmentManagerController::class)->except(['show']);
     Route::get('investment-managers/{investmentManager}', [AdminInvestmentManagerController::class, 'show'])->name('investment-managers.show');
+    Route::get('investment-managers/{investmentManager}/extract-prospektus', [AdminInvestmentManagerController::class, 'extractProspektus'])->name('investment-managers.extract-prospektus');
+    Route::post('investment-managers/{investmentManager}/save-prospektus', [AdminInvestmentManagerController::class, 'saveProspektus'])->name('investment-managers.save-prospektus');
     Route::get('investment-managers-template', [AdminInvestmentManagerController::class, 'downloadTemplate'])->name('investment-managers.template');
     Route::post('investment-managers-import', [AdminInvestmentManagerController::class, 'import'])->name('investment-managers.import');
     Route::delete('investment-managers-period/{investmentManagerPeriod}', [AdminInvestmentManagerController::class, 'destroyPeriod'])->name('investment-managers.period-destroy');
@@ -314,6 +319,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/saham/{stock}/fetch-summary', [StockDetailController::class, 'fetchSummary'])->name('saham.fetch-summary');
     Route::get('/saham/{stock}/broker-research/{research}/view', [StockDetailController::class, 'viewResearch'])->name('saham.broker-research.view');
     Route::get('/saham/{stock}/broker-research/{research}/download', [StockDetailController::class, 'downloadResearch'])->name('saham.broker-research.download');
+    Route::get('/saham/{stock}/broker-documents/{document}', [StockDetailController::class, 'viewBrokerDocument'])->name('saham.broker-documents.view');
     // Route::get('/saham-template', [UserStockController::class, 'downloadTemplate'])->name('saham.template');
     // Route::post('/saham-import', [UserStockController::class, 'import'])->name('saham.import');
     Route::get('/analisa-saham', [UserAnalisaSahamController::class, 'index'])->name('analisa-saham.index');

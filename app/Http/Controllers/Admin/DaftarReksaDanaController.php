@@ -34,21 +34,24 @@ class DaftarReksaDanaController extends Controller
 
         $harianTanggal = $request->get('harian_tanggal');
 
-        // Subquery: ambil tanggal terakhir per reksa_dana_id
-        $latestPerRd = HargaReksaDana::selectRaw('reksa_dana_id, MAX(tanggal) as max_tanggal')
-            ->groupBy('reksa_dana_id');
-
-        $harianQuery = HargaReksaDana::with('reksaDana')
-            ->joinSub($latestPerRd, 'latest', function ($join) {
-                $join->on('harga_reksa_dana.reksa_dana_id', '=', 'latest.reksa_dana_id')
-                    ->whereColumn('harga_reksa_dana.tanggal', 'latest.max_tanggal');
-            })
-            ->select('harga_reksa_dana.*')
-            ->orderByDesc('harga_reksa_dana.tanggal')
-            ->orderBy('harga_reksa_dana.reksa_dana_id');
-
         if ($harianTanggal) {
-            $harianQuery->where('harga_reksa_dana.tanggal', $harianTanggal);
+            // Filter spesifik tanggal: tampilkan semua data pada tanggal tersebut
+            $harianQuery = HargaReksaDana::with('reksaDana')
+                ->where('tanggal', $harianTanggal)
+                ->orderBy('reksa_dana_id');
+        } else {
+            // Default: tampilkan data tanggal terakhir per reksa dana
+            $latestPerRd = HargaReksaDana::selectRaw('reksa_dana_id, MAX(tanggal) as max_tanggal')
+                ->groupBy('reksa_dana_id');
+
+            $harianQuery = HargaReksaDana::with('reksaDana')
+                ->joinSub($latestPerRd, 'latest', function ($join) {
+                    $join->on('harga_reksa_dana.reksa_dana_id', '=', 'latest.reksa_dana_id')
+                        ->whereColumn('harga_reksa_dana.tanggal', 'latest.max_tanggal');
+                })
+                ->select('harga_reksa_dana.*')
+                ->orderByDesc('harga_reksa_dana.tanggal')
+                ->orderBy('harga_reksa_dana.reksa_dana_id');
         }
 
         if ($request->search) {
