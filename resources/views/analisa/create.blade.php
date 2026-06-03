@@ -1171,8 +1171,60 @@
                         </div>
                     </div>
 
+                    {{-- Dokumen Tersimpan --}}
+                    <div class="border border-line rounded-lg p-4 bg-gray-50/50 space-y-3">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                            <h4 class="font-medium text-sm text-primary">Dokumen Tersimpan</h4>
+                        </div>
+                        <p class="text-xs text-muted">Dokumen Prospektus dan FFS yang tersimpan di master data Reksa Dana. Isi Kode Reksa Dana terlebih dahulu untuk melihat dokumen tersedia.</p>
+
+                        <div x-show="existingDocsLoading" class="flex items-center gap-2 text-xs text-muted">
+                            <svg class="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            <span>Memuat dokumen...</span>
+                        </div>
+
+                        <template x-if="existingDocs.length > 0">
+                            <div class="space-y-2 max-h-48 overflow-y-auto">
+                                <template x-for="doc in existingDocs" :key="doc.id">
+                                    <div class="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-200">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                                                :class="doc.document_type === 'prospektus' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'"
+                                                x-text="doc.document_type === 'prospektus' ? 'Prospektus' : 'FFS'"></span>
+                                            <span class="text-sm font-medium truncate" x-text="doc.label"></span>
+                                            <span class="text-xs text-muted shrink-0" x-text="doc.uploaded_at"></span>
+                                        </div>
+                                        <button type="button" @click="parseExistingDocument(doc.id)"
+                                            :disabled="existingDocParsing"
+                                            class="shrink-0 px-3 py-1 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            <span x-show="!existingDocParsing">Parse</span>
+                                            <span x-show="existingDocParsing">Memproses...</span>
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <div x-show="existingDocsLoaded && existingDocs.length === 0" class="text-xs text-muted italic">
+                            Tidak ada dokumen tersimpan untuk kode reksa dana ini.
+                        </div>
+                    </div>
+
+                    {{-- Separator --}}
+                    <div class="relative">
+                        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-line"></div></div>
+                        <div class="relative flex justify-center text-xs"><span class="bg-white px-2 text-muted">ATAU</span></div>
+                    </div>
+
+                    {{-- Upload PDF Baru --}}
                     <div>
-                        <x-input-label for="file_pdf" value="Upload File PDF FFS" />
+                        <x-input-label for="file_pdf" value="Upload File PDF Baru" />
                         <div class="mt-1 flex items-center gap-3">
                             <input id="file_pdf" type="file" accept=".pdf" @change="parsePdf($event)"
                                 class="block w-full text-sm text-muted border border-gray-300 rounded-lg px-3 py-2 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-primary file:text-white hover:file:bg-primary/90 cursor-pointer" />
@@ -1296,6 +1348,12 @@
                     lookupBondReturnUrl: @json($formRoutes['lookup_bond_return']),
                     lookupBankDataUrl: @json($formRoutes['lookup_bank_data']),
                     parsePdfVisionUrl: @json($formRoutes['parse_pdf_vision']),
+                    existingDocsUrl: @json($formRoutes['existing_documents']),
+                    parseExistingDocUrl: @json($formRoutes['parse_existing_document']),
+                    existingDocs: [],
+                    existingDocsLoading: false,
+                    existingDocsLoaded: false,
+                    existingDocParsing: false,
                     plusRequiredLabels: @json($plusLabels),
                     lookupMessage: '',
                     lookupOk: false,
@@ -1693,6 +1751,7 @@
                                 this.lookupMessage = resp.last_analisa ?
                                     'Data analisa terakhir berhasil dimuat.' :
                                     'Data master reksa dana berhasil dimuat.';
+                                this.fetchExistingDocuments(kode);
                             })
                             .catch(() => {
                                 this.lookupOk = false;
@@ -2409,6 +2468,72 @@
                             })
                             .catch(err => {
                                 this.pdfLoading = false;
+                                this.pdfSuccess = false;
+                                this.pdfResult = 'Gagal: ' + err.message;
+                            });
+                    },
+
+                    fetchExistingDocuments(kode) {
+                        if (!this.existingDocsUrl || !kode) return;
+                        this.existingDocsLoading = true;
+                        this.existingDocsLoaded = false;
+                        this.existingDocs = [];
+
+                        fetch(`${this.existingDocsUrl}?kode_reksa_dana=${encodeURIComponent(kode)}`, {
+                                headers: { Accept: 'application/json' }
+                            })
+                            .then(res => res.json())
+                            .then(resp => {
+                                this.existingDocsLoading = false;
+                                this.existingDocsLoaded = true;
+                                if (resp.found && Array.isArray(resp.documents)) {
+                                    this.existingDocs = resp.documents;
+                                }
+                            })
+                            .catch(() => {
+                                this.existingDocsLoading = false;
+                                this.existingDocsLoaded = true;
+                            });
+                    },
+
+                    parseExistingDocument(documentId) {
+                        if (!this.parseExistingDocUrl || !documentId) return;
+                        this.existingDocParsing = true;
+                        this.pdfResult = '';
+                        this.pdfSuccess = false;
+
+                        fetch(this.parseExistingDocUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': this.analisaFormEl().querySelector('input[name="_token"]').value,
+                                },
+                                body: JSON.stringify({ document_id: documentId }),
+                            })
+                            .then(res => {
+                                if (!res.ok) {
+                                    return res.json().then(err => {
+                                        throw new Error(err.message || 'Gagal parsing dokumen');
+                                    });
+                                }
+                                return res.json();
+                            })
+                            .then(resp => {
+                                this.existingDocParsing = false;
+                                if (!resp.success) {
+                                    this.pdfSuccess = false;
+                                    this.pdfResult = resp.message;
+                                    return;
+                                }
+                                const extractedData = this.normalizeExtractedData(resp.data || {});
+                                this.pdfData = extractedData;
+                                this.applyExtractedData(extractedData, this.hasFullInputData(extractedData) ? 'lengkap' : 'manual');
+                                this.pdfSuccess = true;
+                                this.pdfResult = resp.message + ' (dari: ' + (resp.document_label || 'dokumen tersimpan') + ')';
+                            })
+                            .catch(err => {
+                                this.existingDocParsing = false;
                                 this.pdfSuccess = false;
                                 this.pdfResult = 'Gagal: ' + err.message;
                             });
