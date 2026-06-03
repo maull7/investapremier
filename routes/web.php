@@ -96,7 +96,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('reksa-dana/bulk-analisa', [AdminReksaDanaController::class, 'bulkAnalisa'])->name('reksa-dana.bulk-analisa');
     Route::get('reksa-dana/{reksaDana}/pdf', [AdminReksaDanaController::class, 'downloadPdf'])->name('reksa-dana.pdf');
 
-    // Daftar Reksa Dana (master data + harga harian)
+    // Daftar Reksa Dana (master data + harga harian) tes commit
     Route::get('daftar-reksa-dana', [DaftarReksaDanaController::class, 'index'])->name('daftar-reksa-dana.index');
     Route::post('daftar-reksa-dana/documents', [DaftarReksaDanaController::class, 'storeDocument'])->name('daftar-reksa-dana.documents.store');
     Route::get('daftar-reksa-dana/documents/{document}/view', [DaftarReksaDanaController::class, 'viewDocument'])->name('daftar-reksa-dana.documents.view');
