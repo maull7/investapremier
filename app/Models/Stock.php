@@ -56,4 +56,9 @@ class Stock extends Model
     {
         return $this->hasMany(StockBrokerResearch::class)->latest('research_date');
     }
+
+    public function brokerDocuments(): HasMany
+    {
+        return $this->hasMany(StockBrokerDocument::class)->latest('tanggal');
+    }
 }

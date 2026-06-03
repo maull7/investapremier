@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AnalisaSaham;
 use App\Models\Stock;
+use App\Models\StockBrokerDocument;
 use App\Models\StockBrokerResearch;
 use App\Services\AIAnalysisService;
 use App\Services\YahooStockDataService;
@@ -16,7 +17,7 @@ class StockDetailController extends Controller
     public function show(Request $request, Stock $stock)
     {
         $startDate = $this->timeframeStart($request->input('timeframe', '1M'));
-        $stock->load(['profile', 'corporateActions', 'financialReports', 'news', 'brokerResearches']);
+        $stock->load(['profile', 'corporateActions', 'financialReports', 'news', 'brokerResearches', 'brokerDocuments']);
 
         $prices = $stock->prices()
             ->where('tanggal', '>=', $startDate)
@@ -155,6 +156,48 @@ class StockDetailController extends Controller
                 ->with('error', 'Sync Yahoo gagal: ' . $e->getMessage())
                 ->with('active_tab', 'grafik');
         }
+    }
+
+    public function viewBrokerDocument(Request $request, Stock $stock, StockBrokerDocument $document)
+    {
+        abort_if($document->stock_id !== $stock->id, 404);
+        abort_if(!Storage::disk('public')->exists($document->file_path), 404);
+
+        return response()->file(Storage::disk('public')->path($document->file_path), [
+            'Content-Disposition' => 'inline; filename="' . $document->original_name . '"',
+        ]);
+    }
+
+    public function storeBrokerDocument(Request $request, Stock $stock)
+    {
+        $request->validate([
+            'broker_name' => 'required|string|max:255',
+            'judul'       => 'required|string|max:255',
+            'tanggal'     => 'required|date',
+            'dokumen'     => 'required|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx|max:20480',
+        ]);
+
+        $file = $request->file('dokumen');
+        $path = $file->store('broker-documents', 'public');
+
+        $stock->brokerDocuments()->create([
+            'broker_name'   => $request->broker_name,
+            'judul'         => $request->judul,
+            'tanggal'       => $request->tanggal,
+            'file_path'     => $path,
+            'original_name' => $file->getClientOriginalName(),
+        ]);
+
+        return back()->with('success', 'Dokumen broker berhasil diunggah.')->with('active_tab', 'detail-broker');
+    }
+
+    public function deleteBrokerDocument(Request $request, Stock $stock, StockBrokerDocument $document)
+    {
+        abort_if($document->stock_id !== $stock->id, 404);
+        Storage::disk('public')->delete($document->file_path);
+        $document->delete();
+
+        return back()->with('success', 'Dokumen berhasil dihapus.')->with('active_tab', 'detail-broker');
     }
 
     private function summarize(Request $request, callable $callback, string $tab)

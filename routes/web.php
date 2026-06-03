@@ -129,6 +129,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('analisa-rd/scrape-web-data', [AdminAnalisaRdController::class, 'scrapeWebData'])->name('analisa-rd.scrape-web-data');
     Route::post('analisa-rd/scrape-url', [AdminAnalisaRdController::class, 'scrapeUrl'])->name('analisa-rd.scrape-url');
     Route::get('analisa-rd/lookup-kode', [AdminAnalisaRdController::class, 'lookupKode'])->name('analisa-rd.lookup-kode');
+    Route::get('analisa-rd/existing-documents', [AdminAnalisaRdController::class, 'getExistingDocuments'])->name('analisa-rd.existing-documents');
+    Route::post('analisa-rd/parse-existing-document', [AdminAnalisaRdController::class, 'parseExistingDocument'])->name('analisa-rd.parse-existing-document');
     Route::post('analisa-rd/preview-ai', [AdminAnalisaRdController::class, 'previewAi'])->name('analisa-rd.preview-ai');
     Route::post('analisa-rd/preview-ai-plus', [AdminAnalisaRdController::class, 'previewAiPlus'])->name('analisa-rd.preview-ai-plus');
     Route::get('analisa-rd/lookup-sektor', [AdminAnalisaRdController::class, 'lookupSektor'])->name('analisa-rd.lookup-sektor');
@@ -149,6 +151,9 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('saham/{stock}/fetch-summary', [StockDetailController::class, 'fetchSummary'])->name('saham.fetch-summary');
     Route::get('saham/{stock}/broker-research/{research}/view', [StockDetailController::class, 'viewResearch'])->name('saham.broker-research.view');
     Route::get('saham/{stock}/broker-research/{research}/download', [StockDetailController::class, 'downloadResearch'])->name('saham.broker-research.download');
+    Route::post('saham/{stock}/broker-documents', [StockDetailController::class, 'storeBrokerDocument'])->name('saham.broker-documents.store');
+    Route::delete('saham/{stock}/broker-documents/{document}', [StockDetailController::class, 'deleteBrokerDocument'])->name('saham.broker-documents.destroy');
+    Route::get('saham/{stock}/broker-documents/{document}', [StockDetailController::class, 'viewBrokerDocument'])->name('saham.broker-documents.view');
     Route::get('saham-template', [StockController::class, 'downloadTemplate'])->name('saham.template');
     Route::post('saham-import', [StockController::class, 'import'])->name('saham.import');
     Route::get('analisa-saham', [AdminMonitorAnalisaSahamController::class, 'index'])->name('analisa-saham.index');
@@ -208,6 +213,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     // Manajer Investasi
     Route::resource('investment-managers', AdminInvestmentManagerController::class)->except(['show']);
     Route::get('investment-managers/{investmentManager}', [AdminInvestmentManagerController::class, 'show'])->name('investment-managers.show');
+    Route::get('investment-managers/{investmentManager}/extract-prospektus', [AdminInvestmentManagerController::class, 'extractProspektus'])->name('investment-managers.extract-prospektus');
+    Route::post('investment-managers/{investmentManager}/save-prospektus', [AdminInvestmentManagerController::class, 'saveProspektus'])->name('investment-managers.save-prospektus');
     Route::get('investment-managers-template', [AdminInvestmentManagerController::class, 'downloadTemplate'])->name('investment-managers.template');
     Route::post('investment-managers-import', [AdminInvestmentManagerController::class, 'import'])->name('investment-managers.import');
     Route::delete('investment-managers-period/{investmentManagerPeriod}', [AdminInvestmentManagerController::class, 'destroyPeriod'])->name('investment-managers.period-destroy');
@@ -243,6 +250,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('analisa-ul/scrape-url', [AdminAnalisaUlController::class, 'scrapeUrl'])->name('analisa-ul.scrape-url');
     Route::post('analisa-ul/preview-ai', [AdminAnalisaUlController::class, 'previewAi'])->name('analisa-ul.preview-ai');
     Route::post('analisa-ul/preview-ai-plus', [AdminAnalisaUlController::class, 'previewAiPlus'])->name('analisa-ul.preview-ai-plus');
+    Route::get('analisa-ul/existing-documents', [AdminAnalisaUlController::class, 'getExistingDocuments'])->name('analisa-ul.existing-documents');
+    Route::post('analisa-ul/parse-existing-document', [AdminAnalisaUlController::class, 'parseExistingDocument'])->name('analisa-ul.parse-existing-document');
 
     // Monitor Analisa Unit Link
     Route::get('unit-link-analisa', [AdminMonitorAnalisaUlController::class, 'index'])->name('unit-link-analisa.index');
@@ -279,6 +288,8 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::post('/analisa', [AnalisaController::class, 'store'])->name('analisa.store');
     Route::post('/analisa/parse-pdf', [AnalisaController::class, 'parsePdf'])->name('analisa.parse-pdf');
     Route::post('/analisa/parse-pdf-vision', [AnalisaFfsVisionController::class, 'parsePdf'])->name('analisa.parse-pdf-vision');
+    Route::get('/analisa/existing-documents', [AnalisaController::class, 'getExistingDocuments'])->name('analisa.existing-documents');
+    Route::post('/analisa/parse-existing-document', [AnalisaController::class, 'parseExistingDocument'])->name('analisa.parse-existing-document');
     Route::post('/analisa/parse-web-file', [AnalisaController::class, 'parseWebFile'])->name('analisa.parse-web-file');
     Route::post('/analisa/scrape-web-data', [AnalisaController::class, 'scrapeWebData'])->name('analisa.scrape-web-data');
     Route::post('/analisa/scrape-url', [AnalisaController::class, 'scrapeUrl'])->name('analisa.scrape-url');
@@ -314,6 +325,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/saham/{stock}/fetch-summary', [StockDetailController::class, 'fetchSummary'])->name('saham.fetch-summary');
     Route::get('/saham/{stock}/broker-research/{research}/view', [StockDetailController::class, 'viewResearch'])->name('saham.broker-research.view');
     Route::get('/saham/{stock}/broker-research/{research}/download', [StockDetailController::class, 'downloadResearch'])->name('saham.broker-research.download');
+    Route::get('/saham/{stock}/broker-documents/{document}', [StockDetailController::class, 'viewBrokerDocument'])->name('saham.broker-documents.view');
     // Route::get('/saham-template', [UserStockController::class, 'downloadTemplate'])->name('saham.template');
     // Route::post('/saham-import', [UserStockController::class, 'import'])->name('saham.import');
     Route::get('/analisa-saham', [UserAnalisaSahamController::class, 'index'])->name('analisa-saham.index');
@@ -367,6 +379,8 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/unit-link-analisa/template', [UserAnalisaUlController::class, 'downloadTemplate'])->name('unit-link-analisa.template');
     Route::post('/unit-link-analisa/parse-pdf', [UserAnalisaUlController::class, 'parsePdf'])->name('unit-link-analisa.parse-pdf');
     Route::post('/unit-link-analisa/parse-pdf-vision', [AnalisaFfsVisionController::class, 'parsePdf'])->name('unit-link-analisa.parse-pdf-vision');
+    Route::get('/unit-link-analisa/existing-documents', [UserAnalisaUlController::class, 'getExistingDocuments'])->name('unit-link-analisa.existing-documents');
+    Route::post('/unit-link-analisa/parse-existing-document', [UserAnalisaUlController::class, 'parseExistingDocument'])->name('unit-link-analisa.parse-existing-document');
     Route::post('/unit-link-analisa/parse-web-file', [UserAnalisaUlController::class, 'parseWebFile'])->name('unit-link-analisa.parse-web-file');
     Route::post('/unit-link-analisa/scrape-web-data', [UserAnalisaUlController::class, 'scrapeWebData'])->name('unit-link-analisa.scrape-web-data');
     Route::post('/unit-link-analisa/scrape-url', [UserAnalisaUlController::class, 'scrapeUrl'])->name('unit-link-analisa.scrape-url');
