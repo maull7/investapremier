@@ -27,6 +27,8 @@ use App\Http\Controllers\Admin\MonitorAnalisaSahamController as AdminMonitorAnal
 use App\Http\Controllers\Admin\MonitorAnalisaObligasiController as AdminMonitorAnalisaObligasiController;
 use App\Http\Controllers\Admin\AnalisaSahamController as AdminAnalisaSahamController;
 use App\Http\Controllers\Admin\AnalisaObligasiController as AdminAnalisaObligasiController;
+use App\Http\Controllers\Admin\RatingObligasiController as AdminRatingObligasiController;
+use App\Http\Controllers\Admin\YtmNormalCurveController as AdminYtmNormalCurveController;
 use App\Http\Controllers\User\AnalisaSahamController as UserAnalisaSahamController;
 use App\Http\Controllers\User\AnalisaObligasiController as UserAnalisaObligasiController;
 use App\Http\Controllers\User\DataSourceLinkController as UserDataSourceLinkController;
@@ -209,6 +211,24 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('analisa-obligasi/{analisa}/ai-status', [AdminMonitorAnalisaObligasiController::class, 'checkAiStatus'])->name('analisa-obligasi.check-ai-status');
     Route::post('analisa-obligasi/{analisa}/review', [AdminMonitorAnalisaObligasiController::class, 'review'])->name('analisa-obligasi.review');
     Route::delete('analisa-obligasi/{analisa}', [AdminMonitorAnalisaObligasiController::class, 'destroy'])->name('analisa-obligasi.destroy');
+
+    // Master Rating Obligasi & YTM Normal Curve
+    Route::get('rating-obligasi', [AdminRatingObligasiController::class, 'index'])->name('rating-obligasi.index');
+    Route::get('rating-obligasi/create', [AdminRatingObligasiController::class, 'create'])->name('rating-obligasi.create');
+    Route::post('rating-obligasi', [AdminRatingObligasiController::class, 'store'])->name('rating-obligasi.store');
+    Route::get('rating-obligasi/{ratingObligasi}/edit', [AdminRatingObligasiController::class, 'edit'])->name('rating-obligasi.edit');
+    Route::put('rating-obligasi/{ratingObligasi}', [AdminRatingObligasiController::class, 'update'])->name('rating-obligasi.update');
+    Route::delete('rating-obligasi/{ratingObligasi}', [AdminRatingObligasiController::class, 'destroy'])->name('rating-obligasi.destroy');
+    Route::get('rating-obligasi/template', [AdminRatingObligasiController::class, 'downloadTemplate'])->name('rating-obligasi.template');
+    Route::post('rating-obligasi/import', [AdminRatingObligasiController::class, 'import'])->name('rating-obligasi.import');
+
+    Route::get('ytm-normal-curve', [AdminYtmNormalCurveController::class, 'index'])->name('ytm-normal-curve.index');
+    Route::post('ytm-normal-curve', [AdminYtmNormalCurveController::class, 'store'])->name('ytm-normal-curve.store');
+    Route::get('ytm-normal-curve/{ytmNormalCurve}/edit', [AdminYtmNormalCurveController::class, 'edit'])->name('ytm-normal-curve.edit');
+    Route::put('ytm-normal-curve/{ytmNormalCurve}', [AdminYtmNormalCurveController::class, 'update'])->name('ytm-normal-curve.update');
+    Route::delete('ytm-normal-curve/{ytmNormalCurve}', [AdminYtmNormalCurveController::class, 'destroy'])->name('ytm-normal-curve.destroy');
+    Route::get('ytm-normal-curve/template', [AdminYtmNormalCurveController::class, 'downloadTemplate'])->name('ytm-normal-curve.template');
+    Route::post('ytm-normal-curve/import', [AdminYtmNormalCurveController::class, 'import'])->name('ytm-normal-curve.import');
 
     // Manajer Investasi
     Route::resource('investment-managers', AdminInvestmentManagerController::class)->except(['show']);

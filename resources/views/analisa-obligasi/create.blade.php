@@ -45,7 +45,7 @@
                             class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Rating Pefindo</label>
                         <select name="rating"
                             class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
                             <option value="">Pilih Rating</option>
@@ -76,6 +76,43 @@
                                     {{ old('mata_uang', 'IDR') === $c ? 'selected' : '' }}>{{ $c }}</option>
                             @endforeach
                         </select>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Rating & Tenor Information --}}
+            <div class="bg-white rounded-xl border border-line p-6 space-y-4">
+                <h3 class="font-semibold text-primary">Rating Information</h3>
+                <p class="text-xs text-muted">Shadow Rating dihitung otomatis dari data keuangan. Jika tidak ada Official Rating, Shadow Rating digunakan sebagai dasar YTM Spread.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Official Rating</label>
+                        <select name="official_rating"
+                            class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
+                            <option value="">Pilih Official Rating</option>
+                            @php
+                                $officialRatings = \App\Models\RatingObligasi::orderBy('urutan')->orderBy('kode')->get();
+                            @endphp
+                            @foreach ($officialRatings as $r)
+                                <option value="{{ $r->kode }}" {{ old('official_rating') === $r->kode ? 'selected' : '' }}>
+                                    {{ $r->kode }} - {{ $r->nama }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="text-xs text-muted mt-1">Rating dari lembaga pemeringkat</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tenor (Bulan)</label>
+                        <input type="number" name="tenor_bulan" value="{{ old('tenor_bulan') }}"
+                            min="1" placeholder="cth: 60"
+                            class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
+                        <p class="text-xs text-muted mt-1">Sisa tenor obligasi dalam bulan</p>
+                    </div>
+                    <div class="flex items-end pb-1">
+                        <div class="text-xs text-muted space-y-1">
+                            <p>Shadow Rating: <span class="font-medium text-primary">Otomatis</span></p>
+                            <p>YTM Spread: <span class="font-medium text-primary">Otomatis</span></p>
+                        </div>
                     </div>
                 </div>
             </div>

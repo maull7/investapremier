@@ -451,8 +451,12 @@ PROMPT;
 
         if ($instrumen === 'Obligasi') {
             if (!empty($data['rating'])) $lines[] = "Rating: {$data['rating']}";
+            if (!empty($data['official_rating'])) $lines[] = "Official Rating: {$data['official_rating']}";
+            if (!empty($data['shadow_rating'])) $lines[] = "Shadow Rating: {$data['shadow_rating']} (Score: {$data['shadow_score']})";
             if ($data['kupon'] ?? null) $lines[] = "Kupon: {$data['kupon']}%";
             if ($data['ytm'] ?? null) $lines[] = "YTM: {$data['ytm']}%";
+            if ($data['ytm_normal'] ?? null) $lines[] = "YTM Normal: {$data['ytm_normal']}%";
+            if ($data['ytm_spread'] ?? null) $lines[] = "YTM Spread: {$data['ytm_spread']}%";
         }
 
         $lines[] = "";
@@ -740,8 +744,13 @@ DEFAULT);
 
         if ($instrumen === 'Obligasi') {
             if (!empty($data['rating'])) $lines[] = "Rating: {$data['rating']}";
+            if (!empty($data['official_rating'])) $lines[] = "Official Rating: {$data['official_rating']}";
+            if (!empty($data['shadow_rating'])) $lines[] = "Shadow Rating: {$data['shadow_rating']} (Score: {$data['shadow_score']}, Confidence: {$data['shadow_confidence']}%)";
+            if (!empty($data['rating_source'])) $lines[] = "Rating Source: {$data['rating_source']}";
             if ($data['kupon'] ?? null) $lines[] = "Kupon: {$data['kupon']}%";
             if ($data['ytm'] ?? null) $lines[] = "YTM: {$data['ytm']}%";
+            if ($data['ytm_normal'] ?? null) $lines[] = "YTM Normal: {$data['ytm_normal']}%";
+            if ($data['ytm_spread'] ?? null) $lines[] = "YTM Spread: {$data['ytm_spread']}%";
         }
 
         $lines[] = "";

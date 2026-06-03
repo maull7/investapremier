@@ -11,6 +11,8 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(AiPromptSeeder::class);
         $this->call(ScoreClassificationSeeder::class);
+        $this->call(RatingObligasiSeeder::class);
+        $this->call(YtmNormalCurveSeeder::class);
 
         User::factory()->create([
             'name' => 'Admin',

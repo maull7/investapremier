@@ -19,7 +19,8 @@
 <div class="meta">
     {{ $analisa->kode_obligasi ? 'Kode: '.$analisa->kode_obligasi.' · ' : '' }}
     {{ $analisa->nama_emiten ? 'Emiten: '.$analisa->nama_emiten.' · ' : '' }}
-    Rating: {{ $analisa->rating ?? '-' }} · Kupon: {{ $analisa->kupon ? number_format($analisa->kupon,4).'%' : '-' }} · YTM: {{ $analisa->ytm ? number_format($analisa->ytm,4).'%' : '-' }}<br>
+    Rating: {{ $analisa->rating ?? '-' }} · Official: {{ $analisa->official_rating ?? '-' }} · Shadow: {{ $analisa->shadow_rating ?? '-' }} · Source: {{ $analisa->rating_source ?? '-' }} · Kupon: {{ $analisa->kupon ? number_format($analisa->kupon,4).'%' : '-' }} · YTM: {{ $analisa->ytm ? number_format($analisa->ytm,4).'%' : '-' }}<br>
+    YTM Normal: {{ $analisa->ytm_normal ? number_format($analisa->ytm_normal,4).'%' : '-' }} · Spread: {{ $analisa->ytm_spread !== null ? ($analisa->ytm_spread > 0 ? '+' : '').number_format($analisa->ytm_spread,4).'%' : '-' }}<br>
     Periode: {{ $analisa->periode ?? '-' }} · Mata Uang: {{ $analisa->mata_uang ?? 'IDR' }}<br>
     Disubmit oleh: {{ $analisa->user->name ?? '-' }} pada {{ $analisa->created_at->format('d M Y') }}
 </div>

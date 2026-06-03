@@ -292,9 +292,11 @@ abstract class AnalisaLapkeuController extends Controller
                     'kode'      => $request->input('kode_saham') ?? $request->input('kode_obligasi'),
                     'periode'   => $request->input('periode') ?: ($analysisData['periode'] ?? null),
                     'mata_uang' => $request->input('mata_uang'),
-                    'rating'    => $request->input('rating'),
-                    'kupon'     => $request->input('kupon'),
-                    'ytm'       => $request->input('ytm'),
+                    'rating'          => $request->input('rating'),
+                    'official_rating' => $request->input('official_rating'),
+                    'kupon'           => $request->input('kupon'),
+                    'ytm'             => $request->input('ytm'),
+                    'tenor_bulan'     => $request->input('tenor_bulan'),
                 ]
             );
 
@@ -327,9 +329,11 @@ abstract class AnalisaLapkeuController extends Controller
                 'kode'      => $request->input('kode_saham') ?? $request->input('kode_obligasi'),
                 'periode'   => $request->input('periode') ?: ($analysisData['periode'] ?? null),
                 'mata_uang' => $request->input('mata_uang'),
-                'rating'    => $request->input('rating'),
-                'kupon'     => $request->input('kupon'),
-                'ytm'       => $request->input('ytm'),
+                'rating'          => $request->input('rating'),
+                'official_rating' => $request->input('official_rating'),
+                'kupon'           => $request->input('kupon'),
+                'ytm'             => $request->input('ytm'),
+                'tenor_bulan'     => $request->input('tenor_bulan'),
             ]
         );
 

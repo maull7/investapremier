@@ -73,6 +73,14 @@ class AnalisaObligasiKeuangan extends Model
         'ai_narasi_plus',
         'ai_output_plus',
         'pdf_path',
+        'official_rating',
+        'shadow_rating',
+        'shadow_score',
+        'shadow_confidence',
+        'ytm_normal',
+        'ytm_spread',
+        'rating_source',
+        'tenor_bulan',
     ];
 
     protected $casts = [
@@ -123,6 +131,10 @@ class AnalisaObligasiKeuangan extends Model
         'ai_output' => 'array',
         'ai_output_plus' => 'array',
         'data_tahunan' => 'array',
+        'shadow_score' => 'decimal:4',
+        'shadow_confidence' => 'decimal:4',
+        'ytm_normal' => 'decimal:4',
+        'ytm_spread' => 'decimal:4',
     ];
 
     public function user(): BelongsTo
