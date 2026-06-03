@@ -8,6 +8,7 @@ use App\Jobs\AnalisaAiJob;
 use App\Models\AnalisaReksaDana;
 use App\Models\DataSourceLink;
 use App\Models\ReksaDana;
+use App\Models\ReksaDanaDocument;
 use App\Models\StockPrice;
 use App\Services\AnalisaPayloadBuilder;
 use App\Services\BankDataService;
@@ -81,6 +82,8 @@ class AnalisaController extends Controller
             'preview_ai'      => route("{$prefix}.preview-ai"),
             'preview_ai_plus' => route("{$prefix}.preview-ai-plus"),
             'lookup_kode'     => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-kode") ? route("{$prefix}.lookup-kode") : null,
+            'existing_documents' => \Illuminate\Support\Facades\Route::has("{$prefix}.existing-documents") ? route("{$prefix}.existing-documents") : null,
+            'parse_existing_document' => \Illuminate\Support\Facades\Route::has("{$prefix}.parse-existing-document") ? route("{$prefix}.parse-existing-document") : null,
             'lookup_sektor'   => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-sektor") ? route("{$prefix}.lookup-sektor") : null,
             'lookup_ihsg'     => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-ihsg") ? route("{$prefix}.lookup-ihsg") : null,
             'lookup_return'   => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-return") ? route("{$prefix}.lookup-return") : null,
@@ -419,6 +422,105 @@ class AnalisaController extends Controller
                 : 'Tidak dapat mengekstrak data dari PDF ini. Format mungkin tidak didukung.',
             'data' => $data,
             'pdf_file' => $storedPath,
+        ]);
+    }
+
+    public function getExistingDocuments(Request $request)
+    {
+        $request->validate([
+            'kode_reksa_dana' => 'required|string|max:20',
+        ]);
+
+        $kode = strtoupper(trim($request->kode_reksa_dana));
+        $master = ReksaDana::whereRaw('UPPER(kode_reksa_dana) = ?', [$kode])->first();
+
+        if (!$master) {
+            return response()->json([
+                'found' => false,
+                'documents' => [],
+            ]);
+        }
+
+        $documents = $master->documents()
+            ->with('uploader')
+            ->orderByDesc('ffs_year')
+            ->orderByDesc('ffs_month')
+            ->get()
+            ->map(fn($doc) => [
+                'id' => $doc->id,
+                'document_type' => $doc->document_type,
+                'original_name' => $doc->original_name,
+                'file_path' => $doc->file_path,
+                'label' => $doc->document_type === 'prospektus'
+                    ? 'Prospektus ' . $doc->ffs_year
+                    : 'FFS ' . \Carbon\Carbon::create()->month($doc->ffs_month)->format('M') . ' ' . $doc->ffs_year,
+                'ffs_month' => $doc->ffs_month,
+                'ffs_year' => $doc->ffs_year,
+                'uploaded_at' => $doc->created_at->format('d/m/Y'),
+                'uploader_name' => $doc->uploader?->name,
+                'file_size' => $doc->file_size,
+            ]);
+
+        return response()->json([
+            'found' => true,
+            'nama_reksa_dana' => $master->nama_reksa_dana,
+            'documents' => $documents,
+        ]);
+    }
+
+    public function parseExistingDocument(Request $request, FfsParserService $ffsParser, GroqService $groq)
+    {
+        $request->validate([
+            'document_id' => 'required|exists:reksa_dana_documents,id',
+        ]);
+
+        $document = ReksaDanaDocument::findOrFail($request->document_id);
+
+        if (!$document->file_path || !Storage::disk('public')->exists($document->file_path)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File PDF dokumen tidak ditemukan di penyimpanan.',
+                'data' => null,
+            ], 404);
+        }
+
+        $fullPath = Storage::disk('public')->path($document->file_path);
+
+        try {
+            set_time_limit(120);
+            $data = $ffsParser->parseWithAi($fullPath, $groq);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membaca PDF: ' . $e->getMessage(),
+                'data' => null,
+            ], 422);
+        }
+
+        $extracted = [];
+        if ($data['nama_reksa_dana']) $extracted[] = 'Nama RD';
+        if ($data['jenis_reksa_dana']) $extracted[] = 'Jenis RD';
+        if ($data['manajer_investasi']) $extracted[] = 'MI';
+        if ($data['total_aum']) $extracted[] = 'Total AUM';
+        if (!empty($data['unit_penyertaan'])) $extracted[] = 'Unit Penyertaan';
+        if (!empty($data['nab_per_unit'])) $extracted[] = 'NAB/UP';
+        if (!empty($data['tanggal_data'])) $extracted[] = 'Tanggal Data';
+        if (!empty($data['alokasi_aset'])) $extracted[] = count($data['alokasi_aset']) . ' Alokasi Aset';
+        if ($data['sektor']) $extracted[] = count($data['sektor']) . ' Sektor';
+        if ($data['efek']) $extracted[] = count($data['efek']) . ' Efek';
+        if ($data['kinerja']) $extracted[] = count($data['kinerja']) . ' Bulan Kinerja';
+        if ($data['obligasi']) $extracted[] = count($data['obligasi']) . ' Obligasi';
+        if ($data['bank']) $extracted[] = count($data['bank']) . ' Bank';
+
+        return response()->json([
+            'success' => count($extracted) > 0,
+            'message' => count($extracted) > 0
+                ? 'Berhasil mengekstrak: ' . implode(', ', $extracted) . '.'
+                : 'Tidak dapat mengekstrak data dari PDF ini.',
+            'data' => $data,
+            'document_label' => $document->document_type === 'prospektus'
+                ? 'Prospektus ' . $document->ffs_year
+                : 'FFS ' . ($document->ffs_month ? \Carbon\Carbon::create()->month($document->ffs_month)->format('M') . ' ' : '') . $document->ffs_year,
         ]);
     }
 
