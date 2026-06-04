@@ -200,12 +200,12 @@ body{margin:0;font-family:'Poppins',sans-serif}
           @endif
         </div>
 
-        @if(config('captcha.sitekey'))
+        @production
           <div class="g-recaptcha">
             {!! NoCaptcha::display() !!}
             @error('g-recaptcha-response')<div class="field-error">{{ $message }}</div>@enderror
           </div>
-        @endif
+        @endproduction
 
         <button type="submit" class="btn-submit">Masuk</button>
 
@@ -256,7 +256,7 @@ function togglePw(id, eyeId, eyeOffId) {
   document.getElementById(eyeOffId).style.display = show ? ''      : 'none';
 }
 </script>
-@if(config('captcha.sitekey'))
+@production
 {!! NoCaptcha::renderJs() !!}
-@endif
+@endproduction
 @endsection
