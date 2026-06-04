@@ -143,7 +143,6 @@ body{margin:0;font-family:'Poppins',sans-serif}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
 
 /* recaptcha */
-.g-recaptcha{margin-top:16px}
 
 @media(max-width:640px){
   .auth-left{padding:32px 24px}
@@ -200,12 +199,10 @@ body{margin:0;font-family:'Poppins',sans-serif}
           @endif
         </div>
 
-        @production
-          <div class="g-recaptcha">
+        <div style="margin-top:16px">
             {!! NoCaptcha::display() !!}
             @error('g-recaptcha-response')<div class="field-error">{{ $message }}</div>@enderror
           </div>
-        @endproduction
 
         <button type="submit" class="btn-submit">Masuk</button>
 
@@ -256,7 +253,5 @@ function togglePw(id, eyeId, eyeOffId) {
   document.getElementById(eyeOffId).style.display = show ? ''      : 'none';
 }
 </script>
-@production
-{!! NoCaptcha::renderJs() !!}
-@endproduction
+
 @endsection

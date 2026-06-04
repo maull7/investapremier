@@ -189,6 +189,11 @@ body{margin:0;font-family:'Poppins',sans-serif}
           @error('password_confirmation')<div class="field-error">{{ $message }}</div>@enderror
         </div>
 
+        <div style="margin-top:16px">
+          {!! NoCaptcha::display() !!}
+          @error('g-recaptcha-response')<div class="field-error">{{ $message }}</div>@enderror
+        </div>
+
         <button type="submit" class="btn-submit">Daftar Gratis</button>
 
         <div class="divider"><span>atau lanjutkan dengan</span></div>
