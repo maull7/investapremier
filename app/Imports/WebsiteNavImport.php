@@ -4,7 +4,7 @@ namespace App\Imports;
 
 use App\Models\HargaReksaDana;
 use App\Models\ReksaDana;
-use Carbon\Carbon;
+use App\Support\ExcelDateHelper;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -16,6 +16,7 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
  */
 class WebsiteNavImport implements ToCollection, WithHeadingRow
 {
+    use ExcelDateHelper;
     public int $imported = 0;
 
     public int $skipped = 0;
@@ -80,15 +81,7 @@ class WebsiteNavImport implements ToCollection, WithHeadingRow
             return null;
         }
 
-        try {
-            if (is_numeric($raw)) {
-                return Carbon::createFromTimestampUTC(((float) $raw - 25569) * 86400)->toDateString();
-            }
-
-            return Carbon::parse($raw)->toDateString();
-        } catch (\Throwable) {
-            return null;
-        }
+        return $this->parseExcelDate($raw);
     }
 
     protected function parseNab(array $row): ?float

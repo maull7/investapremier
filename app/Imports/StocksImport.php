@@ -3,14 +3,15 @@
 namespace App\Imports;
 
 use App\Models\Stock;
+use App\Support\ExcelDateHelper;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithCalculatedFormulas;
 use Illuminate\Support\Collection;
-use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 class StocksImport implements ToCollection, WithHeadingRow, WithCalculatedFormulas
 {
+    use ExcelDateHelper;
     public int $imported = 0;
 
     public function collection(Collection $rows): void
@@ -26,19 +27,7 @@ class StocksImport implements ToCollection, WithHeadingRow, WithCalculatedFormul
                 return $s;
             };
 
-            $lastUpdate = null;
-            if (!empty($row['last_update'])) {
-                $v = $row['last_update'];
-                if (is_numeric($v)) {
-                    try {
-                        $lastUpdate = Date::excelToDateTimeObject((float) $v)->format('Y-m-d');
-                    } catch (\Throwable $e) {
-                        $lastUpdate = null;
-                    }
-                } else {
-                    $lastUpdate = date('Y-m-d', strtotime((string) $v)) ?: null;
-                }
-            }
+            $lastUpdate = $this->parseExcelDate($row['last_update'] ?? null);
 
             Stock::updateOrCreate(
                 ['kode' => strtoupper(trim($row['kode']))],

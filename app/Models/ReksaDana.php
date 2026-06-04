@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\KodeReksaDanaParser;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +19,7 @@ class ReksaDana extends Model
         'jenis',
         'kategori',
         'kategori_produk',
+        'kelas',
         'benchmark',
         'tujuan_investasi',
         'kebijakan_investasi',
@@ -86,6 +88,32 @@ class ReksaDana extends Model
     public function managementTeams(): HasMany
     {
         return $this->hasMany(MutualFundManagementTeam::class, 'reksa_dana_id');
+    }
+
+    public function fillFromKode(): bool
+    {
+        if (empty($this->kode_reksa_dana)) return false;
+
+        $needsFill = empty($this->nama_manajer_investasi)
+            || empty($this->jenis)
+            || empty($this->kategori_produk)
+            || empty($this->kelas);
+
+        if (!$needsFill) return false;
+
+        $parsed = app(KodeReksaDanaParser::class)->parse($this->kode_reksa_dana);
+        if (!$parsed) return false;
+
+        $this->update([
+            'nama_manajer_investasi' => $parsed['nama_manajer_investasi'],
+            'jenis'                  => $parsed['jenis'],
+            'kategori_produk'        => $parsed['kategori_produk'],
+            'kategori'               => $parsed['kategori'],
+            'kelas'                  => $parsed['kelas'],
+            'mata_uang'              => $parsed['mata_uang'],
+        ]);
+
+        return true;
     }
 
     public function getKategoriLabelAttribute(): string

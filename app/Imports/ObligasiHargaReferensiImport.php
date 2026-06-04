@@ -3,14 +3,15 @@
 namespace App\Imports;
 
 use App\Models\ObligasiHargaReferensi;
+use App\Support\ExcelDateHelper;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithCalculatedFormulas;
 use Illuminate\Support\Collection;
-use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 class ObligasiHargaReferensiImport implements ToCollection, WithHeadingRow, WithCalculatedFormulas
 {
+    use ExcelDateHelper;
     public int $imported = 0;
 
     public function collection(Collection $rows): void
@@ -19,17 +20,12 @@ class ObligasiHargaReferensiImport implements ToCollection, WithHeadingRow, With
             if (empty(trim($row['kode'] ?? ''))) continue;
 
             $toNum = fn($v) => is_numeric($v) ? $v : (is_numeric(str_replace(',', '', $v)) ? str_replace(',', '', $v) : null);
-            $toDate = function ($v) {
-                if (empty($v)) return null;
-                if (is_numeric($v)) return Date::excelToDateTimeObject((float) $v)->format('Y-m-d');
-                return date('Y-m-d', strtotime((string) $v)) ?: null;
-            };
 
             ObligasiHargaReferensi::updateOrCreate(
                 ['kode' => strtoupper(trim($row['kode']))],
                 [
                     'nama' => $row['nama'] ?? null,
-                    'tanggal_terbit' => $toDate($row['tanggal_terbit'] ?? null),
+                    'tanggal_terbit' => $this->parseExcelDate($row['tanggal_terbit'] ?? null),
                     'emiten' => $row['emiten'] ?? null,
                     'sektor' => $row['sektor'] ?? null,
                     'sub_sektor' => $row['sub_sektor'] ?? null,
@@ -39,7 +35,7 @@ class ObligasiHargaReferensiImport implements ToCollection, WithHeadingRow, With
                     'rating' => $row['rating'] ?? null,
                     'syariah' => isset($row['syariah']) ? in_array(strtolower(trim($row['syariah'])), ['ya', 'yes', '1', 'true']) : null,
                     'kupon' => $toNum($row['kupon'] ?? null),
-                    'jatuh_tempo' => $toDate($row['jatuh_tempo'] ?? null),
+                    'jatuh_tempo' => $this->parseExcelDate($row['jatuh_tempo'] ?? null),
                     'harga_persen' => $toNum($row['harga_persen'] ?? $row['harga_(%)'] ?? null),
                     'ttm' => $toNum($row['ttm'] ?? null),
                     'ytm' => $toNum($row['ytm'] ?? null),

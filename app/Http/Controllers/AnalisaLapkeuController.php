@@ -10,6 +10,7 @@ use App\Services\GroqService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Str;
 
 abstract class AnalisaLapkeuController extends Controller
@@ -397,8 +398,8 @@ abstract class AnalisaLapkeuController extends Controller
 
     public function downloadTemplate()
     {
-        return response()->download(
-            public_path('templates/template-analisa-lapkeu.xlsx'),
+        return Excel::download(
+            new \App\Exports\AnalisaLapkeuTemplateExport,
             'template-analisa-lapkeu.xlsx'
         );
     }

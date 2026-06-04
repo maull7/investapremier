@@ -12,6 +12,7 @@ use App\Imports\HargaReksaDanaImport;
 use App\Imports\HarianReksaDanaImport;
 use App\Exports\HargaReksaDanaTemplateExport;
 use App\Exports\HarianReksaDanaTemplateExport;
+use App\Services\KodeReksaDanaParser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -30,7 +31,14 @@ class DaftarReksaDanaController extends Controller
         $hargaQuery = ReksaDana::latest();
         if ($request->jenis) $hargaQuery->where('jenis', $request->jenis);
         if ($request->search) $hargaQuery->where('nama_reksa_dana', 'like', '%' . $request->search . '%');
+        if ($request->harga_tanggal) $hargaQuery->whereDate('tanggal_nab', $request->harga_tanggal);
         $reksaDanas = $hargaQuery->paginate(20, ['*'], 'harga_page')->withQueryString();
+
+        $reksaDanas->each(function ($rd) {
+            if (empty($rd->nama_manajer_investasi) || empty($rd->jenis)) {
+                $rd->fillFromKode();
+            }
+        });
 
         $harianTanggal = $request->get('harian_tanggal');
 
@@ -62,7 +70,13 @@ class DaftarReksaDanaController extends Controller
         $dataSourceLinks = collect();
         $syncLogs = collect();
         $reksaDanaList = collect();
-        $reksaDanaOptions = ReksaDana::orderBy('nama_reksa_dana')->get(['id', 'kode_reksa_dana', 'nama_reksa_dana']);
+        $reksaDanaOptions = ReksaDana::orderBy('nama_reksa_dana')->get(['id', 'kode_reksa_dana', 'nama_reksa_dana', 'nama_manajer_investasi', 'jenis']);
+
+        $reksaDanaOptions->each(function ($rd) {
+            if (empty($rd->nama_manajer_investasi) || empty($rd->jenis)) {
+                $rd->fillFromKode();
+            }
+        });
         $editingLink = null;
         $documents = collect();
         $documentFunds = collect();
@@ -103,14 +117,22 @@ class DaftarReksaDanaController extends Controller
             }
 
             $documentFunds = $documentFundQuery->paginate(20, ['*'], 'document_page')->withQueryString();
+
+            $documentFunds->each(function ($rd) {
+                if (empty($rd->nama_manajer_investasi) || empty($rd->jenis)) {
+                    $rd->fillFromKode();
+                }
+            });
         }
+
+        $hargaTanggal = $request->get('harga_tanggal');
 
         return view('admin.daftar-reksa-dana.index', compact(
             'reksaDanas', 'harian', 'tab',
             'dataSourceLinks', 'syncLogs', 'reksaDanaList', 'editingLink',
             'reksaDanaOptions',
             'documents', 'documentFunds',
-            'harianTanggal',
+            'harianTanggal', 'hargaTanggal',
         ));
     }
 
@@ -189,6 +211,10 @@ class DaftarReksaDanaController extends Controller
             'managementTeams',
         ])->findOrFail($id);
 
+        if (empty($fund->nama_manajer_investasi) || empty($fund->jenis)) {
+            $fund->fillFromKode();
+        }
+
         $range = request('range', '1y');
         $dateLimit = match ($range) {
             '1m'   => now()->subMonth(),
@@ -259,17 +285,53 @@ class DaftarReksaDanaController extends Controller
     public function uploadHarga(Request $request)
     {
         $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:5120']);
-        Excel::import(new HargaReksaDanaImport(), $request->file('file'));
+
+        $import = new HargaReksaDanaImport();
+        Excel::import($import, $request->file('file'));
+
+        if ($import->imported === 0) {
+            $msg = 'Tidak ada data yang berhasil diimport. ';
+            if ($import->skipped > 0) {
+                $msg .= $import->skipped . ' baris dilewati (nama_reksa_dana tidak boleh kosong).';
+            } else {
+                $msg .= 'Periksa kembali format file excel anda.';
+            }
+            return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harga'])
+                ->with('error', $msg);
+        }
+
+        $msg = $import->imported . ' data berhasil diupload.';
+        if ($import->skipped > 0) {
+            $msg .= ' (' . $import->skipped . ' baris dilewati)';
+        }
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harga'])
-            ->with('success', 'Data harga reksa dana berhasil diupload.');
+            ->with('success', $msg);
     }
 
     public function uploadHarian(Request $request)
     {
         $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:5120']);
-        Excel::import(new HarianReksaDanaImport(), $request->file('file'));
+
+        $import = new HarianReksaDanaImport();
+        Excel::import($import, $request->file('file'));
+
+        if ($import->imported === 0) {
+            $msg = 'Tidak ada data yang berhasil diimport. ';
+            if ($import->skipped > 0) {
+                $msg .= $import->skipped . ' baris dilewati. Pastikan nama_reksa_dana, tanggal, dan nab_per_unit terisi dengan benar.';
+            } else {
+                $msg .= 'Periksa kembali format file excel anda.';
+            }
+            return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harian'])
+                ->with('error', $msg);
+        }
+
+        $msg = $import->imported . ' data berhasil diupload.';
+        if ($import->skipped > 0) {
+            $msg .= ' (' . $import->skipped . ' baris dilewati)';
+        }
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harian'])
-            ->with('success', 'Data harian reksa dana berhasil diupload.');
+            ->with('success', $msg);
     }
 
     public function downloadTemplateHarga()
@@ -287,11 +349,12 @@ class DaftarReksaDanaController extends Controller
         $validated = $request->validate([
             'kode_reksa_dana'       => 'nullable|string|max:20|unique:reksa_dana,kode_reksa_dana',
             'nama_reksa_dana'       => 'required|string|max:255',
-            'nama_manajer_investasi'=> 'required|string|max:255',
-            'jenis'                 => 'required|string|in:' . implode(',', self::JENIS_OPTIONS),
+            'nama_manajer_investasi'=> 'nullable|string|max:255',
+            'jenis'                 => 'nullable|string|in:' . implode(',', self::JENIS_OPTIONS),
             'kategori'              => 'nullable|array',
             'kategori.*'            => 'string|in:' . implode(',', self::KATEGORI_OPTIONS),
             'kategori_produk'       => 'nullable|string|in:' . implode(',', self::KATEGORI_PRODUK_OPTIONS),
+            'kelas'                 => 'nullable|string|max:10',
             'benchmark'             => 'nullable|string|max:255',
             'tujuan_investasi'      => 'nullable|string',
             'kebijakan_investasi'   => 'nullable|string',
@@ -300,10 +363,29 @@ class DaftarReksaDanaController extends Controller
             'tanggal_nab'           => 'nullable|date',
         ]);
 
+        if (!empty($validated['kode_reksa_dana'])) {
+            $parsed = app(KodeReksaDanaParser::class)->parse($validated['kode_reksa_dana']);
+            if ($parsed) {
+                $validated['nama_manajer_investasi'] = $parsed['nama_manajer_investasi'];
+                $validated['jenis'] = $parsed['jenis'];
+                $validated['kategori_produk'] = $parsed['kategori_produk'];
+                $validated['kategori'] = $parsed['kategori'];
+                $validated['kelas'] = $parsed['kelas'];
+                $validated['mata_uang'] = $parsed['mata_uang'];
+            }
+        }
+
         $validated['kategori'] = $validated['kategori'] ?? [];
         $validated['mata_uang'] = $validated['mata_uang'] ?? 'IDR';
 
-        ReksaDana::create($validated);
+        $reksaDana = ReksaDana::create($validated);
+
+        if (!empty($validated['nab_per_unit']) && !empty($validated['tanggal_nab'])) {
+            HargaReksaDana::updateOrCreate(
+                ['reksa_dana_id' => $reksaDana->id, 'tanggal' => $validated['tanggal_nab']],
+                ['nab_per_unit' => $validated['nab_per_unit']]
+            );
+        }
 
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harga'])
             ->with('success', 'Reksa dana berhasil ditambahkan.');
@@ -314,11 +396,12 @@ class DaftarReksaDanaController extends Controller
         $validated = $request->validate([
             'kode_reksa_dana'       => 'nullable|string|max:20|unique:reksa_dana,kode_reksa_dana,' . $reksaDana->id,
             'nama_reksa_dana'       => 'required|string|max:255',
-            'nama_manajer_investasi'=> 'required|string|max:255',
-            'jenis'                 => 'required|string|in:' . implode(',', self::JENIS_OPTIONS),
+            'nama_manajer_investasi'=> 'nullable|string|max:255',
+            'jenis'                 => 'nullable|string|in:' . implode(',', self::JENIS_OPTIONS),
             'kategori'              => 'nullable|array',
             'kategori.*'            => 'string|in:' . implode(',', self::KATEGORI_OPTIONS),
             'kategori_produk'       => 'nullable|string|in:' . implode(',', self::KATEGORI_PRODUK_OPTIONS),
+            'kelas'                 => 'nullable|string|max:10',
             'benchmark'             => 'nullable|string|max:255',
             'tujuan_investasi'      => 'nullable|string',
             'kebijakan_investasi'   => 'nullable|string',
@@ -327,9 +410,28 @@ class DaftarReksaDanaController extends Controller
             'tanggal_nab'           => 'nullable|date',
         ]);
 
+        if (!empty($validated['kode_reksa_dana'])) {
+            $parsed = app(KodeReksaDanaParser::class)->parse($validated['kode_reksa_dana']);
+            if ($parsed) {
+                $validated['nama_manajer_investasi'] = $parsed['nama_manajer_investasi'];
+                $validated['jenis'] = $parsed['jenis'];
+                $validated['kategori_produk'] = $parsed['kategori_produk'];
+                $validated['kategori'] = $parsed['kategori'];
+                $validated['kelas'] = $parsed['kelas'];
+                $validated['mata_uang'] = $parsed['mata_uang'];
+            }
+        }
+
         $validated['kategori'] = $validated['kategori'] ?? [];
 
         $reksaDana->update($validated);
+
+        if (!empty($validated['nab_per_unit']) && !empty($validated['tanggal_nab'])) {
+            HargaReksaDana::updateOrCreate(
+                ['reksa_dana_id' => $reksaDana->id, 'tanggal' => $validated['tanggal_nab']],
+                ['nab_per_unit' => $validated['nab_per_unit']]
+            );
+        }
 
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harga'])
             ->with('success', 'Reksa dana berhasil diperbarui.');
@@ -362,6 +464,11 @@ class DaftarReksaDanaController extends Controller
 
         HargaReksaDana::create($validated);
 
+        ReksaDana::where('id', $validated['reksa_dana_id'])->update([
+            'nab_per_unit' => $validated['nab_per_unit'],
+            'tanggal_nab'  => $validated['tanggal'],
+        ]);
+
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harian'])
             ->with('success', 'Data harian berhasil ditambahkan.');
     }
@@ -386,6 +493,11 @@ class DaftarReksaDanaController extends Controller
 
         $hargaReksaDana->update($validated);
 
+        ReksaDana::where('id', $validated['reksa_dana_id'])->update([
+            'nab_per_unit' => $validated['nab_per_unit'],
+            'tanggal_nab'  => $validated['tanggal'],
+        ]);
+
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harian'])
             ->with('success', 'Data harian berhasil diperbarui.');
     }
@@ -396,5 +508,21 @@ class DaftarReksaDanaController extends Controller
 
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harian'])
             ->with('success', 'Data harian berhasil dihapus.');
+    }
+
+    public function parseKode(Request $request)
+    {
+        $kode = $request->get('kode');
+        if (!$kode) {
+            return response()->json(['error' => 'Kode tidak boleh kosong'], 422);
+        }
+
+        $parsed = app(KodeReksaDanaParser::class)->parse($kode);
+
+        if (!$parsed) {
+            return response()->json(['error' => 'Kode Reksa Dana tidak valid / Manajer Investasi tidak ditemukan'], 422);
+        }
+
+        return response()->json($parsed);
     }
 }
