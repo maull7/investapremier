@@ -4,10 +4,11 @@ namespace App\Imports;
 
 use App\Models\ReksaDana;
 use App\Models\HargaReksaDana;
+use App\Services\KodeReksaDanaParser;
+use App\Support\ExcelDateHelper;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
-use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
 /**
  * Upload Harian Reksa Dana
@@ -15,15 +16,29 @@ use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
  */
 class HarianReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows
 {
+    use ExcelDateHelper;
+
+    public int $imported = 0;
+    public int $skipped = 0;
+
     public function model(array $row): ?HargaReksaDana
     {
-        if (empty($row['tanggal']) || empty($row['nab_per_unit'])) return null;
+        if (empty($row['tanggal']) || empty($row['nab_per_unit'])) {
+            $this->skipped++;
+            return null;
+        }
 
         $reksaDana = $this->findReksaDana($row);
-        if (!$reksaDana) return null;
+        if (!$reksaDana) {
+            $this->skipped++;
+            return null;
+        }
 
-        $tanggal = $this->parseDate($row['tanggal']);
-        if (!$tanggal) return null;
+        $tanggal = $this->parseExcelDate($row['tanggal']);
+        if (!$tanggal) {
+            $this->skipped++;
+            return null;
+        }
 
         if (!$reksaDana->tanggal_nab || $tanggal >= $reksaDana->tanggal_nab->toDateString()) {
             $reksaDana->update([
@@ -35,10 +50,13 @@ class HarianReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows
         $aum = is_numeric($row['total_dana_kelolaan'] ?? null) ? $row['total_dana_kelolaan'] : null;
         $up  = is_numeric($row['unit_penyertaan'] ?? null)     ? $row['unit_penyertaan']     : null;
 
-        return HargaReksaDana::updateOrCreate(
+        HargaReksaDana::updateOrCreate(
             ['reksa_dana_id' => $reksaDana->id, 'tanggal' => $tanggal],
             ['nab_per_unit' => $row['nab_per_unit'], 'aum' => $aum, 'unit_participation' => $up]
         );
+
+        $this->imported++;
+        return null;
     }
 
     private function findReksaDana(array $row): ?ReksaDana
@@ -57,35 +75,31 @@ class HarianReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows
             $found = ReksaDana::where('nama_reksa_dana', $nama)->first();
             if ($found) return $found;
 
-            // Tidak ditemukan: buat baru
-            return ReksaDana::create([
+            // Tidak ditemukan: buat baru, auto-fill dari kode jika bisa di-parse
+            $data = [
                 'nama_reksa_dana'        => $nama,
                 'kode_reksa_dana'        => $kode,
                 'nama_manajer_investasi' => '',
                 'jenis'                  => '',
                 'kategori'               => [],
-            ]);
+            ];
+
+            if ($kode) {
+                $parsed = app(KodeReksaDanaParser::class)->parse($kode);
+                if ($parsed) {
+                    $data['nama_manajer_investasi'] = $parsed['nama_manajer_investasi'];
+                    $data['jenis'] = $parsed['jenis'];
+                    $data['kategori_produk'] = $parsed['kategori_produk'];
+                    $data['kategori'] = $parsed['kategori'];
+                    $data['kelas'] = $parsed['kelas'];
+                    $data['mata_uang'] = $parsed['mata_uang'];
+                }
+            }
+
+            return ReksaDana::create($data);
         }
 
         return null;
     }
 
-    private function parseDate(mixed $value): ?string
-    {
-        if (empty($value)) return null;
-
-        // Excel date serial number (integer or float)
-        if (is_numeric($value)) {
-            try {
-                return ExcelDate::excelToDateTimeObject((float) $value)->format('Y-m-d');
-            } catch (\Throwable) {}
-        }
-
-        // String date
-        try {
-            return \Carbon\Carbon::parse((string) $value)->toDateString();
-        } catch (\Throwable) {
-            return null;
-        }
-    }
 }

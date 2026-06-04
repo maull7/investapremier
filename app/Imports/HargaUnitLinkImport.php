@@ -4,12 +4,14 @@ namespace App\Imports;
 
 use App\Models\UnitLink;
 use App\Models\HargaUnitLink;
+use App\Support\ExcelDateHelper;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 
 class HargaUnitLinkImport implements ToModel, WithHeadingRow, SkipsEmptyRows
 {
+    use ExcelDateHelper;
     public int $imported = 0;
 
     public function model(array $row): ?HargaUnitLink
@@ -20,11 +22,8 @@ class HargaUnitLinkImport implements ToModel, WithHeadingRow, SkipsEmptyRows
         $unitLink = UnitLink::where('unit_link', $name)->first();
         if (!$unitLink) return null;
 
-        try {
-            $datetime = \Carbon\Carbon::parse($row['datetime']);
-        } catch (\Exception $e) {
-            return null;
-        }
+        $datetime = $this->parseExcelDate($row['datetime'] ?? null);
+        if (!$datetime) return null;
 
         $this->imported++;
 

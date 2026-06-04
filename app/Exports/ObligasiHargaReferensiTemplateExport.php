@@ -2,13 +2,17 @@
 
 namespace App\Exports;
 
+use App\Support\ExcelDateHelper;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class ObligasiHargaReferensiTemplateExport implements FromArray, WithHeadings, WithStyles
+class ObligasiHargaReferensiTemplateExport implements FromArray, WithHeadings, WithStyles, WithColumnFormatting
 {
+    use ExcelDateHelper;
+
     public function headings(): array
     {
         return [
@@ -23,12 +27,20 @@ class ObligasiHargaReferensiTemplateExport implements FromArray, WithHeadings, W
     {
         return [
             [
-                'ABLS01XXMF', 'MTN Asian Bulk Logistics I Tahun 2022', '2022-06-21', 'ABLS',
-                '', '', '', '', 'IDR', '', 'Tidak',
-                0.09, '2027-06-21', 100, 1.08966, 0.09,
-                0.09, 100000000, 1000000000000,
+                'ABLS01XXMF', 'MTN Asian Bulk Logistics I Tahun 2022',
+                $this->excelDateValue('2022-06-21'),   // C – tanggal_terbit
+                'ABLS', '', '', '', '', 'IDR', '', 'Tidak',
+                0.09,
+                $this->excelDateValue('2027-06-21'),   // M – jatuh_tempo
+                100, 1.08966, 0.09, 0.09, 100000000, 1000000000000,
             ],
         ];
+    }
+
+    /** Apply DATE format to tanggal_terbit (C) and jatuh_tempo (M). */
+    public function columnFormats(): array
+    {
+        return $this->dateColumnFormats(['C', 'M']);
     }
 
     public function styles(Worksheet $sheet): array

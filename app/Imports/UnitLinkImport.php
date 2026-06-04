@@ -3,14 +3,15 @@
 namespace App\Imports;
 
 use App\Models\UnitLink;
+use App\Support\ExcelDateHelper;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithCalculatedFormulas;
 use Illuminate\Support\Collection;
-use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 class UnitLinkImport implements ToCollection, WithHeadingRow, WithCalculatedFormulas
 {
+    use ExcelDateHelper;
     public int $imported = 0;
 
     public function collection(Collection $rows): void
@@ -19,19 +20,7 @@ class UnitLinkImport implements ToCollection, WithHeadingRow, WithCalculatedForm
             $name = trim($row['unit_link'] ?? '');
             if (empty($name)) continue;
 
-            $lastUpdate = null;
-            if (!empty($row['last_update'])) {
-                $v = $row['last_update'];
-                if (is_numeric($v)) {
-                    try {
-                        $lastUpdate = Date::excelToDateTimeObject((float) $v)->format('Y-m-d');
-                    } catch (\Throwable $e) {
-                        $lastUpdate = null;
-                    }
-                } else {
-                    $lastUpdate = date('Y-m-d', strtotime((string) $v)) ?: null;
-                }
-            }
+            $lastUpdate = $this->parseExcelDate($row['last_update'] ?? null);
 
             UnitLink::updateOrCreate(
                 ['unit_link' => $name],

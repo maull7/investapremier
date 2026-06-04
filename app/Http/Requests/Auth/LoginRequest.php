@@ -32,7 +32,7 @@ class LoginRequest extends FormRequest
             'password' => ['required', 'string'],
         ];
 
-        if (app()->isProduction()) {
+        if (config('captcha.sitekey')) {
             $rules['g-recaptcha-response'] = ['required', 'captcha'];
         }
 

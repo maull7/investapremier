@@ -2,41 +2,46 @@
 
 namespace App\Imports;
 
+use App\Support\ExcelDateHelper;
+use App\Models\HargaReksaDana;
 use App\Models\ReksaDana;
 use App\Models\InvestmentManager;
 use App\Services\KodeGeneratorService;
+use App\Services\KodeReksaDanaParser;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
+use Maatwebsite\Excel\Concerns\WithCalculatedFormulas;
 
 /**
  * Upload Harga Reksa Dana
  * Kolom: nama_reksa_dana | nama_manajer_investasi | jenis | kategori (pisah koma) | mata_uang | nab_per_unit | tanggal_nab
  */
-class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows
+class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows, WithCalculatedFormulas
 {
+    use ExcelDateHelper;
+
+    public int $imported = 0;
+    public int $skipped = 0;
+
     public function model(array $row): ?ReksaDana
     {
-        if (empty($row['nama_reksa_dana'])) return null;
+        if (empty($row['nama_reksa_dana'])) {
+            $this->skipped++;
+            return null;
+        }
 
         $kategori = array_map('trim', explode(',', $row['kategori'] ?? ''));
 
-        $tanggal = null;
-        if (!empty($row['tanggal_nab'])) {
-            try {
-                $tanggal = \Carbon\Carbon::parse($row['tanggal_nab'])->toDateString();
-            } catch (\Exception $e) {
-                $tanggal = null;
-            }
-        }
+        $tanggal = $this->parseExcelDate($row['tanggal_nab'] ?? null);
 
         $nama = trim($row['nama_reksa_dana']);
+        $kode = !empty($row['kode_reksa_dana']) ? trim($row['kode_reksa_dana']) : null;
 
         // Cari existing: prioritas kode, fallback nama
         $existing = null;
-        if (!empty($row['kode_reksa_dana'])) {
-            $existing = ReksaDana::where('kode_reksa_dana', trim($row['kode_reksa_dana']))->first();
+        if ($kode) {
+            $existing = ReksaDana::where('kode_reksa_dana', $kode)->first();
         }
         if (!$existing) {
             $existing = ReksaDana::where('nama_reksa_dana', $nama)->first();
@@ -52,10 +57,32 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows
                 'nab_per_unit'           => $row['nab_per_unit'] ?? null,
                 'tanggal_nab'            => $tanggal,
             ];
-            if (!empty($row['kode_reksa_dana'])) {
-                $updateData['kode_reksa_dana'] = trim($row['kode_reksa_dana']);
+            if ($kode) {
+                $updateData['kode_reksa_dana'] = $kode;
             }
+
+            if ($kode) {
+                $parsed = app(KodeReksaDanaParser::class)->parse($kode);
+                if ($parsed) {
+                    $updateData['nama_manajer_investasi'] = $parsed['nama_manajer_investasi'];
+                    $updateData['jenis'] = $parsed['jenis'];
+                    $updateData['kategori_produk'] = $parsed['kategori_produk'];
+                    $updateData['kategori'] = $parsed['kategori'];
+                    $updateData['kelas'] = $parsed['kelas'];
+                    $updateData['mata_uang'] = $parsed['mata_uang'];
+                }
+            }
+
             $existing->update($updateData);
+
+            if ($tanggal && !empty($row['nab_per_unit'])) {
+                HargaReksaDana::updateOrCreate(
+                    ['reksa_dana_id' => $existing->id, 'tanggal' => $tanggal],
+                    ['nab_per_unit' => $row['nab_per_unit']]
+                );
+            }
+
+            $this->imported++;
             return $existing;
         }
 
@@ -70,13 +97,33 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows
             'tanggal_nab'            => $tanggal,
         ];
 
-        if (!empty($row['kode_reksa_dana'])) {
-            $data['kode_reksa_dana'] = trim($row['kode_reksa_dana']);
+        if ($kode) {
+            $data['kode_reksa_dana'] = $kode;
+
+            $parsed = app(KodeReksaDanaParser::class)->parse($kode);
+            if ($parsed) {
+                $data['nama_manajer_investasi'] = $parsed['nama_manajer_investasi'];
+                $data['jenis'] = $parsed['jenis'];
+                $data['kategori_produk'] = $parsed['kategori_produk'];
+                $data['kategori'] = $parsed['kategori'];
+                $data['kelas'] = $parsed['kelas'];
+                $data['mata_uang'] = $parsed['mata_uang'];
+            }
         } else {
             $data['kode_reksa_dana'] = $this->generateKodeReksaDana($data);
         }
 
-        return ReksaDana::create(array_merge(['nama_reksa_dana' => $nama], $data));
+        $reksaDana = ReksaDana::create(array_merge(['nama_reksa_dana' => $nama], $data));
+
+        if ($tanggal && !empty($row['nab_per_unit'])) {
+            HargaReksaDana::updateOrCreate(
+                ['reksa_dana_id' => $reksaDana->id, 'tanggal' => $tanggal],
+                ['nab_per_unit' => $row['nab_per_unit']]
+            );
+        }
+
+        $this->imported++;
+        return $reksaDana;
     }
 
     private function generateKodeReksaDana(array $data): ?string
@@ -92,7 +139,10 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows
         return app(KodeGeneratorService::class)->generateKodeReksaDana(
             $manager->kode_mi,
             $data['jenis'],
-            $data['kategori_produk'] ?? null
+            $data['kategori_produk'] ?? null,
+            null,
+            $data['kategori'] ?? [],
+            $data['mata_uang'] ?? 'IDR'
         );
     }
 }
