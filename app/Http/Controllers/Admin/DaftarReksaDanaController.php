@@ -346,6 +346,15 @@ class DaftarReksaDanaController extends Controller
 
     public function storeHarga(Request $request)
     {
+        if ($request->has('kategori') && is_string($request->input('kategori'))) {
+            $decoded = json_decode($request->input('kategori'), true);
+            if (is_array($decoded)) {
+                $request->merge(['kategori' => $decoded]);
+            } elseif ($request->input('kategori') === '') {
+                $request->merge(['kategori' => []]);
+            }
+        }
+
         $validated = $request->validate([
             'kode_reksa_dana'       => 'nullable|string|max:20|unique:reksa_dana,kode_reksa_dana',
             'nama_reksa_dana'       => 'required|string|max:255',
@@ -393,13 +402,23 @@ class DaftarReksaDanaController extends Controller
 
     public function updateHarga(Request $request, ReksaDana $reksaDana)
     {
+        // Decode kategori jika dikirim sebagai JSON string dari JS
+        if ($request->has('kategori') && is_string($request->input('kategori'))) {
+            $decoded = json_decode($request->input('kategori'), true);
+            if (is_array($decoded)) {
+                $request->merge(['kategori' => $decoded]);
+            } elseif ($request->input('kategori') === '') {
+                $request->merge(['kategori' => []]);
+            }
+        }
+
         $validated = $request->validate([
             'kode_reksa_dana'       => 'nullable|string|max:20|unique:reksa_dana,kode_reksa_dana,' . $reksaDana->id,
             'nama_reksa_dana'       => 'required|string|max:255',
             'nama_manajer_investasi'=> 'nullable|string|max:255',
             'jenis'                 => 'nullable|string|in:' . implode(',', self::JENIS_OPTIONS),
             'kategori'              => 'nullable|array',
-            'kategori.*'            => 'string|in:' . implode(',', self::KATEGORI_OPTIONS),
+            'kategori.*'            => 'string',
             'kategori_produk'       => 'nullable|string|in:' . implode(',', self::KATEGORI_PRODUK_OPTIONS),
             'kelas'                 => 'nullable|string|max:10',
             'benchmark'             => 'nullable|string|max:255',

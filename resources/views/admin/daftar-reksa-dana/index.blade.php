@@ -835,7 +835,7 @@
             document.getElementById('edit-harga-benchmark').value = data.benchmark || '';
             document.getElementById('edit-harga-matauang').value = data.mata_uang || 'IDR';
             document.getElementById('edit-harga-nab').value = data.nab_per_unit || '';
-            document.getElementById('edit-harga-tgl-nab').value = data.tanggal_nab || '';
+            document.getElementById('edit-harga-tgl-nab').value = (data.tanggal_nab || '').substring(0, 10);
 
             const kategori = Array.isArray(data.kategori) ? data.kategori : [];
             document.getElementById('edit-harga-kategori-display').textContent = kategori.length ? kategori.join(', ') :

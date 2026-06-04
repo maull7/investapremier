@@ -70,6 +70,22 @@
         </form>
     </div>
 
+    {{-- Grafik Rating - YTM --}}
+    <div class="bg-white rounded-xl border border-line p-4 sm:p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <div>
+                <h3 class="font-semibold text-primary">Grafik Rating - YTM</h3>
+                <p class="text-xs text-muted mt-1">Perbandingan YTM Normal berdasarkan rating dan tenor</p>
+            </div>
+            <div id="ytmChartStatus" class="text-xs text-muted"></div>
+        </div>
+
+        <div id="ytmChartEmpty" class="hidden min-h-[280px] grid place-items-center text-center text-muted text-sm">
+            Belum tersedia data YTM Normal Curve.
+        </div>
+        <div id="ytmRatingChart" class="min-h-[450px]"></div>
+    </div>
+
     {{-- Daftar YTM Normal Curve --}}
     @forelse ($grouped as $label => $curves)
         <div class="table-card">
@@ -113,3 +129,197 @@
     @endforelse
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const chartEl = document.getElementById('ytmRatingChart');
+    const emptyEl = document.getElementById('ytmChartEmpty');
+    const statusEl = document.getElementById('ytmChartStatus');
+    const chartDataUrl = @json(route('admin.ytm-normal-curve.chart-data'));
+    let chart = null;
+
+    const chartOptions = {
+        chart: {
+            type: 'line',
+            height: 500,
+            toolbar: {
+                show: true,
+                tools: {
+                    download: true,
+                    selection: false,
+                    zoom: true,
+                    zoomin: true,
+                    zoomout: true,
+                    pan: false,
+                    reset: true
+                },
+                export: {
+                    png: {
+                        filename: 'grafik-rating-ytm'
+                    }
+                }
+            },
+            animations: {
+                enabled: true,
+                easing: 'easeinout',
+                speed: 500
+            }
+        },
+        series: [],
+        xaxis: {
+            categories: [],
+            title: {
+                text: 'Tenor (Bulan)'
+            },
+            labels: {
+                style: {
+                    colors: '#64748b',
+                    fontSize: '12px'
+                }
+            }
+        },
+        yaxis: {
+            title: {
+                text: 'YTM Normal (%)'
+            },
+            labels: {
+                formatter: (value) => Number(value).toFixed(2) + '%',
+                style: {
+                    colors: '#64748b',
+                    fontSize: '12px'
+                }
+            }
+        },
+        stroke: {
+            curve: 'smooth',
+            width: 2.5
+        },
+        markers: {
+            size: 4,
+            strokeWidth: 2,
+            hover: {
+                size: 6
+            }
+        },
+        grid: {
+            show: true,
+            borderColor: '#e2e8f0',
+            strokeDashArray: 3
+        },
+        legend: {
+            show: true,
+            position: 'bottom',
+            horizontalAlign: 'center',
+            markers: {
+                width: 10,
+                height: 10,
+                radius: 2
+            },
+            itemMargin: {
+                horizontal: 10,
+                vertical: 6
+            }
+        },
+        tooltip: {
+            shared: false,
+            intersect: true,
+            custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+                const rating = w.config.series[seriesIndex].name;
+                const tenor = w.config.xaxis.categories[dataPointIndex];
+                const ytm = series[seriesIndex][dataPointIndex];
+
+                return `
+                    <div class="px-3 py-2 text-xs">
+                        <div><span class="font-semibold">Rating</span> : ${rating}</div>
+                        <div><span class="font-semibold">Tenor</span> : ${tenor} Bulan</div>
+                        <div><span class="font-semibold">YTM</span> : ${Number(ytm).toFixed(2)}%</div>
+                    </div>
+                `;
+            }
+        },
+        colors: [
+            '#047857', '#2563eb', '#dc2626', '#9333ea', '#ea580c', '#0891b2',
+            '#4f46e5', '#65a30d', '#db2777', '#ca8a04', '#0f766e', '#7c3aed',
+            '#be123c', '#0284c7', '#16a34a', '#c2410c', '#334155', '#a21caf'
+        ],
+        noData: {
+            text: 'Memuat data grafik...'
+        },
+        responsive: [
+            {
+                breakpoint: 640,
+                options: {
+                    chart: {
+                        height: 450
+                    },
+                    legend: {
+                        position: 'bottom',
+                        fontSize: '11px'
+                    },
+                    markers: {
+                        size: 3
+                    }
+                }
+            }
+        ]
+    };
+
+    const setEmptyState = (isEmpty) => {
+        emptyEl.classList.toggle('hidden', !isEmpty);
+        chartEl.classList.toggle('hidden', isEmpty);
+    };
+
+    const renderChart = async () => {
+        try {
+            const response = await fetch(chartDataUrl, {
+                headers: {
+                    Accept: 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Gagal memuat data grafik.');
+            }
+
+            const data = await response.json();
+            const hasData = data.series?.some((item) => item.data?.some((value) => value !== null));
+            setEmptyState(!hasData);
+
+            if (!hasData) {
+                statusEl.textContent = '';
+                return;
+            }
+
+            if (!chart) {
+                chart = new ApexCharts(chartEl, {
+                    ...chartOptions,
+                    series: data.series,
+                    xaxis: {
+                        ...chartOptions.xaxis,
+                        categories: data.categories
+                    }
+                });
+                await chart.render();
+            } else {
+                await chart.updateOptions({
+                    xaxis: {
+                        ...chartOptions.xaxis,
+                        categories: data.categories
+                    }
+                }, false, false);
+                await chart.updateSeries(data.series, true);
+            }
+
+            statusEl.textContent = 'Grafik diperbarui otomatis';
+        } catch (error) {
+            statusEl.textContent = error.message;
+        }
+    };
+
+    renderChart();
+    setInterval(renderChart, 15000);
+});
+</script>
+@endpush

@@ -58,7 +58,7 @@ Route::get('/presentation', function () {
 
 Route::get('/dashboard', function () {
     $user = request()->user();
-    if ($user->role === 'admin') {
+    if (in_array($user->role, ['admin', 'sub_admin'])) {
         return redirect()->route('admin.dashboard');
     }
     return redirect()->route('user.dashboard');
@@ -70,8 +70,31 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Debug route (hanya untuk troubleshoot, hapus setelah selesai)
+    Route::get('/debug-permissions', function () {
+        $user = auth()->user();
+        return response()->json([
+            'id' => $user->id,
+            'name' => $user->name,
+            'role' => $user->role,
+            'is_active' => $user->is_active,
+            'permissions_raw' => $user->permissions,
+            'permissions_list' => $user->getPermissionsList(),
+            'checks' => [
+                'manajemen.dashboard' => $user->hasPermission('manajemen.dashboard'),
+                'reksa-dana.monitor-ffs' => $user->hasPermission('reksa-dana.monitor-ffs'),
+                'reksa-dana.daftar' => $user->hasPermission('reksa-dana.daftar'),
+                'saham.daftar' => $user->hasPermission('saham.daftar'),
+                'saham.daftar.snapshot' => $user->hasPermission('saham.daftar.snapshot'),
+                'ai-prompts' => $user->hasPermission('ai-prompts'),
+                'unit-link.daftar' => $user->hasPermission('unit-link.daftar'),
+                'obligasi.daftar' => $user->hasPermission('obligasi.daftar'),
+            ],
+        ]);
+    })->name('debug-permissions');
 
     Route::get('score-classifications', [ScoreClassificationController::class, 'index'])->name('score-classifications.index');
     Route::put('score-classifications/{scoreClassification}', [ScoreClassificationController::class, 'update'])->name('score-classifications.update');
@@ -224,6 +247,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('rating-obligasi/import', [AdminRatingObligasiController::class, 'import'])->name('rating-obligasi.import');
 
     Route::get('ytm-normal-curve', [AdminYtmNormalCurveController::class, 'index'])->name('ytm-normal-curve.index');
+    Route::get('ytm-normal-curve/chart-data', [AdminYtmNormalCurveController::class, 'chartData'])->name('ytm-normal-curve.chart-data');
     Route::post('ytm-normal-curve', [AdminYtmNormalCurveController::class, 'store'])->name('ytm-normal-curve.store');
     Route::get('ytm-normal-curve/{ytmNormalCurve}/edit', [AdminYtmNormalCurveController::class, 'edit'])->name('ytm-normal-curve.edit');
     Route::put('ytm-normal-curve/{ytmNormalCurve}', [AdminYtmNormalCurveController::class, 'update'])->name('ytm-normal-curve.update');
@@ -291,6 +315,10 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::put('ai-prompts/{key}', [App\Http\Controllers\Admin\AiPromptController::class, 'update'])->name('ai-prompts.update');
     Route::put('ai-prompts/{key}/value', [App\Http\Controllers\Admin\AiPromptController::class, 'updateValue'])->name('ai-prompts.update-value');
     Route::delete('ai-prompts/{key}', [App\Http\Controllers\Admin\AiPromptController::class, 'destroy'])->name('ai-prompts.destroy');
+
+    // Sub Admin Management (admin utama only)
+    Route::resource('sub-admins', \App\Http\Controllers\Admin\SubAdminController::class)
+        ->middleware('role:admin');
 });
 
 Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(function () {

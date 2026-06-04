@@ -20,6 +20,45 @@ class YtmNormalCurveController extends Controller
         return view('admin.ytm-normal-curve.index', compact('grouped', 'ratings'));
     }
 
+    public function chartData()
+    {
+        $curves = YtmNormalCurve::with('rating')
+            ->select('ytm_normal_curves.*')
+            ->join('rating_obligasi', 'rating_obligasi.id', '=', 'ytm_normal_curves.rating_id')
+            ->orderBy('rating_obligasi.urutan')
+            ->orderBy('rating_obligasi.kode')
+            ->orderBy('ytm_normal_curves.tenor_bulan')
+            ->get();
+
+        $categories = $curves->pluck('tenor_bulan')
+            ->unique()
+            ->sort()
+            ->values()
+            ->map(fn ($tenor) => (int) $tenor);
+
+        $series = $curves
+            ->groupBy('rating_id')
+            ->map(function ($ratingCurves) use ($categories) {
+                $firstCurve = $ratingCurves->first();
+                $valuesByTenor = $ratingCurves->keyBy('tenor_bulan');
+
+                return [
+                    'name' => $firstCurve->rating->kode,
+                    'data' => $categories->map(function ($tenor) use ($valuesByTenor) {
+                        $curve = $valuesByTenor->get($tenor);
+
+                        return $curve ? (float) $curve->ytm_normal : null;
+                    })->values(),
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'series' => $series,
+            'categories' => $categories,
+        ]);
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([

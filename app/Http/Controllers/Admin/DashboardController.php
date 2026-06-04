@@ -14,6 +14,10 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        if (request()->user()->isSubAdmin()) {
+            return view('dashboard.sub-admin');
+        }
+
         // Statistik existing
         $totalUsers       = User::count();
         $totalMembers     = User::where('is_member', true)->count();
