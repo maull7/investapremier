@@ -39,8 +39,8 @@
                 <span>/</span>
                 <span>{{ $analisa->nama_perusahaan }}</span>
             </div>
-            <h1 class="text-xl font-bold text-primary">{{ $analisa->nama_perusahaan }}</h1>
-            <p class="text-sm text-muted mt-0.5">
+            <h1 class="page-title">{{ $analisa->nama_perusahaan }}</h1>
+            <p class="page-sub">
                 {{ $analisa->kode_saham ? $analisa->kode_saham . ' · ' : '' }}{{ $analisa->sektor ?? '' }}
                 @if($analisa->periode) &bull; {{ $analisa->periode }} @endif
                 &bull; Disubmit oleh <strong>{{ $analisa->user->name }}</strong> pada {{ $analisa->created_at->format('d M Y') }}

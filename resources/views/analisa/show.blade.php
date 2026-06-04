@@ -10,8 +10,8 @@
                 <span>/</span>
                 <span>{{ $analisa->nama_reksa_dana }}</span>
             </div>
-            <h1 class="text-xl font-bold text-primary">{{ $analisa->nama_reksa_dana }}</h1>
-            <p class="text-sm text-muted mt-0.5">{{ $analisa->jenis_reksa_dana }} &bull; Disubmit {{ $analisa->created_at->format('d M Y') }}</p>
+            <h1 class="page-title">{{ $analisa->nama_reksa_dana }}</h1>
+            <p class="page-sub">{{ $analisa->jenis_reksa_dana }} &bull; Disubmit {{ $analisa->created_at->format('d M Y') }}</p>
         </div>
         @php
             $badge = match($analisa->status) {

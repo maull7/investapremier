@@ -4,8 +4,8 @@
 <div class="p-6 space-y-6">
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-xl font-bold text-primary">YTM Normal Curve</h1>
-            <p class="text-sm text-muted mt-0.5">Kelola kurva YTM normal berdasarkan rating dan tenor</p>
+            <h1 class="page-title">YTM Normal Curve</h1>
+            <p class="page-sub">Kelola kurva YTM normal berdasarkan rating dan tenor</p>
         </div>
         <div class="flex items-center gap-3">
             <form method="POST" action="{{ route('admin.ytm-normal-curve.import') }}" enctype="multipart/form-data"
@@ -72,7 +72,7 @@
 
     {{-- Daftar YTM Normal Curve --}}
     @forelse ($grouped as $label => $curves)
-        <div class="bg-white rounded-xl border border-line overflow-hidden">
+        <div class="table-card">
             <div class="px-4 py-3 bg-[#f8fafc] border-b border-line font-semibold text-primary text-sm">
                 {{ $label }}
             </div>

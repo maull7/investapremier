@@ -11,12 +11,12 @@
         </div>
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold text-primary">{{ $plan->kategori_perencanaan }}</h1>
-                <p class="text-muted text-sm mt-1">Dibuat {{ $plan->created_at->format('d F Y') }}</p>
+                <h1 class="page-title">{{ $plan->kategori_perencanaan }}</h1>
+                <p class="page-sub">Dibuat {{ $plan->created_at->format('d F Y') }}</p>
             </div>
             <div class="flex items-center gap-2">
                 <a href="{{ route('user.perencanaan-investasi.edit', $plan) }}"
-                   class="flex items-center gap-2 px-4 py-2.5 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary hover:border-primary/30 transition">
+                   class="btn-secondary">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                     Edit
                 </a>
@@ -25,7 +25,7 @@
     </div>
 
     @if (session('success'))
-        <div class="mb-5 flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm">
+        <div class="alert-success">
             <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             {{ session('success') }}
         </div>
@@ -162,7 +162,7 @@
     {{-- AI Analysis --}}
     <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mb-6">
         <div class="px-6 py-4 border-b border-line flex items-center justify-between bg-gradient-to-r from-accent to-accent/80">
-            <h3 class="font-bold text-white flex items-center gap-2">
+            <h3 class="th-title">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                 Analisis & Rekomendasi AI
             </h3>

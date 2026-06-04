@@ -5,33 +5,30 @@
 @section('content')
 <div x-data="{ deleteId: null, deleteText: '', showImport: false }">
 
-<div class="mb-6 flex items-center justify-between">
+<div class="mb-6 flex items-center justify-between gap-4 flex-wrap">
     <div>
-        <h1 class="text-2xl font-bold text-primary">Soal Kuis Profil Investasi</h1>
-        <p class="text-muted text-sm mt-1">Kelola soal pilihan ganda untuk kuesioner profil investasi nasabah</p>
+        <h1 class="page-title">Soal Kuis Profil Investasi</h1>
+        <p class="page-sub">Kelola soal pilihan ganda untuk kuesioner profil investasi nasabah</p>
     </div>
-    <div class="flex items-center gap-2">
-        <a href="{{ route('admin.questions.template') }}"
-           class="flex items-center gap-2 px-4 py-2.5 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary hover:border-primary/30 transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+    <div class="flex items-center gap-2 flex-wrap">
+        <a href="{{ route('admin.questions.template') }}" class="btn-secondary btn-sm">
+            <svg viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
             Template Excel
         </a>
-        <button @click="showImport = true"
-                class="flex items-center gap-2 px-4 py-2.5 border border-accent text-accent rounded-xl text-sm font-semibold hover:bg-accent/5 transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        <button @click="showImport = true" class="btn-outline btn-sm">
+            <svg viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
             Import Excel
         </button>
-        <a href="{{ route('admin.questions.create') }}"
-           class="flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:bg-accent/90 transition shadow-sm shadow-accent/20">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        <a href="{{ route('admin.questions.create') }}" class="btn-primary btn-sm">
+            <svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
             Tambah Soal
         </a>
     </div>
 </div>
 
 @if(session('success'))
-<div class="mb-5 flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm">
-    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+<div class="alert-success">
+    <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
     {{ session('success') }}
 </div>
 @endif
@@ -46,24 +43,22 @@
     @endforeach
 </div>
 
-<div class="bg-white rounded-2xl border border-line overflow-hidden shadow-sm">
-    {{-- Table Header --}}
-    <div class="px-6 py-4 border-b border-line flex items-center justify-between bg-gradient-to-r from-primary to-primary-light">
-        <h2 class="font-bold text-white flex items-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+<div class="table-card">
+    <div class="table-head">
+        <h2 class="th-title">
+            <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
             Daftar Soal
         </h2>
-        <div class="flex items-center gap-2">
-            <span class="text-xs text-white/60">Tampilkan:</span>
+        <div class="flex items-center gap-3">
             <form method="GET" action="{{ route('admin.questions.index') }}">
                 <select name="per_page" onchange="this.form.submit()"
-                        class="text-xs bg-white/10 text-white border border-white/20 rounded-lg px-2 py-1 focus:outline-none cursor-pointer">
+                        class="text-xs bg-white/10 text-white border border-white/20 rounded-lg px-2 py-1.5 focus:outline-none cursor-pointer">
                     @foreach([10, 25, 50] as $n)
                     <option value="{{ $n }}" {{ $perPage == $n ? 'selected' : '' }}>{{ $n }}</option>
                     @endforeach
                 </select>
             </form>
-            <span class="text-xs text-white/60">{{ $questions->total() }} total</span>
+            <span class="th-meta">{{ $questions->total() }} soal</span>
         </div>
     </div>
 
@@ -230,7 +225,7 @@
             </div>
             <div class="flex-1">
                 <h3 class="font-bold text-primary text-base">Hapus Soal?</h3>
-                <p class="text-muted text-sm mt-1">Soal berikut akan dihapus permanen beserta semua pilihan jawabannya:</p>
+                <p class="page-sub">Soal berikut akan dihapus permanen beserta semua pilihan jawabannya:</p>
                 <p class="mt-2 text-sm text-primary font-medium bg-[#f8fafc] rounded-lg px-3 py-2 border border-line" x-text="deleteText"></p>
                 <p class="text-xs text-red-500 mt-2">Tindakan ini tidak dapat dibatalkan.</p>
             </div>

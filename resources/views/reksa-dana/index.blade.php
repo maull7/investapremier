@@ -4,8 +4,8 @@
 
 @section('content')
 <div class="mb-6">
-    <h1 class="text-2xl font-bold text-primary">Daftar Reksa Dana</h1>
-    <p class="text-muted text-sm mt-1">Informasi dan analisa reksa dana yang tersedia</p>
+    <h1 class="page-title">Daftar Reksa Dana</h1>
+    <p class="page-sub">Informasi dan analisa reksa dana yang tersedia</p>
 </div>
 
 @if(session('success'))
@@ -60,7 +60,7 @@
     </div>
 </form>
 
-<div class="bg-white rounded-2xl border border-line overflow-hidden shadow-sm">
+<div class="table-card">
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead>

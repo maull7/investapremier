@@ -228,7 +228,7 @@
 </div>
 
 {{-- Riwayat Sync --}}
-<div class="bg-white rounded-2xl border border-line overflow-hidden shadow-sm">
+<div class="table-card">
     <div class="px-6 py-4 border-b border-line bg-[#f8fafc]">
         <h2 class="font-bold text-primary text-sm">Riwayat Sinkronisasi</h2>
     </div>

@@ -4,8 +4,8 @@
     <div class="space-y-6">
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-xl font-bold text-primary">Monitor Analisa Reksa Dana</h1>
-                <p class="text-sm text-muted mt-0.5">Semua submission analisa dari user</p>
+                <h1 class="page-title">Monitor Analisa Reksa Dana</h1>
+                <p class="page-sub">Semua submission analisa dari user</p>
             </div>
         </div>
 
@@ -56,7 +56,7 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-xl border border-line overflow-hidden">
+        <div class="table-card">
             @if ($analisas->isEmpty())
                 <div class="p-12 text-center text-muted text-sm">Belum ada data analisa.</div>
             @else

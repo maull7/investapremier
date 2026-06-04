@@ -4,8 +4,8 @@
     <div class="p-6 space-y-6">
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-xl font-bold text-primary">Master Rating Obligasi</h1>
-                <p class="text-sm text-muted mt-0.5">Kelola daftar rating obligasi untuk analisa</p>
+                <h1 class="page-title">Master Rating Obligasi</h1>
+                <p class="page-sub">Kelola daftar rating obligasi untuk analisa</p>
             </div>
             <div class="flex items-center gap-3">
                 <form method="POST" action="{{ route('admin.rating-obligasi.import') }}" enctype="multipart/form-data"
@@ -21,7 +21,7 @@
                     </div>
                 </form>
                 <a href="{{ route('admin.rating-obligasi.create') }}"
-                    class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition">
+                    class="btn-primary btn-sm">
                     Tambah
                 </a>
             </div>
@@ -33,7 +33,7 @@
             </div>
         @endif
 
-        <div class="bg-white rounded-xl border border-line overflow-hidden">
+        <div class="table-card">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="bg-[#f8fafc] border-b border-line">

@@ -44,7 +44,7 @@
 </div>
 
 {{-- Neraca --}}
-<div class="bg-white rounded-xl border border-line overflow-hidden">
+<div class="table-card">
     <div class="px-5 py-3.5 bg-[#f8fafc] border-b border-line">
         <h3 class="font-semibold text-primary text-sm">Neraca (Balance Sheet)</h3>
     </div>
@@ -87,7 +87,7 @@
 </div>
 
 {{-- Laba Rugi --}}
-<div class="bg-white rounded-xl border border-line overflow-hidden">
+<div class="table-card">
     <div class="px-5 py-3.5 bg-[#f8fafc] border-b border-line">
         <h3 class="font-semibold text-primary text-sm">Laba Rugi (Income Statement)</h3>
     </div>
@@ -112,7 +112,7 @@
 </div>
 
 {{-- Arus Kas --}}
-<div class="bg-white rounded-xl border border-line overflow-hidden">
+<div class="table-card">
     <div class="px-5 py-3.5 bg-[#f8fafc] border-b border-line">
         <h3 class="font-semibold text-primary text-sm">Arus Kas (Cash Flow Statement)</h3>
     </div>

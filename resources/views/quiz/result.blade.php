@@ -21,8 +21,8 @@
 @endphp
 
 <div class="mb-6">
-    <h1 class="text-2xl font-bold text-primary">Hasil Profil Investasi</h1>
-    <p class="text-muted text-sm mt-1">Berdasarkan jawaban kuesioner Anda</p>
+    <h1 class="page-title">Hasil Profil Investasi</h1>
+    <p class="page-sub">Berdasarkan jawaban kuesioner Anda</p>
 </div>
 
 {{-- Profil Utama --}}

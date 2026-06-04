@@ -9,7 +9,7 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
         <span class="text-primary font-medium">{{ isset($manager) ? 'Edit' : 'Tambah' }}</span>
     </div>
-    <h1 class="text-2xl font-bold text-primary">{{ isset($manager) ? 'Edit Manajer Investasi' : 'Tambah Manajer Investasi' }}</h1>
+    <h1 class="page-title">{{ isset($manager) ? 'Edit Manajer Investasi' : 'Tambah Manajer Investasi' }}</h1>
 </div>
 
 <form method="POST"

@@ -3,8 +3,8 @@
 @section('content')
     <div class="max-w-5xl" x-data="lapkeuForm('{{ $previewAiRoute }}', '{{ $previewAiPlusRoute }}', '{{ $parsePdfRoute }}', '{{ $parsePdfVisionRoute }}', '{{ $parsePdfStatusRoute }}', '{{ $lookupKeuanganEmitenRoute }}', '{{ $resolveAiPlusDataRoute }}')">
         <div class="mb-6">
-            <h1 class="text-xl font-bold text-primary">Submit Analisa {{ $productLabel }}</h1>
-            <p class="text-sm text-muted mt-0.5">Isi data laporan keuangan obligasi secara manual atau upload Excel</p>
+            <h1 class="page-title">Submit Analisa {{ $productLabel }}</h1>
+            <p class="page-sub">Isi data laporan keuangan obligasi secara manual atau upload Excel</p>
         </div>
 
         @if ($errors->any())
@@ -118,7 +118,7 @@
             </div>
 
             {{-- Tabs mode input --}}
-            <div class="bg-white rounded-xl border border-line overflow-hidden">
+            <div class="table-card">
                 <div class="flex border-b border-line overflow-x-auto">
                     <button type="button" @click="mode='manual'"
                         :class="mode === 'manual' ? 'border-b-2 border-primary text-primary font-semibold' :

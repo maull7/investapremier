@@ -7,26 +7,26 @@
 
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold text-primary">Perencanaan Investasi</h1>
-                <p class="text-muted text-sm mt-1">Rencanakan dan proyeksikan tujuan investasi Anda</p>
+                <h1 class="page-title">Perencanaan Investasi</h1>
+                <p class="page-sub">Rencanakan dan proyeksikan tujuan investasi Anda</p>
             </div>
             <a href="{{ route('user.perencanaan-investasi.create') }}"
-               class="flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:bg-accent/90 transition shadow-sm shadow-accent/20">
+               class="btn-primary">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 Buat Rencana Baru
             </a>
         </div>
 
         @if (session('success'))
-            <div class="mb-5 flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm">
+            <div class="alert-success">
                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 {{ session('success') }}
             </div>
         @endif
 
-        <div class="bg-white rounded-2xl border border-line overflow-hidden shadow-sm">
-            <div class="px-6 py-4 border-b border-line flex items-center justify-between bg-gradient-to-r from-primary to-primary-light">
-                <h2 class="font-bold text-white flex items-center gap-2">
+        <div class="table-card">
+            <div class="table-head">
+                <h2 class="th-title">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                     Rencana Investasi
                 </h2>
@@ -155,7 +155,7 @@
                     </div>
                     <div class="flex-1">
                         <h3 class="font-bold text-primary text-base">Hapus Rencana?</h3>
-                        <p class="text-muted text-sm mt-1">Rencana berikut akan dihapus permanen:</p>
+                        <p class="page-sub">Rencana berikut akan dihapus permanen:</p>
                         <p class="mt-2 text-sm text-primary font-medium bg-[#f8fafc] rounded-lg px-3 py-2 border border-line" x-text="deleteText"></p>
                         <p class="text-xs text-red-500 mt-2">Tindakan ini tidak dapat dibatalkan.</p>
                     </div>

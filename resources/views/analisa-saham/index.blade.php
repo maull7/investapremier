@@ -4,11 +4,11 @@
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-xl font-bold text-primary">Analisa Saham</h1>
-            <p class="text-sm text-muted mt-0.5">Kelola dan lihat hasil analisa laporan keuangan saham Anda</p>
+            <h1 class="page-title">Analisa Saham</h1>
+            <p class="page-sub">Kelola dan lihat hasil analisa laporan keuangan saham Anda</p>
         </div>
         <a href="{{ route('user.analisa-saham.create') }}"
-           class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition">
+           class="btn-primary btn-sm">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Submit Analisa Baru
         </a>
@@ -26,7 +26,7 @@
             <p class="text-muted text-sm">Belum ada data analisa. Klik tombol di atas untuk memulai.</p>
         </div>
     @else
-        <div class="bg-white rounded-xl border border-line overflow-hidden">
+        <div class="table-card">
             <table class="w-full text-sm">
                 <thead class="bg-[#f8fafc] border-b border-line">
                     <tr>

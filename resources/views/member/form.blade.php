@@ -39,13 +39,13 @@
     @endphp
 
     <div class="mb-6">
-        <h1 class="text-2xl font-bold text-primary">Pendaftaran Member</h1>
-        <p class="text-muted text-sm mt-1">Lengkapi data berikut untuk mendaftar sebagai member InvestaPremier</p>
+        <h1 class="page-title">Pendaftaran Member</h1>
+        <p class="page-sub">Lengkapi data berikut untuk mendaftar sebagai member InvestaPremier</p>
     </div>
 
     @if (session('success'))
         <div
-            class="mb-5 flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm">
+            class="alert-success">
             <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />

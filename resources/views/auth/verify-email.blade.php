@@ -7,7 +7,7 @@
     <div class="w-full max-w-md">
         <div class="mb-8 text-center">
             <div class="w-12 h-12 rounded-xl bg-primary text-white grid place-items-center text-xl font-bold mx-auto mb-4">✦</div>
-            <h1 class="text-2xl font-bold text-primary">Verifikasi Email</h1>
+            <h1 class="page-title">Verifikasi Email</h1>
         </div>
 
         <div class="bg-white rounded-2xl border border-line p-8 shadow-sm">

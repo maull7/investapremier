@@ -3,8 +3,8 @@
 @section('content')
 <div class="p-6 max-w-2xl">
     <div class="mb-6">
-        <h1 class="text-xl font-bold text-primary">{{ isset($ratingObligasi) ? 'Edit Rating Obligasi' : 'Tambah Rating Obligasi' }}</h1>
-        <p class="text-sm text-muted mt-0.5">{{ isset($ratingObligasi) ? 'Ubah data rating obligasi' : 'Buat rating obligasi baru' }}</p>
+        <h1 class="page-title">{{ isset($ratingObligasi) ? 'Edit Rating Obligasi' : 'Tambah Rating Obligasi' }}</h1>
+        <p class="page-sub">{{ isset($ratingObligasi) ? 'Ubah data rating obligasi' : 'Buat rating obligasi baru' }}</p>
     </div>
 
     <form method="POST"

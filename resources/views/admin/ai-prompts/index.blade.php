@@ -6,14 +6,14 @@
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-xl font-bold text-primary">
+            <h1 class="page-title">
                 @if($group)
                     Prompt AI — {{ ucfirst($group) }}
                 @else
                     Edit Prompt AI
                 @endif
             </h1>
-            <p class="text-sm text-muted mt-0.5">Kelola instruksi yang dikirim ke AI.</p>
+            <p class="page-sub">Kelola instruksi yang dikirim ke AI.</p>
         </div>
         <div class="flex items-center gap-2">
             <a href="{{ route('admin.ai-prompts.create') }}?group={{ $group }}"

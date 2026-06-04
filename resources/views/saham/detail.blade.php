@@ -27,7 +27,7 @@
             </div>
             <div class="bg-white rounded-xl border border-line px-5 py-3 text-right">
                 <p class="text-xs text-muted">Harga Terakhir</p>
-                <p class="text-xl font-bold text-primary">
+                <p class="page-title">
                     {{ $stock->harga_terbaru ? 'Rp' . $fmt($stock->harga_terbaru) : '-' }}</p>
             </div>
         </div>
@@ -41,7 +41,7 @@
             @endif
         @endforeach
 
-        <div class="bg-white rounded-2xl border border-line overflow-hidden shadow-sm">
+        <div class="table-card">
             <div class="flex overflow-x-auto border-b border-line">
                 <button type="button" @click="tab='info'"
                     :class="tab === 'info' ? 'border-b-2 border-primary text-primary font-semibold' :

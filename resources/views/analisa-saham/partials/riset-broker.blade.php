@@ -46,7 +46,7 @@
         </form>
     </div>
 
-    <div class="bg-white rounded-xl border border-line overflow-hidden">
+    <div class="table-card">
         <div class="px-6 py-4 border-b border-line">
             <h3 class="font-semibold text-primary">List Dokumen</h3>
         </div>

@@ -4,24 +4,24 @@
 
 @section('content')
 <div class="mb-6">
-    <h1 class="text-2xl font-bold text-primary">Pendaftaran Member</h1>
-    <p class="text-muted text-sm mt-1">Kelola permohonan pendaftaran member dari nasabah</p>
+    <h1 class="page-title">Pendaftaran Member</h1>
+    <p class="page-sub">Kelola permohonan pendaftaran member dari nasabah</p>
 </div>
 
 @if(session('success'))
-<div class="mb-5 flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm">
+<div class="alert-success">
     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
     {{ session('success') }}
 </div>
 @endif
 
-<div class="bg-white rounded-2xl border border-line overflow-hidden shadow-sm">
-    <div class="px-6 py-4 border-b border-line flex items-center justify-between bg-gradient-to-r from-primary to-primary-light">
-        <h2 class="font-bold text-white flex items-center gap-2">
+<div class="table-card">
+    <div class="table-head">
+        <h2 class="th-title">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
             Daftar Permohonan
         </h2>
-        <span class="text-xs text-white/60">{{ $members->total() }} total</span>
+        <span class="th-meta">{{ $members->total() }} total</span>
     </div>
 
     <div class="overflow-x-auto">

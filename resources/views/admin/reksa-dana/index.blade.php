@@ -5,13 +5,13 @@
 @section('content')
 <div class="mb-6 flex items-center justify-between">
     <div>
-        <h1 class="text-2xl font-bold text-primary">Daftar Reksa Dana</h1>
-        <p class="text-muted text-sm mt-1">Seluruh reksa dana yang tersedia di platform</p>
+        <h1 class="page-title">Daftar Reksa Dana</h1>
+        <p class="page-sub">Seluruh reksa dana yang tersedia di platform</p>
     </div>
 </div>
 
 @if(session('success'))
-<div class="mb-5 flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm">
+<div class="alert-success">
     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
     {{ session('success') }}
 </div>
@@ -22,15 +22,15 @@
 <form method="POST" action="{{ route('admin.reksa-dana.bulk-analisa') }}" x-data="{ checked: [] }">
     @csrf
 
-    <div class="bg-white rounded-2xl border border-line overflow-hidden shadow-sm">
+    <div class="table-card">
         {{-- Header + Tombol Analisa FFS --}}
-        <div class="px-6 py-4 border-b border-line flex items-center justify-between bg-gradient-to-r from-primary to-primary-light">
-            <h2 class="font-bold text-white flex items-center gap-2">
+        <div class="table-head">
+            <h2 class="th-title">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                 Daftar Reksa Dana
             </h2>
             <div class="flex items-center gap-3">
-                <span class="text-xs text-white/60">{{ $reksaDanas->total() }} total</span>
+                <span class="th-meta">{{ $reksaDanas->total() }} total</span>
                 <button type="submit"
                     x-bind:disabled="checked.length === 0"
                     x-bind:class="checked.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent/90'"

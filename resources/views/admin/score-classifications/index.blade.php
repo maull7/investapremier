@@ -4,8 +4,8 @@
 
 @section('content')
     <div class="mb-6">
-        <h1 class="text-2xl font-bold text-primary">Klasifikasi Skor Kuis</h1>
-        <p class="text-muted text-sm mt-1">Atur rentang skor dan alokasi portofolio untuk setiap profil investasi.</p>
+        <h1 class="page-title">Klasifikasi Skor Kuis</h1>
+        <p class="page-sub">Atur rentang skor dan alokasi portofolio untuk setiap profil investasi.</p>
     </div>
 
     @if (session('success'))

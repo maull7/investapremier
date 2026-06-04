@@ -27,9 +27,9 @@
             </svg>
             <span class="text-primary font-medium">{{ isset($plan) ? 'Edit Rencana' : 'Buat Rencana Baru' }}</span>
         </div>
-        <h1 class="text-2xl font-bold text-primary">
+        <h1 class="page-title">
             {{ isset($plan) ? 'Edit Rencana Investasi' : 'Buat Rencana Investasi Baru' }}</h1>
-        <p class="text-muted text-sm mt-1">Isi data di bawah untuk memulai perencanaan. Setelah disimpan, AI akan
+        <p class="page-sub">Isi data di bawah untuk memulai perencanaan. Setelah disimpan, AI akan
             menganalisis dan memberikan rekomendasi strategi.</p>
     </div>
 

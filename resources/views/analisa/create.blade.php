@@ -3,8 +3,8 @@
 @section('content')
     <div class="max-w-5xl" x-data="analisaForm()">
         <div class="mb-6">
-            <h1 class="text-xl font-bold text-primary">Submit Analisa {{ $productLabel ?? 'Reksa Dana' }}</h1>
-            <p class="text-sm text-muted mt-0.5">Isi data secara manual, upload Excel, atau ekstrak dari PDF FFS</p>
+            <h1 class="page-title">Submit Analisa {{ $productLabel ?? 'Reksa Dana' }}</h1>
+            <p class="page-sub">Isi data secara manual, upload Excel, atau ekstrak dari PDF FFS</p>
         </div>
 
         @if ($errors->any())
@@ -160,7 +160,7 @@
             </div>
 
             {{-- Tab Pilih Mode --}}
-            <div class="bg-white rounded-xl border border-line overflow-hidden">
+            <div class="table-card">
                 <div class="flex border-b border-line">
                     <button type="button" @click="mode='manual'"
                         :class="mode === 'manual' ? 'border-b-2 border-primary text-primary font-semibold' :

@@ -24,13 +24,13 @@
 
 <div class="mb-6 flex items-center justify-between">
     <div>
-        <h1 class="text-2xl font-bold text-primary">Unit Link</h1>
-        <p class="text-muted text-sm mt-1">Kelola data unit link dan harga</p>
+        <h1 class="page-title">Unit Link</h1>
+        <p class="page-sub">Kelola data unit link dan harga</p>
     </div>
 </div>
 
 @if(session('success'))
-<div class="mb-5 flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm">
+<div class="alert-success">
     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
     {{ session('success') }}
 </div>
@@ -70,7 +70,7 @@
             </div>
             <div class="flex-1">
                 <h3 class="font-bold text-primary text-base">Hapus Unit Link?</h3>
-                <p class="text-muted text-sm mt-1">Data berikut akan dihapus permanen:</p>
+                <p class="page-sub">Data berikut akan dihapus permanen:</p>
                 <p class="mt-2 text-sm text-primary font-medium bg-[#f8fafc] rounded-lg px-3 py-2 border border-line" x-text="deleteText"></p>
                 <p class="text-xs text-red-500 mt-2">Tindakan ini tidak dapat dibatalkan.</p>
             </div>

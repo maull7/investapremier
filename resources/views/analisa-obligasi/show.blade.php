@@ -67,8 +67,8 @@
                 <span>/</span>
                 <span>{{ $analisa->nama_obligasi }}</span>
             </div>
-            <h1 class="text-xl font-bold text-primary">{{ $analisa->nama_obligasi }}</h1>
-            <p class="text-sm text-muted mt-0.5">
+            <h1 class="page-title">{{ $analisa->nama_obligasi }}</h1>
+            <p class="page-sub">
                 {{ $analisa->kode_obligasi ? $analisa->kode_obligasi . ' · ' : '' }}{{ $analisa->nama_emiten ?? '' }}
                 @if($analisa->periode) &bull; {{ $analisa->periode }} @endif
             </p>

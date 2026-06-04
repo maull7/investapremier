@@ -4,8 +4,8 @@
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-xl font-bold text-primary">Monitor Analisa Saham</h1>
-            <p class="text-sm text-muted mt-0.5">Semua submission analisa lapkeu saham dari user</p>
+            <h1 class="page-title">Monitor Analisa Saham</h1>
+            <p class="page-sub">Semua submission analisa lapkeu saham dari user</p>
         </div>
     </div>
 
@@ -19,7 +19,7 @@
         @endforeach
     </div>
 
-    <div class="bg-white rounded-xl border border-line overflow-hidden">
+    <div class="table-card">
         @if($items->isEmpty())
             <div class="p-12 text-center text-muted text-sm">Belum ada data analisa saham.</div>
         @else

@@ -4,13 +4,13 @@
 
 @section('content')
     <div class="mb-6">
-        <h1 class="text-2xl font-bold text-primary">Daftar Reksa Dana</h1>
-        <p class="text-muted text-sm mt-1">Master data reksa dana beserta riwayat harga harian</p>
+        <h1 class="page-title">Daftar Reksa Dana</h1>
+        <p class="page-sub">Master data reksa dana beserta riwayat harga harian</p>
     </div>
 
     @if (session('success'))
         <div
-            class="mb-5 flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm">
+            class="alert-success">
             <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -96,9 +96,9 @@
         </div>
 
         {{-- Tabel Harga --}}
-        <div class="bg-white rounded-2xl border border-line overflow-hidden shadow-sm">
+        <div class="table-card">
             <div
-                class="px-6 py-4 border-b border-line flex items-center justify-between bg-gradient-to-r from-primary to-primary-light">
+                class="table-head">
                 <h2 class="font-bold text-white text-sm">Daftar Reksa Dana ({{ $reksaDanas->total() }} total)</h2>
                 <div class="flex gap-2">
                     <button type="button" onclick="openModal('modal-harga-create')"
@@ -305,7 +305,7 @@
         </div>
 
         {{-- Tabel Harian --}}
-        <div class="bg-white rounded-2xl border border-line overflow-hidden shadow-sm">
+        <div class="table-card">
             <div
                 class="px-6 py-4 border-b border-line flex items-center justify-between bg-gradient-to-r from-accent to-accent/80">
                 <h2 class="font-bold text-white text-sm">Riwayat Harian ({{ $harian->total() }} data)</h2>

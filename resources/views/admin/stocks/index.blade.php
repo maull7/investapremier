@@ -7,12 +7,12 @@
 
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold text-primary">Daftar Saham</h1>
-                <p class="text-muted text-sm mt-1">Kelola data saham yang tercatat di bursa</p>
+                <h1 class="page-title">Daftar Saham</h1>
+                <p class="page-sub">Kelola data saham yang tercatat di bursa</p>
             </div>
             <div class="flex items-center gap-2">
                 <a href="{{ route('admin.saham.template') }}"
-                    class="flex items-center gap-2 px-4 py-2.5 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary hover:border-primary/30 transition">
+                    class="btn-secondary">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -20,7 +20,7 @@
                     Template Excel
                 </a>
                 <button @click="showImport = true"
-                    class="flex items-center gap-2 px-4 py-2.5 border border-accent text-accent rounded-xl text-sm font-semibold hover:bg-accent/5 transition">
+                    class="btn-outline">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -28,7 +28,7 @@
                     Import Excel
                 </button>
                 <a href="{{ route('admin.saham.create') }}"
-                    class="flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:bg-accent/90 transition shadow-sm shadow-accent/20">
+                    class="btn-primary">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
@@ -39,7 +39,7 @@
 
         @if (session('success'))
             <div
-                class="mb-5 flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm">
+                class="alert-success">
                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -83,10 +83,10 @@
             </form>
         </div>
 
-        <div class="bg-white rounded-2xl border border-line overflow-hidden shadow-sm">
+        <div class="table-card">
             <div
-                class="px-6 py-4 border-b border-line flex items-center justify-between bg-gradient-to-r from-primary to-primary-light">
-                <h2 class="font-bold text-white flex items-center gap-2">
+                class="table-head">
+                <h2 class="th-title">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -94,7 +94,7 @@
                     Daftar Saham
                 </h2>
                 <div class="flex items-center gap-2">
-                    <span class="text-xs text-white/60">Tampilkan:</span>
+                    <span class="th-meta">Tampilkan:</span>
                     <form method="GET" action="{{ route('admin.saham.index') }}">
                         @if (request('search'))
                             <input type="hidden" name="search" value="{{ request('search') }}">
@@ -107,7 +107,7 @@
                             @endforeach
                         </select>
                     </form>
-                    <span class="text-xs text-white/60">{{ $stocks->total() }} total</span>
+                    <span class="th-meta">{{ $stocks->total() }} total</span>
                 </div>
             </div>
 
@@ -351,7 +351,7 @@
                     </div>
                     <div class="flex-1">
                         <h3 class="font-bold text-primary text-base">Hapus Saham?</h3>
-                        <p class="text-muted text-sm mt-1">Data saham berikut akan dihapus permanen:</p>
+                        <p class="page-sub">Data saham berikut akan dihapus permanen:</p>
                         <p class="mt-2 text-sm text-primary font-medium bg-[#f8fafc] rounded-lg px-3 py-2 border border-line"
                             x-text="deleteText"></p>
                         <p class="text-xs text-red-500 mt-2">Tindakan ini tidak dapat dibatalkan.</p>

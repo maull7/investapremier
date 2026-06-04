@@ -17,8 +17,8 @@
     </div>
 
     <div>
-        <h1 class="text-xl font-bold text-primary">{{ isset($prompt) ? 'Edit Prompt' : 'Tambah Prompt Baru' }}</h1>
-        <p class="text-sm text-muted mt-0.5">Atur instruksi yang dikirim ke AI.</p>
+        <h1 class="page-title">{{ isset($prompt) ? 'Edit Prompt' : 'Tambah Prompt Baru' }}</h1>
+        <p class="page-sub">Atur instruksi yang dikirim ke AI.</p>
     </div>
 
     @if($errors->any())

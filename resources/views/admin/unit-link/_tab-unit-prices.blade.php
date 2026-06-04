@@ -13,31 +13,31 @@
     </form>
     <div class="flex items-center gap-2">
         <a href="{{ route('admin.unit-link.template-harga') }}"
-           class="flex items-center gap-2 px-4 py-2.5 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary hover:border-primary/30 transition">
+           class="btn-secondary">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
             Template
         </a>
         <button @click="showImport = true"
-                class="flex items-center gap-2 px-4 py-2.5 border border-accent text-accent rounded-xl text-sm font-semibold hover:bg-accent/5 transition">
+                class="btn-outline">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
             Import
         </button>
         <button @click="showHargaForm = true; editHargaId = null; hargaForm = { unit_link_id: '', datetime: '', harga_median: '', sell_buy_low: '', sell_buy_high: '' }"
-                class="flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:bg-accent/90 transition shadow-sm shadow-accent/20">
+                class="btn-primary">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Tambah
         </button>
     </div>
 </div>
 
-<div class="bg-white rounded-2xl border border-line overflow-hidden shadow-sm">
-    <div class="px-6 py-4 border-b border-line flex items-center justify-between bg-gradient-to-r from-primary to-primary-light">
-        <h2 class="font-bold text-white flex items-center gap-2">
+<div class="table-card">
+    <div class="table-head">
+        <h2 class="th-title">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
             Unit Prices
         </h2>
         <div class="flex items-center gap-2">
-            <span class="text-xs text-white/60">Tampilkan:</span>
+            <span class="th-meta">Tampilkan:</span>
             <form method="GET" action="{{ route('admin.unit-link.index') }}">
                 <input type="hidden" name="tab" value="unit-prices">
                 @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
@@ -48,7 +48,7 @@
                     @endforeach
                 </select>
             </form>
-            <span class="text-xs text-white/60">{{ $hargaUnitLinks->total() }} total</span>
+            <span class="th-meta">{{ $hargaUnitLinks->total() }} total</span>
         </div>
     </div>
 
@@ -237,7 +237,7 @@
             </div>
             <div class="flex-1">
                 <h3 class="font-bold text-primary text-base">Hapus Harga Unit Link?</h3>
-                <p class="text-muted text-sm mt-1">Data berikut akan dihapus permanen:</p>
+                <p class="page-sub">Data berikut akan dihapus permanen:</p>
                 <p class="mt-2 text-sm text-primary font-medium bg-[#f8fafc] rounded-lg px-3 py-2 border border-line" x-text="deleteHargaText"></p>
                 <p class="text-xs text-red-500 mt-2">Tindakan ini tidak dapat dibatalkan.</p>
             </div>

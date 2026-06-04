@@ -11,7 +11,7 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
         <span class="text-primary font-medium">{{ $fund->nama_reksa_dana }}</span>
     </div>
-    <h1 class="text-2xl font-bold text-primary">{{ $fund->nama_reksa_dana }}</h1>
+    <h1 class="page-title">{{ $fund->nama_reksa_dana }}</h1>
     <div class="flex flex-wrap gap-3 mt-2 text-sm text-muted">
         @if($fund->kode_reksa_dana)<span class="font-mono text-xs bg-[#f1f5f9] px-2 py-1 rounded">{{ $fund->kode_reksa_dana }}</span>@endif
         @if($fund->nama_manajer_investasi)<span>{{ $fund->nama_manajer_investasi }}</span>@endif

@@ -65,7 +65,7 @@
     </form>
 </div>
 
-<div class="bg-white rounded-2xl border border-line overflow-hidden shadow-sm">
+<div class="table-card">
     <div class="px-6 py-4 border-b border-line flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-emerald-700 to-emerald-600">
         <h2 class="font-bold text-white text-sm">Daftar Reksa Dana dengan Prospektus dan FFS</h2>
         <form method="GET" action="{{ route('admin.daftar-reksa-dana.index') }}" class="flex gap-2">

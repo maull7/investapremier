@@ -39,8 +39,8 @@
                 <span>/</span>
                 <span>{{ $analisa->nama_obligasi }}</span>
             </div>
-            <h1 class="text-xl font-bold text-primary">{{ $analisa->nama_obligasi }}</h1>
-            <p class="text-sm text-muted mt-0.5">
+            <h1 class="page-title">{{ $analisa->nama_obligasi }}</h1>
+            <p class="page-sub">
                 {{ $analisa->kode_obligasi ? $analisa->kode_obligasi . ' · ' : '' }}{{ $analisa->nama_emiten ?? '' }}
                 @if($analisa->rating) &bull; Rating: {{ $analisa->rating }} @endif
                 &bull; Disubmit oleh <strong>{{ $analisa->user->name }}</strong> pada {{ $analisa->created_at->format('d M Y') }}

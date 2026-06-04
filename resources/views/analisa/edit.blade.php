@@ -3,8 +3,8 @@
 @section('content')
 <div class="max-w-5xl" x-data="editForm()">
     <div class="mb-6">
-        <h1 class="text-xl font-bold text-primary">Edit Analisa Reksa Dana</h1>
-        <p class="text-sm text-muted mt-0.5">Perbarui informasi dan data manual analisa</p>
+        <h1 class="page-title">Edit Analisa Reksa Dana</h1>
+        <p class="page-sub">Perbarui informasi dan data manual analisa</p>
     </div>
 
     @if($errors->any())

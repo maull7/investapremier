@@ -4,8 +4,8 @@
 
 @section('content')
 <div class="mb-6">
-    <h1 class="text-2xl font-bold text-primary">Unit Link</h1>
-    <p class="text-muted text-sm mt-1">Data unit link dan harga</p>
+    <h1 class="page-title">Unit Link</h1>
+    <p class="page-sub">Data unit link dan harga</p>
 </div>
 
 {{-- Tabs --}}
@@ -23,14 +23,14 @@
 </div>
 
 @if($tab === 'unit-links')
-<div class="bg-white rounded-2xl border border-line overflow-hidden shadow-sm">
-    <div class="px-6 py-4 border-b border-line flex items-center justify-between bg-gradient-to-r from-primary to-primary-light">
-        <h2 class="font-bold text-white flex items-center gap-2">
+<div class="table-card">
+    <div class="table-head">
+        <h2 class="th-title">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
             Unit Links
         </h2>
         <div class="flex items-center gap-2">
-            <span class="text-xs text-white/60">Tampilkan:</span>
+            <span class="th-meta">Tampilkan:</span>
             <form method="GET" action="{{ route('user.unit-link.index') }}">
                 <input type="hidden" name="tab" value="unit-links">
                 @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
@@ -41,7 +41,7 @@
                     @endforeach
                 </select>
             </form>
-            <span class="text-xs text-white/60">{{ $unitLinks->total() }} total</span>
+            <span class="th-meta">{{ $unitLinks->total() }} total</span>
         </div>
     </div>
 
@@ -133,14 +133,14 @@
     </form>
 </div>
 
-<div class="bg-white rounded-2xl border border-line overflow-hidden shadow-sm">
-    <div class="px-6 py-4 border-b border-line flex items-center justify-between bg-gradient-to-r from-primary to-primary-light">
-        <h2 class="font-bold text-white flex items-center gap-2">
+<div class="table-card">
+    <div class="table-head">
+        <h2 class="th-title">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
             Unit Prices
         </h2>
         <div class="flex items-center gap-2">
-            <span class="text-xs text-white/60">Tampilkan:</span>
+            <span class="th-meta">Tampilkan:</span>
             <form method="GET" action="{{ route('user.unit-link.index') }}">
                 <input type="hidden" name="tab" value="unit-prices">
                 @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
@@ -151,7 +151,7 @@
                     @endforeach
                 </select>
             </form>
-            <span class="text-xs text-white/60">{{ $hargaUnitLinks->total() }} total</span>
+            <span class="th-meta">{{ $hargaUnitLinks->total() }} total</span>
         </div>
     </div>
 

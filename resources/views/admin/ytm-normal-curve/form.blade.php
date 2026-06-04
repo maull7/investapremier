@@ -3,8 +3,8 @@
 @section('content')
 <div class="p-6 max-w-2xl">
     <div class="mb-6">
-        <h1 class="text-xl font-bold text-primary">Edit YTM Normal Curve</h1>
-        <p class="text-sm text-muted mt-0.5">Ubah data YTM normal untuk rating dan tenor tertentu</p>
+        <h1 class="page-title">Edit YTM Normal Curve</h1>
+        <p class="page-sub">Ubah data YTM normal untuk rating dan tenor tertentu</p>
     </div>
 
     <form method="POST" action="{{ route('admin.ytm-normal-curve.update', $ytmNormalCurve) }}"

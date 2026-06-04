@@ -4,8 +4,8 @@
 
 @section('content')
 <div class="mb-6">
-    <h1 class="text-2xl font-bold text-primary">Daftar Obligasi</h1>
-    <p class="text-muted text-sm mt-1">Informasi obligasi harga referensi dan keuangan emiten</p>
+    <h1 class="page-title">Daftar Obligasi</h1>
+    <p class="page-sub">Informasi obligasi harga referensi dan keuangan emiten</p>
 </div>
 
 {{-- Tabs --}}
@@ -40,14 +40,14 @@
         </form>
     </div>
 
-    <div class="bg-white rounded-2xl border border-line overflow-hidden shadow-sm">
-        <div class="px-6 py-4 border-b border-line flex items-center justify-between bg-gradient-to-r from-primary to-primary-light">
-            <h2 class="font-bold text-white flex items-center gap-2">
+    <div class="table-card">
+        <div class="table-head">
+            <h2 class="th-title">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 Obligasi Harga Referensi
             </h2>
             <div class="flex items-center gap-2">
-                <span class="text-xs text-white/60">Tampilkan:</span>
+                <span class="th-meta">Tampilkan:</span>
                 <form method="GET" action="{{ route('user.obligasi.index') }}">
                     <input type="hidden" name="tab" value="harga-referensi">
                     @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
@@ -58,7 +58,7 @@
                         @endforeach
                     </select>
                 </form>
-                <span class="text-xs text-white/60">{{ $hargaReferensi->total() }} total</span>
+                <span class="th-meta">{{ $hargaReferensi->total() }} total</span>
             </div>
         </div>
 
@@ -148,14 +148,14 @@
         </form>
     </div>
 
-    <div class="bg-white rounded-2xl border border-line overflow-hidden shadow-sm">
-        <div class="px-6 py-4 border-b border-line flex items-center justify-between bg-gradient-to-r from-primary to-primary-light">
-            <h2 class="font-bold text-white flex items-center gap-2">
+    <div class="table-card">
+        <div class="table-head">
+            <h2 class="th-title">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 Keuangan Emiten
             </h2>
             <div class="flex items-center gap-2">
-                <span class="text-xs text-white/60">Tampilkan:</span>
+                <span class="th-meta">Tampilkan:</span>
                 <form method="GET" action="{{ route('user.obligasi.index') }}">
                     <input type="hidden" name="tab" value="bond">
                     @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
@@ -166,7 +166,7 @@
                         @endforeach
                     </select>
                 </form>
-                <span class="text-xs text-white/60">{{ $bonds->total() }} total</span>
+                <span class="th-meta">{{ $bonds->total() }} total</span>
             </div>
         </div>
 

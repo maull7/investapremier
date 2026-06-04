@@ -11,7 +11,7 @@
             </svg>
             <span class="text-primary font-medium">{{ isset($stock) ? 'Edit Saham' : 'Tambah Saham' }}</span>
         </div>
-        <h1 class="text-2xl font-bold text-primary">{{ isset($stock) ? 'Edit Saham' : 'Tambah Saham Baru' }}</h1>
+        <h1 class="page-title">{{ isset($stock) ? 'Edit Saham' : 'Tambah Saham Baru' }}</h1>
     </div>
 
     <form method="POST"

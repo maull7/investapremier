@@ -14,7 +14,7 @@
                 </svg>
                 <span class="text-primary font-medium">{{ $manager->name }}</span>
             </div>
-            <h1 class="text-2xl font-bold text-primary">{{ $manager->name }}</h1>
+            <h1 class="page-title">{{ $manager->name }}</h1>
         </div>
 
         {{-- Tabs --}}

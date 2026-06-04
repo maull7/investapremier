@@ -13,31 +13,31 @@
     </form>
     <div class="flex items-center gap-2">
         <a href="{{ route('admin.obligasi.template-harga-referensi') }}"
-           class="flex items-center gap-2 px-4 py-2.5 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary hover:border-primary/30 transition">
+           class="btn-secondary">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
             Template
         </a>
         <button @click="showImportHarga = true"
-                class="flex items-center gap-2 px-4 py-2.5 border border-accent text-accent rounded-xl text-sm font-semibold hover:bg-accent/5 transition">
+                class="btn-outline">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
             Import
         </button>
         <a href="{{ route('admin.obligasi.create-harga-referensi') }}"
-           class="flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:bg-accent/90 transition shadow-sm shadow-accent/20">
+           class="btn-primary">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Tambah
         </a>
     </div>
 </div>
 
-<div class="bg-white rounded-2xl border border-line overflow-hidden shadow-sm">
-    <div class="px-6 py-4 border-b border-line flex items-center justify-between bg-gradient-to-r from-primary to-primary-light">
-        <h2 class="font-bold text-white flex items-center gap-2">
+<div class="table-card">
+    <div class="table-head">
+        <h2 class="th-title">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             Obligasi Harga Referensi
         </h2>
         <div class="flex items-center gap-2">
-            <span class="text-xs text-white/60">Tampilkan:</span>
+            <span class="th-meta">Tampilkan:</span>
             <form method="GET" action="{{ route('admin.obligasi.index') }}">
                 <input type="hidden" name="tab" value="harga-referensi">
                 @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
@@ -48,7 +48,7 @@
                     @endforeach
                 </select>
             </form>
-            <span class="text-xs text-white/60">{{ $hargaReferensi->total() }} total</span>
+            <span class="th-meta">{{ $hargaReferensi->total() }} total</span>
         </div>
     </div>
 

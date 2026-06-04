@@ -7,8 +7,8 @@
     <div class="w-full max-w-md">
         <div class="mb-8 text-center">
             <div class="w-12 h-12 rounded-xl bg-primary text-white grid place-items-center text-xl font-bold mx-auto mb-4">✦</div>
-            <h1 class="text-2xl font-bold text-primary">Konfirmasi Password</h1>
-            <p class="text-muted text-sm mt-1">Konfirmasi password untuk melanjutkan</p>
+            <h1 class="page-title">Konfirmasi Password</h1>
+            <p class="page-sub">Konfirmasi password untuk melanjutkan</p>
         </div>
 
         <div class="bg-white rounded-2xl border border-line p-8 shadow-sm">
