@@ -247,6 +247,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::post('rating-obligasi/import', [AdminRatingObligasiController::class, 'import'])->name('rating-obligasi.import');
 
     Route::get('ytm-normal-curve', [AdminYtmNormalCurveController::class, 'index'])->name('ytm-normal-curve.index');
+    Route::get('ytm-normal-curve/chart-data', [AdminYtmNormalCurveController::class, 'chartData'])->name('ytm-normal-curve.chart-data');
     Route::post('ytm-normal-curve', [AdminYtmNormalCurveController::class, 'store'])->name('ytm-normal-curve.store');
     Route::get('ytm-normal-curve/{ytmNormalCurve}/edit', [AdminYtmNormalCurveController::class, 'edit'])->name('ytm-normal-curve.edit');
     Route::put('ytm-normal-curve/{ytmNormalCurve}', [AdminYtmNormalCurveController::class, 'update'])->name('ytm-normal-curve.update');
