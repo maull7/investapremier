@@ -33,6 +33,47 @@
             menganalisis dan memberikan rekomendasi strategi.</p>
     </div>
 
+    @if (!isset($plan))
+    {{-- Template Cepat --}}
+    <div class="mb-6">
+        <h3 class="font-bold text-primary text-sm mb-3">Mulai Cepat dengan Template</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <button type="button" onclick="isiTemplate('pendidikan')"
+                class="text-left p-4 bg-white rounded-2xl border border-line shadow-sm hover:shadow-md hover:border-accent/30 transition-all">
+                <div class="w-9 h-9 rounded-xl bg-blue-100 text-blue-600 grid place-items-center mb-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                </div>
+                <p class="font-semibold text-sm text-primary">Pendidikan Anak</p>
+                <p class="text-xs text-muted mt-0.5">Biaya S1 dalam 10 tahun</p>
+            </button>
+            <button type="button" onclick="isiTemplate('pensiun')"
+                class="text-left p-4 bg-white rounded-2xl border border-line shadow-sm hover:shadow-md hover:border-accent/30 transition-all">
+                <div class="w-9 h-9 rounded-xl bg-green-100 text-green-600 grid place-items-center mb-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                </div>
+                <p class="font-semibold text-sm text-primary">Dana Pensiun</p>
+                <p class="text-xs text-muted mt-0.5">Persiapan 20 tahun lagi</p>
+            </button>
+            <button type="button" onclick="isiTemplate('rumah')"
+                class="text-left p-4 bg-white rounded-2xl border border-line shadow-sm hover:shadow-md hover:border-accent/30 transition-all">
+                <div class="w-9 h-9 rounded-xl bg-purple-100 text-purple-600 grid place-items-center mb-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                </div>
+                <p class="font-semibold text-sm text-primary">Pembelian Rumah</p>
+                <p class="text-xs text-muted mt-0.5">DP rumah dalam 5 tahun</p>
+            </button>
+            <button type="button" onclick="isiTemplate('darurat')"
+                class="text-left p-4 bg-white rounded-2xl border border-line shadow-sm hover:shadow-md hover:border-accent/30 transition-all">
+                <div class="w-9 h-9 rounded-xl bg-yellow-100 text-yellow-600 grid place-items-center mb-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                </div>
+                <p class="font-semibold text-sm text-primary">Dana Darurat</p>
+                <p class="text-xs text-muted mt-0.5">6 bulan pengeluaran</p>
+            </button>
+        </div>
+    </div>
+    @endif
+
     <form method="POST"
         action="{{ isset($plan) ? route('user.perencanaan-investasi.update', $plan) : route('user.perencanaan-investasi.store') }}"
         class="max-w-5xl" x-data="kategoriSelect()" x-on:submit.prevent="beforeSubmit($event)" novalidate>
@@ -471,6 +512,84 @@
         'Bank Sulselbar', 'Bank Maluku', 'Bank Papua', 'Bank Bengkulu',
         'Bank Babel', 'Bank Riau Kepri',
     ];
+
+    // Template Cepat
+    const TEMPLATES = {
+        pendidikan: {
+            kategori: 'Pendidikan Anak',
+            kebutuhan: 250000000,
+            target: 15,
+            investasi: 1000000,
+            sumber: 'Gaji',
+            risiko: 'Moderat',
+            usia_anak: '3 tahun',
+            target_pendidikan: 'S1',
+            tipe_pendidikan: 'Swasta',
+            lokasi_pendidikan: 'Dalam Negeri',
+            estimasi_biaya: 250000000,
+        },
+        pensiun: {
+            kategori: 'Dana Pensiun',
+            kebutuhan: 2000000000,
+            target: 20,
+            investasi: 5000000,
+            sumber: 'Gaji',
+            risiko: 'Moderat',
+        },
+        rumah: {
+            kategori: 'Pembelian Rumah',
+            kebutuhan: 500000000,
+            target: 5,
+            investasi: 7000000,
+            sumber: 'Gaji',
+            risiko: 'Agresif',
+        },
+        darurat: {
+            kategori: 'Dana Darurat',
+            kebutuhan: 60000000,
+            target: 1,
+            investasi: 5000000,
+            sumber: 'Tabungan',
+            risiko: 'Konservatif',
+        },
+    };
+
+    function isiTemplate(nama) {
+        const t = TEMPLATES[nama];
+        if (!t) return;
+
+        // Set kategori
+        const kategoriSelect = document.querySelector('[name="kategori_perencanaan"]');
+        const alpine = document.querySelector('[x-data]');
+        if (kategoriSelect) {
+            kategoriSelect.value = t.kategori;
+            kategoriSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        // Set fields
+        setVal('kebutuhan_dana', t.kebutuhan);
+        setVal('target_waktu_tahun', t.target);
+        setVal('investasi_per_bulan', t.investasi);
+        setVal('sumber_dana', t.sumber);
+        setVal('profil_risiko', t.risiko);
+
+        if (t.usia_anak) setVal('usia_anak', t.usia_anak);
+        if (t.target_pendidikan) setVal('target_pendidikan', t.target_pendidikan);
+        if (t.tipe_pendidikan) setVal('tipe_pendidikan', t.tipe_pendidikan);
+        if (t.lokasi_pendidikan) setVal('lokasi_pendidikan', t.lokasi_pendidikan);
+        if (t.estimasi_biaya) setVal('estimasi_biaya_saat_ini', t.estimasi_biaya);
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function setVal(name, value) {
+        const el = document.querySelector(`[name="${name}"]`);
+        if (el) {
+            el.value = value;
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    }
 
     function togglePortofolio() {
         const section = document.getElementById('portofolioSection');

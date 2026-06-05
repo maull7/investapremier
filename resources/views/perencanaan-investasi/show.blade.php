@@ -15,6 +15,11 @@
                 <p class="page-sub">Dibuat {{ $plan->created_at->format('d F Y') }}</p>
             </div>
             <div class="flex items-center gap-2">
+                <a href="{{ route('user.perencanaan-investasi.pdf', $plan) }}"
+                   class="btn-secondary">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    PDF
+                </a>
                 <a href="{{ route('user.perencanaan-investasi.edit', $plan) }}"
                    class="btn-secondary">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
@@ -158,6 +163,67 @@
         </div>
     </div>
     @endif
+
+    {{-- Progress Tracking --}}
+    <div class="bg-white rounded-2xl border border-line shadow-sm p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-primary text-sm flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                Progress Realisasi
+            </h3>
+            <button type="button" onclick="bukaModalCheckin()"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white rounded-lg text-xs font-semibold hover:bg-accent/90 transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Check-in
+            </button>
+        </div>
+
+        @php
+            $kebutuhan = (float) ($plan->kebutuhan_dana ?? 0);
+            $latestDana = $latestCheckin ? (float) $latestCheckin->dana_terkumpul : 0;
+            $progressPct = $kebutuhan > 0 ? min(100, round(($latestDana / $kebutuhan) * 100)) : 0;
+        @endphp
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div class="p-3 bg-[#f8fafc] rounded-xl border border-line">
+                <p class="text-xs text-muted">Target Dana</p>
+                <p class="font-bold text-sm text-primary">Rp{{ number_format($kebutuhan, 0, ',', '.') }}</p>
+            </div>
+            <div class="p-3 bg-[#f8fafc] rounded-xl border border-line">
+                <p class="text-xs text-muted">Realisasi Terkini</p>
+                <p class="font-bold text-sm {{ $latestDana > 0 ? 'text-green-600' : 'text-muted' }}">Rp{{ number_format($latestDana, 0, ',', '.') }}</p>
+            </div>
+            <div class="p-3 bg-[#f8fafc] rounded-xl border border-line">
+                <p class="text-xs text-muted">Gap</p>
+                <p class="font-bold text-sm {{ ($kebutuhan - $latestDana) > 0 ? 'text-red-600' : 'text-green-600' }}">Rp{{ number_format(max(0, $kebutuhan - $latestDana), 0, ',', '.') }}</p>
+            </div>
+        </div>
+
+        <div class="mb-2 flex items-center justify-between text-xs">
+            <span class="text-muted">Progress</span>
+            <span class="font-semibold {{ $progressPct >= 100 ? 'text-green-600' : 'text-primary' }}">{{ $progressPct }}%</span>
+        </div>
+        <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-500 {{ $progressPct >= 100 ? 'bg-green-500' : 'bg-accent' }}" style="width: {{ $progressPct }}%"></div>
+        </div>
+
+        @if ($checkins->count() > 1)
+        <div class="mt-4">
+            <p class="text-xs text-muted font-semibold mb-2">Riwayat Check-in</p>
+            <div class="space-y-1.5">
+                @foreach ($checkins->take(5) as $c)
+                <div class="flex items-center justify-between text-xs py-1.5 px-3 bg-[#f8fafc] rounded-lg border border-line">
+                    <span class="text-muted">{{ $c->tanggal_checkin->format('d M Y') }}</span>
+                    <span class="font-semibold text-primary">Rp{{ number_format($c->dana_terkumpul, 0, ',', '.') }}</span>
+                    @if ($c->catatan)
+                    <span class="text-muted truncate max-w-[150px]">{{ $c->catatan }}</span>
+                    @endif
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+    </div>
 
     {{-- AI Analysis --}}
     <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mb-6">
@@ -374,11 +440,265 @@
         @endif
     </div>
 
+    {{-- What-If Scenario --}}
+    @php
+        $whatIfBulanan = number_format($plan->investasi_per_bulan ?? 1000000, 0, '.', '');
+        $whatIfTahun = $plan->target_waktu_tahun ?? 10;
+        $whatIfDanaAwal = number_format($plan->dana_tersedia ?? 0, 0, '.', '');
+        $whatIfKebutuhan = number_format($plan->kebutuhan_dana ?? 0, 0, '.', '');
+    @endphp
+    <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mb-6" x-data="{
+        bulanan: {{ $whatIfBulanan }},
+        returnYear: 10,
+        tahun: {{ $whatIfTahun }},
+        maxTahun: {{ $whatIfTahun }},
+        totalInvestasi: 0,
+        nilaiAkhir: 0,
+        returnInvestasi: 0,
+        ketercapaian: 0,
+        pctClass: 'bg-green-50 rounded-xl border border-green-200',
+        pctTextClass: 'font-bold text-sm text-green-700',
+
+        init() {
+            this.maxTahun = Math.max(this.tahun, 5);
+            this.hitung();
+        },
+
+        hitung() {
+            const r = this.returnYear / 100 / 12;
+            const n = this.tahun * 12;
+            const P = this.bulanan;
+            const danaAwal = {{ $whatIfDanaAwal }};
+
+            const fvInvestasi = r > 0 ? P * ((Math.pow(1 + r, n) - 1) / r) : P * n;
+            const fvPortfolio = danaAwal * Math.pow(1 + this.returnYear / 100, this.tahun);
+
+            this.totalInvestasi = P * n;
+            this.nilaiAkhir = Math.round(fvInvestasi + fvPortfolio);
+            this.returnInvestasi = this.nilaiAkhir - this.totalInvestasi;
+
+            const kebutuhan = {{ $whatIfKebutuhan }};
+            if (kebutuhan > 0) {
+                this.ketercapaian = Math.min(100, Math.round((this.nilaiAkhir / kebutuhan) * 100));
+                if (this.ketercapaian >= 100) {
+                    this.pctClass = 'bg-green-50 rounded-xl border border-green-200';
+                    this.pctTextClass = 'font-bold text-sm text-green-700';
+                } else if (this.ketercapaian >= 50) {
+                    this.pctClass = 'bg-yellow-50 rounded-xl border border-yellow-200';
+                    this.pctTextClass = 'font-bold text-sm text-yellow-700';
+                } else {
+                    this.pctClass = 'bg-red-50 rounded-xl border border-red-200';
+                    this.pctTextClass = 'font-bold text-sm text-red-700';
+                }
+            }
+
+            this.gambarGrafik();
+        },
+
+        formatRp(val) {
+            if (!val && val !== 0) return 'Rp 0';
+            return 'Rp ' + Math.round(val).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        },
+
+        get ketercapaianText() {
+            if (this.ketercapaian >= 100) return 'Tercapai';
+            return this.ketercapaian + '%';
+        },
+
+        gambarGrafik() {
+            this.$nextTick(() => {
+                const canvas = document.getElementById('whatifChart');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                if (window.__whatifChart) { window.__whatifChart.destroy(); window.__whatifChart = null; }
+
+                const labels = [];
+                const dataSkema = [];
+                const dataTarget = [];
+                const r = this.returnYear / 100 / 12;
+                const n = this.tahun * 12;
+                const P = this.bulanan;
+                const danaAwal = {{ $whatIfDanaAwal }};
+                const kebutuhan = {{ $whatIfKebutuhan }};
+
+                for (let i = 0; i <= n; i += Math.max(1, Math.floor(n / 12))) {
+                    const year = Math.floor(i / 12);
+                    labels.push('Thn ' + year);
+                    const fv = r > 0 ? P * ((Math.pow(1 + r, i) - 1) / r) : P * i;
+                    const fvp = danaAwal * Math.pow(1 + this.returnYear / 100, year);
+                    dataSkema.push(Math.round(fv + fvp));
+                    dataTarget.push(kebutuhan);
+                }
+                if (labels[labels.length - 1] !== 'Thn ' + this.tahun) {
+                    labels.push('Thn ' + this.tahun);
+                    const fvFinal = r > 0 ? P * ((Math.pow(1 + r, n) - 1) / r) : P * n;
+                    const fvpFinal = danaAwal * Math.pow(1 + this.returnYear / 100, this.tahun);
+                    dataSkema.push(Math.round(fvFinal + fvpFinal));
+                    dataTarget.push(kebutuhan);
+                }
+
+                window.__whatifChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Proyeksi',
+                            data: dataSkema,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59,130,246,0.08)',
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 3,
+                            borderWidth: 2,
+                        }, {
+                            label: 'Target',
+                            data: dataTarget,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239,68,68,0.05)',
+                            fill: false,
+                            tension: 0,
+                            pointRadius: 2,
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { font: { size: 10 } } },
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => ctx.dataset.label + ': Rp ' + Math.round(ctx.parsed.y).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { font: { size: 9 } } },
+                            y: {
+                                grid: { color: '#f1f5f9' },
+                                ticks: {
+                                    font: { size: 9 },
+                                    callback: v => 'Rp' + (v / 1000000).toFixed(0) + 'jt'
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        }
+    }">
+        <div class="px-6 py-4 border-b border-line flex items-center justify-between bg-gradient-to-r from-blue-50 to-blue-100/50">
+            <h3 class="font-bold text-primary text-sm flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                Simulasi What-If
+            </h3>
+            <span class="text-xs text-muted">Ubah parameter untuk melihat skenario alternatif</span>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label class="text-xs text-muted font-semibold block mb-1">Investasi per Bulan (Rp)</label>
+                    <input type="range" x-model="bulanan" min="100000" max="50000000" step="100000"
+                        class="w-full accent-accent"
+                        @input="hitung()">
+                    <div class="flex justify-between text-xs text-muted mt-1">
+                        <span>Rp100rb</span>
+                        <span class="font-semibold text-primary" x-text="formatRp(bulanan)"></span>
+                        <span>Rp50jt</span>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs text-muted font-semibold block mb-1">Return per Tahun (%)</label>
+                    <input type="range" x-model="returnYear" min="1" max="25" step="0.5"
+                        class="w-full accent-accent"
+                        @input="hitung()">
+                    <div class="flex justify-between text-xs text-muted mt-1">
+                        <span>1%</span>
+                        <span class="font-semibold text-primary" x-text="returnYear + '%'"></span>
+                        <span>25%</span>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs text-muted font-semibold block mb-1">Jangka Waktu (tahun)</label>
+                    <input type="range" x-model="tahun" min="1" :max="maxTahun" step="1"
+                        class="w-full accent-accent"
+                        @input="hitung()">
+                    <div class="flex justify-between text-xs text-muted mt-1">
+                        <span>1 thn</span>
+                        <span class="font-semibold text-primary" x-text="tahun + ' tahun'"></span>
+                        <span x-text="maxTahun + ' thn'"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div class="p-3 bg-blue-50 rounded-xl border border-blue-200">
+                    <p class="text-xs text-muted">Total Investasi</p>
+                    <p class="font-bold text-sm text-blue-700" x-text="formatRp(totalInvestasi)"></p>
+                </div>
+                <div class="p-3 bg-green-50 rounded-xl border border-green-200">
+                    <p class="text-xs text-muted">Nilai Akhir (estimasi)</p>
+                    <p class="font-bold text-sm text-green-700" x-text="formatRp(nilaiAkhir)"></p>
+                </div>
+                <div class="p-3 bg-purple-50 rounded-xl border border-purple-200">
+                    <p class="text-xs text-muted">Return Investasi</p>
+                    <p class="font-bold text-sm text-purple-700" x-text="formatRp(returnInvestasi)"></p>
+                </div>
+                <div class="p-3" :class="pctClass">
+                    <p class="text-xs text-muted">Ketercapaian Target</p>
+                    <p class="font-bold text-sm" :class="pctTextClass" x-text="ketercapaianText"></p>
+                </div>
+            </div>
+
+            <div class="relative" style="height: 200px;">
+                <canvas id="whatifChart"></canvas>
+            </div>
+
+            <p class="text-xs text-muted mt-3">* Simulasi ini menggunakan bunga majemuk dan bersifat indikatif. Hasil sebenarnya dapat berbeda.</p>
+        </div>
+    </div>
+
     <div class="flex items-center gap-3">
         <a href="{{ route('user.perencanaan-investasi.index') }}"
            class="px-5 py-2.5 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary hover:border-primary/30 transition">
             Kembali ke Daftar
         </a>
+    </div>
+
+    {{-- Modal Check-in --}}
+    <div id="checkinModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h4 class="font-bold text-primary text-sm">Check-in Progress</h4>
+                <button onclick="tutupModalCheckin()" class="text-muted hover:text-primary transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form method="POST" action="{{ route('user.perencanaan-investasi.checkin', $plan) }}">
+                @csrf
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-xs font-semibold text-primary block mb-1">Dana Terkumpul Saat Ini (Rp)</label>
+                        <input type="number" name="dana_terkumpul" required min="0"
+                            class="w-full px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                            placeholder="Masukkan total dana yang sudah terkumpul">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-primary block mb-1">Catatan (opsional)</label>
+                        <textarea name="catatan" rows="2"
+                            class="w-full px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                            placeholder="Misalnya: 'Dari bonus tahunan'"></textarea>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-3 mt-6">
+                    <button type="button" onclick="tutupModalCheckin()"
+                        class="px-4 py-2 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary hover:border-primary/30 transition">Batal</button>
+                    <button type="submit"
+                        class="px-4 py-2 bg-accent text-white rounded-xl text-sm font-semibold hover:bg-accent/90 transition">Simpan Check-in</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     {{-- Grafik Modal --}}
@@ -398,6 +718,22 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
+        // Check-in Modal
+        function bukaModalCheckin() {
+            document.getElementById('checkinModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function tutupModalCheckin() {
+            document.getElementById('checkinModal').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('checkinModal');
+            if (e.target === modal) tutupModalCheckin();
+        });
+
         let grafikChart = null;
 
         function bukaGrafikEfek(btn) {

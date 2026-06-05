@@ -11,6 +11,8 @@ use App\Models\Stock;
 use App\Models\ObligasiHargaReferensi;
 use App\Models\HargaReksaDana;
 use App\Models\StockPrice;
+use App\Models\ProgressCheckin;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -81,8 +83,11 @@ class PerencanaanInvestasiController extends Controller
     public function show(PerencanaanInvestasi $perencanaanInvestasi)
     {
         if ($perencanaanInvestasi->user_id !== auth()->id()) abort(403);
-        $perencanaanInvestasi->load('portofolioItems');
-        return view('perencanaan-investasi.show', ['plan' => $perencanaanInvestasi]);
+        $plan = $perencanaanInvestasi;
+        $plan->load('portofolioItems', 'progressCheckins');
+        $checkins = $plan->progressCheckins()->latest()->get();
+        $latestCheckin = $checkins->first();
+        return view('perencanaan-investasi.show', compact('plan', 'checkins', 'latestCheckin'));
     }
 
     public function edit(PerencanaanInvestasi $perencanaanInvestasi)
@@ -148,6 +153,40 @@ class PerencanaanInvestasiController extends Controller
         $perencanaanInvestasi->delete();
         return redirect()->route('user.perencanaan-investasi.index')
             ->with('success', 'Rencana investasi berhasil dihapus.');
+    }
+
+    public function checkinStore(Request $request, PerencanaanInvestasi $perencanaanInvestasi)
+    {
+        if ($perencanaanInvestasi->user_id !== auth()->id()) abort(403);
+
+        $validated = $request->validate([
+            'dana_terkumpul' => 'required|numeric|min:0',
+            'catatan' => 'nullable|string|max:500',
+        ]);
+
+        ProgressCheckin::create([
+            'perencanaan_investasi_id' => $perencanaanInvestasi->id,
+            'user_id' => auth()->id(),
+            'dana_terkumpul' => $validated['dana_terkumpul'],
+            'catatan' => $validated['catatan'] ?? null,
+            'tanggal_checkin' => now(),
+        ]);
+
+        return redirect()->route('user.perencanaan-investasi.show', $perencanaanInvestasi)
+            ->with('success', 'Check-in progress berhasil dicatat.');
+    }
+
+    public function exportPdf(PerencanaanInvestasi $perencanaanInvestasi)
+    {
+        if ($perencanaanInvestasi->user_id !== auth()->id()) abort(403);
+        $perencanaanInvestasi->load('portofolioItems', 'progressCheckins');
+
+        $pdf = Pdf::loadView('perencanaan-investasi.pdf', [
+            'plan' => $perencanaanInvestasi,
+        ]);
+
+        $filename = 'Perencanaan_Investasi_' . str_replace(' ', '_', $perencanaanInvestasi->kategori_perencanaan) . '.pdf';
+        return $pdf->download($filename);
     }
 
     public function regenerateAi(PerencanaanInvestasi $perencanaanInvestasi)

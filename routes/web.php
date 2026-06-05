@@ -447,6 +447,8 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::resource('/perencanaan-investasi', PerencanaanInvestasiController::class)->except(['show']);
     Route::get('/perencanaan-investasi/{perencanaan_investasi}', [PerencanaanInvestasiController::class, 'show'])->name('perencanaan-investasi.show');
     Route::post('/perencanaan-investasi/{perencanaan_investasi}/regenerate-ai', [PerencanaanInvestasiController::class, 'regenerateAi'])->name('perencanaan-investasi.regenerate-ai');
+    Route::post('/perencanaan-investasi/{perencanaan_investasi}/checkin', [PerencanaanInvestasiController::class, 'checkinStore'])->name('perencanaan-investasi.checkin');
+    Route::get('/perencanaan-investasi/{perencanaan_investasi}/pdf', [PerencanaanInvestasiController::class, 'exportPdf'])->name('perencanaan-investasi.pdf');
 
     // Portofolio AJAX
     Route::get('/portofolio/produk', [PerencanaanInvestasiController::class, 'getProduk'])->name('portofolio.produk');

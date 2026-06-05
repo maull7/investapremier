@@ -47,6 +47,7 @@
                                 <th class="px-4 py-3.5 font-semibold">Kebutuhan Dana</th>
                                 <th class="px-4 py-3.5 font-semibold">Target</th>
                                 <th class="px-4 py-3.5 font-semibold">Investasi/Bulan</th>
+                                <th class="px-4 py-3.5 font-semibold">Progress</th>
                                 <th class="px-4 py-3.5 font-semibold">Profil Risiko</th>
                                 <th class="px-4 py-3.5 font-semibold">Status</th>
                                 <th class="px-4 py-3.5 font-semibold text-right">Tanggal</th>
@@ -67,6 +68,17 @@
                                     </td>
                                     <td class="px-4 py-3">
                                         <span class="text-xs font-medium">Rp{{ number_format($plan->investasi_per_bulan ?? 0, 0, ',', '.') }}</span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        @php
+                                            $pct = $plan->kebutuhan_dana > 0 ? min(100, round(($plan->dana_tersedia / $plan->kebutuhan_dana) * 100)) : 0;
+                                        @endphp
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-16 bg-gray-100 rounded-full h-1.5">
+                                                <div class="h-full rounded-full {{ $pct >= 100 ? 'bg-green-500' : 'bg-accent' }}" style="width: {{ $pct }}%"></div>
+                                            </div>
+                                            <span class="text-xs font-medium {{ $pct >= 100 ? 'text-green-600' : 'text-muted' }}">{{ $pct }}%</span>
+                                        </div>
                                     </td>
                                     <td class="px-4 py-3">
                                         <span class="text-xs text-muted">{{ $plan->profil_risiko ?? '-' }}</span>

@@ -46,4 +46,9 @@ class PerencanaanInvestasi extends Model
     {
         return $this->hasMany(PortofolioItem::class);
     }
+
+    public function progressCheckins()
+    {
+        return $this->hasMany(ProgressCheckin::class);
+    }
 }
