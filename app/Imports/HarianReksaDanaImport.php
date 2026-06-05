@@ -85,15 +85,7 @@ class HarianReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows
             ];
 
             if ($kode) {
-                $parsed = app(KodeReksaDanaParser::class)->parse($kode);
-                if ($parsed) {
-                    $data['nama_manajer_investasi'] = $parsed['nama_manajer_investasi'];
-                    $data['jenis'] = $parsed['jenis'];
-                    $data['kategori_produk'] = $parsed['kategori_produk'];
-                    $data['kategori'] = $parsed['kategori'];
-                    $data['kelas'] = $parsed['kelas'];
-                    $data['mata_uang'] = $parsed['mata_uang'];
-                }
+                $data = array_merge($data, app(KodeReksaDanaParser::class)->databaseAttributes($kode));
             }
 
             return ReksaDana::create($data);

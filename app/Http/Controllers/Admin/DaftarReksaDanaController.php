@@ -34,12 +34,6 @@ class DaftarReksaDanaController extends Controller
         if ($request->harga_tanggal) $hargaQuery->whereDate('tanggal_nab', $request->harga_tanggal);
         $reksaDanas = $hargaQuery->paginate(20, ['*'], 'harga_page')->withQueryString();
 
-        $reksaDanas->each(function ($rd) {
-            if (empty($rd->nama_manajer_investasi) || empty($rd->jenis)) {
-                $rd->fillFromKode();
-            }
-        });
-
         $harianTanggal = $request->get('harian_tanggal');
 
         if ($harianTanggal) {
@@ -72,11 +66,6 @@ class DaftarReksaDanaController extends Controller
         $reksaDanaList = collect();
         $reksaDanaOptions = ReksaDana::orderBy('nama_reksa_dana')->get(['id', 'kode_reksa_dana', 'nama_reksa_dana', 'nama_manajer_investasi', 'jenis']);
 
-        $reksaDanaOptions->each(function ($rd) {
-            if (empty($rd->nama_manajer_investasi) || empty($rd->jenis)) {
-                $rd->fillFromKode();
-            }
-        });
         $editingLink = null;
         $documents = collect();
         $documentFunds = collect();
@@ -118,11 +107,6 @@ class DaftarReksaDanaController extends Controller
 
             $documentFunds = $documentFundQuery->paginate(20, ['*'], 'document_page')->withQueryString();
 
-            $documentFunds->each(function ($rd) {
-                if (empty($rd->nama_manajer_investasi) || empty($rd->jenis)) {
-                    $rd->fillFromKode();
-                }
-            });
         }
 
         $hargaTanggal = $request->get('harga_tanggal');
@@ -210,10 +194,6 @@ class DaftarReksaDanaController extends Controller
             'portfolioCompositions' => fn($q) => $q->orderBy('period_date'),
             'managementTeams',
         ])->findOrFail($id);
-
-        if (empty($fund->nama_manajer_investasi) || empty($fund->jenis)) {
-            $fund->fillFromKode();
-        }
 
         $range = request('range', '1y');
         $dateLimit = match ($range) {
@@ -373,15 +353,7 @@ class DaftarReksaDanaController extends Controller
         ]);
 
         if (!empty($validated['kode_reksa_dana'])) {
-            $parsed = app(KodeReksaDanaParser::class)->parse($validated['kode_reksa_dana']);
-            if ($parsed) {
-                $validated['nama_manajer_investasi'] = $parsed['nama_manajer_investasi'];
-                $validated['jenis'] = $parsed['jenis'];
-                $validated['kategori_produk'] = $parsed['kategori_produk'];
-                $validated['kategori'] = $parsed['kategori'];
-                $validated['kelas'] = $parsed['kelas'];
-                $validated['mata_uang'] = $parsed['mata_uang'];
-            }
+            $validated = array_merge($validated, app(KodeReksaDanaParser::class)->databaseAttributes($validated['kode_reksa_dana']));
         }
 
         $validated['kategori'] = $validated['kategori'] ?? [];
@@ -430,15 +402,7 @@ class DaftarReksaDanaController extends Controller
         ]);
 
         if (!empty($validated['kode_reksa_dana'])) {
-            $parsed = app(KodeReksaDanaParser::class)->parse($validated['kode_reksa_dana']);
-            if ($parsed) {
-                $validated['nama_manajer_investasi'] = $parsed['nama_manajer_investasi'];
-                $validated['jenis'] = $parsed['jenis'];
-                $validated['kategori_produk'] = $parsed['kategori_produk'];
-                $validated['kategori'] = $parsed['kategori'];
-                $validated['kelas'] = $parsed['kelas'];
-                $validated['mata_uang'] = $parsed['mata_uang'];
-            }
+            $validated = array_merge($validated, app(KodeReksaDanaParser::class)->databaseAttributes($validated['kode_reksa_dana']));
         }
 
         $validated['kategori'] = $validated['kategori'] ?? [];

@@ -11,6 +11,11 @@ class ReksaDana extends Model
 {
     protected $table = 'reksa_dana';
 
+    protected $appends = [
+        'display_kelas',
+        'display_mata_uang',
+    ];
+
     protected $fillable = [
         'kode_reksa_dana',
         'investment_manager_id',
@@ -101,19 +106,27 @@ class ReksaDana extends Model
 
         if (!$needsFill) return false;
 
-        $parsed = app(KodeReksaDanaParser::class)->parse($this->kode_reksa_dana);
+        $parsed = app(KodeReksaDanaParser::class)->databaseAttributes($this->kode_reksa_dana);
         if (!$parsed) return false;
 
-        $this->update([
-            'nama_manajer_investasi' => $parsed['nama_manajer_investasi'],
-            'jenis'                  => $parsed['jenis'],
-            'kategori_produk'        => $parsed['kategori_produk'],
-            'kategori'               => $parsed['kategori'],
-            'kelas'                  => $parsed['kelas'],
-            'mata_uang'              => $parsed['mata_uang'],
-        ]);
+        $this->update($parsed);
 
         return true;
+    }
+
+    public function getKodeParsedAttribute(): array
+    {
+        return app(KodeReksaDanaParser::class)->parse((string) $this->kode_reksa_dana);
+    }
+
+    public function getDisplayKelasAttribute(): string
+    {
+        return app(KodeReksaDanaParser::class)->resolveClassName($this->kelas, (string) $this->kode_reksa_dana);
+    }
+
+    public function getDisplayMataUangAttribute(): string
+    {
+        return app(KodeReksaDanaParser::class)->resolveCurrencyName($this->mata_uang, (string) $this->kode_reksa_dana);
     }
 
     public function getKategoriLabelAttribute(): string

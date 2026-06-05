@@ -80,11 +80,11 @@
                 @if($fund->nama_manajer_investasi)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Manajer Investasi</span><span class="text-sm">{{ $fund->nama_manajer_investasi }}</span></div>@endif
                 @if($fund->custodian_bank)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Bank Kustodian</span><span class="text-sm">{{ $fund->custodian_bank }}</span></div>@endif
                 @if($fund->launch_date)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Tanggal Peluncuran</span><span class="text-sm">{{ $fund->launch_date->format('d M Y') }}</span></div>@endif
-                @if($fund->mata_uang)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Mata Uang</span><span class="text-sm">{{ $fund->mata_uang }}</span></div>@endif
+                @if($fund->display_mata_uang)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Mata Uang</span><span class="text-sm">{{ $fund->display_mata_uang }}</span></div>@endif
                 @if($fund->jenis)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Kategori</span><span class="text-sm">{{ $fund->kategori_label ?: $fund->jenis }}</span></div>@endif
                 @if($fund->jenis)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Jenis Reksa Dana</span><span class="text-sm">{{ $fund->jenis }}</span></div>@endif
                 @if($fund->kategori_produk)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Kategori Produk</span><span class="text-sm">{{ $fund->kategori_produk }}</span></div>@endif
-                @if($fund->kelas)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Kelas</span><span class="text-sm">{{ $fund->kelas }}</span></div>@endif
+                @if($fund->display_kelas)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Kelas</span><span class="text-sm">{{ $fund->display_kelas }}</span></div>@endif
             </div>
         </div>
 
