@@ -1,5 +1,5 @@
 @php
-    $layout = Auth::user()->isAdmin() ? 'layouts.admin' : 'layouts.user';
+    $layout = Auth::user()->isAdmin() || Auth::user()->isSubAdmin() ? 'layouts.admin' : 'layouts.user';
 @endphp
 
 @extends($layout)
