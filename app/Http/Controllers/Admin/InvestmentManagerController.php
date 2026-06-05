@@ -9,6 +9,7 @@ use App\Models\ReksaDana;
 use App\Models\ReksaDanaDocument;
 use App\Exports\InvestmentManagerTemplateExport;
 use App\Imports\InvestmentManagerImport;
+use App\Services\ReksaDanaChartDataService;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -55,23 +56,18 @@ class InvestmentManagerController extends Controller
         return view('admin.investment-managers.index', compact('managers', 'perPage', 'tahunList'));
     }
 
-    public function show($id)
+    public function show($id, ReksaDanaChartDataService $chartDataService)
     {
         $manager = InvestmentManager::with('periods')->findOrFail($id);
         $manager->load('funds');
 
-        $chartPeriods = $manager->periods()
-            ->when(request('chart_tahun'), fn($q, $v) => $q->where('tahun', $v))
-            ->when(request('chart_kuartal'), fn($q, $v) => $q->where('kuartal', $v))
-            ->when(request('chart_mata_uang'), fn($q, $v) => $q->where('mata_uang', $v))
-            ->orderBy('period_date')
-            ->get();
-
-        $chartLabels = $chartPeriods->pluck('period_date')->map(fn($d) => $d->format('M Y'));
-        $chartAum = $chartPeriods->pluck('aum');
-        $chartUp = $chartPeriods->pluck('up');
-
-        $tahunList = InvestmentManagerPeriod::select('tahun')->distinct()->whereNotNull('tahun')->orderBy('tahun', 'desc')->pluck('tahun');
+        $range = request('range', '1y');
+        $chartData = $chartDataService->forManager(
+            $manager,
+            $range,
+            request('from_date'),
+            request('to_date')
+        );
 
         // Semua reksa dana yang punya prospektus (global, tidak difilter per MI)
         $fundsWithProspektus = ReksaDana::whereHas('documents', fn($q) => $q->where('document_type', 'prospektus'))
@@ -80,8 +76,7 @@ class InvestmentManagerController extends Controller
             ->get();
 
         return view('admin.investment-managers.show', compact(
-            'manager', 'chartPeriods', 'chartLabels', 'chartAum', 'chartUp', 'tahunList',
-            'fundsWithProspektus'
+            'manager', 'fundsWithProspektus', 'range', 'chartData'
         ));
     }
 

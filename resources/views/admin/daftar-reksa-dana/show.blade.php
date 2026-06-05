@@ -3,7 +3,7 @@
 @section('title', $fund->nama_reksa_dana . ' - Detail Reksa Dana')
 
 @section('content')
-<div x-data="{ tab: 'snapshot' }">
+<div x-data="{ tab: {{ Js::from(request('tab', 'snapshot')) }} }">
 
 <div class="mb-6">
     <div class="flex items-center gap-2 text-sm text-muted mb-3">
@@ -164,44 +164,67 @@
 
 {{-- TAB: GRAFIK DAN DATA --}}
 <div x-show="tab === 'grafik'" x-cloak>
-    {{-- Filter Range --}}
-    <div class="mb-4">
-        <form method="GET" action="{{ route('admin.daftar-reksa-dana.show', $fund) }}">
-            <div class="flex flex-wrap items-center gap-2">
-                <input type="hidden" name="tab" value="grafik">
-                <span class="text-xs font-semibold text-muted mr-1">Range:</span>
-                @foreach(['1m'=>'1B','3m'=>'3B','6m'=>'6B','ytd'=>'YTD','1y'=>'1T','3y'=>'3T','5y'=>'5T','all'=>'All'] as $k=>$l)
-                <a href="{{ route('admin.daftar-reksa-dana.show', array_merge(['reksaDana' => $fund, 'range' => $k])) }}" 
-                   class="px-3 py-1.5 rounded-lg text-xs font-semibold transition {{ $range === $k ? 'bg-primary text-white' : 'border border-line text-muted hover:bg-[#f1f5f9]' }}">{{ $l }}</a>
-                @endforeach
+    @php
+        $rangeOptions = ['1m'=>'1 Bulan','3m'=>'3 Bulan','6m'=>'6 Bulan','ytd'=>'YTD','1y'=>'1 Tahun','3y'=>'3 Tahun','5y'=>'5 Tahun','all'=>'All'];
+        $aumPointCount = collect($chartData['aum']['series'])->sum(fn($series) => count($series['data']));
+        $upPointCount = collect($chartData['up']['series'])->sum(fn($series) => count($series['data']));
+        $navPointCount = collect($chartData['nav']['series'])->sum(fn($series) => count($series['data']));
+    @endphp
+
+    <div class="mb-4 space-y-3">
+        <div class="flex flex-wrap items-center gap-2">
+            @foreach($rangeOptions as $k=>$l)
+                <a href="{{ route('admin.daftar-reksa-dana.show', ['reksaDana' => $fund, 'tab' => 'grafik', 'range' => $k]) }}"
+                   class="px-3 py-1.5 rounded-lg text-xs font-semibold transition {{ $range === $k && !request()->filled('from_date') && !request()->filled('to_date') ? 'bg-primary text-white' : 'border border-line text-muted hover:bg-[#f1f5f9]' }}">{{ $l }}</a>
+            @endforeach
+        </div>
+        <form method="GET" action="{{ route('admin.daftar-reksa-dana.show', $fund) }}"
+            class="flex flex-wrap items-end gap-3">
+            <input type="hidden" name="tab" value="grafik">
+            <div>
+                <label class="block text-xs text-muted mb-1">From Date</label>
+                <input type="date" name="from_date" value="{{ request('from_date') }}"
+                    class="px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
             </div>
+            <div>
+                <label class="block text-xs text-muted mb-1">To Date</label>
+                <input type="date" name="to_date" value="{{ request('to_date') }}"
+                    class="px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
+            </div>
+            <button type="submit"
+                class="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition">Terapkan</button>
+            @if(request()->filled('from_date') || request()->filled('to_date'))
+                <a href="{{ route('admin.daftar-reksa-dana.show', ['reksaDana' => $fund, 'tab' => 'grafik', 'range' => $range]) }}"
+                    class="px-4 py-2 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary transition">Reset</a>
+            @endif
         </form>
     </div>
 
-    @if($navLabels->isEmpty())
+    @if(!$chartData['has_data'])
     <div class="py-12 text-center text-muted bg-white rounded-2xl border border-line">
         <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-        <p class="font-medium">Data grafik belum tersedia.</p>
+        <p class="font-medium">Belum terdapat data historis untuk ditampilkan.</p>
     </div>
     @else
     <div class="space-y-6">
-        {{-- Grafik NAV --}}
-        <div class="bg-white rounded-2xl border border-line shadow-sm p-5">
-            <h3 class="font-bold text-primary text-sm mb-4">Grafik NAV</h3>
-            <div style="height: 300px;"><canvas id="chartNav"></canvas></div>
-        </div>
-
-        {{-- Grafik AUM & UP --}}
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        @if($aumPointCount > 0)
             <div class="bg-white rounded-2xl border border-line shadow-sm p-5">
-                <h3 class="font-bold text-primary text-sm mb-4">AUM</h3>
-                <div style="height: 250px;"><canvas id="chartAum"></canvas></div>
+                <h3 class="font-bold text-primary text-sm mb-4">AUM Bulanan</h3>
+                <div id="chartAum" class="min-h-[320px]"></div>
             </div>
+        @endif
+        @if($upPointCount > 0)
             <div class="bg-white rounded-2xl border border-line shadow-sm p-5">
-                <h3 class="font-bold text-primary text-sm mb-4">Unit Penyertaan</h3>
-                <div style="height: 250px;"><canvas id="chartUp"></canvas></div>
+                <h3 class="font-bold text-primary text-sm mb-4">Total UP Bulanan</h3>
+                <div id="chartUp" class="min-h-[320px]"></div>
             </div>
-        </div>
+        @endif
+        @if($navPointCount > 0)
+            <div class="bg-white rounded-2xl border border-line shadow-sm p-5">
+                <h3 class="font-bold text-primary text-sm mb-4">NAB/UP Harian</h3>
+                <div id="chartNav" class="min-h-[340px]"></div>
+            </div>
+        @endif
     </div>
 
     {{-- Tabel Historis --}}
@@ -228,38 +251,51 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function () {
-        function fmt(v) { return v.toLocaleString('id-ID'); }
-        const navLabels = {!! json_encode($navLabels) !!};
-        const navData = {!! json_encode($navValues) !!};
-        const aumData = {!! json_encode($aumValues) !!};
-        const upData = {!! json_encode($upValues) !!};
-
-        const lineOpts = {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => fmt(ctx.parsed.y) } } },
-            scales: { y: { ticks: { callback: val => fmt(val) } } }
+        const chartData = @json($chartData);
+        const formatNumber = value => Number(value || 0).toLocaleString('id-ID', { maximumFractionDigits: 4 });
+        const formatRupiah = value => {
+            const n = Number(value || 0);
+            if (Math.abs(n) >= 1_000_000_000_000) return 'Rp ' + (n / 1_000_000_000_000).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' T';
+            if (Math.abs(n) >= 1_000_000_000) return 'Rp ' + (n / 1_000_000_000).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' M';
+            return 'Rp ' + n.toLocaleString('id-ID', { maximumFractionDigits: 0 });
         };
-
-        new Chart(document.getElementById('chartNav'), {
-            type: 'line',
-            data: { labels: navLabels, datasets: [{ data: navData, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.1)', fill: true, tension: 0.3, pointRadius: 2 }] },
-            options: lineOpts
+        const formatUnit = value => {
+            const n = Number(value || 0);
+            if (Math.abs(n) >= 1_000_000_000) return (n / 1_000_000_000).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' Miliar';
+            if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' Juta';
+            return n.toLocaleString('id-ID', { maximumFractionDigits: 0 });
+        };
+        const baseOptions = (series, formatter, csvName) => ({
+            chart: {
+                type: 'line',
+                height: 320,
+                toolbar: { show: true, tools: { download: true, selection: true, zoom: true, zoomin: true, zoomout: true, pan: true, reset: true }, export: { csv: { filename: csvName }, png: { filename: csvName } } },
+                zoom: { enabled: true, type: 'x' }
+            },
+            series,
+            stroke: { curve: 'smooth', width: 2.5 },
+            markers: { size: 3, hover: { size: 5 } },
+            dataLabels: { enabled: false },
+            legend: { show: true, position: 'top', horizontalAlign: 'left' },
+            xaxis: { type: 'datetime', labels: { datetimeUTC: false } },
+            yaxis: { labels: { formatter } },
+            tooltip: { shared: true, x: { format: 'dd MMM yyyy' }, y: { formatter } },
+            grid: { borderColor: '#e2e8f0' },
+            colors: ['#2563eb', '#059669'],
         });
 
-        new Chart(document.getElementById('chartAum'), {
-            type: 'bar',
-            data: { labels: navLabels, datasets: [{ data: aumData, backgroundColor: 'rgba(37,99,235,0.7)', borderRadius: 3 }] },
-            options: { ...lineOpts, indexAxis: 'y' }
-        });
-
-        new Chart(document.getElementById('chartUp'), {
-            type: 'bar',
-            data: { labels: navLabels, datasets: [{ data: upData, backgroundColor: 'rgba(5,150,105,0.7)', borderRadius: 3 }] },
-            options: { ...lineOpts, indexAxis: 'y' }
-        });
+        if (document.getElementById('chartAum')) {
+            new ApexCharts(document.getElementById('chartAum'), baseOptions(chartData.aum.series, formatRupiah, 'aum-bulanan-reksa-dana')).render();
+        }
+        if (document.getElementById('chartUp')) {
+            new ApexCharts(document.getElementById('chartUp'), baseOptions(chartData.up.series, formatUnit, 'total-up-bulanan-reksa-dana')).render();
+        }
+        if (document.getElementById('chartNav')) {
+            new ApexCharts(document.getElementById('chartNav'), baseOptions(chartData.nav.series, formatNumber, 'nab-up-harian-reksa-dana')).render();
+        }
     });
     </script>
     @endif

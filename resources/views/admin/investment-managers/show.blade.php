@@ -3,7 +3,7 @@
 @section('title', $manager->name . ' - InvestaPremier')
 
 @section('content')
-    <div x-data="{ tab: 'detail' }">
+    <div x-data="{ tab: {{ Js::from(request('tab', 'detail')) }} }">
 
         <div class="mb-6">
             <div class="flex items-center gap-2 text-sm text-muted mb-3">
@@ -233,146 +233,107 @@
 
         {{-- Tab: Grafik --}}
         <div x-show="tab === 'grafik'" x-cloak>
-            <div class="mb-4">
-                <form method="GET" action="{{ route('admin.investment-managers.show', $manager) }}">
-                    <div class="flex flex-wrap items-end gap-3">
-                        <input type="hidden" name="tab" value="grafik">
-                        <select name="chart_tahun"
+            @php
+                $rangeOptions = ['1m'=>'1 Bulan','3m'=>'3 Bulan','6m'=>'6 Bulan','ytd'=>'YTD','1y'=>'1 Tahun','3y'=>'3 Tahun','5y'=>'5 Tahun','all'=>'All'];
+                $aumPointCount = collect($chartData['aum']['series'])->sum(fn($series) => count($series['data']));
+                $upPointCount = collect($chartData['up']['series'])->sum(fn($series) => count($series['data']));
+            @endphp
+
+            <div class="mb-4 space-y-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    @foreach($rangeOptions as $k=>$l)
+                        <a href="{{ route('admin.investment-managers.show', ['investmentManager' => $manager, 'tab' => 'grafik', 'range' => $k]) }}"
+                           class="px-3 py-1.5 rounded-lg text-xs font-semibold transition {{ $range === $k && !request()->filled('from_date') && !request()->filled('to_date') ? 'bg-primary text-white' : 'border border-line text-muted hover:bg-[#f1f5f9]' }}">{{ $l }}</a>
+                    @endforeach
+                </div>
+                <form method="GET" action="{{ route('admin.investment-managers.show', $manager) }}"
+                    class="flex flex-wrap items-end gap-3">
+                    <input type="hidden" name="tab" value="grafik">
+                    <div>
+                        <label class="block text-xs text-muted mb-1">From Date</label>
+                        <input type="date" name="from_date" value="{{ request('from_date') }}"
                             class="px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
-                            <option value="">Semua Tahun</option>
-                            @foreach ($tahunList as $th)
-                                <option value="{{ $th }}"
-                                    {{ request('chart_tahun') == $th ? 'selected' : '' }}>{{ $th }}</option>
-                            @endforeach
-                        </select>
-                        <select name="chart_kuartal"
-                            class="px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
-                            <option value="">Semua Kuartal</option>
-                            @foreach ([1, 2, 3, 4] as $q)
-                                <option value="{{ $q }}"
-                                    {{ request('chart_kuartal') == $q ? 'selected' : '' }}>Q{{ $q }}</option>
-                            @endforeach
-                        </select>
-                        <select name="chart_mata_uang"
-                            class="px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
-                            <option value="">Semua Mata Uang</option>
-                            <option value="IDR" {{ request('chart_mata_uang') == 'IDR' ? 'selected' : '' }}>IDR
-                            </option>
-                            <option value="USD" {{ request('chart_mata_uang') == 'USD' ? 'selected' : '' }}>USD
-                            </option>
-                        </select>
-                        <button type="submit"
-                            class="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition">Terapkan</button>
-                        @if (request()->anyFilled(['chart_tahun', 'chart_kuartal', 'chart_mata_uang']))
-                            <a href="{{ route('admin.investment-managers.show', $manager) }}"
-                                class="px-4 py-2 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary transition">Reset</a>
-                        @endif
                     </div>
+                    <div>
+                        <label class="block text-xs text-muted mb-1">To Date</label>
+                        <input type="date" name="to_date" value="{{ request('to_date') }}"
+                            class="px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
+                    </div>
+                    <button type="submit"
+                        class="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition">Terapkan</button>
+                    @if(request()->filled('from_date') || request()->filled('to_date'))
+                        <a href="{{ route('admin.investment-managers.show', ['investmentManager' => $manager, 'tab' => 'grafik', 'range' => $range]) }}"
+                            class="px-4 py-2 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary transition">Reset</a>
+                    @endif
                 </form>
             </div>
 
-            @if ($chartPeriods->isEmpty())
+            @if (!$chartData['has_data'])
                 <div class="py-16 text-center text-muted bg-white rounded-2xl border border-line">
                     <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor"
                         viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                             d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
-                    <p class="font-medium">Data grafik belum tersedia.</p>
+                    <p class="font-medium">Belum terdapat data historis untuk ditampilkan.</p>
                 </div>
             @else
                 <div class="space-y-6">
-                    {{-- Chart AUM --}}
-                    <div class="bg-white rounded-2xl border border-line shadow-sm p-5">
-                        <h3 class="font-bold text-primary text-sm mb-4">AUM (Rp)</h3>
-                        <div style="height: 300px;">
-                            <canvas id="chartAum"></canvas>
+                    @if($aumPointCount > 0)
+                        <div class="bg-white rounded-2xl border border-line shadow-sm p-5">
+                            <h3 class="font-bold text-primary text-sm mb-4">AUM Bulanan</h3>
+                            <div id="chartAum" class="min-h-[320px]"></div>
                         </div>
-                    </div>
-                    {{-- Chart Unit Penyertaan --}}
-                    <div class="bg-white rounded-2xl border border-line shadow-sm p-5">
-                        <h3 class="font-bold text-primary text-sm mb-4">Unit Penyertaan</h3>
-                        <div style="height: 300px;">
-                            <canvas id="chartUp"></canvas>
+                    @endif
+                    @if($upPointCount > 0)
+                        <div class="bg-white rounded-2xl border border-line shadow-sm p-5">
+                            <h3 class="font-bold text-primary text-sm mb-4">Total UP Bulanan</h3>
+                            <div id="chartUp" class="min-h-[320px]"></div>
                         </div>
-                    </div>
+                    @endif
                 </div>
 
-                <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+                <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
                 <script>
                     document.addEventListener('DOMContentLoaded', function() {
-                        const labels = {!! json_encode($chartLabels) !!};
-                        const aumData = {!! json_encode($chartAum) !!};
-                        const upData = {!! json_encode($chartUp) !!};
-
-                        function fmt(v) {
-                            return v.toLocaleString('id-ID');
-                        }
-
-                        const opts = {
-                            indexAxis: 'y',
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    display: false
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: function(ctx) {
-                                            return fmt(ctx.parsed.x);
-                                        }
-                                    }
-                                }
-                            },
-                            scales: {
-                                x: {
-                                    grid: {
-                                        display: true
-                                    },
-                                    ticks: {
-                                        callback: function(val) {
-                                            return fmt(val);
-                                        }
-                                    }
-                                },
-                                y: {
-                                    grid: {
-                                        display: false
-                                    }
-                                }
-                            }
+                        const chartData = @json($chartData);
+                        const formatRupiah = value => {
+                            const n = Number(value || 0);
+                            if (Math.abs(n) >= 1_000_000_000_000) return 'Rp ' + (n / 1_000_000_000_000).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' T';
+                            if (Math.abs(n) >= 1_000_000_000) return 'Rp ' + (n / 1_000_000_000).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' M';
+                            return 'Rp ' + n.toLocaleString('id-ID', { maximumFractionDigits: 0 });
                         };
-
-                        new Chart(document.getElementById('chartAum'), {
-                            type: 'bar',
-                            data: {
-                                labels: labels,
-                                datasets: [{
-                                    data: aumData,
-                                    backgroundColor: 'rgba(37, 99, 235, 0.8)',
-                                    borderColor: '#2563eb',
-                                    borderWidth: 1,
-                                    borderRadius: 4,
-                                }]
+                        const formatUnit = value => {
+                            const n = Number(value || 0);
+                            if (Math.abs(n) >= 1_000_000_000) return (n / 1_000_000_000).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' Miliar';
+                            if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' Juta';
+                            return n.toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                        };
+                        const options = (series, formatter, csvName) => ({
+                            chart: {
+                                type: 'line',
+                                height: 320,
+                                toolbar: { show: true, tools: { download: true, selection: true, zoom: true, zoomin: true, zoomout: true, pan: true, reset: true }, export: { csv: { filename: csvName }, png: { filename: csvName } } },
+                                zoom: { enabled: true, type: 'x' }
                             },
-                            options: opts
+                            series,
+                            stroke: { curve: 'smooth', width: 2.5 },
+                            markers: { size: 3, hover: { size: 5 } },
+                            dataLabels: { enabled: false },
+                            legend: { show: true, position: 'top', horizontalAlign: 'left' },
+                            xaxis: { type: 'datetime', labels: { datetimeUTC: false } },
+                            yaxis: { labels: { formatter } },
+                            tooltip: { shared: true, x: { format: 'MMM yyyy' }, y: { formatter } },
+                            grid: { borderColor: '#e2e8f0' },
+                            colors: ['#2563eb', '#059669'],
                         });
 
-                        new Chart(document.getElementById('chartUp'), {
-                            type: 'bar',
-                            data: {
-                                labels: labels,
-                                datasets: [{
-                                    data: upData,
-                                    backgroundColor: 'rgba(5, 150, 105, 0.8)',
-                                    borderColor: '#059669',
-                                    borderWidth: 1,
-                                    borderRadius: 4,
-                                }]
-                            },
-                            options: opts
-                        });
+                        if (document.getElementById('chartAum')) {
+                            new ApexCharts(document.getElementById('chartAum'), options(chartData.aum.series, formatRupiah, 'aum-bulanan-manajer-investasi')).render();
+                        }
+                        if (document.getElementById('chartUp')) {
+                            new ApexCharts(document.getElementById('chartUp'), options(chartData.up.series, formatUnit, 'total-up-bulanan-manajer-investasi')).render();
+                        }
                     });
                 </script>
             @endif

@@ -13,6 +13,7 @@ use App\Imports\HarianReksaDanaImport;
 use App\Exports\HargaReksaDanaTemplateExport;
 use App\Exports\HarianReksaDanaTemplateExport;
 use App\Services\KodeReksaDanaParser;
+use App\Services\ReksaDanaChartDataService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -186,7 +187,7 @@ class DaftarReksaDanaController extends Controller
         abort_if(!$document->file_path || !Storage::disk('public')->exists($document->file_path), 404, 'Dokumen tidak ditemukan.');
     }
 
-    public function show($id)
+    public function show($id, ReksaDanaChartDataService $chartDataService)
     {
         $fund = ReksaDana::with([
             'harga' => fn($q) => $q->orderBy('tanggal'),
@@ -196,19 +197,22 @@ class DaftarReksaDanaController extends Controller
         ])->findOrFail($id);
 
         $range = request('range', '1y');
-        $dateLimit = match ($range) {
-            '1m'   => now()->subMonth(),
-            '3m'   => now()->subMonths(3),
-            '6m'   => now()->subMonths(6),
-            'ytd'  => now()->startOfYear(),
-            '1y'   => now()->subYear(),
-            '3y'   => now()->subYears(3),
-            '5y'   => now()->subYears(5),
-            'all'  => now()->subYears(50),
-            default => now()->subYear(),
-        };
+        $chartData = $chartDataService->forFund(
+            $fund,
+            $range,
+            request('from_date'),
+            request('to_date')
+        );
 
-        $navHistory = $fund->harga()->where('tanggal', '>=', $dateLimit)->orderBy('tanggal')->get();
+        $navHistoryQuery = $fund->harga()->orderBy('tanggal');
+        if ($chartData['from']) {
+            $navHistoryQuery->whereDate('tanggal', '>=', $chartData['from']);
+        }
+        if ($chartData['to']) {
+            $navHistoryQuery->whereDate('tanggal', '<=', $chartData['to']);
+        }
+
+        $navHistory = $navHistoryQuery->get();
         $navLabels = $navHistory->pluck('tanggal')->map(fn($d) => $d->format('d M Y'));
         $navValues = $navHistory->pluck('nab_per_unit');
         $aumValues = $navHistory->pluck('aum');
@@ -259,6 +263,7 @@ class DaftarReksaDanaController extends Controller
             'fund', 'navHistory', 'navLabels', 'navValues', 'aumValues', 'upValues',
             'aaTimeline', 'aaLabels', 'topHoldings', 'portfolioTimeline',
             'latestNav', 'returnDaily', 'returnMonthly', 'returnYearly', 'range',
+            'chartData',
         ));
     }
 
