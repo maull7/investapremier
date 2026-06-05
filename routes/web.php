@@ -319,7 +319,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     // Sub Admin Management (admin utama only) Subadmin bisa manage user biasa, tapi tidak bisa manage subadmin lain atau admin utama
     Route::resource('sub-admins', \App\Http\Controllers\Admin\SubAdminController::class)
         ->middleware('role:admin');
-    // tes deploy
+    // tes deploy2
 });
 
 Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(function () {
