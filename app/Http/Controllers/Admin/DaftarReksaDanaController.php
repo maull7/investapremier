@@ -13,6 +13,7 @@ use App\Imports\HarianReksaDanaImport;
 use App\Exports\HargaReksaDanaTemplateExport;
 use App\Exports\HarianReksaDanaTemplateExport;
 use App\Services\KodeReksaDanaParser;
+use App\Services\ReksaDanaChartDataService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -33,12 +34,6 @@ class DaftarReksaDanaController extends Controller
         if ($request->search) $hargaQuery->where('nama_reksa_dana', 'like', '%' . $request->search . '%');
         if ($request->harga_tanggal) $hargaQuery->whereDate('tanggal_nab', $request->harga_tanggal);
         $reksaDanas = $hargaQuery->paginate(20, ['*'], 'harga_page')->withQueryString();
-
-        $reksaDanas->each(function ($rd) {
-            if (empty($rd->nama_manajer_investasi) || empty($rd->jenis)) {
-                $rd->fillFromKode();
-            }
-        });
 
         $harianTanggal = $request->get('harian_tanggal');
 
@@ -72,11 +67,6 @@ class DaftarReksaDanaController extends Controller
         $reksaDanaList = collect();
         $reksaDanaOptions = ReksaDana::orderBy('nama_reksa_dana')->get(['id', 'kode_reksa_dana', 'nama_reksa_dana', 'nama_manajer_investasi', 'jenis']);
 
-        $reksaDanaOptions->each(function ($rd) {
-            if (empty($rd->nama_manajer_investasi) || empty($rd->jenis)) {
-                $rd->fillFromKode();
-            }
-        });
         $editingLink = null;
         $documents = collect();
         $documentFunds = collect();
@@ -118,11 +108,6 @@ class DaftarReksaDanaController extends Controller
 
             $documentFunds = $documentFundQuery->paginate(20, ['*'], 'document_page')->withQueryString();
 
-            $documentFunds->each(function ($rd) {
-                if (empty($rd->nama_manajer_investasi) || empty($rd->jenis)) {
-                    $rd->fillFromKode();
-                }
-            });
         }
 
         $hargaTanggal = $request->get('harga_tanggal');
@@ -202,7 +187,7 @@ class DaftarReksaDanaController extends Controller
         abort_if(!$document->file_path || !Storage::disk('public')->exists($document->file_path), 404, 'Dokumen tidak ditemukan.');
     }
 
-    public function show($id)
+    public function show($id, ReksaDanaChartDataService $chartDataService)
     {
         $fund = ReksaDana::with([
             'harga' => fn($q) => $q->orderBy('tanggal'),
@@ -211,24 +196,23 @@ class DaftarReksaDanaController extends Controller
             'managementTeams',
         ])->findOrFail($id);
 
-        if (empty($fund->nama_manajer_investasi) || empty($fund->jenis)) {
-            $fund->fillFromKode();
+        $range = request('range', '1y');
+        $chartData = $chartDataService->forFund(
+            $fund,
+            $range,
+            request('from_date'),
+            request('to_date')
+        );
+
+        $navHistoryQuery = $fund->harga()->orderBy('tanggal');
+        if ($chartData['from']) {
+            $navHistoryQuery->whereDate('tanggal', '>=', $chartData['from']);
+        }
+        if ($chartData['to']) {
+            $navHistoryQuery->whereDate('tanggal', '<=', $chartData['to']);
         }
 
-        $range = request('range', '1y');
-        $dateLimit = match ($range) {
-            '1m'   => now()->subMonth(),
-            '3m'   => now()->subMonths(3),
-            '6m'   => now()->subMonths(6),
-            'ytd'  => now()->startOfYear(),
-            '1y'   => now()->subYear(),
-            '3y'   => now()->subYears(3),
-            '5y'   => now()->subYears(5),
-            'all'  => now()->subYears(50),
-            default => now()->subYear(),
-        };
-
-        $navHistory = $fund->harga()->where('tanggal', '>=', $dateLimit)->orderBy('tanggal')->get();
+        $navHistory = $navHistoryQuery->get();
         $navLabels = $navHistory->pluck('tanggal')->map(fn($d) => $d->format('d M Y'));
         $navValues = $navHistory->pluck('nab_per_unit');
         $aumValues = $navHistory->pluck('aum');
@@ -279,6 +263,7 @@ class DaftarReksaDanaController extends Controller
             'fund', 'navHistory', 'navLabels', 'navValues', 'aumValues', 'upValues',
             'aaTimeline', 'aaLabels', 'topHoldings', 'portfolioTimeline',
             'latestNav', 'returnDaily', 'returnMonthly', 'returnYearly', 'range',
+            'chartData',
         ));
     }
 
@@ -373,15 +358,7 @@ class DaftarReksaDanaController extends Controller
         ]);
 
         if (!empty($validated['kode_reksa_dana'])) {
-            $parsed = app(KodeReksaDanaParser::class)->parse($validated['kode_reksa_dana']);
-            if ($parsed) {
-                $validated['nama_manajer_investasi'] = $parsed['nama_manajer_investasi'];
-                $validated['jenis'] = $parsed['jenis'];
-                $validated['kategori_produk'] = $parsed['kategori_produk'];
-                $validated['kategori'] = $parsed['kategori'];
-                $validated['kelas'] = $parsed['kelas'];
-                $validated['mata_uang'] = $parsed['mata_uang'];
-            }
+            $validated = array_merge($validated, app(KodeReksaDanaParser::class)->databaseAttributes($validated['kode_reksa_dana']));
         }
 
         $validated['kategori'] = $validated['kategori'] ?? [];
@@ -430,15 +407,7 @@ class DaftarReksaDanaController extends Controller
         ]);
 
         if (!empty($validated['kode_reksa_dana'])) {
-            $parsed = app(KodeReksaDanaParser::class)->parse($validated['kode_reksa_dana']);
-            if ($parsed) {
-                $validated['nama_manajer_investasi'] = $parsed['nama_manajer_investasi'];
-                $validated['jenis'] = $parsed['jenis'];
-                $validated['kategori_produk'] = $parsed['kategori_produk'];
-                $validated['kategori'] = $parsed['kategori'];
-                $validated['kelas'] = $parsed['kelas'];
-                $validated['mata_uang'] = $parsed['mata_uang'];
-            }
+            $validated = array_merge($validated, app(KodeReksaDanaParser::class)->databaseAttributes($validated['kode_reksa_dana']));
         }
 
         $validated['kategori'] = $validated['kategori'] ?? [];

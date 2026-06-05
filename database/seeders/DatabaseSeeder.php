@@ -37,5 +37,7 @@ class DatabaseSeeder extends Seeder
             'role' => 'user',
             'is_member' => true,
         ]);
+
+        $this->call(LocalTestDataSeeder::class);
     }
 }

@@ -111,7 +111,7 @@
                             —
                         @endif
                     </td>
-                    <td class="px-5 py-3.5 text-muted text-xs">{{ $rd->mata_uang ?? 'IDR' }}</td>
+                    <td class="px-5 py-3.5 text-muted text-xs">{{ $rd->display_mata_uang }}</td>
                     <td class="px-5 py-3.5 text-muted text-xs">{{ $rd->tanggal_data ? $rd->tanggal_data->format('d/m/Y') : '—' }}</td>
                     <td class="px-5 py-3.5 text-right text-xs text-muted">
                         {{ $rd->total_aum ? 'Rp ' . number_format($rd->total_aum, 0, ',', '.') : '—' }}

@@ -139,6 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusEl = document.getElementById('ytmChartStatus');
     const chartDataUrl = @json(route('admin.ytm-normal-curve.chart-data'));
     let chart = null;
+    const hiddenRatings = {};
 
     const chartOptions = {
         chart: {
@@ -165,6 +166,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 enabled: true,
                 easing: 'easeinout',
                 speed: 500
+            },
+            events: {
+                legendClick: (chartContext, seriesIndex) => {
+                    const seriesName = chartContext.w.config.series[seriesIndex].name;
+                    const isHidden = chartContext.w.globals.collapsedSeriesIndices.includes(seriesIndex);
+                    hiddenRatings[seriesName] = isHidden;
+                }
             }
         },
         series: [],
@@ -302,6 +310,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
                 await chart.render();
+                Object.keys(hiddenRatings).forEach(name => {
+                    if (hiddenRatings[name]) chart.hideSeries(name);
+                });
             } else {
                 await chart.updateOptions({
                     xaxis: {
@@ -309,6 +320,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         categories: data.categories
                     }
                 }, false, false);
+                data.series.forEach(s => {
+                    if (hiddenRatings[s.name]) s.hidden = true;
+                });
                 await chart.updateSeries(data.series, true);
             }
 

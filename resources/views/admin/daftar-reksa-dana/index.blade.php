@@ -193,7 +193,7 @@
                                         <span class="text-xs text-muted">—</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3.5 text-xs text-muted">{{ $rd->kelas ?? '—' }}</td>
+                                <td class="px-4 py-3.5 text-xs text-muted">{{ $rd->display_kelas }}</td>
                                 <td class="px-4 py-3.5 text-xs text-muted">
                                     @if (is_array($rd->kategori) && count($rd->kategori))
                                         <div class="flex flex-wrap gap-1">
@@ -206,7 +206,7 @@
                                         —
                                     @endif
                                 </td>
-                                <td class="px-4 py-3.5 text-xs text-muted">{{ $rd->mata_uang }}</td>
+                                <td class="px-4 py-3.5 text-xs text-muted">{{ $rd->display_mata_uang }}</td>
                                 <td class="px-4 py-3.5 text-right text-xs font-semibold text-primary">
                                     {{ $rd->nab_per_unit ? number_format($rd->nab_per_unit, 4, ',', '.') : '—' }}
                                 </td>
@@ -810,8 +810,8 @@
                     document.getElementById(prefix + '-harga-mi').value = data.nama_manajer_investasi || '';
                     document.getElementById(prefix + '-harga-jenis').value = data.jenis || '';
                     document.getElementById(prefix + '-harga-kp').value = data.kategori_produk || '';
-                    document.getElementById(prefix + '-harga-kelas').value = data.kelas || '';
-                    document.getElementById(prefix + '-harga-matauang').value = data.mata_uang || 'IDR';
+                    document.getElementById(prefix + '-harga-kelas').value = data.class_name || '';
+                    document.getElementById(prefix + '-harga-matauang').value = data.currency_name || 'IDR';
 
                     const kategori = Array.isArray(data.kategori) ? data.kategori : [];
                     document.getElementById(prefix + '-harga-kategori-display').textContent = kategori.length ? kategori
@@ -831,9 +831,9 @@
             document.getElementById('edit-harga-mi').value = data.nama_manajer_investasi || '';
             document.getElementById('edit-harga-jenis').value = data.jenis || '';
             document.getElementById('edit-harga-kp').value = data.kategori_produk || '';
-            document.getElementById('edit-harga-kelas').value = data.kelas || '';
+            document.getElementById('edit-harga-kelas').value = data.display_kelas || data.kelas || '';
             document.getElementById('edit-harga-benchmark').value = data.benchmark || '';
-            document.getElementById('edit-harga-matauang').value = data.mata_uang || 'IDR';
+            document.getElementById('edit-harga-matauang').value = data.display_mata_uang || data.mata_uang || 'IDR';
             document.getElementById('edit-harga-nab').value = data.nab_per_unit || '';
             document.getElementById('edit-harga-tgl-nab').value = (data.tanggal_nab || '').substring(0, 10);
 

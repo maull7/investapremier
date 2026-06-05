@@ -11,10 +11,10 @@
 
         {{-- Filter Status --}}
         <div class="flex gap-2 text-sm flex-wrap">
-            @foreach (['', 'submitted', 'reviewed', 'draft'] as $s)
+            @foreach (['', 'submitted', 'reviewed', 'input_manual'] as $s)
                 <a href="{{ route('admin.analisa.index', array_filter(['status' => $s ?: null, 'kategori' => request('kategori'), 'ffs_bulan' => request('ffs_bulan'), 'ffs_tahun' => request('ffs_tahun')])) }}"
                     class="px-3 py-1.5 rounded-lg border transition {{ request('status') === $s || (!request('status') && $s === '') ? 'bg-primary text-white border-primary' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
-                    {{ match ($s) {'' => 'Semua','submitted' => 'Menunggu Review','reviewed' => 'Sudah Direview','draft' => 'Draft'} }}
+                    {{ match ($s) {'' => 'Semua','submitted' => 'Menunggu Review','reviewed' => 'Sudah Direview','input_manual' => 'Input Manual'} }}
                 </a>
             @endforeach
         </div>
@@ -106,13 +106,13 @@
                                 <td class="px-5 py-3.5">
                                     @php
                                         $badge = match ($analisa->status) {
-                                            'draft' => 'bg-gray-100 text-gray-600',
+                                            'input_manual' => 'bg-gray-100 text-gray-600',
                                             'submitted' => 'bg-yellow-100 text-yellow-700',
                                             'reviewed' => 'bg-green-100 text-green-700',
                                             default => 'bg-slate-100 text-slate-600',
                                         };
                                         $label = match ($analisa->status) {
-                                            'draft' => 'Draft',
+                                            'input_manual' => 'Input Manual',
                                             'submitted' => 'Menunggu Review',
                                             'reviewed' => 'Sudah Direview',
                                             default => ucfirst($analisa->status ?? 'Unknown'),
@@ -121,19 +121,25 @@
                                     <span
                                         class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium {{ $badge }}">{{ $label }}</span>
                                 </td>
-                                <td class="px-5 py-3.5 text-right">
-                                    <a href="{{ route('admin.analisa.show', $analisa) }}"
-                                        class="px-3 py-1.5 text-xs font-medium text-primary border border-line rounded-lg hover:bg-[#f1f5f9] transition">
-                                        Detail
-                                    </a>
-                                    <form method="POST" action="{{ route('admin.analisa.destroy', $analisa) }}"
-                                        class="inline" onsubmit="return confirm('Hapus data analisa ini?')">
-                                        @csrf @method('DELETE')
-                                        <button type="submit"
-                                            class="px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition ml-1">
-                                            Hapus
-                                        </button>
-                                    </form>
+                                <td class="px-5 py-3.5">
+                                    <div class="flex items-center justify-end gap-2 whitespace-nowrap">
+                                        <a href="{{ route('admin.analisa-rd.edit', $analisa) }}"
+                                            class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition">
+                                            Analisa RD
+                                        </a>
+                                        <a href="{{ route('admin.analisa.show', $analisa) }}"
+                                            class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-primary border border-line rounded-lg hover:bg-[#f1f5f9] transition">
+                                            Detail
+                                        </a>
+                                        <form method="POST" action="{{ route('admin.analisa.destroy', $analisa) }}"
+                                            class="inline-flex" onsubmit="return confirm('Hapus data analisa ini?')">
+                                            @csrf @method('DELETE')
+                                            <button type="submit"
+                                                class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition">
+                                                Hapus
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach

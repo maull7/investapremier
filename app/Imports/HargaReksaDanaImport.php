@@ -62,15 +62,7 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows, W
             }
 
             if ($kode) {
-                $parsed = app(KodeReksaDanaParser::class)->parse($kode);
-                if ($parsed) {
-                    $updateData['nama_manajer_investasi'] = $parsed['nama_manajer_investasi'];
-                    $updateData['jenis'] = $parsed['jenis'];
-                    $updateData['kategori_produk'] = $parsed['kategori_produk'];
-                    $updateData['kategori'] = $parsed['kategori'];
-                    $updateData['kelas'] = $parsed['kelas'];
-                    $updateData['mata_uang'] = $parsed['mata_uang'];
-                }
+                $updateData = array_merge($updateData, app(KodeReksaDanaParser::class)->databaseAttributes($kode));
             }
 
             $existing->update($updateData);
@@ -100,15 +92,7 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows, W
         if ($kode) {
             $data['kode_reksa_dana'] = $kode;
 
-            $parsed = app(KodeReksaDanaParser::class)->parse($kode);
-            if ($parsed) {
-                $data['nama_manajer_investasi'] = $parsed['nama_manajer_investasi'];
-                $data['jenis'] = $parsed['jenis'];
-                $data['kategori_produk'] = $parsed['kategori_produk'];
-                $data['kategori'] = $parsed['kategori'];
-                $data['kelas'] = $parsed['kelas'];
-                $data['mata_uang'] = $parsed['mata_uang'];
-            }
+            $data = array_merge($data, app(KodeReksaDanaParser::class)->databaseAttributes($kode));
         } else {
             $data['kode_reksa_dana'] = $this->generateKodeReksaDana($data);
         }

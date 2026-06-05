@@ -8,6 +8,10 @@
         <h1 class="page-title">Daftar Reksa Dana</h1>
         <p class="page-sub">Seluruh reksa dana yang tersedia di platform</p>
     </div>
+    <a href="{{ route('admin.analisa-rd.resume') }}"
+       class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition">
+        Analisa Reksa Dana
+    </a>
 </div>
 
 @if(session('success'))
@@ -143,7 +147,7 @@
                                 —
                             @endif
                         </td>
-                        <td class="px-4 py-3.5 text-muted text-xs">{{ $rd->mata_uang ?? 'IDR' }}</td>
+                        <td class="px-4 py-3.5 text-muted text-xs">{{ $rd->display_mata_uang }}</td>
                         <td class="px-4 py-3.5 text-muted text-xs">{{ $rd->tanggal_data ? $rd->tanggal_data->format('d/m/Y') : '—' }}</td>
                         <td class="px-4 py-3.5 text-right text-xs text-muted">
                             {{ $rd->total_aum ? 'Rp ' . number_format($rd->total_aum, 0, ',', '.') : '—' }}

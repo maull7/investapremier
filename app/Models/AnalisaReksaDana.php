@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\KodeReksaDanaParser;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,6 +10,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class AnalisaReksaDana extends Model
 {
     protected $table = 'analisa_reksa_dana';
+
+    protected $appends = [
+        'display_mata_uang',
+    ];
 
     protected $fillable = [
         'user_id', 'product_type', 'kode_reksa_dana', 'nama_reksa_dana',
@@ -26,7 +31,7 @@ class AnalisaReksaDana extends Model
         'total_hasil_investasi', 'hasil_investasi_setelah_biaya', 'persentase_pph',
         'fair_value_level_1', 'fair_value_level_2', 'fair_value_level_3',
         'unit_milik_investor', 'unit_milik_mi', 'total_unit_beredar',
-        'status', 'catatan_admin', 'ai_narasi', 'ai_output', 'ai_narasi_plus', 'ai_output_plus', 'pdf_path',
+        'status', 'mode', 'catatan_admin', 'ai_narasi', 'ai_output', 'ai_narasi_plus', 'ai_output_plus', 'pdf_path',
     ];
 
     protected $casts = [
@@ -76,6 +81,11 @@ class AnalisaReksaDana extends Model
     public function sukuk(): HasMany
     {
         return $this->hasMany(AnalisaSukuk::class, 'analisa_reksa_dana_id');
+    }
+
+    public function getDisplayMataUangAttribute(): string
+    {
+        return app(KodeReksaDanaParser::class)->resolveCurrencyName($this->mata_uang, (string) $this->kode_reksa_dana);
     }
 
     // Total MarCap 10 Saham Terbesar = SUM ihsg_contribution untuk efek Top 10 + Saham

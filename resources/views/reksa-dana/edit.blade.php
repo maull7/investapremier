@@ -62,7 +62,7 @@
                     <div>
                         <x-input-label for="mata_uang" value="Mata Uang" />
                         <x-text-input id="mata_uang" name="mata_uang" type="text" class="mt-1 block w-full"
-                            value="{{ old('mata_uang', $reksaDana->mata_uang ?? 'IDR') }}" maxlength="10" />
+                            value="{{ old('mata_uang', $reksaDana->display_mata_uang) }}" maxlength="10" />
                         <x-input-error :messages="$errors->get('mata_uang')" class="mt-1" />
                     </div>
                     <div>
