@@ -8,6 +8,10 @@
         <h1 class="page-title">Daftar Reksa Dana</h1>
         <p class="page-sub">Seluruh reksa dana yang tersedia di platform</p>
     </div>
+    <a href="{{ route('admin.analisa-rd.resume') }}"
+       class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition">
+        Analisa Reksa Dana
+    </a>
 </div>
 
 @if(session('success'))

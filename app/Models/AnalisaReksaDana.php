@@ -31,7 +31,7 @@ class AnalisaReksaDana extends Model
         'total_hasil_investasi', 'hasil_investasi_setelah_biaya', 'persentase_pph',
         'fair_value_level_1', 'fair_value_level_2', 'fair_value_level_3',
         'unit_milik_investor', 'unit_milik_mi', 'total_unit_beredar',
-        'status', 'catatan_admin', 'ai_narasi', 'ai_output', 'ai_narasi_plus', 'ai_output_plus', 'pdf_path',
+        'status', 'mode', 'catatan_admin', 'ai_narasi', 'ai_output', 'ai_narasi_plus', 'ai_output_plus', 'pdf_path',
     ];
 
     protected $casts = [

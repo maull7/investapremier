@@ -147,7 +147,10 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
 
     // Analisa Reksa Dana (form submit, sama seperti user)
     Route::get('analisa-rd/create', [AdminAnalisaRdController::class, 'create'])->name('analisa-rd.create');
+    Route::get('analisa-rd/resume', [AdminAnalisaRdController::class, 'resume'])->name('analisa-rd.resume');
     Route::post('analisa-rd', [AdminAnalisaRdController::class, 'store'])->name('analisa-rd.store');
+    Route::get('analisa-rd/{analisa}/edit', [AdminAnalisaRdController::class, 'edit'])->name('analisa-rd.edit');
+    Route::put('analisa-rd/{analisa}', [AdminAnalisaRdController::class, 'update'])->name('analisa-rd.update');
     Route::get('analisa-rd/template', [AdminAnalisaRdController::class, 'downloadTemplate'])->name('analisa-rd.template');
     Route::post('analisa-rd/parse-pdf', [AdminAnalisaRdController::class, 'parsePdf'])->name('analisa-rd.parse-pdf');
     Route::post('analisa-rd/parse-pdf-vision', [AnalisaFfsVisionController::class, 'parsePdf'])->name('analisa-rd.parse-pdf-vision');
@@ -335,6 +338,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::put('/reksa-dana/{reksaDana}', [ReksaDanaController::class, 'update'])->name('reksa-dana.update');
     Route::delete('/reksa-dana/{reksaDana}', [ReksaDanaController::class, 'destroy'])->name('reksa-dana.destroy');
     Route::get('/analisa/create', [AnalisaController::class, 'create'])->name('analisa.create');
+    Route::get('/analisa/resume', [AnalisaController::class, 'resume'])->name('analisa.resume');
     Route::post('/analisa', [AnalisaController::class, 'store'])->name('analisa.store');
     Route::post('/analisa/parse-pdf', [AnalisaController::class, 'parsePdf'])->name('analisa.parse-pdf');
     Route::post('/analisa/parse-pdf-vision', [AnalisaFfsVisionController::class, 'parsePdf'])->name('analisa.parse-pdf-vision');

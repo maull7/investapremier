@@ -1,4 +1,4 @@
-@extends('layouts.user')
+@extends($formRoutes['layout'] ?? 'layouts.user')
 
 @section('content')
 <div class="max-w-5xl" x-data="editForm()">
@@ -15,7 +15,7 @@
     </div>
     @endif
 
-    <form method="POST" action="{{ route('user.analisa.update', $analisa) }}" class="space-y-6">
+    <form method="POST" action="{{ $formRoutes['update'] ?? route('user.analisa.update', $analisa) }}" class="space-y-6">
         @csrf @method('PUT')
 
         {{-- Info Dasar --}}
@@ -668,7 +668,7 @@
                 class="px-5 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition">
                 Simpan Perubahan
             </button>
-            <a href="{{ route('user.analisa.index') }}"
+            <a href="{{ $formRoutes['cancel'] ?? route('user.analisa.index') }}"
                class="px-5 py-2 text-sm font-medium text-muted border border-line rounded-lg hover:bg-[#f1f5f9] transition">
                 Batal
             </a>

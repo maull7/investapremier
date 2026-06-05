@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Storage;
 
 class ReksaDanaDocument extends Model
 {
+    public const TYPE_LAPORAN_TAHUNAN = 'laporan_tahunan';
     public const TYPE_PROSPECTUS = 'prospektus';
     public const TYPE_FFS = 'ffs';
 

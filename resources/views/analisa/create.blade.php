@@ -1,7 +1,7 @@
 @extends($formRoutes['layout'] ?? 'layouts.user')
 
 @section('content')
-    <div class="max-w-5xl" x-data="analisaForm()">
+    <div class="max-w-5xl" x-data="analisaForm(@json($resumeAnalisa), @json($resumeMode))">
         <div class="mb-6">
             <h1 class="page-title">Submit Analisa {{ $productLabel ?? 'Reksa Dana' }}</h1>
             <p class="page-sub">Isi data secara manual, upload Excel, atau ekstrak dari PDF FFS</p>
@@ -40,6 +40,7 @@
             class="space-y-6"
             @submit="if (mode === 'link-website') { $event.preventDefault(); webMessage = 'Selesaikan langkah di tab Link Website: unduh file lalu klik Isi Form Otomatis. Setelah itu submit dari tab Input Manual.'; webOk = false; }">
             @csrf
+            <input type="hidden" name="resume_id" :value="resumeId || ''">
             <input type="hidden" name="input_mode" :value="mode === 'link-website' ? 'manual' : mode">
             <input type="hidden" name="pdf_file" x-model="pdfFile">
             <input type="hidden" name="tanggal_data" :value="tanggalDataValue()">
@@ -1376,7 +1377,17 @@
                             </svg>
                             <h4 class="font-medium text-sm text-primary">Dokumen Tersimpan</h4>
                         </div>
-                        <p class="text-xs text-muted">Dokumen Prospektus dan FFS yang tersimpan di master data Reksa Dana. Isi Kode Reksa Dana terlebih dahulu untuk melihat dokumen tersedia.</p>
+                        <p class="text-xs text-muted">
+                            Menampilkan
+                            <strong x-text="jenisLaporan === 'laporan_tahunan' ? 'Laporan Tahunan / Prospektus' : 'FFS'"></strong>
+                            <template x-if="jenisLaporan === 'kalender_ffs' && ffsBulan && ffsTahun">
+                                <span> untuk <strong><span x-text="['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][ffsBulan-1]"></span> <span x-text="ffsTahun"></span></strong></span>
+                            </template>
+                            <template x-if="jenisLaporan === 'laporan_tahunan' && tahunLaporan">
+                                <span> untuk tahun <strong><span x-text="tahunLaporan"></span></strong></span>
+                            </template>
+                            dari semua Reksa Dana.
+                        </p>
 
                         <div x-show="existingDocsLoading" class="flex items-center gap-2 text-xs text-muted">
                             <svg class="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
@@ -1387,29 +1398,54 @@
                         </div>
 
                         <template x-if="existingDocs.length > 0">
-                            <div class="space-y-2 max-h-48 overflow-y-auto">
-                                <template x-for="doc in existingDocs" :key="doc.id">
-                                    <div class="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-200">
-                                        <div class="flex items-center gap-2 min-w-0">
-                                            <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                                                :class="doc.document_type === 'prospektus' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'"
-                                                x-text="doc.document_type === 'prospektus' ? 'Prospektus' : 'FFS'"></span>
-                                            <span class="text-sm font-medium truncate" x-text="doc.label"></span>
-                                            <span class="text-xs text-muted shrink-0" x-text="doc.uploaded_at"></span>
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="inline-flex items-center gap-1.5 text-xs text-muted cursor-pointer hover:text-foreground transition">
+                                        <input type="checkbox" @change="selectedDocIds = $event.target.checked ? existingDocs.map(d => d.id) : []"
+                                            :checked="selectedDocIds.length === existingDocs.length"
+                                            class="rounded border-gray-300 text-primary focus:ring-primary/20">
+                                        Pilih semua
+                                    </label>
+                                    <button type="button" @click="parseSelectedDocuments()"
+                                        x-show="selectedDocIds.length > 0"
+                                        :disabled="batchParsing"
+                                        class="px-3 py-1 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                                        <span x-show="!batchParsing" x-text="'Parse ' + selectedDocIds.length + ' dokumen'"></span>
+                                        <span x-show="batchParsing">Memproses <span x-text="batchParsedCount + '/' + selectedDocIds.length"></span>...</span>
+                                    </button>
+                                </div>
+                                <div class="space-y-2 max-h-48 overflow-y-auto">
+                                    <template x-for="doc in existingDocs" :key="doc.id">
+                                        <div class="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-200"
+                                            :class="{'border-primary/40 bg-primary/[0.03]': selectedDocIds.includes(doc.id)}">
+                                            <div class="flex items-center gap-2 min-w-0">
+                                                <input type="checkbox" :value="doc.id"
+                                                    :checked="selectedDocIds.includes(doc.id)"
+                                                    @change="toggleDocSelection(doc.id)"
+                                                    class="shrink-0 rounded border-gray-300 text-primary focus:ring-primary/20">
+                                                <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                                                    :class="{
+                                                        'bg-blue-100 text-blue-700': doc.document_type === 'prospektus',
+                                                        'bg-emerald-100 text-emerald-700': doc.document_type === 'ffs',
+                                                        'bg-amber-100 text-amber-700': doc.document_type === 'laporan_tahunan',
+                                                    }"
+                                                    x-text="{
+                                                        'prospektus': 'Prospektus',
+                                                        'ffs': 'FFS',
+                                                        'laporan_tahunan': 'Laporan Tahunan',
+                                                    }[doc.document_type] || doc.document_type"></span>
+                                                <span class="text-sm font-medium truncate" x-text="doc.label"></span>
+                                                <span class="text-xs text-muted shrink-0 hidden sm:inline" x-text="doc.reksa_dana_kode"></span>
+                                                <span class="text-xs text-muted shrink-0" x-text="doc.uploaded_at"></span>
+                                            </div>
                                         </div>
-                                        <button type="button" @click="parseExistingDocument(doc.id)"
-                                            :disabled="existingDocParsing"
-                                            class="shrink-0 px-3 py-1 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed">
-                                            <span x-show="!existingDocParsing">Parse</span>
-                                            <span x-show="existingDocParsing">Memproses...</span>
-                                        </button>
-                                    </div>
-                                </template>
+                                    </template>
+                                </div>
                             </div>
                         </template>
 
                         <div x-show="existingDocsLoaded && existingDocs.length === 0" class="text-xs text-muted italic">
-                            Tidak ada dokumen tersimpan untuk kode reksa dana ini.
+                            Dokumen tidak ditemukan untuk periode yang dipilih.
                         </div>
                     </div>
 
@@ -1493,7 +1529,7 @@
 
     @push('scripts')
         <script>
-            function analisaForm() {
+            function analisaForm(resumeData = null, resumeMode = null) {
                 @php
                     $oldSektor = old('sektor', [['nama_sektor' => '', 'bobot' => '']]);
                     $oldEfek = old('efek', [['kode_efek' => '', 'nama_efek' => '', 'sektor' => '', 'bobot' => '', 'kontribusi_kinerja' => '', 'market_cap' => '', 'nilai_pasar' => '', 'harga_perolehan' => '', 'persen_nab' => '', 'return_1m' => '', 'return_3m' => '', 'return_6m' => '', 'return_1y' => '', 'top_10' => false]]);
@@ -1517,7 +1553,7 @@
                 @endphp
 
                 return {
-                    mode: @json(old('input_mode', request('tab') === 'link-website' ? 'link-website' : 'manual')),
+                    mode: resumeMode || @json(old('input_mode', request('tab') === 'link-website' ? 'link-website' : 'manual')),
                     webLoading: false,
                     webFile: null,
                     webMessage: '',
@@ -1551,6 +1587,11 @@
                     existingDocsLoading: false,
                     existingDocsLoaded: false,
                     existingDocParsing: false,
+                    selectedDocIds: [],
+                    batchParsing: false,
+                    batchParsedCount: 0,
+                    currentKode: '',
+                    resumeId: resumeData?.id || null,
                     plusRequiredLabels: @json($plusLabels),
                     lookupMessage: '',
                     lookupOk: false,
@@ -1616,6 +1657,17 @@
                     unitMilikInvestor: @json(old('unit_milik_investor')),
                     unitMilikMi: @json(old('unit_milik_mi')),
                     totalUnitBeredar: @json(old('total_unit_beredar')),
+
+                    init() {
+                        if (resumeData) {
+                            this.applyLookupData(resumeData);
+                        }
+                        this.fetchExistingDocuments();
+                        this.$watch('jenisLaporan', () => this.fetchExistingDocuments());
+                        this.$watch('ffsBulan', () => this.fetchExistingDocuments());
+                        this.$watch('ffsTahun', () => this.fetchExistingDocuments());
+                        this.$watch('tahunLaporan', () => this.fetchExistingDocuments());
+                    },
 
                     addRow(type) {
                         const defaults = {
@@ -1939,6 +1991,7 @@
                                     return;
                                 }
 
+                                this.currentKode = kode;
                                 const data = {
                                     ...(resp.master || {}),
                                     ...(resp.last_analisa || {}),
@@ -1948,7 +2001,6 @@
                                 this.lookupMessage = resp.last_analisa ?
                                     'Data analisa terakhir berhasil dimuat.' :
                                     'Data master reksa dana berhasil dimuat.';
-                                this.fetchExistingDocuments(kode);
                             })
                             .catch(() => {
                                 this.lookupOk = false;
@@ -1957,6 +2009,8 @@
                     },
 
                     applyLookupData(data) {
+                        this.resumeId = data.id || this.resumeId;
+                        this.setFieldValue('kode_reksa_dana', data.kode_reksa_dana);
                         this.setFieldValue('nama_reksa_dana', data.nama_reksa_dana);
                         this.setFieldValue('jenis_reksa_dana', data.jenis_reksa_dana);
                         this.setFieldValue('benchmark', data.benchmark);
@@ -1971,8 +2025,6 @@
                         this.unitPenyertaan = data.unit_penyertaan ?? this.unitPenyertaan;
                         this.nabPerUnit = data.nab_per_unit ?? this.nabPerUnit;
                         this.tanggalData = data.tanggal_data ?? this.tanggalData;
-                        this.ffsBulan = data.ffs_bulan ?? this.ffsBulan;
-                        this.ffsTahun = data.ffs_tahun ?? this.ffsTahun;
                         this.applyKategori(data.kategori || []);
                         if (data.sektor?.length) this.sektor = data.sektor;
                         if (data.efek?.length) {
@@ -2380,8 +2432,6 @@
                         this.tanggalData = data.tanggal_data ?? this.tanggalData;
                         this.unitPenyertaan = data.unit_penyertaan ?? this.unitPenyertaan;
                         this.nabPerUnit = data.nab_per_unit ?? this.nabPerUnit;
-                        this.ffsBulan = data.ffs_bulan ?? this.ffsBulan;
-                        this.ffsTahun = data.ffs_tahun ?? this.ffsTahun;
                         this.returnYtd = data.return_ytd ?? this.returnYtd;
                         this.return1y = data.return_1y ?? this.return1y;
                         this.totalReturn = data.total_return ?? this.totalReturn;
@@ -2704,20 +2754,31 @@
                             });
                     },
 
-                    fetchExistingDocuments(kode) {
-                        if (!this.existingDocsUrl || !kode) return;
+                    fetchExistingDocuments() {
+                        if (!this.existingDocsUrl) return;
                         this.existingDocsLoading = true;
                         this.existingDocsLoaded = false;
                         this.existingDocs = [];
+                        this.selectedDocIds = [];
 
-                        fetch(`${this.existingDocsUrl}?kode_reksa_dana=${encodeURIComponent(kode)}`, {
+                        const params = new URLSearchParams();
+                        if (this.jenisLaporan === 'laporan_tahunan') {
+                            params.append('jenis_laporan', 'laporan_tahunan');
+                            if (this.tahunLaporan) params.append('tahun_laporan', this.tahunLaporan);
+                        } else {
+                            params.append('jenis_laporan', 'kalender_ffs');
+                            if (this.ffsBulan) params.append('ffs_bulan', this.ffsBulan);
+                            if (this.ffsTahun) params.append('ffs_tahun', this.ffsTahun);
+                        }
+
+                        fetch(`${this.existingDocsUrl}?${params.toString()}`, {
                                 headers: { Accept: 'application/json' }
                             })
                             .then(res => res.json())
                             .then(resp => {
                                 this.existingDocsLoading = false;
                                 this.existingDocsLoaded = true;
-                                if (resp.found && Array.isArray(resp.documents)) {
+                                if (Array.isArray(resp.documents)) {
                                     this.existingDocs = resp.documents;
                                 }
                             })
@@ -2768,6 +2829,71 @@
                                 this.pdfSuccess = false;
                                 this.pdfResult = 'Gagal: ' + err.message;
                             });
+                    },
+
+                    toggleDocSelection(docId) {
+                        const idx = this.selectedDocIds.indexOf(docId);
+                        if (idx === -1) {
+                            this.selectedDocIds.push(docId);
+                        } else {
+                            this.selectedDocIds.splice(idx, 1);
+                        }
+                    },
+
+                    parseSelectedDocuments() {
+                        if (!this.parseExistingDocUrl || this.selectedDocIds.length === 0) return;
+                        this.batchParsing = true;
+                        this.batchParsedCount = 0;
+                        this.pdfResult = '';
+                        this.pdfSuccess = false;
+
+                        const ids = [...this.selectedDocIds];
+                        const parseNext = () => {
+                            if (this.batchParsedCount >= ids.length) {
+                                this.batchParsing = false;
+                                this.selectedDocIds = [];
+                                if (!this.pdfSuccess) {
+                                    this.pdfResult = 'Semua dokumen selesai diproses.';
+                                }
+                                return;
+                            }
+                            const docId = ids[this.batchParsedCount];
+                            fetch(this.parseExistingDocUrl, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': this.analisaFormEl().querySelector('input[name="_token"]').value,
+                                    },
+                                    body: JSON.stringify({ document_id: docId }),
+                                })
+                                .then(res => {
+                                    if (!res.ok) {
+                                        return res.json().then(err => { throw new Error(err.message || 'Gagal parsing dokumen'); });
+                                    }
+                                    return res.json();
+                                })
+                                .then(resp => {
+                                    this.batchParsedCount++;
+                                    if (!resp.success) {
+                                        this.pdfResult = 'Dokumen ' + this.batchParsedCount + ' gagal: ' + resp.message;
+                                        parseNext();
+                                        return;
+                                    }
+                                    const extractedData = this.normalizeExtractedData(resp.data || {});
+                                    this.pdfData = extractedData;
+                                    this.applyExtractedData(extractedData, this.hasFullInputData(extractedData) ? 'lengkap' : 'manual');
+                                    this.pdfSuccess = true;
+                                    this.pdfResult = 'Berhasil parse dokumen ' + this.batchParsedCount + '/' + ids.length + ' (dari: ' + (resp.document_label || 'dokumen tersimpan') + ')';
+                                    parseNext();
+                                })
+                                .catch(err => {
+                                    this.batchParsedCount++;
+                                    this.pdfResult = 'Dokumen ' + this.batchParsedCount + ' gagal: ' + err.message;
+                                    parseNext();
+                                });
+                        };
+                        parseNext();
                     },
                 };
             }

@@ -154,10 +154,43 @@ class AnalisaController extends Controller
 
     public function create()
     {
+        $resumeAnalisa = null;
+        $resumeMode = null;
+
+        if ($resumeId = request('resume')) {
+            $analisa = AnalisaReksaDana::with(['sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasiAset'])
+                ->when(!$this->isAdminContext, fn($query) => $query->where('user_id', auth()->id()))
+                ->where('product_type', $this->productType)
+                ->find($resumeId);
+            if ($analisa) {
+                $resumeAnalisa = $this->serializeAnalisaForForm($analisa);
+                $resumeMode = $analisa->mode ?: 'manual';
+            }
+        }
+
         return view('analisa.create', array_merge(
             ['formRoutes' => $this->formRoutes(), 'productLabel' => $this->productLabel],
             $this->dataSourceLinkContext(),
+            compact('resumeAnalisa', 'resumeMode'),
         ));
+    }
+
+    public function resume()
+    {
+        $lastDraft = AnalisaReksaDana::query()
+            ->when(!$this->isAdminContext, fn($query) => $query->where('user_id', auth()->id()))
+            ->where('product_type', $this->productType)
+            ->where('status', 'input_manual')
+            ->latest()
+            ->first();
+
+        $createRoute = $this->isAdminContext ? 'admin.analisa-rd.create' : 'user.analisa.create';
+
+        if ($lastDraft) {
+            return redirect()->route($createRoute, ['resume' => $lastDraft->id]);
+        }
+
+        return redirect()->route($createRoute);
     }
 
     public function lookupKode(Request $request)
@@ -431,22 +464,51 @@ class AnalisaController extends Controller
     public function getExistingDocuments(Request $request)
     {
         $request->validate([
-            'kode_reksa_dana' => 'required|string|max:20',
+            'kode_reksa_dana' => 'nullable|string|max:20',
+            'jenis_laporan' => 'nullable|in:kalender_ffs,laporan_tahunan',
+            'ffs_bulan' => 'nullable|integer|min:1|max:12',
+            'ffs_tahun' => 'nullable|integer|min:2000|max:2100',
+            'tahun_laporan' => 'nullable|digits:4',
         ]);
 
-        $kode = strtoupper(trim($request->kode_reksa_dana));
-        $master = ReksaDana::whereRaw('UPPER(kode_reksa_dana) = ?', [$kode])->first();
+        $query = ReksaDanaDocument::with(['reksaDana', 'uploader']);
 
-        if (!$master) {
-            return response()->json([
-                'found' => false,
-                'documents' => [],
-            ]);
+        // Filter by kode if provided
+        if ($kode = $request->kode_reksa_dana) {
+            $kode = strtoupper(trim($kode));
+            $query->whereHas('reksaDana', fn($q) => $q->whereRaw('UPPER(kode_reksa_dana) = ?', [$kode]));
         }
 
-        $documents = $master->documents()
-            ->with('uploader')
-            ->orderByDesc('ffs_year')
+        $jenisLaporan = $request->jenis_laporan;
+
+        if ($jenisLaporan === 'laporan_tahunan') {
+            $query->whereIn('document_type', [
+                ReksaDanaDocument::TYPE_LAPORAN_TAHUNAN,
+                ReksaDanaDocument::TYPE_PROSPECTUS,
+            ]);
+            if ($request->tahun_laporan) {
+                $tahun = $request->tahun_laporan;
+                $query->where(function ($q) use ($tahun) {
+                    $q->where(function ($q2) use ($tahun) {
+                        $q2->where('document_type', ReksaDanaDocument::TYPE_LAPORAN_TAHUNAN)
+                          ->where('tahun_laporan', $tahun);
+                    })->orWhere(function ($q2) use ($tahun) {
+                        $q2->where('document_type', ReksaDanaDocument::TYPE_PROSPECTUS)
+                          ->where('ffs_year', $tahun);
+                    });
+                });
+            }
+        } else {
+            $query->where('document_type', ReksaDanaDocument::TYPE_FFS);
+            if ($request->ffs_bulan) {
+                $query->where('ffs_month', $request->ffs_bulan);
+            }
+            if ($request->ffs_tahun) {
+                $query->where('ffs_year', $request->ffs_tahun);
+            }
+        }
+
+        $documents = $query->orderByDesc('ffs_year')
             ->orderByDesc('ffs_month')
             ->get()
             ->map(fn($doc) => [
@@ -454,21 +516,33 @@ class AnalisaController extends Controller
                 'document_type' => $doc->document_type,
                 'original_name' => $doc->original_name,
                 'file_path' => $doc->file_path,
-                'label' => $doc->document_type === 'prospektus'
-                    ? 'Prospektus ' . $doc->ffs_year
-                    : 'FFS ' . \Carbon\Carbon::create()->month($doc->ffs_month)->format('M') . ' ' . $doc->ffs_year,
+                'label' => $this->getDocumentLabel($doc),
                 'ffs_month' => $doc->ffs_month,
                 'ffs_year' => $doc->ffs_year,
+                'tahun_laporan' => $doc->tahun_laporan,
+                'reksa_dana_nama' => $doc->reksaDana?->nama_reksa_dana,
+                'reksa_dana_kode' => $doc->reksaDana?->kode_reksa_dana,
                 'uploaded_at' => $doc->created_at->format('d/m/Y'),
                 'uploader_name' => $doc->uploader?->name,
                 'file_size' => $doc->file_size,
             ]);
 
         return response()->json([
-            'found' => true,
-            'nama_reksa_dana' => $master->nama_reksa_dana,
+            'found' => $documents->isNotEmpty(),
             'documents' => $documents,
         ]);
+    }
+
+    private function getDocumentLabel(ReksaDanaDocument $doc): string
+    {
+        return match ($doc->document_type) {
+            ReksaDanaDocument::TYPE_LAPORAN_TAHUNAN => 'Laporan Tahunan ' . ($doc->tahun_laporan ?? ''),
+            ReksaDanaDocument::TYPE_PROSPECTUS => 'Prospektus ' . ($doc->ffs_year ?? ''),
+            ReksaDanaDocument::TYPE_FFS => 'FFS '
+                . ($doc->ffs_month ? \Carbon\Carbon::create()->month($doc->ffs_month)->format('M') . ' ' : '')
+                . ($doc->ffs_year ?? ''),
+            default => $doc->original_name,
+        };
     }
 
     public function parseExistingDocument(Request $request, FfsParserService $ffsParser, GroqService $groq)
@@ -521,9 +595,7 @@ class AnalisaController extends Controller
                 ? 'Berhasil mengekstrak: ' . implode(', ', $extracted) . '.'
                 : 'Tidak dapat mengekstrak data dari PDF ini.',
             'data' => $data,
-            'document_label' => $document->document_type === 'prospektus'
-                ? 'Prospektus ' . $document->ffs_year
-                : 'FFS ' . ($document->ffs_month ? \Carbon\Carbon::create()->month($document->ffs_month)->format('M') . ' ' : '') . $document->ffs_year,
+            'document_label' => $this->getDocumentLabel($document),
         ]);
     }
 
@@ -708,11 +780,14 @@ class AnalisaController extends Controller
             'ai_output'            => 'nullable|string',
             'ai_narasi_plus'       => 'nullable|string',
             'ai_output_plus'       => 'nullable|string',
+            'resume_id'            => 'nullable|integer|exists:analisa_reksa_dana,id',
         ]);
 
+        $submittedMode = $request->input('input_mode') ?: 'manual';
         if (in_array($request->input_mode, ['lengkap', 'ai', 'ai-plus', 'link-website'], true)) {
             $request->merge(['input_mode' => 'manual']);
         }
+        $request->merge(['saved_mode' => $submittedMode]);
 
         if ($request->input_mode === 'excel') {
             return $this->storeFromExcel($request);
@@ -787,7 +862,7 @@ class AnalisaController extends Controller
         DB::transaction(function () use ($request, $isSimpan) {
             $pdfPath = $this->resolvePdfPath($request->pdf_file);
 
-            $analisa = AnalisaReksaDana::create([
+            $payload = [
                 'user_id'              => auth()->id(),
                 'product_type'         => $this->productType,
                 'kode_reksa_dana'      => $request->kode_reksa_dana ? strtoupper($request->kode_reksa_dana) : null,
@@ -848,8 +923,24 @@ class AnalisaController extends Controller
                 'unit_milik_mi'       => $request->unit_milik_mi,
                 'total_unit_beredar'  => $request->total_unit_beredar,
                 'status'               => $isSimpan ? 'input_manual' : 'submitted',
+                'mode'                 => $request->input('saved_mode', $request->input_mode ?: 'manual'),
                 'pdf_path'             => $pdfPath,
-            ]);
+            ];
+
+            $analisa = $this->resumeDraftFromRequest($request);
+            if ($analisa) {
+                unset($payload['user_id']);
+                $analisa->update($payload);
+                $analisa->sektor()->delete();
+                $analisa->efek()->delete();
+                $analisa->kinerja()->delete();
+                $analisa->obligasi()->delete();
+                $analisa->sukuk()->delete();
+                $analisa->bank()->delete();
+                $analisa->alokasiAset()->delete();
+            } else {
+                $analisa = AnalisaReksaDana::create($payload);
+            }
 
             $sektor   = collect($request->sektor)->filter(fn($r) => !empty($r['nama_sektor']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
             $efek     = collect($request->efek)->filter(fn($r) => !empty($r['kode_efek']) && !empty($r['nama_efek']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
@@ -890,7 +981,7 @@ class AnalisaController extends Controller
         DB::transaction(function () use ($request, $isSimpan) {
             $pdfPath = $this->resolvePdfPath($request->pdf_file);
 
-            $analisa = AnalisaReksaDana::create([
+            $payload = [
                 'user_id'              => auth()->id(),
                 'product_type'         => $this->productType,
                 'kode_reksa_dana'      => $request->kode_reksa_dana ? strtoupper($request->kode_reksa_dana) : null,
@@ -951,8 +1042,24 @@ class AnalisaController extends Controller
                 'unit_milik_mi'       => $request->unit_milik_mi,
                 'total_unit_beredar'  => $request->total_unit_beredar,
                 'status'               => $isSimpan ? 'input_manual' : 'submitted',
+                'mode'                 => $request->input('saved_mode', $request->input_mode ?: 'excel'),
                 'pdf_path'             => $pdfPath,
-            ]);
+            ];
+
+            $analisa = $this->resumeDraftFromRequest($request);
+            if ($analisa) {
+                unset($payload['user_id']);
+                $analisa->update($payload);
+                $analisa->sektor()->delete();
+                $analisa->efek()->delete();
+                $analisa->kinerja()->delete();
+                $analisa->obligasi()->delete();
+                $analisa->sukuk()->delete();
+                $analisa->bank()->delete();
+                $analisa->alokasiAset()->delete();
+            } else {
+                $analisa = AnalisaReksaDana::create($payload);
+            }
 
             Excel::import(new AnalisaImport($analisa), $request->file('file_excel'));
 
@@ -999,6 +1106,17 @@ class AnalisaController extends Controller
         }
     }
 
+    private function resumeDraftFromRequest(Request $request): ?AnalisaReksaDana
+    {
+        if (!$request->filled('resume_id')) {
+            return null;
+        }
+
+        return AnalisaReksaDana::where('product_type', $this->productType)
+            ->when(!$this->isAdminContext, fn($query) => $query->where('user_id', auth()->id()))
+            ->find($request->integer('resume_id'));
+    }
+
     private function resolvePdfPath(?string $pdfFile): ?string
     {
         if (!$pdfFile) return null;
@@ -1042,6 +1160,7 @@ class AnalisaController extends Controller
     private function serializeAnalisaForForm(AnalisaReksaDana $analisa): array
     {
         return [
+            'id'                    => $analisa->id,
             'kode_reksa_dana'      => $analisa->kode_reksa_dana,
             'nama_reksa_dana'      => $analisa->nama_reksa_dana,
             'jenis_reksa_dana'     => $analisa->jenis_reksa_dana,
@@ -1063,6 +1182,7 @@ class AnalisaController extends Controller
             'periode_awal'         => $analisa->periode_awal,
             'periode_akhir'        => $analisa->periode_akhir,
             'tahun_laporan'        => $analisa->tahun_laporan,
+            'mode'                 => $analisa->mode,
             'return_ytd'           => $analisa->return_ytd,
             'return_1y'            => $analisa->return_1y,
             'total_return'         => $analisa->total_return,
@@ -1170,8 +1290,9 @@ class AnalisaController extends Controller
 
     public function edit(AnalisaReksaDana $analisa)
     {
-        abort_if($analisa->user_id !== auth()->id(), 403);
-        abort_if($analisa->status === 'reviewed', 403, 'Data yang sudah direview tidak dapat diedit.');
+        abort_if(!$this->isAdminContext && $analisa->user_id !== auth()->id(), 403);
+        abort_if(!$this->isAdminContext && $analisa->status === 'reviewed', 403, 'Data yang sudah direview tidak dapat diedit.');
+        abort_if($analisa->product_type !== $this->productType, 404);
 
         $analisa->load(['sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasiAset']);
 
@@ -1242,13 +1363,23 @@ class AnalisaController extends Controller
             'alokasi_aset' => $analisa->alokasiAset->map(fn($a) => ['nama_aset' => $a->nama_aset, 'persentase' => $a->persentase])->values(),
         ];
 
-        return view('analisa.edit', array_merge(compact('analisa', 'editData'), ['formRoutes' => $this->formRoutes()]));
+        $formRoutes = array_merge($this->formRoutes(), [
+            'update' => $this->isAdminContext
+                ? route('admin.analisa-rd.update', $analisa)
+                : route('user.analisa.update', $analisa),
+            'cancel' => $this->isAdminContext
+                ? route('admin.analisa.index')
+                : route('user.analisa.index'),
+        ]);
+
+        return view('analisa.edit', compact('analisa', 'editData', 'formRoutes'));
     }
 
     public function update(Request $request, AnalisaReksaDana $analisa)
     {
-        abort_if($analisa->user_id !== auth()->id(), 403);
-        abort_if($analisa->status === 'reviewed', 403, 'Data yang sudah direview tidak dapat diedit.');
+        abort_if(!$this->isAdminContext && $analisa->user_id !== auth()->id(), 403);
+        abort_if(!$this->isAdminContext && $analisa->status === 'reviewed', 403, 'Data yang sudah direview tidak dapat diedit.');
+        abort_if($analisa->product_type !== $this->productType, 404);
 
         $request->validate([
             'kode_reksa_dana'      => 'nullable|string|max:20',
@@ -1309,6 +1440,7 @@ class AnalisaController extends Controller
             'unit_milik_investor'  => 'nullable|numeric',
             'unit_milik_mi'        => 'nullable|numeric',
             'total_unit_beredar'   => 'nullable|numeric',
+            'input_mode'           => 'nullable|in:manual,lengkap,excel,pdf,ai,ai-plus,link-website',
         ]);
 
         $this->validateAlokasiAsetTotal($request);
@@ -1396,6 +1528,7 @@ class AnalisaController extends Controller
                 'unit_milik_investor' => $request->unit_milik_investor,
                 'unit_milik_mi'       => $request->unit_milik_mi,
                 'total_unit_beredar'  => $request->total_unit_beredar,
+                'mode'                 => $request->input_mode ?: 'manual',
             ]);
 
             $sektor   = collect($request->sektor ?? [])->filter(fn($r) => !empty($r['nama_sektor']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
@@ -1423,7 +1556,9 @@ class AnalisaController extends Controller
             if ($alokasiAset) $analisa->alokasiAset()->createMany($alokasiAset);
         });
 
-        return redirect()->route('user.analisa.index')->with('success', 'Data analisa berhasil diperbarui.');
+        return redirect()
+            ->route($this->isAdminContext ? 'admin.analisa.index' : 'user.analisa.index')
+            ->with('success', 'Data analisa berhasil diperbarui.');
     }
 
     public function show(AnalisaReksaDana $analisa)
