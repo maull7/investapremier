@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\ExtractionBatchController;
 use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\ObligasiController as AdminObligasiController;
 use App\Http\Controllers\Admin\InvestmentManagerController as AdminInvestmentManagerController;
+use App\Http\Controllers\Admin\InvestmentPersonRoleController as AdminInvestmentPersonRoleController;
 use App\Http\Controllers\Admin\UnitLinkController as AdminUnitLinkController;
 use App\Http\Controllers\Admin\UnitLinkFfsController as AdminUnitLinkFfsController;
 use App\Http\Controllers\Admin\AnalisaUlController as AdminAnalisaUlController;
@@ -143,6 +144,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::post('daftar-reksa-dana/harian/update/{hargaReksaDana}', [DaftarReksaDanaController::class, 'updateHarian'])->name('daftar-reksa-dana.harian.update');
     Route::delete('daftar-reksa-dana/harian/destroy/{hargaReksaDana}', [DaftarReksaDanaController::class, 'destroyHarian'])->name('daftar-reksa-dana.harian.destroy');
     Route::get('daftar-reksa-dana/parse-kode', [DaftarReksaDanaController::class, 'parseKode'])->name('daftar-reksa-dana.parse-kode');
+    Route::post('daftar-reksa-dana/{reksaDana}/export-investment-manager', [DaftarReksaDanaController::class, 'exportInvestmentManager'])->name('daftar-reksa-dana.export-investment-manager');
     Route::get('daftar-reksa-dana/{reksaDana}', [DaftarReksaDanaController::class, 'show'])->name('daftar-reksa-dana.show');
 
     Route::post('data-source-links', [DataSourceLinkController::class, 'store'])->name('data-source-links.store');
@@ -292,6 +294,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('investment-managers-template', [AdminInvestmentManagerController::class, 'downloadTemplate'])->name('investment-managers.template');
     Route::post('investment-managers-import', [AdminInvestmentManagerController::class, 'import'])->name('investment-managers.import');
     Route::delete('investment-managers-period/{investmentManagerPeriod}', [AdminInvestmentManagerController::class, 'destroyPeriod'])->name('investment-managers.period-destroy');
+    Route::get('investment-person-roles/detail', [AdminInvestmentPersonRoleController::class, 'show'])->name('investment-person-roles.detail');
 
     // Unit Link
     Route::get('unit-link', [AdminUnitLinkController::class, 'index'])->name('unit-link.index');

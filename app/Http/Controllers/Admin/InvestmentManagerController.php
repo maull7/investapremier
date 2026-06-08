@@ -9,6 +9,7 @@ use App\Models\ReksaDana;
 use App\Models\ReksaDanaDocument;
 use App\Exports\InvestmentManagerTemplateExport;
 use App\Imports\InvestmentManagerImport;
+use App\Services\InvestmentPersonService;
 use App\Services\ReksaDanaChartDataService;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
@@ -57,10 +58,11 @@ class InvestmentManagerController extends Controller
         return view('admin.investment-managers.index', compact('managers', 'perPage', 'tahunList'));
     }
 
-    public function show($id, ReksaDanaChartDataService $chartDataService)
+    public function show($id, ReksaDanaChartDataService $chartDataService, InvestmentPersonService $personService)
     {
         $manager = InvestmentManager::with('periods')->findOrFail($id);
         $manager->load('funds');
+        $governanceSections = $personService->sectionsForManager($manager);
 
         $range = request('range', '1y');
         $chartData = $chartDataService->forManager(
@@ -77,7 +79,7 @@ class InvestmentManagerController extends Controller
             ->get();
 
         return view('admin.investment-managers.show', compact(
-            'manager', 'fundsWithProspektus', 'range', 'chartData'
+            'manager', 'fundsWithProspektus', 'range', 'chartData', 'governanceSections'
         ));
     }
 
@@ -110,7 +112,7 @@ class InvestmentManagerController extends Controller
         }
     }
 
-    public function saveProspektus(Request $request, InvestmentManager $investmentManager)
+    public function saveProspektus(Request $request, InvestmentManager $investmentManager, InvestmentPersonService $personService)
     {
         $validated = $request->validate([
             'address'                => 'nullable|string|max:500',
@@ -122,10 +124,26 @@ class InvestmentManagerController extends Controller
             'director_president'     => 'nullable|string|max:255',
             'directors'              => 'nullable|string',
             'shareholders'           => 'nullable|string',
+            'investment_committee'    => 'nullable|string',
+            'investment_management_team' => 'nullable|string',
             'description'            => 'nullable|string',
         ]);
 
-        $investmentManager->update(array_filter($validated, fn($v) => $v !== null && $v !== ''));
+        $update = array_filter($validated, fn($v) => $v !== null && $v !== '');
+        foreach ([
+            'commissioners',
+            'directors',
+            'shareholders',
+            'investment_committee',
+            'investment_management_team',
+        ] as $field) {
+            if (array_key_exists($field, $update)) {
+                $update[$field] = $this->mergePeopleText($investmentManager->{$field}, $update[$field], $personService);
+            }
+        }
+
+        $investmentManager->update($update);
+        $personService->syncInvestmentManager($investmentManager->refresh(), 'prospektus');
 
         ActivityLogger::log(
             'Menyimpan Prospektus',
@@ -154,6 +172,8 @@ class InvestmentManagerController extends Controller
             'director_president'     => null,
             'directors'              => null,
             'shareholders'           => null,
+            'investment_committee'    => null,
+            'investment_management_team' => null,
             'description'            => null,
         ];
 
@@ -205,12 +225,31 @@ class InvestmentManagerController extends Controller
             $data['shareholders'] = trim($m[1]);
         }
 
+        if (preg_match('/(?:Komite Investasi|Investment Committee)[:\s\n]+(.+?)(?:\n\n|Tim Pengelola|Pengelola Investasi|Dewan|Direksi|BAB\s+[IVX]+)/si', $text, $m)) {
+            $data['investment_committee'] = trim($m[1]);
+        }
+
+        if (preg_match('/(?:Tim Pengelola Investasi|Pengelola Investasi|Investment Management Team|Portfolio Manager)[:\s\n]+(.+?)(?:\n\n|Komite Investasi|Dewan|Direksi|BAB\s+[IVX]+)/si', $text, $m)) {
+            $data['investment_management_team'] = trim($m[1]);
+        }
+
         // Deskripsi (kalimat pertama setelah "Manajer Investasi" atau "Pengelolaan Investasi")
         if (preg_match('/(?:Manajer Investasi|Pengelolaan Investasi)[^\n]*\n([^\n]{40,})/i', $text, $m)) {
             $data['description'] = trim($m[1]);
         }
 
-        return array_map(fn($v) => $v ? mb_substr(trim($v), 0, 500) : null, $data);
+        return array_map(fn($v) => $v ? mb_substr(trim($v), 0, 2000) : null, $data);
+    }
+
+    private function mergePeopleText(?string $old, string $new, InvestmentPersonService $personService): string
+    {
+        $items = collect($personService->parsePeople($old))
+            ->merge($personService->parsePeople($new))
+            ->unique(fn ($item) => $personService->normalizeName($item['name']))
+            ->map(fn ($item) => trim($item['name'] . ($item['position'] ? ' - ' . $item['position'] : '')))
+            ->values();
+
+        return $items->implode("\n");
     }
 
     public function create()

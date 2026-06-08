@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DataSourceLink;
 use App\Models\DataSourceSyncLog;
 use App\Models\HargaReksaDana;
+use App\Models\InvestmentManager;
 use App\Models\ReksaDana;
 use App\Models\ReksaDanaDocument;
 use App\Imports\HargaReksaDanaImport;
@@ -13,6 +14,7 @@ use App\Imports\HarianReksaDanaImport;
 use App\Exports\HargaReksaDanaTemplateExport;
 use App\Exports\HarianReksaDanaTemplateExport;
 use App\Services\KodeReksaDanaParser;
+use App\Services\InvestmentPersonService;
 use App\Services\ReksaDanaChartDataService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -327,6 +329,58 @@ class DaftarReksaDanaController extends Controller
         ));
     }
 
+    public function exportInvestmentManager(ReksaDana $reksaDana, InvestmentPersonService $personService)
+    {
+        $reksaDana->load('managementTeams');
+
+        if (!filled($reksaDana->nama_manajer_investasi) && !$reksaDana->investment_manager_id) {
+            return back()->withErrors([
+                'export_investment_manager' => 'Nama Manajer Investasi pada Reksa Dana belum tersedia.',
+            ]);
+        }
+
+        $manager = $reksaDana->investmentManager
+            ?: InvestmentManager::firstOrCreate(['name' => trim((string) $reksaDana->nama_manajer_investasi)]);
+
+        if (!$reksaDana->investment_manager_id) {
+            $reksaDana->update(['investment_manager_id' => $manager->id]);
+        }
+
+        $committee = $reksaDana->managementTeams
+            ->where('type', 'committee')
+            ->map(fn ($row) => trim($row->name . ($row->position ? ' - ' . $row->position : '')))
+            ->implode("\n");
+        $team = $reksaDana->managementTeams
+            ->where('type', 'investment_manager')
+            ->map(fn ($row) => trim($row->name . ($row->position ? ' - ' . $row->position : '')))
+            ->implode("\n");
+
+        $updates = [];
+        if ($committee !== '') {
+            $updates['investment_committee'] = $this->mergePeopleText($manager->investment_committee, $committee, $personService);
+        }
+        if ($team !== '') {
+            $updates['investment_management_team'] = $this->mergePeopleText($manager->investment_management_team, $team, $personService);
+        }
+
+        if ($updates !== []) {
+            $manager->update($updates);
+        }
+
+        $personService->syncFund($reksaDana->refresh(), 'ffs');
+        $personService->syncInvestmentManager($manager->refresh(), 'export_reksa_dana');
+
+        ActivityLogger::log(
+            'Export Reksa Dana ke Manajer Investasi',
+            "{$reksaDana->nama_reksa_dana} berhasil diekspor ke {$manager->name}",
+            'success',
+            $manager,
+        );
+
+        return redirect()->route('admin.investment-managers.show', $manager)
+            ->with('success', 'Data Manajer Investasi berhasil diupdate dari Reksa Dana.');
+    }
+
     public function uploadHarga(Request $request)
     {
         $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:5120']);
@@ -609,6 +663,16 @@ class DaftarReksaDanaController extends Controller
 
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harian'])
             ->with('success', 'Data harian berhasil dihapus.');
+    }
+
+    private function mergePeopleText(?string $old, string $new, InvestmentPersonService $personService): string
+    {
+        return collect($personService->parsePeople($old))
+            ->merge($personService->parsePeople($new))
+            ->unique(fn ($item) => $personService->normalizeName($item['name']))
+            ->map(fn ($item) => trim($item['name'] . ($item['position'] ? ' - ' . $item['position'] : '')))
+            ->values()
+            ->implode("\n");
     }
 
     public function parseKode(Request $request)

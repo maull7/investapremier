@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Exports\YtmNormalCurveTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Imports\YtmNormalCurveImport;
+use App\Models\PheiCreditSpreadMatrix;
 use App\Models\RatingObligasi;
 use App\Models\YtmNormalCurve;
 use Illuminate\Http\Request;
@@ -23,6 +24,27 @@ class YtmNormalCurveController extends Controller
 
     public function chartData()
     {
+        $latestMatrixDate = PheiCreditSpreadMatrix::max('data_date');
+        if ($latestMatrixDate) {
+            $matrices = PheiCreditSpreadMatrix::whereDate('data_date', $latestMatrixDate)
+                ->orderBy('tenor_bulan')
+                ->get();
+
+            $categories = $matrices->pluck('tenor_bulan')->map(fn ($tenor) => (int) $tenor)->values();
+
+            return response()->json([
+                'series' => [
+                    ['name' => 'AAA', 'data' => $matrices->pluck('rating_aaa')->map(fn ($v) => $v !== null ? (float) $v : null)->values()],
+                    ['name' => 'AA', 'data' => $matrices->pluck('rating_aa')->map(fn ($v) => $v !== null ? (float) $v : null)->values()],
+                    ['name' => 'A', 'data' => $matrices->pluck('rating_a')->map(fn ($v) => $v !== null ? (float) $v : null)->values()],
+                    ['name' => 'BBB', 'data' => $matrices->pluck('rating_bbb')->map(fn ($v) => $v !== null ? (float) $v : null)->values()],
+                ],
+                'categories' => $categories,
+                'data_date' => $latestMatrixDate,
+                'source' => 'PHEI Credit Spread Matrix',
+            ]);
+        }
+
         $curves = YtmNormalCurve::with('rating')
             ->select('ytm_normal_curves.*')
             ->join('rating_obligasi', 'rating_obligasi.id', '=', 'ytm_normal_curves.rating_id')

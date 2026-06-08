@@ -479,7 +479,7 @@ class AnalisaController extends Controller
                 $query->whereHas('reksaDana', fn($q) => $q->where('kode_reksa_dana', $kode));
             }
 
-            $jenisLaporan = $request->jenis_laporan;
+            $jenisLaporan = $request->jenis_laporan ?: 'laporan_tahunan';
 
             if ($jenisLaporan === 'laporan_tahunan') {
                 $query->whereIn('document_type', [
@@ -558,6 +558,13 @@ class AnalisaController extends Controller
 
     public function parseExistingDocument(Request $request, FfsParserService $ffsParser, GroqService $groq)
     {
+        $request->merge([
+            'jenis_laporan' => 'laporan_tahunan',
+            'ffs_bulan' => null,
+            'ffs_tahun' => null,
+            'tahun_laporan' => $request->tahun_laporan ?: now()->year,
+        ]);
+
         $request->validate([
             'document_id' => 'required|exists:reksa_dana_documents,id',
         ]);
@@ -727,6 +734,13 @@ class AnalisaController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge([
+            'jenis_laporan' => 'laporan_tahunan',
+            'ffs_bulan' => null,
+            'ffs_tahun' => null,
+            'tahun_laporan' => $request->tahun_laporan ?: now()->year,
+        ]);
+
         $request->validate([
             'kode_reksa_dana'      => 'nullable|string|max:20',
             'nama_reksa_dana'      => 'required|string|max:255',
@@ -893,7 +907,7 @@ class AnalisaController extends Controller
                 'tanggal_data'         => $request->tanggal_data,
                 'ffs_bulan'            => $request->ffs_bulan,
                 'ffs_tahun'            => $request->ffs_tahun,
-                'jenis_laporan'        => $request->jenis_laporan ?: 'kalender_ffs',
+                'jenis_laporan'        => 'laporan_tahunan',
                 'periode_awal'         => $request->periode_awal,
                 'periode_akhir'        => $request->periode_akhir,
                 'tahun_laporan'        => $request->tahun_laporan,
@@ -1012,7 +1026,7 @@ class AnalisaController extends Controller
                 'tanggal_data'         => $request->tanggal_data,
                 'ffs_bulan'            => $request->ffs_bulan,
                 'ffs_tahun'            => $request->ffs_tahun,
-                'jenis_laporan'        => $request->jenis_laporan ?: 'kalender_ffs',
+                'jenis_laporan'        => 'laporan_tahunan',
                 'periode_awal'         => $request->periode_awal,
                 'periode_akhir'        => $request->periode_akhir,
                 'tahun_laporan'        => $request->tahun_laporan,
@@ -1333,6 +1347,13 @@ class AnalisaController extends Controller
         abort_if(!$this->isAdminContext && $analisa->status === 'reviewed', 403, 'Data yang sudah direview tidak dapat diedit.');
         abort_if($analisa->product_type !== $this->productType, 404);
 
+        $request->merge([
+            'jenis_laporan' => 'laporan_tahunan',
+            'ffs_bulan' => null,
+            'ffs_tahun' => null,
+            'tahun_laporan' => $request->tahun_laporan ?: now()->year,
+        ]);
+
         $request->validate([
             'kode_reksa_dana'      => 'nullable|string|max:20',
             'nama_reksa_dana'      => 'required|string|max:255',
@@ -1440,7 +1461,7 @@ class AnalisaController extends Controller
                 'tanggal_data'         => $request->tanggal_data,
                 'ffs_bulan'            => $request->ffs_bulan,
                 'ffs_tahun'            => $request->ffs_tahun,
-                'jenis_laporan'        => $request->jenis_laporan ?: 'kalender_ffs',
+                'jenis_laporan'        => 'laporan_tahunan',
                 'periode_awal'         => $request->periode_awal,
                 'periode_akhir'        => $request->periode_akhir,
                 'tahun_laporan'        => $request->tahun_laporan,

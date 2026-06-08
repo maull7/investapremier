@@ -1618,7 +1618,7 @@
                     tanggalData: @json(old('tanggal_data')),
                     ffsBulan: @json(old('ffs_bulan')),
                     ffsTahun: @json(old('ffs_tahun', now()->year)),
-                    jenisLaporan: @json(old('jenis_laporan', 'kalender_ffs')),
+                    jenisLaporan: @json(old('jenis_laporan', 'laporan_tahunan')),
                     periodeAwal: @json(old('periode_awal')),
                     periodeAkhir: @json(old('periode_akhir')),
                     tahunLaporan: @json(old('tahun_laporan', now()->year)),
@@ -2799,14 +2799,8 @@
                         const kode = (document.getElementById('kode_reksa_dana')?.value || '').trim();
                         if (kode) params.append('kode_reksa_dana', kode);
 
-                        if (this.jenisLaporan === 'laporan_tahunan') {
-                            params.append('jenis_laporan', 'laporan_tahunan');
-                            if (this.tahunLaporan) params.append('tahun_laporan', this.tahunLaporan);
-                        } else {
-                            params.append('jenis_laporan', 'kalender_ffs');
-                            if (this.ffsBulan) params.append('ffs_bulan', this.ffsBulan);
-                            if (this.ffsTahun) params.append('ffs_tahun', this.ffsTahun);
-                        }
+                        params.append('jenis_laporan', 'laporan_tahunan');
+                        if (this.tahunLaporan) params.append('tahun_laporan', this.tahunLaporan);
 
                         fetch(`${this.existingDocsUrl}?${params.toString()}`, {
                                 headers: { Accept: 'application/json' }
