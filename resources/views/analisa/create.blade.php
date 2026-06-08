@@ -1,10 +1,10 @@
 @extends($formRoutes['layout'] ?? 'layouts.user')
 
 @section('content')
-    <div class="max-w-5xl" x-data="analisaForm(@json($resumeAnalisa), @json($resumeMode))">
+    <div class="max-w-5xl" x-data='analisaForm(@json($resumeAnalisa), @json($resumeMode))'>
         <div class="mb-6">
-            <h1 class="page-title">Submit Analisa {{ $productLabel ?? 'Reksa Dana' }}</h1>
-            <p class="page-sub">Isi data secara manual, upload Excel, atau ekstrak dari PDF FFS</p>
+            <h1 class="page-title">{{ !empty($isEditMode) ? 'Edit Analisa ' . ($productLabel ?? 'Reksa Dana') : 'Submit Analisa ' . ($productLabel ?? 'Reksa Dana') }}</h1>
+            <p class="page-sub">{{ !empty($isEditMode) ? 'Perbarui data analisa reksa dana' : 'Isi data secara manual, upload Excel, atau ekstrak dari PDF FFS' }}</p>
         </div>
 
         @if ($errors->any())
@@ -36,10 +36,11 @@
             @endif
         @endif
 
-        <form id="analisa-form" method="POST" action="{{ $formRoutes['store'] }}" enctype="multipart/form-data"
+        <form id="analisa-form" method="POST" action="{{ !empty($isEditMode) ? $formRoutes['update'] : $formRoutes['store'] }}" enctype="multipart/form-data"
             class="space-y-6"
             @submit="if (mode === 'link-website') { $event.preventDefault(); webMessage = 'Selesaikan langkah di tab Link Website: unduh file lalu klik Isi Form Otomatis. Setelah itu submit dari tab Input Manual.'; webOk = false; }">
             @csrf
+            @if(!empty($isEditMode)) @method('PUT') @endif
             <input type="hidden" name="resume_id" :value="resumeId || ''">
             <input type="hidden" name="input_mode" :value="mode === 'link-website' ? 'manual' : mode">
             <input type="hidden" name="pdf_file" x-model="pdfFile">
@@ -49,6 +50,7 @@
             <input type="hidden" name="jenis_laporan" :value="jenisLaporan">
 
             {{-- Info Dasar --}}
+            @if(empty($isEditMode) || ($formRoutes['layout'] ?? '') !== 'layouts.admin')
             <div class="bg-white rounded-xl border border-line p-6 space-y-4" x-show="mode !== 'link-website'" x-cloak>
                 <h3 class="font-semibold text-primary">Informasi Reksa Dana</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -159,6 +161,7 @@
                     </div>
                 </div>
             </div>
+            @endif
 
             {{-- Tab Pilih Mode --}}
             <div class="table-card">
@@ -1530,8 +1533,8 @@
 
             <div class="flex items-center gap-3" x-show="mode !== 'link-website'" x-cloak>
                 <button type="submit" name="simpan" value="1"
-                    class="px-4 py-2 text-sm font-medium text-white bg-gray-500 rounded-lg hover:bg-gray-600 transition">Simpan</button>
-                <x-primary-button>Submit Analisa</x-primary-button>
+                    class="px-4 py-2 text-sm font-medium text-white bg-gray-500 rounded-lg hover:bg-gray-600 transition">{{ !empty($isEditMode) ? 'Simpan Draft' : 'Simpan' }}</button>
+                <x-primary-button>{{ !empty($isEditMode) ? 'Simpan Perubahan' : 'Submit Analisa' }}</x-primary-button>
                 <a href="{{ $formRoutes['cancel'] }}"
                     class="px-4 py-2 text-sm font-medium text-muted border border-line rounded-lg hover:bg-[#f1f5f9] transition">Batal</a>
             </div>

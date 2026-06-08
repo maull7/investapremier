@@ -77,7 +77,8 @@
                 @foreach($hargaReferensi as $o)
                 <tr class="hover:bg-[#f8fafc] transition-colors">
                     <td class="px-4 py-3">
-                        <div class="w-fit px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-bold text-xs">{{ $o->kode }}</div>
+                        <a href="{{ route('admin.sekuritas.obligasi', $o->kode) }}"
+                            class="w-fit px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-bold text-xs hover:bg-primary/20 transition">{{ $o->kode }}</a>
                     </td>
                     <td class="px-4 py-3">
                         <p class="font-semibold text-primary leading-snug text-sm">{{ $o->nama ?: '-' }}</p>

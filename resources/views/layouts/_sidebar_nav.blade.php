@@ -271,12 +271,13 @@
             'obligasi.daftar',
             'obligasi.rating',
             'obligasi.ytm',
+            'obligasi.sekuritas-informasi',
             'obligasi.analisa',
             'obligasi.monitor-analisa',
         ]))
     <div>
         <button type="button" @click="obligasiOpen = !obligasiOpen"
-            class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.obligasi.*') || request()->routeIs('admin.analisa-obligasi.*') || request()->routeIs('admin.rating-obligasi.*') || request()->routeIs('admin.ytm-normal-curve.*') ? 'bg-green-50 text-green-700 font-semibold' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+            class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.obligasi.*') || request()->routeIs('admin.analisa-obligasi.*') || request()->routeIs('admin.rating-obligasi.*') || request()->routeIs('admin.ytm-normal-curve.*') || request()->routeIs('admin.sekuritas-informasi.*') || request()->routeIs('admin.sekuritas.*') ? 'bg-green-50 text-green-700 font-semibold' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
             <span class="flex items-center gap-3">
                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -299,6 +300,17 @@
                         d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                 </svg>
                 Daftar Obligasi
+            </a>
+            @endcanAccess
+            @canAccess('obligasi.sekuritas-informasi')
+            <a href="{{ route('admin.sekuritas-informasi.index') }}"
+                @if ($mobile) x-on:click="sidebarOpen = false" @endif
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.sekuritas-informasi.*') ? 'bg-green-50 text-green-700 font-semibold' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+                Sekuritas Informasi
             </a>
             @endcanAccess
             @canAccess('obligasi.rating')

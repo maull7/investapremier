@@ -1307,73 +1307,6 @@ class AnalisaController extends Controller
 
         $analisa->load(['sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasiAset']);
 
-        $editData = [
-            'sektor'   => $analisa->sektor->map(fn($s) => ['nama_sektor' => $s->nama_sektor, 'bobot' => $s->bobot])->values(),
-            'efek'     => $analisa->efek->map(fn($e) => [
-                'kode_efek' => $e->kode_efek,
-                'nama_efek' => $e->nama_efek,
-                'sektor' => $e->sektor,
-                'bobot' => $e->bobot,
-                'kontribusi_kinerja' => $e->kontribusi_kinerja,
-                'market_cap' => $e->market_cap,
-                'nilai_pasar' => $e->nilai_pasar,
-                'return_1m' => $e->return_1m,
-                'return_3m' => $e->return_3m,
-                'return_6m' => $e->return_6m,
-                'return_1y' => $e->return_1y,
-                'ihsg_contribution' => $e->ihsg_contribution,
-                'effect_type' => $e->effect_type,
-                'top_10' => $e->top_10,
-                'harga_perolehan' => $e->harga_perolehan,
-                'persen_nab' => $e->persen_nab,
-            ])->values(),
-            'kinerja'  => $analisa->kinerja->map(fn($k) => ['periode' => \Carbon\Carbon::parse($k->periode)->format('Y-m'), 'return_pct' => $k->return_pct])->values(),
-            'obligasi' => $analisa->obligasi->map(fn($o) => [
-                'kode_obligasi' => $o->kode_obligasi,
-                'nama_obligasi' => $o->nama_obligasi,
-                'bobot' => $o->bobot,
-                'durasi' => $o->durasi,
-                'rating' => $o->rating,
-                'nilai_pasar' => $o->nilai_pasar,
-                'return_1m' => $o->return_1m,
-                'return_3m' => $o->return_3m,
-                'return_6m' => $o->return_6m,
-                'return_1y' => $o->return_1y,
-                'ytm' => $o->ytm,
-                'kupon' => $o->kupon,
-                'tanggal_jatuh_tempo' => $o->tanggal_jatuh_tempo?->format('Y-m-d'),
-                'penerbit' => $o->penerbit,
-                'persen_nab' => $o->persen_nab,
-            ])->values(),
-            'sukuk'    => $analisa->sukuk->map(fn($s) => [
-                'kode_sukuk' => $s->kode_sukuk,
-                'nama_sukuk' => $s->nama_sukuk,
-                'jenis_sukuk' => $s->jenis_sukuk,
-                'bobot' => $s->bobot,
-                'yield' => $s->yield,
-                'jatuh_tempo' => $s->jatuh_tempo,
-                'rating' => $s->rating,
-                'persen_nab' => $s->persen_nab,
-            ])->values(),
-            'bank'     => $analisa->bank->map(fn($b) => [
-                'nama_bank' => $b->nama_bank,
-                'bobot' => $b->bobot,
-                'car' => $b->car,
-                'npl' => $b->npl,
-                'klasifikasi_risiko' => $b->klasifikasi_risiko,
-                'jenis_bank' => $b->jenis_bank,
-                'nilai_pasar' => $b->nilai_pasar,
-                'return_1m' => $b->return_1m,
-                'return_3m' => $b->return_3m,
-                'return_6m' => $b->return_6m,
-                'return_1y' => $b->return_1y,
-                'tingkat_bunga' => $b->tingkat_bunga,
-                'jangka_waktu' => $b->jangka_waktu,
-                'persen_nab' => $b->persen_nab,
-            ])->values(),
-            'alokasi_aset' => $analisa->alokasiAset->map(fn($a) => ['nama_aset' => $a->nama_aset, 'persentase' => $a->persentase])->values(),
-        ];
-
         $formRoutes = array_merge($this->formRoutes(), [
             'update' => $this->isAdminContext
                 ? route('admin.analisa-rd.update', $analisa)
@@ -1383,7 +1316,15 @@ class AnalisaController extends Controller
                 : route('user.analisa.index'),
         ]);
 
-        return view('analisa.edit', compact('analisa', 'editData', 'formRoutes'));
+        $resumeAnalisa = $this->serializeAnalisaForForm($analisa);
+        $resumeMode = $analisa->mode ?: 'manual';
+        $isEditMode = true;
+
+        return view('analisa.create', array_merge(
+            ['formRoutes' => $formRoutes, 'productLabel' => $this->productLabel, 'isEditMode' => true],
+            $this->dataSourceLinkContext(),
+            compact('resumeAnalisa', 'resumeMode'),
+        ));
     }
 
     public function update(Request $request, AnalisaReksaDana $analisa)

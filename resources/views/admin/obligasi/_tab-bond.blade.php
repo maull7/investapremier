@@ -77,7 +77,8 @@
                 @foreach($bonds as $o)
                 <tr class="hover:bg-[#f8fafc] transition-colors">
                     <td class="px-4 py-3">
-                        <div class="w-fit px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-bold text-xs">{{ $o->kode }}</div>
+                        <a href="{{ route('admin.sekuritas.obligasi', $o->kode) }}"
+                            class="w-fit px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-bold text-xs hover:bg-primary/20 transition">{{ $o->kode }}</a>
                     </td>
                     <td class="px-4 py-3 text-xs">{{ $o->periode }}</td>
                     <td class="px-4 py-3 text-right text-xs">{{ $o->total_asset ? number_format($o->total_asset, 0, ',', '.') : '-' }}</td>

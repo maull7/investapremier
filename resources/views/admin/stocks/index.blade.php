@@ -174,9 +174,9 @@
                                 @endphp
                                 <tr class="hover:bg-[#f8fafc] transition-colors">
                                     <td class="px-4 py-3">
-                                        <div
-                                            class="w-14 h-7 rounded-lg bg-primary/10 text-primary font-bold text-xs grid place-items-center">
-                                            {{ $s->kode }}</div>
+                                        <a href="{{ route('admin.sekuritas.efek', $s->kode) }}"
+                                            class="w-14 h-7 rounded-lg bg-primary/10 text-primary font-bold text-xs grid place-items-center hover:bg-primary/20 transition">
+                                            {{ $s->kode }}</a>
                                     </td>
                                     <td class="px-4 py-3">
                                         <a href="{{ route('admin.saham.show', $s) }}"

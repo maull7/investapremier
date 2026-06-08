@@ -31,6 +31,8 @@ use App\Http\Controllers\Admin\AnalisaSahamController as AdminAnalisaSahamContro
 use App\Http\Controllers\Admin\AnalisaObligasiController as AdminAnalisaObligasiController;
 use App\Http\Controllers\Admin\RatingObligasiController as AdminRatingObligasiController;
 use App\Http\Controllers\Admin\YtmNormalCurveController as AdminYtmNormalCurveController;
+use App\Http\Controllers\Admin\SekuritasInformasiController;
+use App\Http\Controllers\Admin\ReksaDanaHoldingsController;
 use App\Http\Controllers\User\AnalisaSahamController as UserAnalisaSahamController;
 use App\Http\Controllers\User\AnalisaObligasiController as UserAnalisaObligasiController;
 use App\Http\Controllers\User\DataSourceLinkController as UserDataSourceLinkController;
@@ -268,6 +270,19 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::delete('ytm-normal-curve/{ytmNormalCurve}', [AdminYtmNormalCurveController::class, 'destroy'])->name('ytm-normal-curve.destroy');
     Route::get('ytm-normal-curve/template', [AdminYtmNormalCurveController::class, 'downloadTemplate'])->name('ytm-normal-curve.template');
     Route::post('ytm-normal-curve/import', [AdminYtmNormalCurveController::class, 'import'])->name('ytm-normal-curve.import');
+
+    // Sekuritas Informasi (Bond & Sukuk Data)
+    Route::get('sekuritas-informasi', [SekuritasInformasiController::class, 'index'])->name('sekuritas-informasi.index');
+    Route::post('sekuritas-informasi', [SekuritasInformasiController::class, 'store'])->name('sekuritas-informasi.store');
+    Route::put('sekuritas-informasi/{sekuritasInformasi}', [SekuritasInformasiController::class, 'update'])->name('sekuritas-informasi.update');
+    Route::delete('sekuritas-informasi/{sekuritasInformasi}', [SekuritasInformasiController::class, 'destroy'])->name('sekuritas-informasi.destroy');
+    Route::get('sekuritas-informasi/template', [SekuritasInformasiController::class, 'downloadTemplate'])->name('sekuritas-informasi.template');
+    Route::post('sekuritas-informasi/import', [SekuritasInformasiController::class, 'import'])->name('sekuritas-informasi.import');
+    Route::get('sekuritas-informasi/export', [SekuritasInformasiController::class, 'export'])->name('sekuritas-informasi.export');
+
+    // Reksa Dana Holdings (daftar RD yang memiliki efek/obligasi tertentu)
+    Route::get('sekuritas/efek/{kode}', [ReksaDanaHoldingsController::class, 'efek'])->name('sekuritas.efek');
+    Route::get('sekuritas/obligasi/{kode}', [ReksaDanaHoldingsController::class, 'obligasi'])->name('sekuritas.obligasi');
 
     // Manajer Investasi
     Route::resource('investment-managers', AdminInvestmentManagerController::class)->except(['show']);
