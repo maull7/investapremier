@@ -45,7 +45,7 @@ use App\Http\Controllers\StockDetailController;
 use Illuminate\Support\Facades\Route;
 
 
-//before login
+//before login tes
 Route::get('/', function () {
     return view('index');
 })->name('index');
