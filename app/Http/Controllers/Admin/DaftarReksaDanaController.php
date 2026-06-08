@@ -620,8 +620,16 @@ class DaftarReksaDanaController extends Controller
 
         $parsed = app(KodeReksaDanaParser::class)->parse($kode);
 
-        if (!$parsed) {
-            return response()->json(['error' => 'Kode Reksa Dana tidak valid / Manajer Investasi tidak ditemukan'], 422);
+        if (empty($parsed['is_valid_length']) || empty($parsed['jenis'])) {
+            $msg = 'Kode Reksa Dana tidak valid. ';
+            if (strlen($kode) < 16) {
+                $msg .= 'Panjang kode minimal 16 karakter.';
+            } elseif (empty($parsed['nama_manajer_investasi'])) {
+                $msg .= 'Kode Manajer Investasi tidak ditemukan.';
+            } else {
+                $msg .= 'Format kode tidak sesuai.';
+            }
+            return response()->json(['error' => $msg], 422);
         }
 
         return response()->json($parsed);

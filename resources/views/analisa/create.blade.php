@@ -1438,6 +1438,23 @@
                                                 <span class="text-xs text-muted shrink-0 hidden sm:inline" x-text="doc.reksa_dana_kode"></span>
                                                 <span class="text-xs text-muted shrink-0" x-text="doc.uploaded_at"></span>
                                             </div>
+                                            <div class="flex items-center gap-1 shrink-0" x-show="doc.url">
+                                                <a :href="doc.url" target="_blank"
+                                                    class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                    </svg>
+                                                    Lihat
+                                                </a>
+                                                <a :href="doc.url" download
+                                                    class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-md hover:bg-emerald-100 transition">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                    </svg>
+                                                    Download
+                                                </a>
+                                            </div>
                                         </div>
                                     </template>
                                 </div>
@@ -1660,6 +1677,10 @@
 
                     init() {
                         if (resumeData) {
+                            const el = document.getElementById('kode_reksa_dana');
+                            if (el && resumeData.kode_reksa_dana) {
+                                el.value = resumeData.kode_reksa_dana;
+                            }
                             this.applyLookupData(resumeData);
                         }
                         this.fetchExistingDocuments();
@@ -1973,10 +1994,17 @@
                     lookupReksaDana(kode) {
                         kode = String(kode || '').trim();
                         if (!this.lookupKodeUrl || kode.length < 2) {
+                            if (this.currentKode) {
+                                this.currentKode = '';
+                                this.fetchExistingDocuments();
+                            }
                             this.lookupMessage = '';
                             this.lookupOk = false;
                             return;
                         }
+
+                        // Sudah di-lookup, jangan fetch ulang (cegah infinite loop dari setFieldValue)
+                        if (this.currentKode === kode) return;
 
                         fetch(`${this.lookupKodeUrl}?kode_reksa_dana=${encodeURIComponent(kode)}`, {
                                 headers: {
@@ -1986,8 +2014,9 @@
                             .then(res => res.json())
                             .then(resp => {
                                 if (!resp.found) {
+                                    this.currentKode = '';
                                     this.lookupOk = false;
-                                    this.lookupMessage = 'Kode belum ditemukan di master data atau analisa sebelumnya.';
+                                    this.lookupMessage = 'Kode tidak ditemukan.';
                                     return;
                                 }
 
@@ -2001,6 +2030,7 @@
                                 this.lookupMessage = resp.last_analisa ?
                                     'Data analisa terakhir berhasil dimuat.' :
                                     'Data master reksa dana berhasil dimuat.';
+                                this.fetchExistingDocuments();
                             })
                             .catch(() => {
                                 this.lookupOk = false;
@@ -2010,7 +2040,6 @@
 
                     applyLookupData(data) {
                         this.resumeId = data.id || this.resumeId;
-                        this.setFieldValue('kode_reksa_dana', data.kode_reksa_dana);
                         this.setFieldValue('nama_reksa_dana', data.nama_reksa_dana);
                         this.setFieldValue('jenis_reksa_dana', data.jenis_reksa_dana);
                         this.setFieldValue('benchmark', data.benchmark);
@@ -2762,6 +2791,11 @@
                         this.selectedDocIds = [];
 
                         const params = new URLSearchParams();
+
+                        // Filter berdasarkan kode reksa dana yang sudah dipilih
+                        const kode = (document.getElementById('kode_reksa_dana')?.value || '').trim();
+                        if (kode) params.append('kode_reksa_dana', kode);
+
                         if (this.jenisLaporan === 'laporan_tahunan') {
                             params.append('jenis_laporan', 'laporan_tahunan');
                             if (this.tahunLaporan) params.append('tahun_laporan', this.tahunLaporan);

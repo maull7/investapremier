@@ -463,80 +463,91 @@ class AnalisaController extends Controller
 
     public function getExistingDocuments(Request $request)
     {
-        $request->validate([
-            'kode_reksa_dana' => 'nullable|string|max:20',
-            'jenis_laporan' => 'nullable|in:kalender_ffs,laporan_tahunan',
-            'ffs_bulan' => 'nullable|integer|min:1|max:12',
-            'ffs_tahun' => 'nullable|integer|min:2000|max:2100',
-            'tahun_laporan' => 'nullable|digits:4',
-        ]);
-
-        $query = ReksaDanaDocument::with(['reksaDana', 'uploader']);
-
-        // Filter by kode if provided
-        if ($kode = $request->kode_reksa_dana) {
-            $kode = strtoupper(trim($kode));
-            $query->whereHas('reksaDana', fn($q) => $q->whereRaw('UPPER(kode_reksa_dana) = ?', [$kode]));
-        }
-
-        $jenisLaporan = $request->jenis_laporan;
-
-        if ($jenisLaporan === 'laporan_tahunan') {
-            $query->whereIn('document_type', [
-                ReksaDanaDocument::TYPE_LAPORAN_TAHUNAN,
-                ReksaDanaDocument::TYPE_PROSPECTUS,
-            ]);
-            if ($request->tahun_laporan) {
-                $tahun = $request->tahun_laporan;
-                $query->where(function ($q) use ($tahun) {
-                    $q->where(function ($q2) use ($tahun) {
-                        $q2->where('document_type', ReksaDanaDocument::TYPE_LAPORAN_TAHUNAN)
-                          ->where('tahun_laporan', $tahun);
-                    })->orWhere(function ($q2) use ($tahun) {
-                        $q2->where('document_type', ReksaDanaDocument::TYPE_PROSPECTUS)
-                          ->where('ffs_year', $tahun);
-                    });
-                });
-            }
-        } else {
-            $query->where('document_type', ReksaDanaDocument::TYPE_FFS);
-            if ($request->ffs_bulan) {
-                $query->where('ffs_month', $request->ffs_bulan);
-            }
-            if ($request->ffs_tahun) {
-                $query->where('ffs_year', $request->ffs_tahun);
-            }
-        }
-
-        $documents = $query->orderByDesc('ffs_year')
-            ->orderByDesc('ffs_month')
-            ->get()
-            ->map(fn($doc) => [
-                'id' => $doc->id,
-                'document_type' => $doc->document_type,
-                'original_name' => $doc->original_name,
-                'file_path' => $doc->file_path,
-                'label' => $this->getDocumentLabel($doc),
-                'ffs_month' => $doc->ffs_month,
-                'ffs_year' => $doc->ffs_year,
-                'tahun_laporan' => $doc->tahun_laporan,
-                'reksa_dana_nama' => $doc->reksaDana?->nama_reksa_dana,
-                'reksa_dana_kode' => $doc->reksaDana?->kode_reksa_dana,
-                'uploaded_at' => $doc->created_at->format('d/m/Y'),
-                'uploader_name' => $doc->uploader?->name,
-                'file_size' => $doc->file_size,
+        try {
+            $request->validate([
+                'kode_reksa_dana' => 'nullable|string|max:20',
+                'jenis_laporan' => 'nullable|in:kalender_ffs,laporan_tahunan',
+                'ffs_bulan' => 'nullable|integer|min:1|max:12',
+                'ffs_tahun' => 'nullable|integer|min:2000|max:2100',
+                'tahun_laporan' => 'nullable|integer|min:2000|max:2100',
             ]);
 
-        return response()->json([
-            'found' => $documents->isNotEmpty(),
-            'documents' => $documents,
-        ]);
+            $query = ReksaDanaDocument::with(['reksaDana', 'uploader']);
+
+            if ($kode = $request->kode_reksa_dana) {
+                $kode = strtoupper(trim($kode));
+                $query->whereHas('reksaDana', fn($q) => $q->where('kode_reksa_dana', $kode));
+            }
+
+            $jenisLaporan = $request->jenis_laporan;
+
+            if ($jenisLaporan === 'laporan_tahunan') {
+                $query->whereIn('document_type', [
+                    ReksaDanaDocument::TYPE_LAPORAN_TAHUNAN,
+                    ReksaDanaDocument::TYPE_PROSPECTUS,
+                ]);
+                if ($request->tahun_laporan) {
+                    $query->where('ffs_year', $request->tahun_laporan);
+                }
+            } else {
+                $query->where('document_type', ReksaDanaDocument::TYPE_FFS);
+                if ($request->ffs_bulan) {
+                    $query->where('ffs_month', $request->ffs_bulan);
+                }
+                if ($request->ffs_tahun) {
+                    $query->where('ffs_year', $request->ffs_tahun);
+                }
+            }
+
+            $documents = $query->orderByDesc('ffs_year')
+                ->orderByDesc('ffs_month')
+                ->get()
+                ->map(fn($doc) => [
+                    'id' => $doc->id,
+                    'document_type' => $doc->document_type,
+                    'original_name' => $doc->original_name,
+                    'file_path' => $doc->file_path,
+                    'label' => $this->getDocumentLabel($doc),
+                    'ffs_month' => $doc->ffs_month,
+                    'ffs_year' => $doc->ffs_year,
+                    'tahun_laporan' => $doc->ffs_year,
+                    'reksa_dana_nama' => $doc->reksaDana?->nama_reksa_dana,
+                    'reksa_dana_kode' => $doc->reksaDana?->kode_reksa_dana,
+                    'uploaded_at' => $doc->created_at?->format('d/m/Y') ?? '',
+                    'uploader_name' => $doc->uploader?->name,
+                    'file_size' => $doc->file_size,
+                    'url' => $doc->file_path && Storage::disk('public')->exists($doc->file_path)
+                        ? Storage::disk('public')->url($doc->file_path) : null,
+                ]);
+
+            return response()->json([
+                'found' => $documents->isNotEmpty(),
+                'documents' => $documents,
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'found' => false,
+                'documents' => [],
+                'error' => 'Parameter tidak valid.',
+            ], 422);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Gagal mengambil dokumen tersimpan', [
+                'error' => $e->getMessage(),
+                'params' => $request->only(['kode_reksa_dana', 'jenis_laporan', 'ffs_bulan', 'ffs_tahun', 'tahun_laporan']),
+            ]);
+
+            return response()->json([
+                'found' => false,
+                'documents' => [],
+                'error' => 'Gagal mengambil data dokumen.',
+            ]);
+        }
     }
 
     private function getDocumentLabel(ReksaDanaDocument $doc): string
     {
         return match ($doc->document_type) {
-            ReksaDanaDocument::TYPE_LAPORAN_TAHUNAN => 'Laporan Tahunan ' . ($doc->tahun_laporan ?? ''),
+            ReksaDanaDocument::TYPE_LAPORAN_TAHUNAN => 'Laporan Tahunan ' . ($doc->ffs_year ?? ''),
             ReksaDanaDocument::TYPE_PROSPECTUS => 'Prospektus ' . ($doc->ffs_year ?? ''),
             ReksaDanaDocument::TYPE_FFS => 'FFS '
                 . ($doc->ffs_month ? \Carbon\Carbon::create()->month($doc->ffs_month)->format('M') . ' ' : '')

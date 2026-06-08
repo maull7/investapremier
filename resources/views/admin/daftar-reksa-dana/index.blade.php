@@ -831,6 +831,14 @@
                     if (data.error) {
                         errorEl.textContent = data.error;
                         errorEl.classList.remove('hidden');
+                        // Clear generated fields so stale DB data doesn't persist
+                        document.getElementById(prefix + '-harga-mi').value = '';
+                        document.getElementById(prefix + '-harga-jenis').value = '';
+                        document.getElementById(prefix + '-harga-kp').value = '';
+                        document.getElementById(prefix + '-harga-kelas').value = '';
+                        document.getElementById(prefix + '-harga-matauang').value = '';
+                        document.getElementById(prefix + '-harga-kategori-display').textContent = '—';
+                        document.getElementById(prefix + '-harga-kategori').value = '[]';
                         return;
                     }
                     errorEl.classList.add('hidden');
@@ -856,12 +864,7 @@
 
             document.getElementById('edit-harga-kode').value = data.kode_reksa_dana || '';
             document.getElementById('edit-harga-nama').value = data.nama_reksa_dana;
-            document.getElementById('edit-harga-mi').value = data.nama_manajer_investasi || '';
-            document.getElementById('edit-harga-jenis').value = data.jenis || '';
-            document.getElementById('edit-harga-kp').value = data.kategori_produk || '';
-            document.getElementById('edit-harga-kelas').value = data.display_kelas || data.kelas || '';
             document.getElementById('edit-harga-benchmark').value = data.benchmark || '';
-            document.getElementById('edit-harga-matauang').value = data.display_mata_uang || data.mata_uang || 'IDR';
             document.getElementById('edit-harga-nab').value = data.nab_per_unit || '';
             document.getElementById('edit-harga-tgl-nab').value = (data.tanggal_nab || '').substring(0, 10);
 
@@ -869,6 +872,19 @@
             document.getElementById('edit-harga-kategori-display').textContent = kategori.length ? kategori.join(', ') :
             '—';
             document.getElementById('edit-harga-kategori').value = JSON.stringify(kategori);
+
+            // Generate MI, Jenis, Kategori Produk, Kelas, Mata Uang dari parsing kode,
+            // bukan dari database — agar data hasil parse selalu prioritas
+            if (data.kode_reksa_dana) {
+                fillFromKode(data.kode_reksa_dana, 'edit');
+            } else {
+                // Fallback jika tidak ada kode
+                document.getElementById('edit-harga-mi').value = data.nama_manajer_investasi || '';
+                document.getElementById('edit-harga-jenis').value = data.jenis || '';
+                document.getElementById('edit-harga-kp').value = data.kategori_produk || '';
+                document.getElementById('edit-harga-kelas').value = data.display_kelas || data.kelas || '';
+                document.getElementById('edit-harga-matauang').value = data.display_mata_uang || data.mata_uang || 'IDR';
+            }
 
             openModal('modal-harga-edit');
         }
