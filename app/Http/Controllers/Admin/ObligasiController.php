@@ -11,6 +11,7 @@ use App\Imports\ObligasiHargaReferensiImport;
 use App\Imports\ObligasiBondImport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
+use App\Support\ActivityLogger;
 
 class ObligasiController extends Controller
 {
@@ -77,7 +78,14 @@ class ObligasiController extends Controller
             'outstanding_amount' => 'nullable|numeric',
         ]);
 
-        ObligasiHargaReferensi::create($data);
+        $hargaReferensi = ObligasiHargaReferensi::create($data);
+
+        ActivityLogger::log(
+            'Membuat Harga Referensi',
+            "Harga referensi {$hargaReferensi->kode} berhasil ditambahkan",
+            'success',
+            $hargaReferensi,
+        );
 
         return redirect()->route('admin.obligasi.index', ['tab' => 'harga-referensi'])
             ->with('success', 'Obligasi harga referensi berhasil ditambahkan.');
@@ -114,12 +122,26 @@ class ObligasiController extends Controller
 
         $obligasiHargaReferensi->update($data);
 
+        ActivityLogger::log(
+            'Memperbarui Harga Referensi',
+            "Harga referensi {$obligasiHargaReferensi->kode} berhasil diperbarui",
+            'success',
+            $obligasiHargaReferensi,
+        );
+
         return redirect()->route('admin.obligasi.index', ['tab' => 'harga-referensi'])
             ->with('success', 'Obligasi harga referensi berhasil diperbarui.');
     }
 
     public function destroyHargaReferensi(ObligasiHargaReferensi $obligasiHargaReferensi)
     {
+        ActivityLogger::log(
+            'Menghapus Harga Referensi',
+            "Harga referensi {$obligasiHargaReferensi->kode} berhasil dihapus",
+            'success',
+            $obligasiHargaReferensi,
+        );
+
         $obligasiHargaReferensi->delete();
         return redirect()->route('admin.obligasi.index', ['tab' => 'harga-referensi'])
             ->with('success', 'Obligasi harga referensi berhasil dihapus.');
@@ -179,9 +201,16 @@ class ObligasiController extends Controller
             'cash_flows_financing' => 'nullable|numeric',
         ]);
 
-        ObligasiBond::updateOrCreate(
+        $bond = ObligasiBond::updateOrCreate(
             ['kode' => $data['kode'], 'periode' => $data['periode']],
             $data
+        );
+
+        ActivityLogger::log(
+            'Membuat Bond',
+            "Bond {$bond->kode} periode {$bond->periode} berhasil ditambahkan",
+            'success',
+            $bond,
         );
 
         return redirect()->route('admin.obligasi.index', ['tab' => 'bond'])
@@ -244,12 +273,26 @@ class ObligasiController extends Controller
 
         $obligasiBond->update($data);
 
+        ActivityLogger::log(
+            'Memperbarui Bond',
+            "Bond {$obligasiBond->kode} periode {$obligasiBond->periode} berhasil diperbarui",
+            'success',
+            $obligasiBond,
+        );
+
         return redirect()->route('admin.obligasi.index', ['tab' => 'bond'])
             ->with('success', 'Keuangan emiten berhasil diperbarui.');
     }
 
     public function destroyBond(ObligasiBond $obligasiBond)
     {
+        ActivityLogger::log(
+            'Menghapus Bond',
+            "Bond {$obligasiBond->kode} periode {$obligasiBond->periode} berhasil dihapus",
+            'success',
+            $obligasiBond,
+        );
+
         $obligasiBond->delete();
         return redirect()->route('admin.obligasi.index', ['tab' => 'bond'])
             ->with('success', 'Keuangan emiten berhasil dihapus.');
@@ -270,6 +313,13 @@ class ObligasiController extends Controller
         $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv']);
         $import = new ObligasiHargaReferensiImport;
         Excel::import($import, $request->file('file'));
+
+        ActivityLogger::log(
+            'Import Harga Referensi',
+            "{$import->imported} data harga referensi berhasil diimport",
+            'success',
+        );
+
         return redirect()->route('admin.obligasi.index', ['tab' => 'harga-referensi'])
             ->with('success', "{$import->imported} data obligasi harga referensi berhasil diimport.");
     }
@@ -279,6 +329,13 @@ class ObligasiController extends Controller
         $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv']);
         $import = new ObligasiBondImport;
         Excel::import($import, $request->file('file'));
+
+        ActivityLogger::log(
+            'Import Bond',
+            "{$import->imported} data bond berhasil diimport",
+            'success',
+        );
+
         return redirect()->route('admin.obligasi.index', ['tab' => 'bond'])
             ->with('success', "{$import->imported} data keuangan emiten berhasil diimport.");
     }

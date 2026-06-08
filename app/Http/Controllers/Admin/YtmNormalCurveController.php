@@ -9,6 +9,7 @@ use App\Models\RatingObligasi;
 use App\Models\YtmNormalCurve;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Support\ActivityLogger;
 
 class YtmNormalCurveController extends Controller
 {
@@ -77,7 +78,14 @@ class YtmNormalCurveController extends Controller
             ]);
         }
 
-        YtmNormalCurve::create($data);
+        $curve = YtmNormalCurve::create($data);
+
+        ActivityLogger::log(
+            'Membuat YTM Normal Curve',
+            "YTM Normal Curve untuk rating id {$curve->rating_id} tenor {$curve->tenor_bulan} bulan berhasil ditambahkan",
+            'success',
+            $curve,
+        );
 
         return redirect()->route('admin.ytm-normal-curve.index')
             ->with('success', 'Data YTM Normal Curve berhasil ditambahkan.');
@@ -110,12 +118,26 @@ class YtmNormalCurveController extends Controller
 
         $ytmNormalCurve->update($data);
 
+        ActivityLogger::log(
+            'Memperbarui YTM Normal Curve',
+            "YTM Normal Curve untuk rating id {$ytmNormalCurve->rating_id} tenor {$ytmNormalCurve->tenor_bulan} bulan berhasil diperbarui",
+            'success',
+            $ytmNormalCurve,
+        );
+
         return redirect()->route('admin.ytm-normal-curve.index')
             ->with('success', 'Data YTM Normal Curve berhasil disimpan.');
     }
 
     public function destroy(YtmNormalCurve $ytmNormalCurve)
     {
+        ActivityLogger::log(
+            'Menghapus YTM Normal Curve',
+            "YTM Normal Curve untuk rating id {$ytmNormalCurve->rating_id} tenor {$ytmNormalCurve->tenor_bulan} bulan berhasil dihapus",
+            'success',
+            $ytmNormalCurve,
+        );
+
         $ytmNormalCurve->delete();
 
         return redirect()->route('admin.ytm-normal-curve.index')
@@ -133,6 +155,12 @@ class YtmNormalCurveController extends Controller
 
         $import = new YtmNormalCurveImport;
         Excel::import($import, $request->file('file'));
+
+        ActivityLogger::log(
+            'Import YTM Normal Curve',
+            "{$import->imported} data YTM Normal Curve berhasil diimport",
+            'success',
+        );
 
         $message = "{$import->imported} data YTM Normal Curve berhasil diimport.";
         if ($import->imported === 0) {

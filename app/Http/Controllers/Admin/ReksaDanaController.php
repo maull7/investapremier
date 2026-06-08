@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\AnalisaAiJob;
 use App\Models\AnalisaReksaDana;
 use Illuminate\Http\Request;
+use App\Support\ActivityLogger;
 use Illuminate\Support\Facades\Storage;
 
 class ReksaDanaController extends Controller
@@ -53,6 +54,12 @@ class ReksaDanaController extends Controller
                 $count++;
             }
         }
+
+        ActivityLogger::log(
+            'Bulk Analisa Reksa Dana',
+            "{$count} reksa dana sedang diproses analisa FFS",
+            'success',
+        );
 
         return back()->with('success', "{$count} reksa dana sedang diproses analisa FFS.");
     }

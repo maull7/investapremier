@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AnalisaReksaDana;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use App\Support\ActivityLogger;
 use Illuminate\Support\Facades\Storage;
 
 class AnalisaController extends Controller
@@ -85,11 +86,25 @@ class AnalisaController extends Controller
             'catatan_admin' => $request->catatan_admin,
         ]);
 
+        ActivityLogger::log(
+            'Review Analisa Reksa Dana',
+            "Analisa {$analisa->nama_reksa_dana} telah ditandai sebagai reviewed",
+            'success',
+            $analisa,
+        );
+
         return back()->with('success', 'Data analisa telah ditandai sebagai reviewed.');
     }
 
     public function destroy(AnalisaReksaDana $analisa)
     {
+        ActivityLogger::log(
+            'Menghapus Analisa Reksa Dana',
+            "Analisa {$analisa->nama_reksa_dana} berhasil dihapus",
+            'success',
+            $analisa,
+        );
+
         if ($analisa->pdf_path && Storage::disk('public')->exists($analisa->pdf_path)) {
             Storage::disk('public')->delete($analisa->pdf_path);
         }

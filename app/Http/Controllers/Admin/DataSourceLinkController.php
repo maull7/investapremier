@@ -8,6 +8,7 @@ use App\Models\DataSourceLinkUrl;
 use App\Services\DataSourceSyncService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use App\Support\ActivityLogger;
 use Illuminate\Validation\Rule;
 
 class DataSourceLinkController extends Controller
@@ -38,6 +39,13 @@ class DataSourceLinkController extends Controller
         ]);
         $this->saveUrls($link, $urls);
 
+        ActivityLogger::log(
+            'Membuat Sumber Data',
+            "Sumber data {$data['nama_sumber']} berhasil ditambahkan",
+            'success',
+            $link,
+        );
+
         return $this->redirectIndex('success', 'Sumber data berhasil ditambahkan.');
     }
 
@@ -61,11 +69,25 @@ class DataSourceLinkController extends Controller
         $dataSourceLink->urls()->delete();
         $this->saveUrls($dataSourceLink, $urls);
 
+        ActivityLogger::log(
+            'Mengubah Sumber Data',
+            "Sumber data {$data['nama_sumber']} berhasil diperbarui",
+            'success',
+            $dataSourceLink,
+        );
+
         return $this->redirectIndex('success', 'Sumber data berhasil diperbarui.');
     }
 
     public function destroy(DataSourceLink $dataSourceLink): RedirectResponse
     {
+        ActivityLogger::log(
+            'Menghapus Sumber Data',
+            "Sumber data {$dataSourceLink->nama_sumber} berhasil dihapus",
+            'success',
+            $dataSourceLink,
+        );
+
         $dataSourceLink->delete();
 
         return $this->redirectIndex('success', 'Sumber data berhasil dihapus.');
@@ -81,6 +103,12 @@ class DataSourceLinkController extends Controller
             $dataSourceLink,
             $request->file('file'),
             $request->user()?->id,
+        );
+
+        ActivityLogger::log(
+            'Upload Data Sumber',
+            $log->message,
+            $log->status === 'success' ? 'success' : 'failed',
         );
 
         $flash = $log->status === 'success' ? 'success' : 'error';

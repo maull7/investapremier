@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AiPrompt;
 use Illuminate\Http\Request;
+use App\Support\ActivityLogger;
 
 class AiPromptController extends Controller
 {
@@ -40,7 +41,14 @@ class AiPromptController extends Controller
             'sort_order'  => 'nullable|integer',
         ]);
 
-        AiPrompt::create($request->only(['key', 'group', 'label', 'value', 'description', 'sort_order']));
+        $prompt = AiPrompt::create($request->only(['key', 'group', 'label', 'value', 'description', 'sort_order']));
+
+        ActivityLogger::log(
+            'Membuat AI Prompt',
+            "Prompt \"{$prompt->label}\" berhasil ditambahkan",
+            'success',
+            $prompt,
+        );
 
         return redirect()->route('admin.ai-prompts.group', $request->group ?: 'general')
             ->with('success', "Prompt \"{$request->label}\" berhasil ditambahkan.");
@@ -66,6 +74,13 @@ class AiPromptController extends Controller
         $aiPrompt = AiPrompt::findOrFail($key);
         $aiPrompt->update($request->only(['label', 'value', 'description', 'group', 'sort_order']));
 
+        ActivityLogger::log(
+            'Memperbarui AI Prompt',
+            "Prompt \"{$aiPrompt->label}\" berhasil diperbarui",
+            'success',
+            $aiPrompt,
+        );
+
         return redirect()->route('admin.ai-prompts.group', $aiPrompt->group ?: 'general')
             ->with('success', "Prompt \"{$aiPrompt->label}\" berhasil disimpan.");
     }
@@ -74,6 +89,14 @@ class AiPromptController extends Controller
     {
         $aiPrompt = AiPrompt::findOrFail($key);
         $group = $aiPrompt->group ?: 'general';
+
+        ActivityLogger::log(
+            'Menghapus AI Prompt',
+            "Prompt \"{$aiPrompt->label}\" berhasil dihapus",
+            'success',
+            $aiPrompt,
+        );
+
         $aiPrompt->delete();
 
         return redirect()->route('admin.ai-prompts.group', $group)
@@ -85,6 +108,13 @@ class AiPromptController extends Controller
         $request->validate(['value' => 'required|string']);
         $aiPrompt = AiPrompt::findOrFail($key);
         $aiPrompt->update(['value' => $request->value]);
+
+        ActivityLogger::log(
+            'Memperbarui Nilai AI Prompt',
+            "Nilai prompt \"{$aiPrompt->label}\" berhasil diperbarui",
+            'success',
+            $aiPrompt,
+        );
 
         return back()->with('success', "Prompt \"{$aiPrompt->label}\" berhasil disimpan.");
     }

@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\ReksaDanaController as AdminReksaDanaController;
 use App\Http\Controllers\Admin\AnalisaRdController as AdminAnalisaRdController;
 use App\Http\Controllers\Admin\DaftarReksaDanaController;
 use App\Http\Controllers\Admin\DataSourceLinkController;
+use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\ObligasiController as AdminObligasiController;
 use App\Http\Controllers\Admin\InvestmentManagerController as AdminInvestmentManagerController;
@@ -318,6 +319,10 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::put('ai-prompts/{key}', [App\Http\Controllers\Admin\AiPromptController::class, 'update'])->name('ai-prompts.update');
     Route::put('ai-prompts/{key}/value', [App\Http\Controllers\Admin\AiPromptController::class, 'updateValue'])->name('ai-prompts.update-value');
     Route::delete('ai-prompts/{key}', [App\Http\Controllers\Admin\AiPromptController::class, 'destroy'])->name('ai-prompts.destroy');
+
+    // Activity Logs (admin only)
+    Route::get('activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index')
+        ->middleware('role:admin');
 
     // Sub Admin Management (admin utama only) Subadmin bisa manage user biasa, tapi tidak bisa manage subadmin lain atau admin utama
     Route::resource('sub-admins', \App\Http\Controllers\Admin\SubAdminController::class)

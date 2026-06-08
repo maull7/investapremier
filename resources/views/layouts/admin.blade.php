@@ -3,7 +3,7 @@
 @section('body')
     <div x-data="{
         sidebarOpen: false,
-        menuMasterOpen: {{ request()->routeIs('admin.dashboard') || request()->routeIs('admin.questions.*') || request()->routeIs('admin.members.*') || request()->routeIs('admin.score-classifications.*') ? 'true' : 'false' }},
+        menuMasterOpen: {{ request()->routeIs('admin.dashboard') || request()->routeIs('admin.questions.*') || request()->routeIs('admin.members.*') || request()->routeIs('admin.score-classifications.*') || request()->routeIs('admin.activity-logs.*') ? 'true' : 'false' }},
         reksaDanaOpen: {{ request()->routeIs('admin.reksa-dana.*') || request()->routeIs('admin.analisa-rd.*') || request()->routeIs('admin.analisa.*') ? 'true' : 'false' }},
         unitLinkOpen: {{ request()->routeIs('admin.unit-link.*') || request()->routeIs('admin.unit-link-ffs.*') || request()->routeIs('admin.analisa-ul.*') || request()->routeIs('admin.unit-link-analisa.*') ? 'true' : 'false' }},
         sahamOpen: {{ request()->routeIs('admin.saham.*') || request()->routeIs('admin.analisa-saham.*') ? 'true' : 'false' }},

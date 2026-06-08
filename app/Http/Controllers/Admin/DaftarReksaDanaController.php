@@ -17,6 +17,7 @@ use App\Services\ReksaDanaChartDataService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Support\ActivityLogger;
 use Maatwebsite\Excel\Facades\Excel;
 
 class DaftarReksaDanaController extends Controller
@@ -152,6 +153,12 @@ class DaftarReksaDanaController extends Controller
             'file_size' => $file->getSize(),
         ]);
 
+        ActivityLogger::log(
+            'Upload Dokumen',
+            "Dokumen {$validated['document_type']} berhasil diupload untuk reksa dana ID {$validated['reksa_dana_id']}",
+            'success',
+        );
+
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs'])
             ->with('success', 'Dokumen berhasil diupload.');
     }
@@ -175,6 +182,13 @@ class DaftarReksaDanaController extends Controller
 
     public function destroyDocument(ReksaDanaDocument $document)
     {
+        ActivityLogger::log(
+            'Menghapus Dokumen',
+            "Dokumen {$document->original_name} berhasil dihapus",
+            'success',
+            $document,
+        );
+
         $document->deleteStoredFile();
         $document->delete();
 
@@ -289,6 +303,12 @@ class DaftarReksaDanaController extends Controller
         if ($import->skipped > 0) {
             $msg .= ' (' . $import->skipped . ' baris dilewati)';
         }
+        ActivityLogger::log(
+            'Upload Harga Reksa Dana',
+            $msg,
+            'success',
+        );
+
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harga'])
             ->with('success', $msg);
     }
@@ -315,6 +335,12 @@ class DaftarReksaDanaController extends Controller
         if ($import->skipped > 0) {
             $msg .= ' (' . $import->skipped . ' baris dilewati)';
         }
+        ActivityLogger::log(
+            'Upload Data Harian Reksa Dana',
+            $msg,
+            'success',
+        );
+
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harian'])
             ->with('success', $msg);
     }
@@ -373,6 +399,13 @@ class DaftarReksaDanaController extends Controller
             );
         }
 
+        ActivityLogger::log(
+            'Membuat Reksa Dana',
+            "Reksa dana {$validated['nama_reksa_dana']} berhasil ditambahkan",
+            'success',
+            $reksaDana,
+        );
+
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harga'])
             ->with('success', 'Reksa dana berhasil ditambahkan.');
     }
@@ -421,12 +454,26 @@ class DaftarReksaDanaController extends Controller
             );
         }
 
+        ActivityLogger::log(
+            'Mengubah Reksa Dana',
+            "Reksa dana {$reksaDana->nama_reksa_dana} berhasil diperbarui",
+            'success',
+            $reksaDana,
+        );
+
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harga'])
             ->with('success', 'Reksa dana berhasil diperbarui.');
     }
 
     public function destroyHarga(ReksaDana $reksaDana)
     {
+        ActivityLogger::log(
+            'Menghapus Reksa Dana',
+            "Reksa dana {$reksaDana->nama_reksa_dana} berhasil dihapus",
+            'success',
+            $reksaDana,
+        );
+
         $reksaDana->delete();
 
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harga'])
@@ -457,6 +504,12 @@ class DaftarReksaDanaController extends Controller
             'tanggal_nab'  => $validated['tanggal'],
         ]);
 
+        ActivityLogger::log(
+            'Membuat Data Harian',
+            "Data harian untuk reksa dana ID {$validated['reksa_dana_id']} tanggal {$validated['tanggal']} berhasil ditambahkan",
+            'success',
+        );
+
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harian'])
             ->with('success', 'Data harian berhasil ditambahkan.');
     }
@@ -486,12 +539,26 @@ class DaftarReksaDanaController extends Controller
             'tanggal_nab'  => $validated['tanggal'],
         ]);
 
+        ActivityLogger::log(
+            'Mengubah Data Harian',
+            "Data harian ID {$hargaReksaDana->id} berhasil diperbarui",
+            'success',
+            $hargaReksaDana,
+        );
+
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harian'])
             ->with('success', 'Data harian berhasil diperbarui.');
     }
 
     public function destroyHarian(HargaReksaDana $hargaReksaDana)
     {
+        ActivityLogger::log(
+            'Menghapus Data Harian',
+            "Data harian ID {$hargaReksaDana->id} berhasil dihapus",
+            'success',
+            $hargaReksaDana,
+        );
+
         $hargaReksaDana->delete();
 
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harian'])

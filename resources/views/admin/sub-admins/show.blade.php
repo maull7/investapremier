@@ -8,6 +8,7 @@
         </a>
         <h1 class="text-xl font-bold text-gray-900">Detail Sub Admin</h1>
         <div class="ml-auto flex gap-2">
+            <a href="{{ route('admin.activity-logs.index', ['user_id' => $subAdmin->id]) }}" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Lihat Logs</a>
             <a href="{{ route('admin.sub-admins.edit', $subAdmin) }}" class="px-4 py-2 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 hover:bg-blue-100">Edit</a>
         </div>
     </div>

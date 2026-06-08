@@ -7,6 +7,7 @@ use App\Models\AnalisaReksaDana;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Support\ActivityLogger;
 
 class MonitorAnalisaUlController extends Controller
 {
@@ -64,11 +65,25 @@ class MonitorAnalisaUlController extends Controller
             'catatan_admin' => $request->catatan_admin,
         ]);
 
+        ActivityLogger::log(
+            'Review Analisa Unit Link',
+            "Analisa unit link {$analisa->nama_reksa_dana} telah direview",
+            'success',
+            $analisa,
+        );
+
         return back()->with('success', 'Data analisa telah ditandai sebagai reviewed.');
     }
 
     public function destroy(AnalisaReksaDana $analisa)
     {
+        ActivityLogger::log(
+            'Menghapus Analisa Unit Link',
+            "Analisa unit link {$analisa->nama_reksa_dana} berhasil dihapus",
+            'success',
+            $analisa,
+        );
+
         if ($analisa->pdf_path && Storage::disk('public')->exists($analisa->pdf_path)) {
             Storage::disk('public')->delete($analisa->pdf_path);
         }
