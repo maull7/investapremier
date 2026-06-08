@@ -113,6 +113,12 @@
                         @if (request('jenis'))
                             <input type="hidden" name="jenis" value="{{ request('jenis') }}">
                         @endif
+                        @if (request('sort'))
+                            <input type="hidden" name="sort" value="{{ request('sort') }}">
+                        @endif
+                        @if (request('direction'))
+                            <input type="hidden" name="direction" value="{{ request('direction') }}">
+                        @endif
                         <input type="date" name="harga_tanggal" value="{{ $hargaTanggal }}"
                             class="text-xs border border-white/30 bg-white/10 text-white rounded-lg px-3 py-1.5 focus:outline-none focus:bg-white/20 [color-scheme:dark]">
                         <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama..."
@@ -142,7 +148,15 @@
                     <thead>
                         <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide">
                             <th class="px-4 py-3.5 font-semibold">Kode</th>
-                            <th class="px-4 py-3.5 font-semibold">Nama Reksa Dana</th>
+                            <th class="px-4 py-3.5 font-semibold">
+                                <a href="{{ route('admin.daftar-reksa-dana.index', array_merge(request()->except('sort', 'direction', 'harga_page'), ['tab' => 'harga', 'sort' => 'nama_reksa_dana', 'direction' => request('sort', 'nama_reksa_dana') === 'nama_reksa_dana' && request('direction', 'asc') === 'asc' ? 'desc' : 'asc'])) }}"
+                                   class="flex items-center gap-1 hover:text-primary whitespace-nowrap">
+                                    Nama Reksa Dana
+                                    @if(request('sort', 'nama_reksa_dana') === 'nama_reksa_dana')
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ request('direction', 'asc') === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7' }}"/></svg>
+                                    @endif
+                                </a>
+                            </th>
                             <th class="px-4 py-3.5 font-semibold">Manajer Investasi</th>
                             <th class="px-4 py-3.5 font-semibold">Jenis</th>
                             <th class="px-4 py-3.5 font-semibold">Kategori Produk</th>
@@ -351,6 +365,12 @@
                     </button>
                     <form method="GET" action="{{ route('admin.daftar-reksa-dana.index') }}" class="flex gap-2">
                         <input type="hidden" name="tab" value="harian">
+                        @if (request('harian_sort'))
+                            <input type="hidden" name="harian_sort" value="{{ request('harian_sort') }}">
+                        @endif
+                        @if (request('harian_direction'))
+                            <input type="hidden" name="harian_direction" value="{{ request('harian_direction') }}">
+                        @endif
                         <input type="date" name="harian_tanggal" value="{{ $harianTanggal }}"
                             class="text-xs border border-white/30 bg-white/10 text-white rounded-lg px-3 py-1.5 focus:outline-none focus:bg-white/20 [color-scheme:dark]">
                         <input type="text" name="search" value="{{ request('search') }}"
@@ -372,7 +392,15 @@
                         <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide">
                             <th class="px-4 py-3.5 font-semibold">Tanggal</th>
                             <th class="px-4 py-3.5 font-semibold">Kode</th>
-                            <th class="px-4 py-3.5 font-semibold">Reksadana</th>
+                            <th class="px-4 py-3.5 font-semibold">
+                                <a href="{{ route('admin.daftar-reksa-dana.index', array_merge(request()->except('harian_sort', 'harian_direction', 'harian_page'), ['tab' => 'harian', 'harian_sort' => 'reksa_dana.nama_reksa_dana', 'harian_direction' => request('harian_sort', 'reksa_dana.nama_reksa_dana') === 'reksa_dana.nama_reksa_dana' && request('harian_direction', 'asc') === 'asc' ? 'desc' : 'asc'])) }}"
+                                   class="flex items-center gap-1 hover:text-primary whitespace-nowrap">
+                                    Reksadana
+                                    @if(request('harian_sort', 'reksa_dana.nama_reksa_dana') === 'reksa_dana.nama_reksa_dana')
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ request('harian_direction', 'asc') === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7' }}"/></svg>
+                                    @endif
+                                </a>
+                            </th>
                             <th class="px-4 py-3.5 font-semibold text-right">NAB/UP</th>
                             <th class="px-4 py-3.5 font-semibold text-center">Aksi</th>
                         </tr>
@@ -803,6 +831,14 @@
                     if (data.error) {
                         errorEl.textContent = data.error;
                         errorEl.classList.remove('hidden');
+                        // Clear generated fields so stale DB data doesn't persist
+                        document.getElementById(prefix + '-harga-mi').value = '';
+                        document.getElementById(prefix + '-harga-jenis').value = '';
+                        document.getElementById(prefix + '-harga-kp').value = '';
+                        document.getElementById(prefix + '-harga-kelas').value = '';
+                        document.getElementById(prefix + '-harga-matauang').value = '';
+                        document.getElementById(prefix + '-harga-kategori-display').textContent = '—';
+                        document.getElementById(prefix + '-harga-kategori').value = '[]';
                         return;
                     }
                     errorEl.classList.add('hidden');
@@ -828,12 +864,7 @@
 
             document.getElementById('edit-harga-kode').value = data.kode_reksa_dana || '';
             document.getElementById('edit-harga-nama').value = data.nama_reksa_dana;
-            document.getElementById('edit-harga-mi').value = data.nama_manajer_investasi || '';
-            document.getElementById('edit-harga-jenis').value = data.jenis || '';
-            document.getElementById('edit-harga-kp').value = data.kategori_produk || '';
-            document.getElementById('edit-harga-kelas').value = data.display_kelas || data.kelas || '';
             document.getElementById('edit-harga-benchmark').value = data.benchmark || '';
-            document.getElementById('edit-harga-matauang').value = data.display_mata_uang || data.mata_uang || 'IDR';
             document.getElementById('edit-harga-nab').value = data.nab_per_unit || '';
             document.getElementById('edit-harga-tgl-nab').value = (data.tanggal_nab || '').substring(0, 10);
 
@@ -841,6 +872,19 @@
             document.getElementById('edit-harga-kategori-display').textContent = kategori.length ? kategori.join(', ') :
             '—';
             document.getElementById('edit-harga-kategori').value = JSON.stringify(kategori);
+
+            // Generate MI, Jenis, Kategori Produk, Kelas, Mata Uang dari parsing kode,
+            // bukan dari database — agar data hasil parse selalu prioritas
+            if (data.kode_reksa_dana) {
+                fillFromKode(data.kode_reksa_dana, 'edit');
+            } else {
+                // Fallback jika tidak ada kode
+                document.getElementById('edit-harga-mi').value = data.nama_manajer_investasi || '';
+                document.getElementById('edit-harga-jenis').value = data.jenis || '';
+                document.getElementById('edit-harga-kp').value = data.kategori_produk || '';
+                document.getElementById('edit-harga-kelas').value = data.display_kelas || data.kelas || '';
+                document.getElementById('edit-harga-matauang').value = data.display_mata_uang || data.mata_uang || 'IDR';
+            }
 
             openModal('modal-harga-edit');
         }

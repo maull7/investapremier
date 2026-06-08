@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ObligasiHargaReferensi;
 use App\Models\ObligasiBond;
+use App\Models\ExtractionBatch;
 use App\Exports\ObligasiHargaReferensiTemplateExport;
 use App\Exports\ObligasiBondTemplateExport;
 use App\Imports\ObligasiHargaReferensiImport;
@@ -22,6 +23,8 @@ class ObligasiController extends Controller
 
         $hargaReferensi = collect();
         $bonds = collect();
+        $extractionBatches = collect();
+        $detailBatch = null;
 
         if ($tab === 'bond') {
             $query = ObligasiBond::latest();
@@ -33,6 +36,18 @@ class ObligasiController extends Controller
                 });
             }
             $bonds = $query->paginate($perPage)->withQueryString();
+        } elseif ($tab === 'hasil-ekstrak') {
+            $extractionBatches = ExtractionBatch::with('creator')
+                ->where('data_type', 'bond_data')
+                ->latest()
+                ->paginate(10, ['*'], 'batch_page')
+                ->withQueryString();
+
+            $detailBatch = $request->filled('detail_batch')
+                ? ExtractionBatch::with('bondData')
+                    ->where('data_type', 'bond_data')
+                    ->find($request->integer('detail_batch'))
+                : null;
         } else {
             $query = ObligasiHargaReferensi::latest();
             if ($request->search) {
@@ -46,7 +61,9 @@ class ObligasiController extends Controller
             $hargaReferensi = $query->paginate($perPage)->withQueryString();
         }
 
-        return view('admin.obligasi.index', compact('tab', 'perPage', 'hargaReferensi', 'bonds'));
+        $extractionRanges = $this->buildRangeOptions(ObligasiHargaReferensi::count());
+
+        return view('admin.obligasi.index', compact('tab', 'perPage', 'hargaReferensi', 'bonds', 'extractionBatches', 'detailBatch', 'extractionRanges'));
     }
 
     public function createHargaReferensi()
@@ -338,5 +355,20 @@ class ObligasiController extends Controller
 
         return redirect()->route('admin.obligasi.index', ['tab' => 'bond'])
             ->with('success', "{$import->imported} data keuangan emiten berhasil diimport.");
+    }
+
+    private function buildRangeOptions(int $total, int $step = 20): array
+    {
+        $ranges = [];
+
+        for ($start = 1; $start <= $total; $start += $step) {
+            $end = min($start + $step - 1, $total);
+            $ranges[] = [
+                'value' => "{$start}-{$end}",
+                'label' => "{$start} - {$end}",
+            ];
+        }
+
+        return $ranges;
     }
 }

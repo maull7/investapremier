@@ -17,9 +17,11 @@ use App\Http\Controllers\Admin\AnalisaRdController as AdminAnalisaRdController;
 use App\Http\Controllers\Admin\DaftarReksaDanaController;
 use App\Http\Controllers\Admin\DataSourceLinkController;
 use App\Http\Controllers\Admin\ActivityLogController;
+use App\Http\Controllers\Admin\ExtractionBatchController;
 use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\ObligasiController as AdminObligasiController;
 use App\Http\Controllers\Admin\InvestmentManagerController as AdminInvestmentManagerController;
+use App\Http\Controllers\Admin\InvestmentPersonRoleController as AdminInvestmentPersonRoleController;
 use App\Http\Controllers\Admin\UnitLinkController as AdminUnitLinkController;
 use App\Http\Controllers\Admin\UnitLinkFfsController as AdminUnitLinkFfsController;
 use App\Http\Controllers\Admin\AnalisaUlController as AdminAnalisaUlController;
@@ -30,6 +32,8 @@ use App\Http\Controllers\Admin\AnalisaSahamController as AdminAnalisaSahamContro
 use App\Http\Controllers\Admin\AnalisaObligasiController as AdminAnalisaObligasiController;
 use App\Http\Controllers\Admin\RatingObligasiController as AdminRatingObligasiController;
 use App\Http\Controllers\Admin\YtmNormalCurveController as AdminYtmNormalCurveController;
+use App\Http\Controllers\Admin\SekuritasInformasiController;
+use App\Http\Controllers\Admin\ReksaDanaHoldingsController;
 use App\Http\Controllers\User\AnalisaSahamController as UserAnalisaSahamController;
 use App\Http\Controllers\User\AnalisaObligasiController as UserAnalisaObligasiController;
 use App\Http\Controllers\User\DataSourceLinkController as UserDataSourceLinkController;
@@ -127,6 +131,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::post('daftar-reksa-dana/documents', [DaftarReksaDanaController::class, 'storeDocument'])->name('daftar-reksa-dana.documents.store');
     Route::get('daftar-reksa-dana/documents/{document}/view', [DaftarReksaDanaController::class, 'viewDocument'])->name('daftar-reksa-dana.documents.view');
     Route::get('daftar-reksa-dana/documents/{document}/download', [DaftarReksaDanaController::class, 'downloadDocument'])->name('daftar-reksa-dana.documents.download');
+    Route::post('daftar-reksa-dana/documents/{document}/update', [DaftarReksaDanaController::class, 'updateDocument'])->name('daftar-reksa-dana.documents.update');
     Route::delete('daftar-reksa-dana/documents/{document}', [DaftarReksaDanaController::class, 'destroyDocument'])->name('daftar-reksa-dana.documents.destroy');
     Route::post('daftar-reksa-dana/upload-harga', [DaftarReksaDanaController::class, 'uploadHarga'])->name('daftar-reksa-dana.upload-harga');
     Route::post('daftar-reksa-dana/upload-harian', [DaftarReksaDanaController::class, 'uploadHarian'])->name('daftar-reksa-dana.upload-harian');
@@ -139,6 +144,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::post('daftar-reksa-dana/harian/update/{hargaReksaDana}', [DaftarReksaDanaController::class, 'updateHarian'])->name('daftar-reksa-dana.harian.update');
     Route::delete('daftar-reksa-dana/harian/destroy/{hargaReksaDana}', [DaftarReksaDanaController::class, 'destroyHarian'])->name('daftar-reksa-dana.harian.destroy');
     Route::get('daftar-reksa-dana/parse-kode', [DaftarReksaDanaController::class, 'parseKode'])->name('daftar-reksa-dana.parse-kode');
+    Route::post('daftar-reksa-dana/{reksaDana}/export-investment-manager', [DaftarReksaDanaController::class, 'exportInvestmentManager'])->name('daftar-reksa-dana.export-investment-manager');
     Route::get('daftar-reksa-dana/{reksaDana}', [DaftarReksaDanaController::class, 'show'])->name('daftar-reksa-dana.show');
 
     Route::post('data-source-links', [DataSourceLinkController::class, 'store'])->name('data-source-links.store');
@@ -172,6 +178,10 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
 
     // Daftar & Analisa Saham
     Route::resource('saham', StockController::class)->except(['show']);
+    Route::post('saham/extraction-batches', [ExtractionBatchController::class, 'storeStock'])->name('saham.extraction-batches.store');
+    Route::post('saham/extraction-batches/{extractionBatch}/retry', [ExtractionBatchController::class, 'retry'])->name('saham.extraction-batches.retry');
+    Route::post('saham/extraction-batches/{extractionBatch}/save', [ExtractionBatchController::class, 'save'])->name('saham.extraction-batches.save');
+    Route::delete('saham/extraction-batches/{extractionBatch}', [ExtractionBatchController::class, 'destroy'])->name('saham.extraction-batches.destroy');
     Route::get('saham/{stock}', [StockDetailController::class, 'show'])->name('saham.show');
     Route::post('saham/{stock}/summarize-news', [StockDetailController::class, 'summarizeNews'])->name('saham.summarize-news');
     Route::post('saham/{stock}/generate-news', [StockDetailController::class, 'generateNews'])->name('saham.generate-news');
@@ -208,6 +218,10 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
 
     // Daftar & Analisa Obligasi
     Route::get('obligasi', [AdminObligasiController::class, 'index'])->name('obligasi.index');
+    Route::post('obligasi/extraction-batches', [ExtractionBatchController::class, 'storeBond'])->name('obligasi.extraction-batches.store');
+    Route::post('obligasi/extraction-batches/{extractionBatch}/retry', [ExtractionBatchController::class, 'retry'])->name('obligasi.extraction-batches.retry');
+    Route::post('obligasi/extraction-batches/{extractionBatch}/save', [ExtractionBatchController::class, 'save'])->name('obligasi.extraction-batches.save');
+    Route::delete('obligasi/extraction-batches/{extractionBatch}', [ExtractionBatchController::class, 'destroy'])->name('obligasi.extraction-batches.destroy');
     Route::get('obligasi/harga-referensi/create', [AdminObligasiController::class, 'createHargaReferensi'])->name('obligasi.create-harga-referensi');
     Route::post('obligasi/harga-referensi', [AdminObligasiController::class, 'storeHargaReferensi'])->name('obligasi.store-harga-referensi');
     Route::get('obligasi/harga-referensi/{obligasiHargaReferensi}/edit', [AdminObligasiController::class, 'editHargaReferensi'])->name('obligasi.edit-harga-referensi');
@@ -259,6 +273,19 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('ytm-normal-curve/template', [AdminYtmNormalCurveController::class, 'downloadTemplate'])->name('ytm-normal-curve.template');
     Route::post('ytm-normal-curve/import', [AdminYtmNormalCurveController::class, 'import'])->name('ytm-normal-curve.import');
 
+    // Sekuritas Informasi (Bond & Sukuk Data)
+    Route::get('sekuritas-informasi', [SekuritasInformasiController::class, 'index'])->name('sekuritas-informasi.index');
+    Route::post('sekuritas-informasi', [SekuritasInformasiController::class, 'store'])->name('sekuritas-informasi.store');
+    Route::put('sekuritas-informasi/{sekuritasInformasi}', [SekuritasInformasiController::class, 'update'])->name('sekuritas-informasi.update');
+    Route::delete('sekuritas-informasi/{sekuritasInformasi}', [SekuritasInformasiController::class, 'destroy'])->name('sekuritas-informasi.destroy');
+    Route::get('sekuritas-informasi/template', [SekuritasInformasiController::class, 'downloadTemplate'])->name('sekuritas-informasi.template');
+    Route::post('sekuritas-informasi/import', [SekuritasInformasiController::class, 'import'])->name('sekuritas-informasi.import');
+    Route::get('sekuritas-informasi/export', [SekuritasInformasiController::class, 'export'])->name('sekuritas-informasi.export');
+
+    // Reksa Dana Holdings (daftar RD yang memiliki efek/obligasi tertentu)
+    Route::get('sekuritas/efek/{kode}', [ReksaDanaHoldingsController::class, 'efek'])->name('sekuritas.efek');
+    Route::get('sekuritas/obligasi/{kode}', [ReksaDanaHoldingsController::class, 'obligasi'])->name('sekuritas.obligasi');
+
     // Manajer Investasi
     Route::resource('investment-managers', AdminInvestmentManagerController::class)->except(['show']);
     Route::get('investment-managers/{investmentManager}', [AdminInvestmentManagerController::class, 'show'])->name('investment-managers.show');
@@ -267,6 +294,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('investment-managers-template', [AdminInvestmentManagerController::class, 'downloadTemplate'])->name('investment-managers.template');
     Route::post('investment-managers-import', [AdminInvestmentManagerController::class, 'import'])->name('investment-managers.import');
     Route::delete('investment-managers-period/{investmentManagerPeriod}', [AdminInvestmentManagerController::class, 'destroyPeriod'])->name('investment-managers.period-destroy');
+    Route::get('investment-person-roles/detail', [AdminInvestmentPersonRoleController::class, 'show'])->name('investment-person-roles.detail');
 
     // Unit Link
     Route::get('unit-link', [AdminUnitLinkController::class, 'index'])->name('unit-link.index');

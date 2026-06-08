@@ -70,6 +70,8 @@ class CheckAdminRoutePermission
             'admin.analisa-saham.check-ai-status' => 'saham.monitor-analisa',
 
             'admin.obligasi.*' => 'obligasi.daftar',
+            'admin.sekuritas-informasi.*' => 'obligasi.sekuritas-informasi',
+            'admin.sekuritas.*' => 'obligasi.sekuritas-informasi',
             'admin.rating-obligasi.*' => 'obligasi.rating',
             'admin.ytm-normal-curve.*' => 'obligasi.ytm',
             'admin.analisa-obligasi.create' => 'obligasi.analisa',

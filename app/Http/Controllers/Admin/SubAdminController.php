@@ -64,6 +64,7 @@ class SubAdminController extends Controller
                     'daftar' => ['label' => 'Daftar Obligasi'],
                     'rating' => ['label' => 'Rating Obligasi'],
                     'ytm' => ['label' => 'YTM Normal Curve'],
+                    'sekuritas-informasi' => ['label' => 'Sekuritas Informasi'],
                     'analisa' => ['label' => 'Analisa Obligasi'],
                     'monitor-analisa' => ['label' => 'Monitor Analisa Obligasi'],
                 ],

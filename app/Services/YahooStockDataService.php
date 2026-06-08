@@ -154,7 +154,7 @@ class YahooStockDataService
             $volume = $volumes[$index] ?? null;
 
             StockPrice::updateOrCreate(
-                ['kode_efek' => strtoupper($stock->kode), 'tanggal' => $date],
+                ['kode_efek' => strtoupper($stock->kode), 'tanggal' => $date, 'sumber' => 'Yahoo Finance'],
                 [
                     'stock_id'   => $stock->id,
                     'nama_efek'  => $stock->nama,

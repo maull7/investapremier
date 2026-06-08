@@ -19,6 +19,7 @@
         @csrf @method('PUT')
 
         {{-- Info Dasar --}}
+        @if(($formRoutes['layout'] ?? '') !== 'layouts.admin')
         <div class="bg-white rounded-xl border border-line p-6 space-y-4">
             <h3 class="font-semibold text-primary">Informasi Reksa Dana</h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -127,6 +128,7 @@
                 </div>
             </div>
         </div>
+        @endif
 
         {{-- Informasi Umum --}}
         <div class="bg-white rounded-xl border border-line p-6 space-y-4">

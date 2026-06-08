@@ -6,6 +6,8 @@
             class="px-2 py-1 border border-line rounded text-[11px] font-semibold text-muted hover:text-primary">Preview</a>
         <a href="{{ route('admin.daftar-reksa-dana.documents.download', $document) }}"
             class="px-2 py-1 border border-line rounded text-[11px] font-semibold text-muted hover:text-primary">Download</a>
+        <button type="button" onclick='openEditDocument(@json($document))'
+            class="px-2 py-1 border border-blue-200 text-blue-600 rounded text-[11px] font-semibold hover:bg-blue-50">Edit</button>
         <form method="POST" action="{{ route('admin.daftar-reksa-dana.documents.destroy', $document) }}"
             onsubmit="return confirm('Hapus dokumen ini?')">
             @csrf @method('DELETE')

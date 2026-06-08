@@ -1,10 +1,10 @@
 @extends($formRoutes['layout'] ?? 'layouts.user')
 
 @section('content')
-    <div class="max-w-5xl" x-data="analisaForm(@json($resumeAnalisa), @json($resumeMode))">
+    <div class="max-w-5xl" x-data='analisaForm(@json($resumeAnalisa), @json($resumeMode))'>
         <div class="mb-6">
-            <h1 class="page-title">Submit Analisa {{ $productLabel ?? 'Reksa Dana' }}</h1>
-            <p class="page-sub">Isi data secara manual, upload Excel, atau ekstrak dari PDF FFS</p>
+            <h1 class="page-title">{{ !empty($isEditMode) ? 'Edit Analisa ' . ($productLabel ?? 'Reksa Dana') : 'Submit Analisa ' . ($productLabel ?? 'Reksa Dana') }}</h1>
+            <p class="page-sub">{{ !empty($isEditMode) ? 'Perbarui data analisa reksa dana' : 'Isi data secara manual, upload Excel, atau ekstrak dari PDF FFS' }}</p>
         </div>
 
         @if ($errors->any())
@@ -36,10 +36,11 @@
             @endif
         @endif
 
-        <form id="analisa-form" method="POST" action="{{ $formRoutes['store'] }}" enctype="multipart/form-data"
+        <form id="analisa-form" method="POST" action="{{ !empty($isEditMode) ? $formRoutes['update'] : $formRoutes['store'] }}" enctype="multipart/form-data"
             class="space-y-6"
             @submit="if (mode === 'link-website') { $event.preventDefault(); webMessage = 'Selesaikan langkah di tab Link Website: unduh file lalu klik Isi Form Otomatis. Setelah itu submit dari tab Input Manual.'; webOk = false; }">
             @csrf
+            @if(!empty($isEditMode)) @method('PUT') @endif
             <input type="hidden" name="resume_id" :value="resumeId || ''">
             <input type="hidden" name="input_mode" :value="mode === 'link-website' ? 'manual' : mode">
             <input type="hidden" name="pdf_file" x-model="pdfFile">
@@ -49,6 +50,7 @@
             <input type="hidden" name="jenis_laporan" :value="jenisLaporan">
 
             {{-- Info Dasar --}}
+            @if(empty($isEditMode) || ($formRoutes['layout'] ?? '') !== 'layouts.admin')
             <div class="bg-white rounded-xl border border-line p-6 space-y-4" x-show="mode !== 'link-website'" x-cloak>
                 <h3 class="font-semibold text-primary">Informasi Reksa Dana</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -159,6 +161,7 @@
                     </div>
                 </div>
             </div>
+            @endif
 
             {{-- Tab Pilih Mode --}}
             <div class="table-card">
@@ -1438,6 +1441,23 @@
                                                 <span class="text-xs text-muted shrink-0 hidden sm:inline" x-text="doc.reksa_dana_kode"></span>
                                                 <span class="text-xs text-muted shrink-0" x-text="doc.uploaded_at"></span>
                                             </div>
+                                            <div class="flex items-center gap-1 shrink-0" x-show="doc.url">
+                                                <a :href="doc.url" target="_blank"
+                                                    class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                    </svg>
+                                                    Lihat
+                                                </a>
+                                                <a :href="doc.url" download
+                                                    class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-md hover:bg-emerald-100 transition">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                    </svg>
+                                                    Download
+                                                </a>
+                                            </div>
                                         </div>
                                     </template>
                                 </div>
@@ -1513,8 +1533,8 @@
 
             <div class="flex items-center gap-3" x-show="mode !== 'link-website'" x-cloak>
                 <button type="submit" name="simpan" value="1"
-                    class="px-4 py-2 text-sm font-medium text-white bg-gray-500 rounded-lg hover:bg-gray-600 transition">Simpan</button>
-                <x-primary-button>Submit Analisa</x-primary-button>
+                    class="px-4 py-2 text-sm font-medium text-white bg-gray-500 rounded-lg hover:bg-gray-600 transition">{{ !empty($isEditMode) ? 'Simpan Draft' : 'Simpan' }}</button>
+                <x-primary-button>{{ !empty($isEditMode) ? 'Simpan Perubahan' : 'Submit Analisa' }}</x-primary-button>
                 <a href="{{ $formRoutes['cancel'] }}"
                     class="px-4 py-2 text-sm font-medium text-muted border border-line rounded-lg hover:bg-[#f1f5f9] transition">Batal</a>
             </div>
@@ -1598,7 +1618,7 @@
                     tanggalData: @json(old('tanggal_data')),
                     ffsBulan: @json(old('ffs_bulan')),
                     ffsTahun: @json(old('ffs_tahun', now()->year)),
-                    jenisLaporan: @json(old('jenis_laporan', 'kalender_ffs')),
+                    jenisLaporan: @json(old('jenis_laporan', 'laporan_tahunan')),
                     periodeAwal: @json(old('periode_awal')),
                     periodeAkhir: @json(old('periode_akhir')),
                     tahunLaporan: @json(old('tahun_laporan', now()->year)),
@@ -1660,6 +1680,10 @@
 
                     init() {
                         if (resumeData) {
+                            const el = document.getElementById('kode_reksa_dana');
+                            if (el && resumeData.kode_reksa_dana) {
+                                el.value = resumeData.kode_reksa_dana;
+                            }
                             this.applyLookupData(resumeData);
                         }
                         this.fetchExistingDocuments();
@@ -1973,10 +1997,17 @@
                     lookupReksaDana(kode) {
                         kode = String(kode || '').trim();
                         if (!this.lookupKodeUrl || kode.length < 2) {
+                            if (this.currentKode) {
+                                this.currentKode = '';
+                                this.fetchExistingDocuments();
+                            }
                             this.lookupMessage = '';
                             this.lookupOk = false;
                             return;
                         }
+
+                        // Sudah di-lookup, jangan fetch ulang (cegah infinite loop dari setFieldValue)
+                        if (this.currentKode === kode) return;
 
                         fetch(`${this.lookupKodeUrl}?kode_reksa_dana=${encodeURIComponent(kode)}`, {
                                 headers: {
@@ -1986,8 +2017,9 @@
                             .then(res => res.json())
                             .then(resp => {
                                 if (!resp.found) {
+                                    this.currentKode = '';
                                     this.lookupOk = false;
-                                    this.lookupMessage = 'Kode belum ditemukan di master data atau analisa sebelumnya.';
+                                    this.lookupMessage = 'Kode tidak ditemukan.';
                                     return;
                                 }
 
@@ -2001,6 +2033,7 @@
                                 this.lookupMessage = resp.last_analisa ?
                                     'Data analisa terakhir berhasil dimuat.' :
                                     'Data master reksa dana berhasil dimuat.';
+                                this.fetchExistingDocuments();
                             })
                             .catch(() => {
                                 this.lookupOk = false;
@@ -2010,7 +2043,6 @@
 
                     applyLookupData(data) {
                         this.resumeId = data.id || this.resumeId;
-                        this.setFieldValue('kode_reksa_dana', data.kode_reksa_dana);
                         this.setFieldValue('nama_reksa_dana', data.nama_reksa_dana);
                         this.setFieldValue('jenis_reksa_dana', data.jenis_reksa_dana);
                         this.setFieldValue('benchmark', data.benchmark);
@@ -2762,14 +2794,13 @@
                         this.selectedDocIds = [];
 
                         const params = new URLSearchParams();
-                        if (this.jenisLaporan === 'laporan_tahunan') {
-                            params.append('jenis_laporan', 'laporan_tahunan');
-                            if (this.tahunLaporan) params.append('tahun_laporan', this.tahunLaporan);
-                        } else {
-                            params.append('jenis_laporan', 'kalender_ffs');
-                            if (this.ffsBulan) params.append('ffs_bulan', this.ffsBulan);
-                            if (this.ffsTahun) params.append('ffs_tahun', this.ffsTahun);
-                        }
+
+                        // Filter berdasarkan kode reksa dana yang sudah dipilih
+                        const kode = (document.getElementById('kode_reksa_dana')?.value || '').trim();
+                        if (kode) params.append('kode_reksa_dana', kode);
+
+                        params.append('jenis_laporan', 'laporan_tahunan');
+                        if (this.tahunLaporan) params.append('tahun_laporan', this.tahunLaporan);
 
                         fetch(`${this.existingDocsUrl}?${params.toString()}`, {
                                 headers: { Accept: 'application/json' }

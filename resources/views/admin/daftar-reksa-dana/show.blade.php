@@ -3,7 +3,27 @@
 @section('title', $fund->nama_reksa_dana . ' - Detail Reksa Dana')
 
 @section('content')
-<div x-data="{ tab: {{ Js::from(request('tab', 'snapshot')) }} }">
+<div x-data="{
+    tab: {{ Js::from(request('tab', 'snapshot')) }},
+    personModal: { open: false, loading: false, error: null, data: null },
+    async openPerson(name) {
+        this.personModal = { open: true, loading: true, error: null, data: null };
+        try {
+            const url = '{{ route('admin.investment-person-roles.detail') }}?name=' + encodeURIComponent(name);
+            const res = await fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+            const json = await res.json();
+            if (!res.ok) {
+                this.personModal.error = json.message || 'Gagal mengambil detail.';
+                return;
+            }
+            this.personModal.data = json;
+        } catch (e) {
+            this.personModal.error = e.message;
+        } finally {
+            this.personModal.loading = false;
+        }
+    }
+}">
 
 <div class="mb-6">
     <div class="flex items-center gap-2 text-sm text-muted mb-3">
@@ -12,6 +32,12 @@
         <span class="text-primary font-medium">{{ $fund->nama_reksa_dana }}</span>
     </div>
     <h1 class="page-title">{{ $fund->nama_reksa_dana }}</h1>
+    <form method="POST" action="{{ route('admin.daftar-reksa-dana.export-investment-manager', $fund) }}" class="mt-3">
+        @csrf
+        <button type="submit" class="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition">
+            Export ke Data Manajer Investasi
+        </button>
+    </form>
     <div class="flex flex-wrap gap-3 mt-2 text-sm text-muted">
         @if($fund->kode_reksa_dana)<span class="font-mono text-xs bg-[#f1f5f9] px-2 py-1 rounded">{{ $fund->kode_reksa_dana }}</span>@endif
         @if($fund->nama_manajer_investasi)<span>{{ $fund->nama_manajer_investasi }}</span>@endif
@@ -130,7 +156,7 @@
                 <thead><tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide"><th class="px-4 py-3 font-semibold">Nama</th><th class="px-4 py-3 font-semibold">Jabatan</th></tr></thead>
                 <tbody class="divide-y divide-line">
                     @foreach($committees as $mt)
-                    <tr class="hover:bg-[#f8fafc]"><td class="px-4 py-3 text-xs">{{ $mt->name }}</td><td class="px-4 py-3 text-xs text-muted">{{ $mt->position ?? '—' }}</td></tr>
+                    <tr class="hover:bg-[#f8fafc]"><td class="px-4 py-3 text-xs"><button type="button" @click="openPerson({{ Js::from($mt->name) }})" class="text-accent hover:underline text-left font-semibold">{{ $mt->name }}</button></td><td class="px-4 py-3 text-xs text-muted">{{ $mt->position ?? '—' }}</td></tr>
                     @endforeach
                 </tbody>
             </table>
@@ -147,7 +173,7 @@
                 <thead><tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide"><th class="px-4 py-3 font-semibold">Nama</th><th class="px-4 py-3 font-semibold">Jabatan</th></tr></thead>
                 <tbody class="divide-y divide-line">
                     @foreach($investmentManagers as $mt)
-                    <tr class="hover:bg-[#f8fafc]"><td class="px-4 py-3 text-xs">{{ $mt->name }}</td><td class="px-4 py-3 text-xs text-muted">{{ $mt->position ?? '—' }}</td></tr>
+                    <tr class="hover:bg-[#f8fafc]"><td class="px-4 py-3 text-xs"><button type="button" @click="openPerson({{ Js::from($mt->name) }})" class="text-accent hover:underline text-left font-semibold">{{ $mt->name }}</button></td><td class="px-4 py-3 text-xs text-muted">{{ $mt->position ?? '—' }}</td></tr>
                     @endforeach
                 </tbody>
             </table>
@@ -280,7 +306,7 @@
             markers: { size: 3, hover: { size: 5 } },
             dataLabels: { enabled: false },
             legend: { show: true, position: 'top', horizontalAlign: 'left' },
-            xaxis: { type: 'datetime', labels: { datetimeUTC: false } },
+            xaxis: { type: 'datetime', labels: { datetimeUTC: false, format: 'dd MMM yyyy' } },
             yaxis: { labels: { formatter } },
             tooltip: { shared: true, x: { format: 'dd MMM yyyy' }, y: { formatter } },
             grid: { borderColor: '#e2e8f0' },
@@ -506,5 +532,48 @@
     @endif
 </div>
 
+<div x-show="personModal.open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+    <div class="absolute inset-0 bg-black/40" @click="personModal.open = false"></div>
+    <div class="relative bg-white rounded-2xl shadow-xl border border-line w-full max-w-3xl max-h-[85vh] overflow-y-auto">
+        <div class="px-6 py-4 border-b border-line flex items-center justify-between">
+            <div>
+                <p class="text-xs text-muted">Detail keterkaitan</p>
+                <h2 class="font-bold text-primary" x-text="personModal.data?.name || 'Memuat...'"></h2>
+            </div>
+            <button type="button" @click="personModal.open = false" class="text-muted hover:text-primary text-xl leading-none">&times;</button>
+        </div>
+        <div class="p-6 space-y-6">
+            <div x-show="personModal.loading" class="text-sm text-muted">Memuat data...</div>
+            <div x-show="personModal.error" x-text="personModal.error" class="px-4 py-3 rounded-xl text-sm bg-red-50 border border-red-200 text-red-700"></div>
+            <template x-if="personModal.data">
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="font-bold text-primary text-sm mb-3">Reksa Dana yang Pernah Diikuti</h3>
+                        <template x-if="personModal.data.funds.length === 0"><p class="text-sm text-muted">Belum ada data Reksa Dana terkait.</p></template>
+                        <div class="overflow-x-auto" x-show="personModal.data.funds.length > 0">
+                            <table class="w-full text-sm"><thead><tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide"><th class="px-3 py-2">Reksa Dana</th><th class="px-3 py-2">Kode</th><th class="px-3 py-2">Peran</th><th class="px-3 py-2">Jabatan</th></tr></thead><tbody class="divide-y divide-line"><template x-for="row in personModal.data.funds" :key="row.name + row.role + row.position"><tr><td class="px-3 py-2 font-semibold" x-text="row.name"></td><td class="px-3 py-2 font-mono text-xs" x-text="row.code || '-'"></td><td class="px-3 py-2" x-text="row.role || '-'"></td><td class="px-3 py-2 text-muted" x-text="row.position || '-'"></td></tr></template></tbody></table>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-primary text-sm mb-3">Manajer Investasi Terkait</h3>
+                        <template x-if="personModal.data.managers.length === 0"><p class="text-sm text-muted">Belum ada data Manajer Investasi terkait.</p></template>
+                        <div class="overflow-x-auto" x-show="personModal.data.managers.length > 0">
+                            <table class="w-full text-sm"><thead><tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide"><th class="px-3 py-2">Manajer Investasi</th><th class="px-3 py-2">Peran</th><th class="px-3 py-2">Jabatan</th></tr></thead><tbody class="divide-y divide-line"><template x-for="row in personModal.data.managers" :key="row.name + row.role + row.position"><tr><td class="px-3 py-2 font-semibold" x-text="row.name"></td><td class="px-3 py-2" x-text="row.role || '-'"></td><td class="px-3 py-2 text-muted" x-text="row.position || '-'"></td></tr></template></tbody></table>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-primary text-sm mb-3">Berita Utama Terkait</h3>
+                        <template x-if="personModal.data.news.length === 0"><p class="text-sm text-muted">Belum ada berita terkait.</p></template>
+                        <div class="space-y-2" x-show="personModal.data.news.length > 0">
+                            <template x-for="item in personModal.data.news" :key="item.url || item.title">
+                                <a :href="item.url" target="_blank" class="block border border-line rounded-xl px-4 py-3 hover:border-accent transition"><p class="text-sm font-semibold text-primary" x-text="item.title"></p><p class="text-xs text-muted mt-1"><span x-text="item.source || '-'"></span> <span x-show="item.published_at">-</span> <span x-text="item.published_at || ''"></span></p></a>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+</div>
 </div>
 @endsection

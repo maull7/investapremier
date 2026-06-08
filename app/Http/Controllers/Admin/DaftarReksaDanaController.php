@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DataSourceLink;
 use App\Models\DataSourceSyncLog;
 use App\Models\HargaReksaDana;
+use App\Models\InvestmentManager;
 use App\Models\ReksaDana;
 use App\Models\ReksaDanaDocument;
 use App\Imports\HargaReksaDanaImport;
@@ -13,6 +14,7 @@ use App\Imports\HarianReksaDanaImport;
 use App\Exports\HargaReksaDanaTemplateExport;
 use App\Exports\HarianReksaDanaTemplateExport;
 use App\Services\KodeReksaDanaParser;
+use App\Services\InvestmentPersonService;
 use App\Services\ReksaDanaChartDataService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -30,21 +32,25 @@ class DaftarReksaDanaController extends Controller
     {
         $tab = $request->get('tab', 'harga');
 
-        $hargaQuery = ReksaDana::latest();
+        $hargaSort = $request->get('sort', 'nama_reksa_dana');
+        $hargaDir = $request->get('direction', 'asc');
+        $hargaQuery = ReksaDana::orderBy($hargaSort, $hargaDir);
         if ($request->jenis) $hargaQuery->where('jenis', $request->jenis);
         if ($request->search) $hargaQuery->where('nama_reksa_dana', 'like', '%' . $request->search . '%');
         if ($request->harga_tanggal) $hargaQuery->whereDate('tanggal_nab', $request->harga_tanggal);
         $reksaDanas = $hargaQuery->paginate(20, ['*'], 'harga_page')->withQueryString();
 
         $harianTanggal = $request->get('harian_tanggal');
+        $harianSort = $request->get('harian_sort', 'reksa_dana.nama_reksa_dana');
+        $harianDir = $request->get('harian_direction', 'asc');
 
         if ($harianTanggal) {
-            // Filter spesifik tanggal: tampilkan semua data pada tanggal tersebut
             $harianQuery = HargaReksaDana::with('reksaDana')
+                ->join('reksa_dana', 'harga_reksa_dana.reksa_dana_id', '=', 'reksa_dana.id')
                 ->where('tanggal', $harianTanggal)
-                ->orderBy('reksa_dana_id');
+                ->orderBy('reksa_dana.nama_reksa_dana', $harianDir)
+                ->select('harga_reksa_dana.*');
         } else {
-            // Default: tampilkan data tanggal terakhir per reksa dana
             $latestPerRd = HargaReksaDana::selectRaw('reksa_dana_id, MAX(tanggal) as max_tanggal')
                 ->groupBy('reksa_dana_id');
 
@@ -53,9 +59,9 @@ class DaftarReksaDanaController extends Controller
                     $join->on('harga_reksa_dana.reksa_dana_id', '=', 'latest.reksa_dana_id')
                         ->whereColumn('harga_reksa_dana.tanggal', 'latest.max_tanggal');
                 })
-                ->select('harga_reksa_dana.*')
-                ->orderByDesc('harga_reksa_dana.tanggal')
-                ->orderBy('harga_reksa_dana.reksa_dana_id');
+                ->join('reksa_dana', 'harga_reksa_dana.reksa_dana_id', '=', 'reksa_dana.id')
+                ->orderBy('reksa_dana.nama_reksa_dana', $harianDir)
+                ->select('harga_reksa_dana.*');
         }
 
         if ($request->search) {
@@ -180,6 +186,48 @@ class DaftarReksaDanaController extends Controller
         return Storage::disk('public')->download($document->file_path, $document->original_name);
     }
 
+    public function updateDocument(Request $request, ReksaDanaDocument $document)
+    {
+        $validated = $request->validate([
+            'document_type' => 'required|in:prospektus,ffs',
+            'ffs_month' => 'required_if:document_type,ffs|nullable|integer|min:1|max:12',
+            'ffs_year' => 'required|integer|min:2000|max:2100',
+            'notes' => 'nullable|string|max:1000',
+            'file' => 'nullable|file|mimes:pdf|max:20480',
+        ]);
+
+        if ($validated['document_type'] === 'prospektus') {
+            $validated['ffs_month'] = null;
+        }
+
+        unset($validated['file']);
+
+        if ($request->hasFile('file')) {
+            $document->deleteStoredFile();
+
+            $file = $request->file('file');
+            $filename = now()->format('Ymd-His') . '-' . Str::random(10) . '.pdf';
+            $path = $file->storeAs('reksa-dana-documents/' . $document->reksa_dana_id, $filename, 'public');
+
+            $validated['original_name'] = $file->getClientOriginalName();
+            $validated['file_path'] = $path;
+            $validated['mime_type'] = $file->getClientMimeType();
+            $validated['file_size'] = $file->getSize();
+        }
+
+        $document->update($validated);
+
+        ActivityLogger::log(
+            'Mengubah Dokumen',
+            "Dokumen {$document->original_name} berhasil diperbarui",
+            'success',
+            $document,
+        );
+
+        return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs'])
+            ->with('success', 'Dokumen berhasil diperbarui.');
+    }
+
     public function destroyDocument(ReksaDanaDocument $document)
     {
         ActivityLogger::log(
@@ -279,6 +327,58 @@ class DaftarReksaDanaController extends Controller
             'latestNav', 'returnDaily', 'returnMonthly', 'returnYearly', 'range',
             'chartData',
         ));
+    }
+
+    public function exportInvestmentManager(ReksaDana $reksaDana, InvestmentPersonService $personService)
+    {
+        $reksaDana->load('managementTeams');
+
+        if (!filled($reksaDana->nama_manajer_investasi) && !$reksaDana->investment_manager_id) {
+            return back()->withErrors([
+                'export_investment_manager' => 'Nama Manajer Investasi pada Reksa Dana belum tersedia.',
+            ]);
+        }
+
+        $manager = $reksaDana->investmentManager
+            ?: InvestmentManager::firstOrCreate(['name' => trim((string) $reksaDana->nama_manajer_investasi)]);
+
+        if (!$reksaDana->investment_manager_id) {
+            $reksaDana->update(['investment_manager_id' => $manager->id]);
+        }
+
+        $committee = $reksaDana->managementTeams
+            ->where('type', 'committee')
+            ->map(fn ($row) => trim($row->name . ($row->position ? ' - ' . $row->position : '')))
+            ->implode("\n");
+        $team = $reksaDana->managementTeams
+            ->where('type', 'investment_manager')
+            ->map(fn ($row) => trim($row->name . ($row->position ? ' - ' . $row->position : '')))
+            ->implode("\n");
+
+        $updates = [];
+        if ($committee !== '') {
+            $updates['investment_committee'] = $this->mergePeopleText($manager->investment_committee, $committee, $personService);
+        }
+        if ($team !== '') {
+            $updates['investment_management_team'] = $this->mergePeopleText($manager->investment_management_team, $team, $personService);
+        }
+
+        if ($updates !== []) {
+            $manager->update($updates);
+        }
+
+        $personService->syncFund($reksaDana->refresh(), 'ffs');
+        $personService->syncInvestmentManager($manager->refresh(), 'export_reksa_dana');
+
+        ActivityLogger::log(
+            'Export Reksa Dana ke Manajer Investasi',
+            "{$reksaDana->nama_reksa_dana} berhasil diekspor ke {$manager->name}",
+            'success',
+            $manager,
+        );
+
+        return redirect()->route('admin.investment-managers.show', $manager)
+            ->with('success', 'Data Manajer Investasi berhasil diupdate dari Reksa Dana.');
     }
 
     public function uploadHarga(Request $request)
@@ -565,6 +665,16 @@ class DaftarReksaDanaController extends Controller
             ->with('success', 'Data harian berhasil dihapus.');
     }
 
+    private function mergePeopleText(?string $old, string $new, InvestmentPersonService $personService): string
+    {
+        return collect($personService->parsePeople($old))
+            ->merge($personService->parsePeople($new))
+            ->unique(fn ($item) => $personService->normalizeName($item['name']))
+            ->map(fn ($item) => trim($item['name'] . ($item['position'] ? ' - ' . $item['position'] : '')))
+            ->values()
+            ->implode("\n");
+    }
+
     public function parseKode(Request $request)
     {
         $kode = $request->get('kode');
@@ -574,8 +684,16 @@ class DaftarReksaDanaController extends Controller
 
         $parsed = app(KodeReksaDanaParser::class)->parse($kode);
 
-        if (!$parsed) {
-            return response()->json(['error' => 'Kode Reksa Dana tidak valid / Manajer Investasi tidak ditemukan'], 422);
+        if (empty($parsed['is_valid_length']) || empty($parsed['jenis'])) {
+            $msg = 'Kode Reksa Dana tidak valid. ';
+            if (strlen($kode) < 16) {
+                $msg .= 'Panjang kode minimal 16 karakter.';
+            } elseif (empty($parsed['nama_manajer_investasi'])) {
+                $msg .= 'Kode Manajer Investasi tidak ditemukan.';
+            } else {
+                $msg .= 'Format kode tidak sesuai.';
+            }
+            return response()->json(['error' => $msg], 422);
         }
 
         return response()->json($parsed);

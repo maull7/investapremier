@@ -7,7 +7,7 @@
         reksaDanaOpen: {{ request()->routeIs('admin.reksa-dana.*') || request()->routeIs('admin.analisa-rd.*') || request()->routeIs('admin.analisa.*') ? 'true' : 'false' }},
         unitLinkOpen: {{ request()->routeIs('admin.unit-link.*') || request()->routeIs('admin.unit-link-ffs.*') || request()->routeIs('admin.analisa-ul.*') || request()->routeIs('admin.unit-link-analisa.*') ? 'true' : 'false' }},
         sahamOpen: {{ request()->routeIs('admin.saham.*') || request()->routeIs('admin.analisa-saham.*') ? 'true' : 'false' }},
-        obligasiOpen: {{ request()->routeIs('admin.obligasi.*') || request()->routeIs('admin.analisa-obligasi.*') ? 'true' : 'false' }},
+        obligasiOpen: {{ request()->routeIs('admin.obligasi.*') || request()->routeIs('admin.analisa-obligasi.*') || request()->routeIs('admin.rating-obligasi.*') || request()->routeIs('admin.ytm-normal-curve.*') || request()->routeIs('admin.sekuritas-informasi.*') || request()->routeIs('admin.sekuritas.*') ? 'true' : 'false' }},
         menuAiPrompts: {{ request()->routeIs('admin.ai-prompts.*') ? 'true' : 'false' }}
     }" class="flex h-screen overflow-hidden">
         {{-- Overlay mobile --}}

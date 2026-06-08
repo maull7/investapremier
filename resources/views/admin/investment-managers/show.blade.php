@@ -3,7 +3,27 @@
 @section('title', $manager->name . ' - InvestaPremier')
 
 @section('content')
-    <div x-data="{ tab: {{ Js::from(request('tab', 'detail')) }} }">
+    <div x-data="{
+        tab: {{ Js::from(request('tab', 'detail')) }},
+        personModal: { open: false, loading: false, error: null, data: null },
+        async openPerson(name) {
+            this.personModal = { open: true, loading: true, error: null, data: null };
+            try {
+                const url = '{{ route('admin.investment-person-roles.detail') }}?name=' + encodeURIComponent(name);
+                const res = await fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                const json = await res.json();
+                if (!res.ok) {
+                    this.personModal.error = json.message || 'Gagal mengambil detail.';
+                    return;
+                }
+                this.personModal.data = json;
+            } catch (e) {
+                this.personModal.error = e.message;
+            } finally {
+                this.personModal.loading = false;
+            }
+        }
+    }">
 
         <div class="mb-6">
             <div class="flex items-center gap-2 text-sm text-muted mb-3">
@@ -127,11 +147,6 @@
             'phone' => 'Nomor Telepon',
             'email' => 'Email',
             'website' => 'Website',
-            'commissioner_president' => 'Komisaris Utama',
-            'commissioners' => 'Komisaris',
-            'director_president' => 'Direktur Utama',
-            'directors' => 'Direktur',
-            'shareholders' => 'Pemegang Saham',
             'description' => 'Deskripsi',
             'last_updated_at' => 'Tanggal Update',
         ] as $field => $label)
@@ -154,6 +169,40 @@
                     @endforeach
                 </div>
             </div>
+
+            @foreach($governanceSections as $section)
+                @if(!empty($section['items']))
+                    <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mt-6">
+                        <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
+                            <h2 class="font-bold text-white text-sm">{{ $section['label'] }}</h2>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide">
+                                        <th class="px-4 py-3 font-semibold">Nama / Pihak</th>
+                                        <th class="px-4 py-3 font-semibold">Jabatan / Peran</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-line">
+                                    @foreach($section['items'] as $item)
+                                        <tr class="hover:bg-[#f8fafc] transition-colors">
+                                            <td class="px-4 py-3 text-xs font-semibold">
+                                                <button type="button"
+                                                    @click="openPerson({{ Js::from($item['name']) }})"
+                                                    class="text-accent hover:underline text-left">
+                                                    {{ $item['name'] }}
+                                                </button>
+                                            </td>
+                                            <td class="px-4 py-3 text-xs text-muted">{{ $item['position'] ?: '-' }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endif
+            @endforeach
 
 
         </div>
@@ -339,6 +388,73 @@
             @endif
         </div>
 
+
+        <div x-show="personModal.open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+            <div class="absolute inset-0 bg-black/40" @click="personModal.open = false"></div>
+            <div class="relative bg-white rounded-2xl shadow-xl border border-line w-full max-w-3xl max-h-[85vh] overflow-y-auto">
+                <div class="px-6 py-4 border-b border-line flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-muted">Detail keterkaitan</p>
+                        <h2 class="font-bold text-primary" x-text="personModal.data?.name || 'Memuat...'"></h2>
+                    </div>
+                    <button type="button" @click="personModal.open = false" class="text-muted hover:text-primary text-xl leading-none">&times;</button>
+                </div>
+                <div class="p-6 space-y-6">
+                    <div x-show="personModal.loading" class="text-sm text-muted">Memuat data...</div>
+                    <div x-show="personModal.error" x-text="personModal.error" class="px-4 py-3 rounded-xl text-sm bg-red-50 border border-red-200 text-red-700"></div>
+                    <template x-if="personModal.data">
+                        <div class="space-y-6">
+                            <div>
+                                <h3 class="font-bold text-primary text-sm mb-3">Reksa Dana yang Pernah Diikuti</h3>
+                                <template x-if="personModal.data.funds.length === 0">
+                                    <p class="text-sm text-muted">Belum ada data Reksa Dana terkait.</p>
+                                </template>
+                                <div class="overflow-x-auto" x-show="personModal.data.funds.length > 0">
+                                    <table class="w-full text-sm">
+                                        <thead><tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide"><th class="px-3 py-2">Reksa Dana</th><th class="px-3 py-2">Kode</th><th class="px-3 py-2">Peran</th><th class="px-3 py-2">Jabatan</th></tr></thead>
+                                        <tbody class="divide-y divide-line">
+                                            <template x-for="row in personModal.data.funds" :key="row.name + row.role + row.position">
+                                                <tr><td class="px-3 py-2 font-semibold" x-text="row.name"></td><td class="px-3 py-2 font-mono text-xs" x-text="row.code || '-'"></td><td class="px-3 py-2" x-text="row.role || '-'"></td><td class="px-3 py-2 text-muted" x-text="row.position || '-'"></td></tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-primary text-sm mb-3">Manajer Investasi Terkait</h3>
+                                <template x-if="personModal.data.managers.length === 0">
+                                    <p class="text-sm text-muted">Belum ada data Manajer Investasi terkait.</p>
+                                </template>
+                                <div class="overflow-x-auto" x-show="personModal.data.managers.length > 0">
+                                    <table class="w-full text-sm">
+                                        <thead><tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide"><th class="px-3 py-2">Manajer Investasi</th><th class="px-3 py-2">Peran</th><th class="px-3 py-2">Jabatan</th></tr></thead>
+                                        <tbody class="divide-y divide-line">
+                                            <template x-for="row in personModal.data.managers" :key="row.name + row.role + row.position">
+                                                <tr><td class="px-3 py-2 font-semibold" x-text="row.name"></td><td class="px-3 py-2" x-text="row.role || '-'"></td><td class="px-3 py-2 text-muted" x-text="row.position || '-'"></td></tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-primary text-sm mb-3">Berita Utama Terkait</h3>
+                                <template x-if="personModal.data.news.length === 0">
+                                    <p class="text-sm text-muted">Belum ada berita terkait.</p>
+                                </template>
+                                <div class="space-y-2" x-show="personModal.data.news.length > 0">
+                                    <template x-for="item in personModal.data.news" :key="item.url || item.title">
+                                        <a :href="item.url" target="_blank" class="block border border-line rounded-xl px-4 py-3 hover:border-accent transition">
+                                            <p class="text-sm font-semibold text-primary" x-text="item.title"></p>
+                                            <p class="text-xs text-muted mt-1"><span x-text="item.source || '-'"></span> <span x-show="item.published_at">-</span> <span x-text="item.published_at || ''"></span></p>
+                                        </a>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
 
 
     </div>

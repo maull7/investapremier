@@ -95,6 +95,11 @@ class ReksaDana extends Model
         return $this->hasMany(MutualFundManagementTeam::class, 'reksa_dana_id');
     }
 
+    public function personRoles(): HasMany
+    {
+        return $this->hasMany(InvestmentPersonRole::class, 'reksa_dana_id');
+    }
+
     public function fillFromKode(): bool
     {
         if (empty($this->kode_reksa_dana)) return false;

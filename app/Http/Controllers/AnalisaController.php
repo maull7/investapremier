@@ -463,80 +463,91 @@ class AnalisaController extends Controller
 
     public function getExistingDocuments(Request $request)
     {
-        $request->validate([
-            'kode_reksa_dana' => 'nullable|string|max:20',
-            'jenis_laporan' => 'nullable|in:kalender_ffs,laporan_tahunan',
-            'ffs_bulan' => 'nullable|integer|min:1|max:12',
-            'ffs_tahun' => 'nullable|integer|min:2000|max:2100',
-            'tahun_laporan' => 'nullable|digits:4',
-        ]);
-
-        $query = ReksaDanaDocument::with(['reksaDana', 'uploader']);
-
-        // Filter by kode if provided
-        if ($kode = $request->kode_reksa_dana) {
-            $kode = strtoupper(trim($kode));
-            $query->whereHas('reksaDana', fn($q) => $q->whereRaw('UPPER(kode_reksa_dana) = ?', [$kode]));
-        }
-
-        $jenisLaporan = $request->jenis_laporan;
-
-        if ($jenisLaporan === 'laporan_tahunan') {
-            $query->whereIn('document_type', [
-                ReksaDanaDocument::TYPE_LAPORAN_TAHUNAN,
-                ReksaDanaDocument::TYPE_PROSPECTUS,
-            ]);
-            if ($request->tahun_laporan) {
-                $tahun = $request->tahun_laporan;
-                $query->where(function ($q) use ($tahun) {
-                    $q->where(function ($q2) use ($tahun) {
-                        $q2->where('document_type', ReksaDanaDocument::TYPE_LAPORAN_TAHUNAN)
-                          ->where('tahun_laporan', $tahun);
-                    })->orWhere(function ($q2) use ($tahun) {
-                        $q2->where('document_type', ReksaDanaDocument::TYPE_PROSPECTUS)
-                          ->where('ffs_year', $tahun);
-                    });
-                });
-            }
-        } else {
-            $query->where('document_type', ReksaDanaDocument::TYPE_FFS);
-            if ($request->ffs_bulan) {
-                $query->where('ffs_month', $request->ffs_bulan);
-            }
-            if ($request->ffs_tahun) {
-                $query->where('ffs_year', $request->ffs_tahun);
-            }
-        }
-
-        $documents = $query->orderByDesc('ffs_year')
-            ->orderByDesc('ffs_month')
-            ->get()
-            ->map(fn($doc) => [
-                'id' => $doc->id,
-                'document_type' => $doc->document_type,
-                'original_name' => $doc->original_name,
-                'file_path' => $doc->file_path,
-                'label' => $this->getDocumentLabel($doc),
-                'ffs_month' => $doc->ffs_month,
-                'ffs_year' => $doc->ffs_year,
-                'tahun_laporan' => $doc->tahun_laporan,
-                'reksa_dana_nama' => $doc->reksaDana?->nama_reksa_dana,
-                'reksa_dana_kode' => $doc->reksaDana?->kode_reksa_dana,
-                'uploaded_at' => $doc->created_at->format('d/m/Y'),
-                'uploader_name' => $doc->uploader?->name,
-                'file_size' => $doc->file_size,
+        try {
+            $request->validate([
+                'kode_reksa_dana' => 'nullable|string|max:20',
+                'jenis_laporan' => 'nullable|in:kalender_ffs,laporan_tahunan',
+                'ffs_bulan' => 'nullable|integer|min:1|max:12',
+                'ffs_tahun' => 'nullable|integer|min:2000|max:2100',
+                'tahun_laporan' => 'nullable|integer|min:2000|max:2100',
             ]);
 
-        return response()->json([
-            'found' => $documents->isNotEmpty(),
-            'documents' => $documents,
-        ]);
+            $query = ReksaDanaDocument::with(['reksaDana', 'uploader']);
+
+            if ($kode = $request->kode_reksa_dana) {
+                $kode = strtoupper(trim($kode));
+                $query->whereHas('reksaDana', fn($q) => $q->where('kode_reksa_dana', $kode));
+            }
+
+            $jenisLaporan = $request->jenis_laporan ?: 'laporan_tahunan';
+
+            if ($jenisLaporan === 'laporan_tahunan') {
+                $query->whereIn('document_type', [
+                    ReksaDanaDocument::TYPE_LAPORAN_TAHUNAN,
+                    ReksaDanaDocument::TYPE_PROSPECTUS,
+                ]);
+                if ($request->tahun_laporan) {
+                    $query->where('ffs_year', $request->tahun_laporan);
+                }
+            } else {
+                $query->where('document_type', ReksaDanaDocument::TYPE_FFS);
+                if ($request->ffs_bulan) {
+                    $query->where('ffs_month', $request->ffs_bulan);
+                }
+                if ($request->ffs_tahun) {
+                    $query->where('ffs_year', $request->ffs_tahun);
+                }
+            }
+
+            $documents = $query->orderByDesc('ffs_year')
+                ->orderByDesc('ffs_month')
+                ->get()
+                ->map(fn($doc) => [
+                    'id' => $doc->id,
+                    'document_type' => $doc->document_type,
+                    'original_name' => $doc->original_name,
+                    'file_path' => $doc->file_path,
+                    'label' => $this->getDocumentLabel($doc),
+                    'ffs_month' => $doc->ffs_month,
+                    'ffs_year' => $doc->ffs_year,
+                    'tahun_laporan' => $doc->ffs_year,
+                    'reksa_dana_nama' => $doc->reksaDana?->nama_reksa_dana,
+                    'reksa_dana_kode' => $doc->reksaDana?->kode_reksa_dana,
+                    'uploaded_at' => $doc->created_at?->format('d/m/Y') ?? '',
+                    'uploader_name' => $doc->uploader?->name,
+                    'file_size' => $doc->file_size,
+                    'url' => $doc->file_path && Storage::disk('public')->exists($doc->file_path)
+                        ? Storage::disk('public')->url($doc->file_path) : null,
+                ]);
+
+            return response()->json([
+                'found' => $documents->isNotEmpty(),
+                'documents' => $documents,
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'found' => false,
+                'documents' => [],
+                'error' => 'Parameter tidak valid.',
+            ], 422);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Gagal mengambil dokumen tersimpan', [
+                'error' => $e->getMessage(),
+                'params' => $request->only(['kode_reksa_dana', 'jenis_laporan', 'ffs_bulan', 'ffs_tahun', 'tahun_laporan']),
+            ]);
+
+            return response()->json([
+                'found' => false,
+                'documents' => [],
+                'error' => 'Gagal mengambil data dokumen.',
+            ]);
+        }
     }
 
     private function getDocumentLabel(ReksaDanaDocument $doc): string
     {
         return match ($doc->document_type) {
-            ReksaDanaDocument::TYPE_LAPORAN_TAHUNAN => 'Laporan Tahunan ' . ($doc->tahun_laporan ?? ''),
+            ReksaDanaDocument::TYPE_LAPORAN_TAHUNAN => 'Laporan Tahunan ' . ($doc->ffs_year ?? ''),
             ReksaDanaDocument::TYPE_PROSPECTUS => 'Prospektus ' . ($doc->ffs_year ?? ''),
             ReksaDanaDocument::TYPE_FFS => 'FFS '
                 . ($doc->ffs_month ? \Carbon\Carbon::create()->month($doc->ffs_month)->format('M') . ' ' : '')
@@ -547,6 +558,13 @@ class AnalisaController extends Controller
 
     public function parseExistingDocument(Request $request, FfsParserService $ffsParser, GroqService $groq)
     {
+        $request->merge([
+            'jenis_laporan' => 'laporan_tahunan',
+            'ffs_bulan' => null,
+            'ffs_tahun' => null,
+            'tahun_laporan' => $request->tahun_laporan ?: now()->year,
+        ]);
+
         $request->validate([
             'document_id' => 'required|exists:reksa_dana_documents,id',
         ]);
@@ -716,6 +734,13 @@ class AnalisaController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge([
+            'jenis_laporan' => 'laporan_tahunan',
+            'ffs_bulan' => null,
+            'ffs_tahun' => null,
+            'tahun_laporan' => $request->tahun_laporan ?: now()->year,
+        ]);
+
         $request->validate([
             'kode_reksa_dana'      => 'nullable|string|max:20',
             'nama_reksa_dana'      => 'required|string|max:255',
@@ -882,7 +907,7 @@ class AnalisaController extends Controller
                 'tanggal_data'         => $request->tanggal_data,
                 'ffs_bulan'            => $request->ffs_bulan,
                 'ffs_tahun'            => $request->ffs_tahun,
-                'jenis_laporan'        => $request->jenis_laporan ?: 'kalender_ffs',
+                'jenis_laporan'        => 'laporan_tahunan',
                 'periode_awal'         => $request->periode_awal,
                 'periode_akhir'        => $request->periode_akhir,
                 'tahun_laporan'        => $request->tahun_laporan,
@@ -1001,7 +1026,7 @@ class AnalisaController extends Controller
                 'tanggal_data'         => $request->tanggal_data,
                 'ffs_bulan'            => $request->ffs_bulan,
                 'ffs_tahun'            => $request->ffs_tahun,
-                'jenis_laporan'        => $request->jenis_laporan ?: 'kalender_ffs',
+                'jenis_laporan'        => 'laporan_tahunan',
                 'periode_awal'         => $request->periode_awal,
                 'periode_akhir'        => $request->periode_akhir,
                 'tahun_laporan'        => $request->tahun_laporan,
@@ -1296,73 +1321,6 @@ class AnalisaController extends Controller
 
         $analisa->load(['sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasiAset']);
 
-        $editData = [
-            'sektor'   => $analisa->sektor->map(fn($s) => ['nama_sektor' => $s->nama_sektor, 'bobot' => $s->bobot])->values(),
-            'efek'     => $analisa->efek->map(fn($e) => [
-                'kode_efek' => $e->kode_efek,
-                'nama_efek' => $e->nama_efek,
-                'sektor' => $e->sektor,
-                'bobot' => $e->bobot,
-                'kontribusi_kinerja' => $e->kontribusi_kinerja,
-                'market_cap' => $e->market_cap,
-                'nilai_pasar' => $e->nilai_pasar,
-                'return_1m' => $e->return_1m,
-                'return_3m' => $e->return_3m,
-                'return_6m' => $e->return_6m,
-                'return_1y' => $e->return_1y,
-                'ihsg_contribution' => $e->ihsg_contribution,
-                'effect_type' => $e->effect_type,
-                'top_10' => $e->top_10,
-                'harga_perolehan' => $e->harga_perolehan,
-                'persen_nab' => $e->persen_nab,
-            ])->values(),
-            'kinerja'  => $analisa->kinerja->map(fn($k) => ['periode' => \Carbon\Carbon::parse($k->periode)->format('Y-m'), 'return_pct' => $k->return_pct])->values(),
-            'obligasi' => $analisa->obligasi->map(fn($o) => [
-                'kode_obligasi' => $o->kode_obligasi,
-                'nama_obligasi' => $o->nama_obligasi,
-                'bobot' => $o->bobot,
-                'durasi' => $o->durasi,
-                'rating' => $o->rating,
-                'nilai_pasar' => $o->nilai_pasar,
-                'return_1m' => $o->return_1m,
-                'return_3m' => $o->return_3m,
-                'return_6m' => $o->return_6m,
-                'return_1y' => $o->return_1y,
-                'ytm' => $o->ytm,
-                'kupon' => $o->kupon,
-                'tanggal_jatuh_tempo' => $o->tanggal_jatuh_tempo?->format('Y-m-d'),
-                'penerbit' => $o->penerbit,
-                'persen_nab' => $o->persen_nab,
-            ])->values(),
-            'sukuk'    => $analisa->sukuk->map(fn($s) => [
-                'kode_sukuk' => $s->kode_sukuk,
-                'nama_sukuk' => $s->nama_sukuk,
-                'jenis_sukuk' => $s->jenis_sukuk,
-                'bobot' => $s->bobot,
-                'yield' => $s->yield,
-                'jatuh_tempo' => $s->jatuh_tempo,
-                'rating' => $s->rating,
-                'persen_nab' => $s->persen_nab,
-            ])->values(),
-            'bank'     => $analisa->bank->map(fn($b) => [
-                'nama_bank' => $b->nama_bank,
-                'bobot' => $b->bobot,
-                'car' => $b->car,
-                'npl' => $b->npl,
-                'klasifikasi_risiko' => $b->klasifikasi_risiko,
-                'jenis_bank' => $b->jenis_bank,
-                'nilai_pasar' => $b->nilai_pasar,
-                'return_1m' => $b->return_1m,
-                'return_3m' => $b->return_3m,
-                'return_6m' => $b->return_6m,
-                'return_1y' => $b->return_1y,
-                'tingkat_bunga' => $b->tingkat_bunga,
-                'jangka_waktu' => $b->jangka_waktu,
-                'persen_nab' => $b->persen_nab,
-            ])->values(),
-            'alokasi_aset' => $analisa->alokasiAset->map(fn($a) => ['nama_aset' => $a->nama_aset, 'persentase' => $a->persentase])->values(),
-        ];
-
         $formRoutes = array_merge($this->formRoutes(), [
             'update' => $this->isAdminContext
                 ? route('admin.analisa-rd.update', $analisa)
@@ -1372,7 +1330,15 @@ class AnalisaController extends Controller
                 : route('user.analisa.index'),
         ]);
 
-        return view('analisa.edit', compact('analisa', 'editData', 'formRoutes'));
+        $resumeAnalisa = $this->serializeAnalisaForForm($analisa);
+        $resumeMode = $analisa->mode ?: 'manual';
+        $isEditMode = true;
+
+        return view('analisa.create', array_merge(
+            ['formRoutes' => $formRoutes, 'productLabel' => $this->productLabel, 'isEditMode' => true],
+            $this->dataSourceLinkContext(),
+            compact('resumeAnalisa', 'resumeMode'),
+        ));
     }
 
     public function update(Request $request, AnalisaReksaDana $analisa)
@@ -1380,6 +1346,13 @@ class AnalisaController extends Controller
         abort_if(!$this->isAdminContext && $analisa->user_id !== auth()->id(), 403);
         abort_if(!$this->isAdminContext && $analisa->status === 'reviewed', 403, 'Data yang sudah direview tidak dapat diedit.');
         abort_if($analisa->product_type !== $this->productType, 404);
+
+        $request->merge([
+            'jenis_laporan' => 'laporan_tahunan',
+            'ffs_bulan' => null,
+            'ffs_tahun' => null,
+            'tahun_laporan' => $request->tahun_laporan ?: now()->year,
+        ]);
 
         $request->validate([
             'kode_reksa_dana'      => 'nullable|string|max:20',
@@ -1488,7 +1461,7 @@ class AnalisaController extends Controller
                 'tanggal_data'         => $request->tanggal_data,
                 'ffs_bulan'            => $request->ffs_bulan,
                 'ffs_tahun'            => $request->ffs_tahun,
-                'jenis_laporan'        => $request->jenis_laporan ?: 'kalender_ffs',
+                'jenis_laporan'        => 'laporan_tahunan',
                 'periode_awal'         => $request->periode_awal,
                 'periode_akhir'        => $request->periode_akhir,
                 'tahun_laporan'        => $request->tahun_laporan,

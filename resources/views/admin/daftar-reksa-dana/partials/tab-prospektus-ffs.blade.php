@@ -157,3 +157,98 @@
         <div class="px-6 py-4 border-t border-line">{{ $documentFunds->links() }}</div>
     @endif
 </div>
+
+{{-- Modal Edit Dokumen --}}
+<div id="modal-document-edit" class="fixed inset-0 z-50 hidden bg-black/40 flex items-center justify-center p-4"
+    onclick="if(event.target===this)closeModal('modal-document-edit')">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-line sticky top-0 bg-white z-10">
+            <div>
+                <h3 class="font-bold text-primary">Edit Dokumen</h3>
+                <p class="text-xs text-muted mt-0.5">Nama file: <span id="edit-doc-filename" class="font-semibold text-primary">—</span></p>
+            </div>
+            <button type="button" onclick="closeModal('modal-document-edit')"
+                class="p-1 hover:bg-[#f1f5f9] rounded-lg transition">
+                <svg class="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form method="POST" action="" class="p-6 space-y-4" id="form-document-edit" enctype="multipart/form-data">
+            @csrf
+            @method('POST')
+            <div x-data="{ docType: document.getElementById('edit-doc-type')?.value || 'prospektus' }">
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Jenis Dokumen *</label>
+                    <select name="document_type" x-model="docType" required
+                        class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-emerald-700 focus:ring focus:ring-emerald-700/20">
+                        <option value="prospektus">Prospektus</option>
+                        <option value="ffs">Fund Fact Sheet (FFS)</option>
+                    </select>
+                </div>
+                <div x-show="docType === 'ffs'" class="grid grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-primary mb-1">Bulan FFS *</label>
+                        <select name="ffs_month" id="edit-doc-ffs-month" :required="docType === 'ffs'"
+                            class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-emerald-700 focus:ring focus:ring-emerald-700/20">
+                            <option value="">— Pilih Bulan —</option>
+                            @foreach ($months as $index => $month)
+                                <option value="{{ $index + 1 }}">{{ $month }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-primary mb-1">Tahun FFS *</label>
+                        <input type="number" name="ffs_year" id="edit-doc-ffs-year" min="2000" max="2100" :required="docType === 'ffs'"
+                            class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-emerald-700 focus:ring focus:ring-emerald-700/20">
+                    </div>
+                </div>
+                <div x-show="docType === 'prospektus'" class="mt-4">
+                    <label class="block text-xs font-semibold text-primary mb-1">Tahun Prospektus *</label>
+                    <input type="number" name="ffs_year" id="edit-doc-prospektus-year" min="2000" max="2100" :required="docType === 'prospektus'"
+                        class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-emerald-700 focus:ring focus:ring-emerald-700/20">
+                </div>
+                <div class="mt-4">
+                    <label class="block text-xs font-semibold text-primary mb-1">Ganti File (PDF)</label>
+                    <input type="file" name="file" accept="application/pdf"
+                        class="w-full text-xs border border-line rounded-lg px-3 py-2 file:mr-2 file:rounded file:border-0 file:bg-emerald-50 file:px-2 file:py-1 file:text-emerald-700">
+                    <p class="text-[11px] text-muted mt-1">Kosongkan jika tidak ingin mengganti file. Format PDF, maksimal 20 MB.</p>
+                </div>
+                <div class="mt-4">
+                    <label class="block text-xs font-semibold text-primary mb-1">Catatan</label>
+                    <input type="text" name="notes" id="edit-doc-notes" maxlength="1000"
+                        class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-emerald-700 focus:ring focus:ring-emerald-700/20" placeholder="Opsional">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="closeModal('modal-document-edit')"
+                    class="px-4 py-2 text-sm text-muted border border-line rounded-lg hover:bg-[#f1f5f9] transition">Batal</button>
+                <button type="submit"
+                    class="px-4 py-2 text-sm text-white bg-emerald-700 rounded-lg hover:bg-emerald-800 transition">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditDocument(doc) {
+    document.getElementById('edit-doc-filename').textContent = doc.original_name;
+    document.getElementById('form-document-edit').action = '{{ route('admin.daftar-reksa-dana.documents.update', '_docid_') }}'.replace('_docid_', doc.id);
+    document.getElementById('edit-doc-notes').value = doc.notes || '';
+
+    const typeSelect = document.querySelector('#form-document-edit select[name="document_type"]');
+    typeSelect.value = doc.document_type;
+
+    if (doc.document_type === 'ffs') {
+        document.getElementById('edit-doc-ffs-month').value = doc.ffs_month || '';
+        document.getElementById('edit-doc-ffs-year').value = doc.ffs_year || '';
+        document.getElementById('edit-doc-prospektus-year').value = doc.ffs_year || '';
+    } else {
+        document.getElementById('edit-doc-prospektus-year').value = doc.ffs_year || '';
+        document.getElementById('edit-doc-ffs-month').value = '';
+        document.getElementById('edit-doc-ffs-year').value = doc.ffs_year || '';
+    }
+
+    openModal('modal-document-edit');
+}
+</script>
