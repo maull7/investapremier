@@ -42,12 +42,33 @@ return [
     ],
 
     'yfapi' => [
+        'enabled' => (bool) env('YFAPI_ENABLED', false),
         'key' => env('YFAPI_KEY'),
         'url' => env('YFAPI_URL', 'https://yfapi.net'),
     ],
 
     'yahoo_finance' => [
         'search_url' => env('YAHOO_FINANCE_SEARCH_URL', 'https://query1.finance.yahoo.com/v1/finance/search'),
+        'chart_url' => env('YAHOO_FINANCE_CHART_URL', 'https://query1.finance.yahoo.com/v8/finance/chart'),
+    ],
+
+    'extraction' => [
+        'queue' => env('DATA_EXTRACTION_QUEUE', 'extraction'),
+        'timeout' => (int) env('DATA_EXTRACTION_HTTP_TIMEOUT', 20),
+        'retry' => (int) env('DATA_EXTRACTION_HTTP_RETRY', 3),
+        'retry_sleep_ms' => (int) env('DATA_EXTRACTION_HTTP_RETRY_SLEEP_MS', 500),
+        'job_timeout' => (int) env('DATA_EXTRACTION_JOB_TIMEOUT', 120),
+        'job_tries' => (int) env('DATA_EXTRACTION_JOB_TRIES', 1),
+        'sources' => [
+            'idx' => [
+                'bond_url' => env('IDX_BOND_EXTRACTION_URL'),
+                'stock_url' => env('IDX_STOCK_EXTRACTION_URL'),
+            ],
+            'phei' => [
+                'bond_url' => env('PHEI_BOND_EXTRACTION_URL'),
+                'news_url' => env('PHEI_NEWS_EXTRACTION_URL'),
+            ],
+        ],
     ],
 
     'groq' => [

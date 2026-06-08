@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\AnalisaRdController as AdminAnalisaRdController;
 use App\Http\Controllers\Admin\DaftarReksaDanaController;
 use App\Http\Controllers\Admin\DataSourceLinkController;
 use App\Http\Controllers\Admin\ActivityLogController;
+use App\Http\Controllers\Admin\ExtractionBatchController;
 use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\ObligasiController as AdminObligasiController;
 use App\Http\Controllers\Admin\InvestmentManagerController as AdminInvestmentManagerController;
@@ -173,6 +174,10 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
 
     // Daftar & Analisa Saham
     Route::resource('saham', StockController::class)->except(['show']);
+    Route::post('saham/extraction-batches', [ExtractionBatchController::class, 'storeStock'])->name('saham.extraction-batches.store');
+    Route::post('saham/extraction-batches/{extractionBatch}/retry', [ExtractionBatchController::class, 'retry'])->name('saham.extraction-batches.retry');
+    Route::post('saham/extraction-batches/{extractionBatch}/save', [ExtractionBatchController::class, 'save'])->name('saham.extraction-batches.save');
+    Route::delete('saham/extraction-batches/{extractionBatch}', [ExtractionBatchController::class, 'destroy'])->name('saham.extraction-batches.destroy');
     Route::get('saham/{stock}', [StockDetailController::class, 'show'])->name('saham.show');
     Route::post('saham/{stock}/summarize-news', [StockDetailController::class, 'summarizeNews'])->name('saham.summarize-news');
     Route::post('saham/{stock}/generate-news', [StockDetailController::class, 'generateNews'])->name('saham.generate-news');
@@ -209,6 +214,10 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
 
     // Daftar & Analisa Obligasi
     Route::get('obligasi', [AdminObligasiController::class, 'index'])->name('obligasi.index');
+    Route::post('obligasi/extraction-batches', [ExtractionBatchController::class, 'storeBond'])->name('obligasi.extraction-batches.store');
+    Route::post('obligasi/extraction-batches/{extractionBatch}/retry', [ExtractionBatchController::class, 'retry'])->name('obligasi.extraction-batches.retry');
+    Route::post('obligasi/extraction-batches/{extractionBatch}/save', [ExtractionBatchController::class, 'save'])->name('obligasi.extraction-batches.save');
+    Route::delete('obligasi/extraction-batches/{extractionBatch}', [ExtractionBatchController::class, 'destroy'])->name('obligasi.extraction-batches.destroy');
     Route::get('obligasi/harga-referensi/create', [AdminObligasiController::class, 'createHargaReferensi'])->name('obligasi.create-harga-referensi');
     Route::post('obligasi/harga-referensi', [AdminObligasiController::class, 'storeHargaReferensi'])->name('obligasi.store-harga-referensi');
     Route::get('obligasi/harga-referensi/{obligasiHargaReferensi}/edit', [AdminObligasiController::class, 'editHargaReferensi'])->name('obligasi.edit-harga-referensi');

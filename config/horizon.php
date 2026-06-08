@@ -98,6 +98,7 @@ return [
 
     'waits' => [
         'redis:default' => 60,
+        'redis:extraction' => 60,
     ],
 
     /*
@@ -222,6 +223,18 @@ return [
             'timeout'    => 180, // AI bisa lambat (OpenAI + Groq fallback)
             'nice'       => 0,
         ],
+        'supervisor-extraction' => [
+            'connection' => 'redis',
+            'queue'      => ['extraction'],
+            'balance'    => 'simple',
+            'maxProcesses' => 1,
+            'maxTime'    => 0,
+            'maxJobs'    => 0,
+            'memory'     => 128,
+            'tries'      => 3,
+            'timeout'    => 180,
+            'nice'       => 0,
+        ],
     ],
 
     'environments' => [
@@ -234,6 +247,9 @@ return [
             'supervisor-ai' => [
                 'maxProcesses' => 3,
             ],
+            'supervisor-extraction' => [
+                'maxProcesses' => 2,
+            ],
         ],
 
         'local' => [
@@ -241,6 +257,9 @@ return [
                 'maxProcesses' => 2,
             ],
             'supervisor-ai' => [
+                'maxProcesses' => 1,
+            ],
+            'supervisor-extraction' => [
                 'maxProcesses' => 1,
             ],
         ],
