@@ -13,6 +13,7 @@ use App\Services\ReksaDanaChartDataService;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Support\ActivityLogger;
 use Smalot\PdfParser\Parser;
 
 class InvestmentManagerController extends Controller
@@ -126,6 +127,13 @@ class InvestmentManagerController extends Controller
 
         $investmentManager->update(array_filter($validated, fn($v) => $v !== null && $v !== ''));
 
+        ActivityLogger::log(
+            'Menyimpan Prospektus',
+            "Prospektus untuk {$investmentManager->name} berhasil disimpan",
+            'success',
+            $investmentManager,
+        );
+
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json(['success' => true]);
         }
@@ -217,7 +225,14 @@ class InvestmentManagerController extends Controller
             'kode_mi' => 'nullable|string|max:10|unique:investment_managers,kode_mi',
         ]);
 
-        InvestmentManager::create($request->only('name', 'kode_mi'));
+        $manager = InvestmentManager::create($request->only('name', 'kode_mi'));
+
+        ActivityLogger::log(
+            'Membuat Manajer Investasi',
+            "Manajer investasi {$manager->name} berhasil ditambahkan",
+            'success',
+            $manager,
+        );
 
         return redirect()->route('admin.investment-managers.index')
             ->with('success', 'Manajer investasi berhasil ditambahkan.');
@@ -237,6 +252,13 @@ class InvestmentManagerController extends Controller
         ]);
 
         $investmentManager->update($request->only('name', 'kode_mi'));
+
+        ActivityLogger::log(
+            'Memperbarui Manajer Investasi',
+            "Manajer investasi {$investmentManager->name} berhasil diperbarui",
+            'success',
+            $investmentManager,
+        );
 
         $periods = $request->input('periods', []);
         foreach ($periods as $periodId => $data) {
@@ -265,6 +287,13 @@ class InvestmentManagerController extends Controller
 
     public function destroy(InvestmentManager $investmentManager)
     {
+        ActivityLogger::log(
+            'Menghapus Manajer Investasi',
+            "Manajer investasi {$investmentManager->name} berhasil dihapus",
+            'success',
+            $investmentManager,
+        );
+
         $investmentManager->delete();
         return redirect()->route('admin.investment-managers.index')
             ->with('success', 'Manajer investasi berhasil dihapus.');
@@ -282,12 +311,25 @@ class InvestmentManagerController extends Controller
         $import = new InvestmentManagerImport;
         Excel::import($import, $request->file('file'));
 
+        ActivityLogger::log(
+            'Import Manajer Investasi',
+            "{$import->imported} data manajer investasi berhasil diimport",
+            'success',
+        );
+
         return redirect()->route('admin.investment-managers.index')
             ->with('success', "{$import->imported} data manajer investasi berhasil diimport.");
     }
 
     public function destroyPeriod(InvestmentManagerPeriod $investmentManagerPeriod)
     {
+        ActivityLogger::log(
+            'Menghapus Periode Manajer Investasi',
+            "Periode manajer investasi berhasil dihapus",
+            'success',
+            $investmentManagerPeriod,
+        );
+
         $investmentManagerPeriod->delete();
         return redirect()->route('admin.investment-managers.index')
             ->with('success', 'Periode berhasil dihapus.');

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Stock;
 use App\Exports\StocksTemplateExport;
 use App\Imports\StocksImport;
+use App\Support\ActivityLogger;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 
@@ -55,7 +56,14 @@ class StockController extends Controller
             'last_update' => 'nullable|date',
         ]);
 
-        Stock::create($request->all());
+        $stock = Stock::create($request->all());
+
+        ActivityLogger::log(
+            'Membuat Saham',
+            "Saham {$stock->kode} - {$stock->nama} berhasil ditambahkan",
+            'success',
+            $stock,
+        );
 
         return redirect()->route('admin.saham.index')->with('success', 'Saham berhasil ditambahkan.');
     }
@@ -87,11 +95,24 @@ class StockController extends Controller
 
         $stock->update($request->all());
 
+        ActivityLogger::log(
+            'Mengubah Saham',
+            "Saham {$stock->kode} - {$stock->nama} berhasil diperbarui",
+            'success',
+            $stock,
+        );
+
         return redirect()->route('admin.saham.index')->with('success', 'Saham berhasil diperbarui.');
     }
 
     public function destroy(Stock $stock)
     {
+        ActivityLogger::log(
+            'Menghapus Saham',
+            "Saham {$stock->kode} - {$stock->nama} berhasil dihapus",
+            'success',
+            $stock,
+        );
         $stock->delete();
         return redirect()->route('admin.saham.index')->with('success', 'Saham berhasil dihapus.');
     }
@@ -107,6 +128,12 @@ class StockController extends Controller
 
         $import = new StocksImport;
         Excel::import($import, $request->file('file'));
+
+        ActivityLogger::log(
+            'Import Saham',
+            "{$import->imported} data saham berhasil diimport dari Excel",
+            'success',
+        );
 
         return redirect()->route('admin.saham.index')
             ->with('success', "{$import->imported} data saham berhasil diimport dari Excel.");

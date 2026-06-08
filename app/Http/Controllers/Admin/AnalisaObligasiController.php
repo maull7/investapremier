@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\User\AnalisaObligasiController as BaseAnalisaObligasiController;
+use App\Support\ActivityLogger;
 
 class AnalisaObligasiController extends BaseAnalisaObligasiController
 {
@@ -67,6 +68,13 @@ class AnalisaObligasiController extends BaseAnalisaObligasiController
         $this->calculateShadowRating($analisa);
         $this->calculateYtmSpread($analisa);
 
+        ActivityLogger::log(
+            'Membuat Analisa Obligasi',
+            "Analisa obligasi {$analisa->nama_obligasi} berhasil dibuat",
+            'success',
+            $analisa,
+        );
+
         return redirect()->route($this->routePrefix() . '.show', $analisa->id)
             ->with('success', 'Data analisa obligasi berhasil disimpan. Analisa AI sedang diproses.');
     }
@@ -74,6 +82,13 @@ class AnalisaObligasiController extends BaseAnalisaObligasiController
     public function destroy($id)
     {
         $analisa = \App\Models\AnalisaObligasiKeuangan::findOrFail($id);
+
+        ActivityLogger::log(
+            'Menghapus Analisa Obligasi',
+            "Analisa obligasi {$analisa->nama_obligasi} berhasil dihapus",
+            'success',
+            $analisa,
+        );
 
         if ($analisa->pdf_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($analisa->pdf_path)) {
             \Illuminate\Support\Facades\Storage::disk('public')->delete($analisa->pdf_path);

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MemberProfile;
 use App\Models\StockPrice;
 use App\Models\User;
+use App\Support\ActivityLogger;
 
 class MemberController extends Controller
 {
@@ -36,6 +37,12 @@ class MemberController extends Controller
     {
         $member->update(['status' => 'approved']);
         $member->user->update(['is_member' => true]);
+        ActivityLogger::log(
+            'Menyetujui Member',
+            "Pendaftaran member {$member->user->name} telah disetujui",
+            'success',
+            $member,
+        );
         return back()->with('success', "Pendaftaran {$member->user->name} telah disetujui.");
     }
 
@@ -43,6 +50,12 @@ class MemberController extends Controller
     {
         $member->update(['status' => 'rejected']);
         $member->user->update(['is_member' => false]);
+        ActivityLogger::log(
+            'Menolak Member',
+            "Pendaftaran member {$member->user->name} telah ditolak",
+            'success',
+            $member,
+        );
         return back()->with('success', "Pendaftaran {$member->user->name} telah ditolak.");
     }
 }

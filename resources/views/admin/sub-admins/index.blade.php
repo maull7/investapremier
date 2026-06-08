@@ -47,6 +47,7 @@
                         <td class="px-4 py-3 text-gray-500 text-xs">{{ count($sa->getPermissionsList()) }} item</td>
                         <td class="px-4 py-3">
                             <div class="flex items-center justify-end gap-2">
+                                <a href="{{ route('admin.activity-logs.index', ['user_id' => $sa->id]) }}" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Logs</a>
                                 <a href="{{ route('admin.sub-admins.show', $sa) }}" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Detail</a>
                                 <a href="{{ route('admin.sub-admins.edit', $sa) }}" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100">Edit</a>
                                 <form method="POST" action="{{ route('admin.sub-admins.destroy', $sa) }}" onsubmit="return confirm('Hapus sub admin ini?')">

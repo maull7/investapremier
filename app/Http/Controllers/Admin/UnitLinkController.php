@@ -11,6 +11,7 @@ use App\Imports\UnitLinkImport;
 use App\Imports\HargaUnitLinkImport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
+use App\Support\ActivityLogger;
 
 class UnitLinkController extends Controller
 {
@@ -64,7 +65,14 @@ class UnitLinkController extends Controller
             'last_update' => 'nullable|date',
         ]);
 
-        UnitLink::create($data);
+        $unitLink = UnitLink::create($data);
+
+        ActivityLogger::log(
+            'Membuat Unit Link',
+            "Unit link {$unitLink->unit_link} berhasil ditambahkan",
+            'success',
+            $unitLink,
+        );
 
         return redirect()->route('admin.unit-link.index', ['tab' => 'unit-links'])
             ->with('success', 'Unit link berhasil ditambahkan.');
@@ -91,12 +99,26 @@ class UnitLinkController extends Controller
 
         $unitLink->update($data);
 
+        ActivityLogger::log(
+            'Memperbarui Unit Link',
+            "Unit link {$unitLink->unit_link} berhasil diperbarui",
+            'success',
+            $unitLink,
+        );
+
         return redirect()->route('admin.unit-link.index', ['tab' => 'unit-links'])
             ->with('success', 'Unit link berhasil diperbarui.');
     }
 
     public function destroy(UnitLink $unitLink)
     {
+        ActivityLogger::log(
+            'Menghapus Unit Link',
+            "Unit link {$unitLink->unit_link} berhasil dihapus",
+            'success',
+            $unitLink,
+        );
+
         $unitLink->delete();
         return redirect()->route('admin.unit-link.index', ['tab' => 'unit-links'])
             ->with('success', 'Unit link berhasil dihapus.');
@@ -112,6 +134,13 @@ class UnitLinkController extends Controller
         $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv']);
         $import = new UnitLinkImport;
         Excel::import($import, $request->file('file'));
+
+        ActivityLogger::log(
+            'Import Unit Link',
+            "{$import->imported} data unit link berhasil diimport",
+            'success',
+        );
+
         return redirect()->route('admin.unit-link.index', ['tab' => 'unit-links'])
             ->with('success', "{$import->imported} data unit link berhasil diimport.");
     }
@@ -126,6 +155,13 @@ class UnitLinkController extends Controller
         $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:5120']);
         $import = new HargaUnitLinkImport;
         Excel::import($import, $request->file('file'));
+
+        ActivityLogger::log(
+            'Import Harga Unit Link',
+            "{$import->imported} data harga unit link berhasil diimport",
+            'success',
+        );
+
         return redirect()->route('admin.unit-link.index', ['tab' => 'unit-prices'])
             ->with('success', "{$import->imported} data harga unit link berhasil diimport.");
     }
@@ -140,7 +176,14 @@ class UnitLinkController extends Controller
             'sell_buy_high' => 'nullable|numeric',
         ]);
 
-        HargaUnitLink::create($data);
+        $harga = HargaUnitLink::create($data);
+
+        ActivityLogger::log(
+            'Membuat Harga Unit Link',
+            "Harga unit link untuk unit_link_id {$harga->unit_link_id} berhasil ditambahkan",
+            'success',
+            $harga,
+        );
 
         return redirect()->route('admin.unit-link.index', ['tab' => 'unit-prices'])
             ->with('success', 'Harga unit link berhasil ditambahkan.');
@@ -158,12 +201,26 @@ class UnitLinkController extends Controller
 
         $hargaUnitLink->update($data);
 
+        ActivityLogger::log(
+            'Memperbarui Harga Unit Link',
+            "Harga unit link id {$hargaUnitLink->id} berhasil diperbarui",
+            'success',
+            $hargaUnitLink,
+        );
+
         return redirect()->route('admin.unit-link.index', ['tab' => 'unit-prices'])
             ->with('success', 'Harga unit link berhasil diperbarui.');
     }
 
     public function destroyHarga(HargaUnitLink $hargaUnitLink)
     {
+        ActivityLogger::log(
+            'Menghapus Harga Unit Link',
+            "Harga unit link id {$hargaUnitLink->id} berhasil dihapus",
+            'success',
+            $hargaUnitLink,
+        );
+
         $hargaUnitLink->delete();
         return redirect()->route('admin.unit-link.index', ['tab' => 'unit-prices'])
             ->with('success', 'Harga unit link berhasil dihapus.');

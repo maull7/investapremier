@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\User\AnalisaSahamController as BaseAnalisaSahamController;
+use App\Support\ActivityLogger;
 
 class AnalisaSahamController extends BaseAnalisaSahamController
 {
@@ -64,6 +65,13 @@ class AnalisaSahamController extends BaseAnalisaSahamController
 
         $this->persistLapkeuAiFromRequest($request, $analisa);
 
+        ActivityLogger::log(
+            'Membuat Analisa Saham',
+            "Analisa saham {$data['nama_perusahaan']} berhasil dibuat",
+            'success',
+            $analisa,
+        );
+
         return redirect()->route($this->routePrefix() . '.show', $analisa->id)
             ->with('success', 'Data analisa saham berhasil disimpan. Analisa AI sedang diproses.');
     }
@@ -72,6 +80,13 @@ class AnalisaSahamController extends BaseAnalisaSahamController
     {
         $model = $this->getModel();
         $analisa = $model::findOrFail($id);
+
+        ActivityLogger::log(
+            'Menghapus Analisa Saham',
+            "Analisa saham {$analisa->nama_perusahaan} berhasil dihapus",
+            'success',
+            $analisa,
+        );
 
         if ($analisa->pdf_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($analisa->pdf_path)) {
             \Illuminate\Support\Facades\Storage::disk('public')->delete($analisa->pdf_path);

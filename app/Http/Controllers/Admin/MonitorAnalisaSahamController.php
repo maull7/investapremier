@@ -6,6 +6,7 @@ use App\Http\Controllers\AnalisaLapkeuController;
 use App\Models\AnalisaSaham;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Support\ActivityLogger;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class MonitorAnalisaSahamController extends AnalisaLapkeuController
@@ -120,12 +121,26 @@ class MonitorAnalisaSahamController extends AnalisaLapkeuController
             'catatan_admin' => $request->catatan_admin,
         ]);
 
+        ActivityLogger::log(
+            'Review Analisa Saham',
+            "Analisa saham {$analisa->nama_perusahaan} telah direview",
+            'success',
+            $analisa,
+        );
+
         return back()->with('success', 'Data analisa saham telah ditandai sebagai reviewed.');
     }
 
     public function destroy($id)
     {
         $analisa = AnalisaSaham::findOrFail($id);
+
+        ActivityLogger::log(
+            'Menghapus Analisa Saham',
+            "Analisa saham {$analisa->nama_perusahaan} berhasil dihapus",
+            'success',
+            $analisa,
+        );
 
         if ($analisa->pdf_path && Storage::disk('public')->exists($analisa->pdf_path)) {
             Storage::disk('public')->delete($analisa->pdf_path);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
@@ -104,7 +105,7 @@ class SubAdminController extends Controller
             return back()->withInput()->withErrors(['permissions' => 'Pilih minimal satu permission.']);
         }
 
-        User::create([
+        $subAdmin = User::create([
             'name' => $request->input('name'),
             'email' => $request->input('email'),
             'password' => Hash::make($request->input('password')),
@@ -112,6 +113,13 @@ class SubAdminController extends Controller
             'is_active' => $request->boolean('is_active', true),
             'permissions' => $permissions,
         ]);
+
+        ActivityLogger::log(
+            'Membuat Sub Admin',
+            "Sub Admin {$subAdmin->name} ({$subAdmin->email}) berhasil dibuat",
+            'success',
+            $subAdmin,
+        );
 
         return redirect()->route('admin.sub-admins.index')
             ->with('success', 'Sub Admin berhasil dibuat.');
@@ -160,6 +168,13 @@ class SubAdminController extends Controller
 
         $subAdmin->update($update);
 
+        ActivityLogger::log(
+            'Mengubah Sub Admin',
+            "Sub Admin {$subAdmin->name} ({$subAdmin->email}) berhasil diperbarui",
+            'success',
+            $subAdmin,
+        );
+
         return redirect()->route('admin.sub-admins.index')
             ->with('success', 'Sub Admin berhasil diperbarui.');
     }
@@ -204,6 +219,12 @@ class SubAdminController extends Controller
     public function destroy(User $subAdmin)
     {
         abort_if($subAdmin->role !== 'sub_admin', 404);
+        ActivityLogger::log(
+            'Menghapus Sub Admin',
+            "Sub Admin {$subAdmin->name} ({$subAdmin->email}) berhasil dihapus",
+            'success',
+            $subAdmin,
+        );
         $subAdmin->delete();
         return back()->with('success', 'Sub Admin berhasil dihapus.');
     }

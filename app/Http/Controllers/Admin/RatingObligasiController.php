@@ -8,6 +8,7 @@ use App\Imports\RatingObligasiImport;
 use App\Models\RatingObligasi;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Support\ActivityLogger;
 
 class RatingObligasiController extends Controller
 {
@@ -31,7 +32,14 @@ class RatingObligasiController extends Controller
             'urutan' => 'nullable|integer|min:0',
         ]);
 
-        RatingObligasi::create($data);
+        $rating = RatingObligasi::create($data);
+
+        ActivityLogger::log(
+            'Membuat Rating Obligasi',
+            "Rating {$rating->kode} berhasil ditambahkan",
+            'success',
+            $rating,
+        );
 
         return redirect()->route('admin.rating-obligasi.index')
             ->with('success', "Rating {$data['kode']} berhasil ditambahkan.");
@@ -53,6 +61,13 @@ class RatingObligasiController extends Controller
 
         $ratingObligasi->update($data);
 
+        ActivityLogger::log(
+            'Memperbarui Rating Obligasi',
+            "Rating {$ratingObligasi->kode} berhasil diperbarui",
+            'success',
+            $ratingObligasi,
+        );
+
         return redirect()->route('admin.rating-obligasi.index')
             ->with('success', "Rating {$data['kode']} berhasil disimpan.");
     }
@@ -60,6 +75,14 @@ class RatingObligasiController extends Controller
     public function destroy(RatingObligasi $ratingObligasi)
     {
         $kode = $ratingObligasi->kode;
+
+        ActivityLogger::log(
+            'Menghapus Rating Obligasi',
+            "Rating {$kode} berhasil dihapus",
+            'success',
+            $ratingObligasi,
+        );
+
         $ratingObligasi->delete();
 
         return redirect()->route('admin.rating-obligasi.index')
@@ -77,6 +100,12 @@ class RatingObligasiController extends Controller
 
         $import = new RatingObligasiImport;
         Excel::import($import, $request->file('file'));
+
+        ActivityLogger::log(
+            'Import Rating Obligasi',
+            "{$import->imported} data rating obligasi berhasil diimport",
+            'success',
+        );
 
         $message = "{$import->imported} data rating obligasi berhasil diimport.";
         if ($import->imported === 0) {

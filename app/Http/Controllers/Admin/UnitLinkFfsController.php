@@ -7,6 +7,7 @@ use App\Jobs\AnalisaAiJob;
 use App\Models\AnalisaReksaDana;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Support\ActivityLogger;
 
 class UnitLinkFfsController extends Controller
 {
@@ -37,6 +38,12 @@ class UnitLinkFfsController extends Controller
                 $count++;
             }
         }
+
+        ActivityLogger::log(
+            'Bulk Analisa Unit Link',
+            "{$count} unit link sedang diproses analisa FFS",
+            'success',
+        );
 
         return back()->with('success', "{$count} unit link sedang diproses analisa FFS.");
     }

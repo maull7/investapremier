@@ -7,6 +7,7 @@ use App\Models\Question;
 use App\Models\QuestionOption;
 use App\Exports\QuestionsTemplateExport;
 use App\Imports\QuestionsImport;
+use App\Support\ActivityLogger;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 
@@ -41,6 +42,13 @@ class QuestionController extends Controller
             $question->options()->create($opt);
         }
 
+        ActivityLogger::log(
+            'Membuat Soal',
+            "Soal kuis berhasil ditambahkan: ".str($request->question_text)->limit(100),
+            'success',
+            $question,
+        );
+
         return redirect()->route('admin.questions.index')->with('success', 'Soal berhasil ditambahkan.');
     }
 
@@ -67,6 +75,13 @@ class QuestionController extends Controller
             $question->options()->create($opt);
         }
 
+        ActivityLogger::log(
+            'Mengubah Soal',
+            "Soal kuis berhasil diperbarui: ".str($request->question_text)->limit(100),
+            'success',
+            $question,
+        );
+
         return redirect()->route('admin.questions.index')->with('success', 'Soal berhasil diperbarui.');
     }
 
@@ -82,12 +97,24 @@ class QuestionController extends Controller
         $import = new QuestionsImport;
         Excel::import($import, $request->file('file'));
 
+        ActivityLogger::log(
+            'Import Soal',
+            "{$import->imported} soal berhasil diimport dari Excel",
+            'success',
+        );
+
         return redirect()->route('admin.questions.index')
             ->with('success', "{$import->imported} soal berhasil diimport dari Excel.");
     }
 
     public function destroy(Question $question)
     {
+        ActivityLogger::log(
+            'Menghapus Soal',
+            "Soal kuis berhasil dihapus: ".str($question->question_text)->limit(100),
+            'success',
+            $question,
+        );
         $question->delete();
         return redirect()->route('admin.questions.index')->with('success', 'Soal berhasil dihapus.');
     }

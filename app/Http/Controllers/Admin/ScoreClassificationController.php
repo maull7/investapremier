@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ScoreClassification;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 
 class ScoreClassificationController extends Controller
@@ -33,6 +34,13 @@ class ScoreClassificationController extends Controller
         }
 
         $scoreClassification->update($data);
+
+        ActivityLogger::log(
+            'Mengubah Klasifikasi Skor',
+            "Klasifikasi {$scoreClassification->profile_name} berhasil diperbarui",
+            'success',
+            $scoreClassification,
+        );
 
         return back()->with('success', "Klasifikasi {$scoreClassification->profile_name} berhasil diperbarui.");
     }

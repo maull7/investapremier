@@ -6,6 +6,7 @@ use App\Http\Controllers\AnalisaLapkeuController;
 use App\Models\AnalisaObligasiKeuangan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Support\ActivityLogger;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class MonitorAnalisaObligasiController extends AnalisaLapkeuController
@@ -96,12 +97,26 @@ class MonitorAnalisaObligasiController extends AnalisaLapkeuController
             'catatan_admin' => $request->catatan_admin,
         ]);
 
+        ActivityLogger::log(
+            'Review Analisa Obligasi',
+            "Analisa obligasi {$analisa->nama_obligasi} telah direview",
+            'success',
+            $analisa,
+        );
+
         return back()->with('success', 'Data analisa obligasi telah ditandai sebagai reviewed.');
     }
 
     public function destroy($id)
     {
         $analisa = AnalisaObligasiKeuangan::findOrFail($id);
+
+        ActivityLogger::log(
+            'Menghapus Analisa Obligasi',
+            "Analisa obligasi {$analisa->nama_obligasi} berhasil dihapus",
+            'success',
+            $analisa,
+        );
 
         if ($analisa->pdf_path && Storage::disk('public')->exists($analisa->pdf_path)) {
             Storage::disk('public')->delete($analisa->pdf_path);
