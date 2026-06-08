@@ -127,6 +127,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::post('daftar-reksa-dana/documents', [DaftarReksaDanaController::class, 'storeDocument'])->name('daftar-reksa-dana.documents.store');
     Route::get('daftar-reksa-dana/documents/{document}/view', [DaftarReksaDanaController::class, 'viewDocument'])->name('daftar-reksa-dana.documents.view');
     Route::get('daftar-reksa-dana/documents/{document}/download', [DaftarReksaDanaController::class, 'downloadDocument'])->name('daftar-reksa-dana.documents.download');
+    Route::post('daftar-reksa-dana/documents/{document}/update', [DaftarReksaDanaController::class, 'updateDocument'])->name('daftar-reksa-dana.documents.update');
     Route::delete('daftar-reksa-dana/documents/{document}', [DaftarReksaDanaController::class, 'destroyDocument'])->name('daftar-reksa-dana.documents.destroy');
     Route::post('daftar-reksa-dana/upload-harga', [DaftarReksaDanaController::class, 'uploadHarga'])->name('daftar-reksa-dana.upload-harga');
     Route::post('daftar-reksa-dana/upload-harian', [DaftarReksaDanaController::class, 'uploadHarian'])->name('daftar-reksa-dana.upload-harian');

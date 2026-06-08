@@ -280,7 +280,7 @@
             markers: { size: 3, hover: { size: 5 } },
             dataLabels: { enabled: false },
             legend: { show: true, position: 'top', horizontalAlign: 'left' },
-            xaxis: { type: 'datetime', labels: { datetimeUTC: false } },
+            xaxis: { type: 'datetime', labels: { datetimeUTC: false, format: 'dd MMM yyyy' } },
             yaxis: { labels: { formatter } },
             tooltip: { shared: true, x: { format: 'dd MMM yyyy' }, y: { formatter } },
             grid: { borderColor: '#e2e8f0' },

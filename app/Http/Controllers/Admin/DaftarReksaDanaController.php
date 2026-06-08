@@ -30,21 +30,25 @@ class DaftarReksaDanaController extends Controller
     {
         $tab = $request->get('tab', 'harga');
 
-        $hargaQuery = ReksaDana::latest();
+        $hargaSort = $request->get('sort', 'nama_reksa_dana');
+        $hargaDir = $request->get('direction', 'asc');
+        $hargaQuery = ReksaDana::orderBy($hargaSort, $hargaDir);
         if ($request->jenis) $hargaQuery->where('jenis', $request->jenis);
         if ($request->search) $hargaQuery->where('nama_reksa_dana', 'like', '%' . $request->search . '%');
         if ($request->harga_tanggal) $hargaQuery->whereDate('tanggal_nab', $request->harga_tanggal);
         $reksaDanas = $hargaQuery->paginate(20, ['*'], 'harga_page')->withQueryString();
 
         $harianTanggal = $request->get('harian_tanggal');
+        $harianSort = $request->get('harian_sort', 'reksa_dana.nama_reksa_dana');
+        $harianDir = $request->get('harian_direction', 'asc');
 
         if ($harianTanggal) {
-            // Filter spesifik tanggal: tampilkan semua data pada tanggal tersebut
             $harianQuery = HargaReksaDana::with('reksaDana')
+                ->join('reksa_dana', 'harga_reksa_dana.reksa_dana_id', '=', 'reksa_dana.id')
                 ->where('tanggal', $harianTanggal)
-                ->orderBy('reksa_dana_id');
+                ->orderBy('reksa_dana.nama_reksa_dana', $harianDir)
+                ->select('harga_reksa_dana.*');
         } else {
-            // Default: tampilkan data tanggal terakhir per reksa dana
             $latestPerRd = HargaReksaDana::selectRaw('reksa_dana_id, MAX(tanggal) as max_tanggal')
                 ->groupBy('reksa_dana_id');
 
@@ -53,9 +57,9 @@ class DaftarReksaDanaController extends Controller
                     $join->on('harga_reksa_dana.reksa_dana_id', '=', 'latest.reksa_dana_id')
                         ->whereColumn('harga_reksa_dana.tanggal', 'latest.max_tanggal');
                 })
-                ->select('harga_reksa_dana.*')
-                ->orderByDesc('harga_reksa_dana.tanggal')
-                ->orderBy('harga_reksa_dana.reksa_dana_id');
+                ->join('reksa_dana', 'harga_reksa_dana.reksa_dana_id', '=', 'reksa_dana.id')
+                ->orderBy('reksa_dana.nama_reksa_dana', $harianDir)
+                ->select('harga_reksa_dana.*');
         }
 
         if ($request->search) {
@@ -178,6 +182,48 @@ class DaftarReksaDanaController extends Controller
         $this->ensureDocumentExists($document);
 
         return Storage::disk('public')->download($document->file_path, $document->original_name);
+    }
+
+    public function updateDocument(Request $request, ReksaDanaDocument $document)
+    {
+        $validated = $request->validate([
+            'document_type' => 'required|in:prospektus,ffs',
+            'ffs_month' => 'required_if:document_type,ffs|nullable|integer|min:1|max:12',
+            'ffs_year' => 'required|integer|min:2000|max:2100',
+            'notes' => 'nullable|string|max:1000',
+            'file' => 'nullable|file|mimes:pdf|max:20480',
+        ]);
+
+        if ($validated['document_type'] === 'prospektus') {
+            $validated['ffs_month'] = null;
+        }
+
+        unset($validated['file']);
+
+        if ($request->hasFile('file')) {
+            $document->deleteStoredFile();
+
+            $file = $request->file('file');
+            $filename = now()->format('Ymd-His') . '-' . Str::random(10) . '.pdf';
+            $path = $file->storeAs('reksa-dana-documents/' . $document->reksa_dana_id, $filename, 'public');
+
+            $validated['original_name'] = $file->getClientOriginalName();
+            $validated['file_path'] = $path;
+            $validated['mime_type'] = $file->getClientMimeType();
+            $validated['file_size'] = $file->getSize();
+        }
+
+        $document->update($validated);
+
+        ActivityLogger::log(
+            'Mengubah Dokumen',
+            "Dokumen {$document->original_name} berhasil diperbarui",
+            'success',
+            $document,
+        );
+
+        return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs'])
+            ->with('success', 'Dokumen berhasil diperbarui.');
     }
 
     public function destroyDocument(ReksaDanaDocument $document)
