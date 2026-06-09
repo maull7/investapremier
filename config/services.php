@@ -18,6 +18,19 @@ return [
         'key' => env('POSTMARK_API_KEY'),
     ],
 
+    /*
+    | Playwright browser cache location.
+    |
+    | Leave blank on local dev so Playwright uses its default
+    | (~/.cache/ms-playwright of the running user). On production set this in
+    | .env to a path the web-server user (e.g. www-data) can read:
+    |
+    |     PLAYWRIGHT_BROWSERS_PATH=/var/www/.cache/ms-playwright
+    */
+    'playwright' => [
+        'browsers_path' => env('PLAYWRIGHT_BROWSERS_PATH'),
+    ],
+
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],
