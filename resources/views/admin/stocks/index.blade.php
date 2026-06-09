@@ -8,13 +8,90 @@
         deleteText: '',
         showImport: false,
         showExtraction: false,
+        // ── Async sync state (polled from server) ─────────────────────
         isSyncing: false,
-        syncStep: 0,
-        startSync() {
+        syncRunId: null,
+        syncStep: 'queued',
+        syncStepLabel: 'Menunggu worker...',
+        syncProgress: 0,
+        syncStatus: 'queued',
+        syncMessage: '',
+        syncErrors: [],
+        syncPollTimer: null,
+
+        init() {
+            const initialRunId = @json(session('sync_run_id'));
+            if (initialRunId) {
+                this.startPolling(initialRunId);
+            }
+        },
+
+        async submitSync(event) {
+            event.preventDefault();
+            const form = event.target;
             this.isSyncing = true;
-            this.syncStep = 0;
-            this._t1 = setTimeout(() => { this.syncStep = 1 }, 15000);
-            this._t2 = setTimeout(() => { this.syncStep = 2 }, 30000);
+            this.syncStep = 'queued';
+            this.syncStepLabel = 'Mengirim job ke antrian...';
+            this.syncProgress = 0;
+            this.syncStatus = 'queued';
+            this.syncErrors = [];
+            this.syncMessage = '';
+
+            try {
+                const res = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': form.querySelector('input[name=_token]').value,
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                if (!data.run_id) throw new Error('Server tidak mengembalikan run_id');
+                this.startPolling(data.run_id);
+            } catch (e) {
+                this.isSyncing = false;
+                alert('Gagal memulai sync: ' + e.message);
+            }
+        },
+
+        startPolling(runId) {
+            this.syncRunId = runId;
+            this.isSyncing = true;
+            this.poll();
+        },
+
+        async poll() {
+            if (!this.syncRunId) return;
+            try {
+                const res = await fetch(`/admin/saham/sync-idx/status/${this.syncRunId}`, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const d = await res.json();
+                this.syncStep = d.current_step || 'queued';
+                this.syncStepLabel = d.current_step_label || '...';
+                this.syncProgress = d.progress_percent || 0;
+                this.syncStatus = d.status;
+                this.syncMessage = d.message || '';
+                this.syncErrors = d.errors || [];
+
+                if (d.is_terminal) {
+                    this.syncProgress = 100;
+                    setTimeout(() => { window.location.reload(); }, 2500);
+                    return;
+                }
+                this.syncPollTimer = setTimeout(() => this.poll(), 2000);
+            } catch (e) {
+                this.syncPollTimer = setTimeout(() => this.poll(), 5000);
+            }
+        },
+
+        cancelSync() {
+            if (this.syncPollTimer) clearTimeout(this.syncPollTimer);
+            this.isSyncing = false;
+            this.syncRunId = null;
         }
     }">
 
@@ -46,7 +123,7 @@
                     </svg>
                     Ekstrak Data
                 </button> --}}
-                <form method="POST" action="{{ route('admin.saham.sync-idx') }}" @submit="startSync()">
+                <form method="POST" action="{{ route('admin.saham.sync-idx') }}" @submit="submitSync($event)">
                     @csrf
                     <button type="submit" class="btn-outline" :disabled="isSyncing"
                         :class="isSyncing ? 'opacity-50 cursor-not-allowed' : ''"
@@ -666,66 +743,75 @@
             </div>
         </div>
 
-        {{-- Modal Loading: Sync dari IDX --}}
+        {{-- Modal Loading: Sync dari IDX (server-polled progress) --}}
         <div x-show="isSyncing" x-cloak
             class="fixed inset-0 z-[60] bg-white/95 backdrop-blur-sm grid place-items-center px-4"
             x-transition:enter="transition duration-200" x-transition:enter-start="opacity-0"
             x-transition:enter-end="opacity-100">
-            <div class="text-center max-w-md">
-                <div class="w-14 h-14 border-4 border-accent border-t-transparent rounded-full mx-auto mb-6 animate-spin">
+            <div class="text-center max-w-lg w-full">
+                <template x-if="syncStatus !== 'completed' && syncStatus !== 'failed'">
+                    <div class="w-14 h-14 border-4 border-accent border-t-transparent rounded-full mx-auto mb-6 animate-spin"></div>
+                </template>
+                <template x-if="syncStatus === 'completed'">
+                    <div class="w-14 h-14 rounded-full mx-auto mb-6 bg-green-100 grid place-items-center">
+                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                </template>
+                <template x-if="syncStatus === 'failed'">
+                    <div class="w-14 h-14 rounded-full mx-auto mb-6 bg-red-100 grid place-items-center">
+                        <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </div>
+                </template>
+
+                <h3 class="text-lg font-bold text-primary mb-1">
+                    <span x-show="syncStatus === 'completed'">Sync Selesai</span>
+                    <span x-show="syncStatus === 'failed'">Sync Gagal</span>
+                    <span x-show="syncStatus !== 'completed' && syncStatus !== 'failed'">Sinkronisasi dari IDX</span>
+                </h3>
+                <p class="text-sm text-muted mb-2" x-text="syncStepLabel"></p>
+                <p class="text-xs text-muted mb-5">
+                    Run ID: <span class="font-mono" x-text="syncRunId"></span> · Status: <span class="font-semibold" x-text="syncStatus"></span>
+                </p>
+
+                <div class="max-w-sm mx-auto mb-5">
+                    <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div class="h-full transition-all duration-500 ease-out"
+                            :style="`width: ${syncProgress}%`"
+                            :class="syncStatus === 'failed' ? 'bg-red-500' : (syncStatus === 'completed' ? 'bg-green-500' : 'bg-accent')"></div>
+                    </div>
+                    <p class="text-xs text-muted mt-1.5"><span x-text="syncProgress"></span>%</p>
                 </div>
-                <h3 class="text-lg font-bold text-primary mb-1">Sinkronisasi dari IDX</h3>
-                <p class="text-sm text-muted mb-5">Tarik data master saham + harga real-time dan simpan ke database.</p>
 
-                <ol class="text-left space-y-2 max-w-sm mx-auto">
-                    <li class="flex items-center gap-3 text-sm">
-                        <span class="w-6 h-6 rounded-full grid place-items-center text-[11px] font-bold shrink-0"
-                            :class="syncStep > 0 ? 'bg-green-100 text-green-700' : (syncStep === 0 ? 'bg-accent text-white' :
-                                'bg-slate-100 text-muted')">
-                            <template x-if="syncStep > 0">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                                        d="M5 13l4 4L19 7" />
-                                </svg>
-                            </template>
-                            <template x-if="syncStep <= 0"><span>1</span></template>
-                        </span>
-                        <span
-                            :class="syncStep === 0 ? 'text-primary font-semibold' : (syncStep > 0 ? 'text-muted line-through' :
-                                'text-muted')">
-                            Mengambil master daftar saham IDX
-                        </span>
-                    </li>
-                    <li class="flex items-center gap-3 text-sm">
-                        <span class="w-6 h-6 rounded-full grid place-items-center text-[11px] font-bold shrink-0"
-                            :class="syncStep > 1 ? 'bg-green-100 text-green-700' : (syncStep === 1 ? 'bg-accent text-white' :
-                                'bg-slate-100 text-muted')">
-                            <template x-if="syncStep > 1">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                                        d="M5 13l4 4L19 7" />
-                                </svg>
-                            </template>
-                            <template x-if="syncStep <= 1"><span>2</span></template>
-                        </span>
-                        <span
-                            :class="syncStep === 1 ? 'text-primary font-semibold' : (syncStep > 1 ? 'text-muted line-through' :
-                                'text-muted')">
-                            Mengambil data harga &amp; volume hari ini
-                        </span>
-                    </li>
-                    <li class="flex items-center gap-3 text-sm">
-                        <span class="w-6 h-6 rounded-full grid place-items-center text-[11px] font-bold shrink-0"
-                            :class="syncStep === 2 ? 'bg-accent text-white' : 'bg-slate-100 text-muted'">
-                            <span>3</span>
-                        </span>
-                        <span :class="syncStep === 2 ? 'text-primary font-semibold' : 'text-muted'">
-                            Menyimpan ke database
-                        </span>
-                    </li>
-                </ol>
+                <template x-if="syncMessage">
+                    <div class="mt-2 mx-auto max-w-md text-left rounded-xl border px-4 py-3 text-xs"
+                        :class="syncStatus === 'failed' ? 'border-red-200 bg-red-50 text-red-800' : 'border-green-200 bg-green-50 text-green-800'">
+                        <p x-text="syncMessage"></p>
+                    </div>
+                </template>
 
-                <p class="text-xs text-muted mt-6">Proses ini memakan waktu 30-60 detik. Jangan tutup tab ini.</p>
+                <template x-if="syncErrors && syncErrors.length">
+                    <div class="mt-3 mx-auto max-w-md text-left rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                        <p class="font-semibold mb-1">Catatan / Error</p>
+                        <ul class="list-disc pl-4 space-y-0.5">
+                            <template x-for="err in syncErrors" :key="err">
+                                <li x-text="err"></li>
+                            </template>
+                        </ul>
+                    </div>
+                </template>
+
+                <p class="text-xs text-muted mt-6" x-show="syncStatus !== 'completed' && syncStatus !== 'failed'">
+                    Job berjalan di background. Aman jika kamu tutup tab — progress akan dilanjutkan oleh worker.
+                </p>
+
+                <button type="button" @click="cancelSync()" x-show="syncStatus === 'failed'"
+                    class="mt-4 px-4 py-2 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary transition">
+                    Tutup
+                </button>
             </div>
         </div>
 

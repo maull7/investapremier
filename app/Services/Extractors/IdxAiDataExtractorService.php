@@ -72,17 +72,18 @@ class IdxAiDataExtractorService
             ];
         }
 
+        $extractedArr = $result['extracted'] ?? null;
         Log::debug('Playwright: success', [
-            'has_extracted' => isset($result['extracted']) ? 'YES' : 'NO',
-            'extracted_count' => $result['extracted_count'] ?? ($result['extracted'] ? count($result['extracted']) : 0),
+            'has_extracted' => $extractedArr !== null ? 'YES' : 'NO',
+            'extracted_count' => $result['extracted_count'] ?? (is_array($extractedArr) ? count($extractedArr) : 0),
             'has_table_data' => isset($result['table_data']) ? 'YES' : 'NO',
             'text_size' => $result['text_size'] ?? 0,
         ]);
 
-        if (isset($result['extracted']) && is_array($result['extracted'])) {
+        if (is_array($extractedArr) && !empty($extractedArr)) {
             Log::debug('Playwright: extracted sample', [
-                'first' => json_encode($result['extracted'][0] ?? null),
-                'last' => json_encode($result['extracted'][count($result['extracted'])-1] ?? null),
+                'first' => json_encode($extractedArr[0] ?? null),
+                'last' => json_encode($extractedArr[count($extractedArr) - 1] ?? null),
             ]);
         }
 
