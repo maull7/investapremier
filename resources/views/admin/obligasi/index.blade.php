@@ -5,7 +5,18 @@
 @section('content')
 <div x-data="{
     deleteId: null, deleteType: '', deleteText: '',
-    showImportHarga: false, showImportBond: false, showExtraction: false
+    showImportHarga: false, showImportBond: false, showExtraction: false,
+    isSyncing: false,
+    syncStep: 0,
+    startSync() {
+        this.isSyncing = true;
+        this.syncStep = 0;
+        // Step transitions roughly match observed timings:
+        //   IDX API (~15s) -> PHEI Govt (~30s) -> PHEI Corp (~110s) -> upsert (~5s)
+        this._t1 = setTimeout(() => { this.syncStep = 1 }, 15000);
+        this._t2 = setTimeout(() => { this.syncStep = 2 }, 45000);
+        this._t3 = setTimeout(() => { this.syncStep = 3 }, 155000);
+    }
 }">
 
 <div class="mb-6 flex items-center justify-between">
@@ -13,12 +24,27 @@
         <h1 class="page-title">Daftar Obligasi</h1>
         <p class="page-sub">Kelola data obligasi harga referensi dan keuangan emiten</p>
     </div>
-    <button @click="showExtraction = true" class="btn-outline">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18M6 8h12m-9 4h6m-8 4h10m-7 4h4" />
-        </svg>
-        Ekstrak Data
-    </button>
+    <div class="flex items-center gap-2">
+        <button @click="showExtraction = true" class="btn-outline">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18M6 8h12m-9 4h6m-8 4h10m-7 4h4" />
+            </svg>
+            Ekstrak Data
+        </button>
+        <form method="POST" action="{{ route('admin.obligasi.sync-idx') }}" @submit="startSync()">
+            @csrf
+            <button type="submit" class="btn-outline" :disabled="isSyncing"
+                :class="isSyncing ? 'opacity-50 cursor-not-allowed' : ''"
+                title="Tarik metadata obligasi dari IDX + PHEI dan langsung simpan ke database (harga & YTM tetap manual)">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    :class="isSyncing ? 'animate-spin' : ''">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Sync dari IDX + PHEI
+            </button>
+        </form>
+    </div>
 </div>
 
 @if(session('success'))
@@ -32,6 +58,13 @@
 <div class="mb-5 flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">
     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
     {{ session('error') }}
+</div>
+@endif
+
+@if(session('warning'))
+<div class="mb-5 flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-sm">
+    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M5.07 19h13.86a2 2 0 001.74-2.99l-6.93-12a2 2 0 00-3.48 0l-6.93 12A2 2 0 005.07 19z"/></svg>
+    {{ session('warning') }}
 </div>
 @endif
 
@@ -145,6 +178,83 @@
 
 {{-- Modal Import Bond --}}
 @include('admin.obligasi._modal-import-bond')
+
+{{-- Modal Loading: Sync dari IDX + PHEI --}}
+<div x-show="isSyncing" x-cloak
+    class="fixed inset-0 z-[60] bg-white/95 backdrop-blur-sm grid place-items-center px-4"
+    x-transition:enter="transition duration-200" x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100">
+    <div class="text-center max-w-md">
+        <div class="w-14 h-14 border-4 border-accent border-t-transparent rounded-full mx-auto mb-6 animate-spin"></div>
+        <h3 class="text-lg font-bold text-primary mb-1">Sinkronisasi Obligasi</h3>
+        <p class="text-sm text-muted mb-5">Tarik metadata obligasi dari IDX + PHEI dan simpan ke database.</p>
+
+        <ol class="text-left space-y-2 max-w-sm mx-auto">
+            {{-- Step 1: IDX Korporasi --}}
+            <li class="flex items-center gap-3 text-sm">
+                <span class="w-6 h-6 rounded-full grid place-items-center text-[11px] font-bold shrink-0"
+                    :class="syncStep > 0 ? 'bg-green-100 text-green-700' : (syncStep === 0 ? 'bg-accent text-white' : 'bg-slate-100 text-muted')">
+                    <template x-if="syncStep > 0">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </template>
+                    <template x-if="syncStep <= 0"><span>1</span></template>
+                </span>
+                <span :class="syncStep === 0 ? 'text-primary font-semibold' : (syncStep > 0 ? 'text-muted line-through' : 'text-muted')">
+                    Mengambil ~1419 obligasi korporasi + rating dari IDX (~15 detik)
+                </span>
+            </li>
+            {{-- Step 2: PHEI Pemerintah --}}
+            <li class="flex items-center gap-3 text-sm">
+                <span class="w-6 h-6 rounded-full grid place-items-center text-[11px] font-bold shrink-0"
+                    :class="syncStep > 1 ? 'bg-green-100 text-green-700' : (syncStep === 1 ? 'bg-accent text-white' : 'bg-slate-100 text-muted')">
+                    <template x-if="syncStep > 1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </template>
+                    <template x-if="syncStep <= 1"><span>2</span></template>
+                </span>
+                <span :class="syncStep === 1 ? 'text-primary font-semibold' : (syncStep > 1 ? 'text-muted line-through' : 'text-muted')">
+                    Mengambil obligasi pemerintah dari PHEI (~30 detik)
+                </span>
+            </li>
+            {{-- Step 3: PHEI Korporasi --}}
+            <li class="flex items-center gap-3 text-sm">
+                <span class="w-6 h-6 rounded-full grid place-items-center text-[11px] font-bold shrink-0"
+                    :class="syncStep > 2 ? 'bg-green-100 text-green-700' : (syncStep === 2 ? 'bg-accent text-white' : 'bg-slate-100 text-muted')">
+                    <template x-if="syncStep > 2">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </template>
+                    <template x-if="syncStep <= 2"><span>3</span></template>
+                </span>
+                <span :class="syncStep === 2 ? 'text-primary font-semibold' : (syncStep > 2 ? 'text-muted line-through' : 'text-muted')">
+                    Mengambil obligasi korporasi dari PHEI (~2 menit)
+                </span>
+            </li>
+            {{-- Step 4: Save to DB --}}
+            <li class="flex items-center gap-3 text-sm">
+                <span class="w-6 h-6 rounded-full grid place-items-center text-[11px] font-bold shrink-0"
+                    :class="syncStep === 3 ? 'bg-accent text-white' : 'bg-slate-100 text-muted'">
+                    <span>4</span>
+                </span>
+                <span :class="syncStep === 3 ? 'text-primary font-semibold' : 'text-muted'">
+                    Menyimpan ke database (preserve harga manual)
+                </span>
+            </li>
+        </ol>
+
+        <div class="mt-6 mx-auto max-w-sm text-left rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+            <p class="font-semibold mb-1">Catatan</p>
+            <p>Sumber free IDX/PHEI tidak menyediakan harga real-time per-obligasi (harga_persen, YTM, current_yield). Fields tersebut tetap NULL setelah sync — perlu diisi manual via menu Edit atau import Excel.</p>
+        </div>
+
+        <p class="text-xs text-muted mt-4">Total proses ~2-3 menit. Jangan tutup tab ini.</p>
+    </div>
+</div>
 
 </div>
 @endsection

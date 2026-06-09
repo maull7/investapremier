@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\DaftarReksaDanaController;
 use App\Http\Controllers\Admin\DataSourceLinkController;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\ExtractionBatchController;
+use App\Http\Controllers\Admin\IdxAiExtractionController;
 use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\ObligasiController as AdminObligasiController;
 use App\Http\Controllers\Admin\InvestmentManagerController as AdminInvestmentManagerController;
@@ -43,6 +44,8 @@ use App\Http\Controllers\User\InvestmentManagerController as UserInvestmentManag
 use App\Http\Controllers\User\UnitLinkController as UserUnitLinkController;
 use App\Http\Controllers\User\AnalisaUlController as UserAnalisaUlController;
 use App\Http\Controllers\User\PerencanaanInvestasiController;
+use App\Http\Controllers\User\NotificationController as UserNotificationController;
+use App\Http\Controllers\User\StockPriceAlertController as UserStockPriceAlertController;
 use App\Http\Controllers\ReksaDanaController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\StockDetailController;
@@ -182,6 +185,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::post('saham/extraction-batches/{extractionBatch}/retry', [ExtractionBatchController::class, 'retry'])->name('saham.extraction-batches.retry');
     Route::post('saham/extraction-batches/{extractionBatch}/save', [ExtractionBatchController::class, 'save'])->name('saham.extraction-batches.save');
     Route::delete('saham/extraction-batches/{extractionBatch}', [ExtractionBatchController::class, 'destroy'])->name('saham.extraction-batches.destroy');
+    Route::post('saham/sync-idx', [StockController::class, 'syncFromIdx'])->name('saham.sync-idx');
     Route::get('saham/{stock}', [StockDetailController::class, 'show'])->name('saham.show');
     Route::post('saham/{stock}/summarize-news', [StockDetailController::class, 'summarizeNews'])->name('saham.summarize-news');
     Route::post('saham/{stock}/generate-news', [StockDetailController::class, 'generateNews'])->name('saham.generate-news');
@@ -216,8 +220,14 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::post('analisa-saham/{analisa}/review', [AdminMonitorAnalisaSahamController::class, 'review'])->name('analisa-saham.review');
     Route::delete('analisa-saham/{analisa}', [AdminMonitorAnalisaSahamController::class, 'destroy'])->name('analisa-saham.destroy');
 
+    // AI-Powered Web Extraction (Saham & Obligasi)
+    Route::get('idx-ai-extraction', [IdxAiExtractionController::class, 'index'])->name('idx-ai-extraction.index');
+    Route::post('idx-ai-extraction/extract', [IdxAiExtractionController::class, 'extract'])->name('idx-ai-extraction.extract');
+    Route::post('idx-ai-extraction/save', [IdxAiExtractionController::class, 'save'])->name('idx-ai-extraction.save');
+
     // Daftar & Analisa Obligasi
     Route::get('obligasi', [AdminObligasiController::class, 'index'])->name('obligasi.index');
+    Route::post('obligasi/sync-idx', [AdminObligasiController::class, 'syncFromIdx'])->name('obligasi.sync-idx');
     Route::post('obligasi/extraction-batches', [ExtractionBatchController::class, 'storeBond'])->name('obligasi.extraction-batches.store');
     Route::post('obligasi/extraction-batches/{extractionBatch}/retry', [ExtractionBatchController::class, 'retry'])->name('obligasi.extraction-batches.retry');
     Route::post('obligasi/extraction-batches/{extractionBatch}/save', [ExtractionBatchController::class, 'save'])->name('obligasi.extraction-batches.save');
@@ -492,6 +502,23 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/portofolio/harga', [PerencanaanInvestasiController::class, 'getHarga'])->name('portofolio.harga');
     Route::get('/portofolio/grafik', [PerencanaanInvestasiController::class, 'getGrafik'])->name('portofolio.grafik');
     Route::get('/portofolio/rekomendasi', [PerencanaanInvestasiController::class, 'getRekomendasi'])->name('portofolio.rekomendasi');
+
+    // Notifikasi (in-app, polling)
+    Route::get('/notifications', [UserNotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/unread', [UserNotificationController::class, 'unread'])->name('notifications.unread');
+    Route::post('/notifications/{id}/read', [UserNotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [UserNotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::delete('/notifications/{id}', [UserNotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::delete('/notifications', [UserNotificationController::class, 'clearAll'])->name('notifications.clear');
+
+    // Alert Harga Saham (member create/manage)
+    Route::get('/price-alerts', [UserStockPriceAlertController::class, 'index'])->name('price-alerts.index');
+    Route::get('/price-alerts/create', [UserStockPriceAlertController::class, 'create'])->name('price-alerts.create');
+    Route::post('/price-alerts', [UserStockPriceAlertController::class, 'store'])->name('price-alerts.store');
+    Route::get('/price-alerts/{priceAlert}/edit', [UserStockPriceAlertController::class, 'edit'])->name('price-alerts.edit');
+    Route::put('/price-alerts/{priceAlert}', [UserStockPriceAlertController::class, 'update'])->name('price-alerts.update');
+    Route::post('/price-alerts/{priceAlert}/toggle', [UserStockPriceAlertController::class, 'toggle'])->name('price-alerts.toggle');
+    Route::delete('/price-alerts/{priceAlert}', [UserStockPriceAlertController::class, 'destroy'])->name('price-alerts.destroy');
 });
 
 Route::middleware(['auth', 'verified'])->prefix('quiz')->name('quiz.')->group(function () {

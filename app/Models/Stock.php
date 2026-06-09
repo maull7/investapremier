@@ -10,9 +10,11 @@ class Stock extends Model
 {
     protected $fillable = [
         'kode', 'nama', 'sektor', 'sub_industri',
-        'harga_terbaru', 'harga_penutupan_sebelumnya',
+        'harga_terbaru', 'perubahan_persen',
+        'harga_penutupan_sebelumnya',
         'harga_pembukaan', 'harga_tertinggi', 'harga_terendah',
         'volume', 'value', 'frekuensi', 'jumlah_saham',
+        'listing_board',
         'market_capital', 'last_update',
     ];
 
