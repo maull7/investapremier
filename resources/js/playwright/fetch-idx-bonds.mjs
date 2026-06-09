@@ -31,8 +31,29 @@ try {
     const page = await context.newPage();
     page.setDefaultTimeout(PAGE_TIMEOUT);
 
+    // Block heavy third-party resources that aren't needed (analytics, ads, RUM,
+    // fonts) — these often keep the network busy on slow VPS links and have no
+    // effect on the data we need.
+    await page.route('**/*', (route) => {
+        const req = route.request();
+        const url = req.url();
+        const type = req.resourceType();
+        if (['image', 'font', 'media', 'stylesheet'].includes(type)) {
+            return route.abort();
+        }
+        if (/(googletagmanager|google-analytics|googleadservices|doubleclick|sentry|cloudflareinsights|cdn-cgi\/rum|facebook|hotjar|clarity\.ms|segment\.com|amplitude)/i.test(url)) {
+            return route.abort();
+        }
+        return route.continue();
+    });
+
     // Step 1: bootstrap — visit the public page once so Cloudflare grants a cookie.
-    await page.goto(BOOTSTRAP_URL, { waitUntil: 'networkidle', timeout: PAGE_TIMEOUT });
+    // Use `domcontentloaded` (not `networkidle`) because IDX third-party scripts
+    // can keep the network busy indefinitely on some VPS networks.
+    await page.goto(BOOTSTRAP_URL, { waitUntil: 'domcontentloaded', timeout: PAGE_TIMEOUT });
+    try {
+        await page.waitForLoadState('networkidle', { timeout: 8000 });
+    } catch { /* continue regardless */ }
     await page.waitForTimeout(3000);
 
     // Step 2: fetch via the bond list API. Retry on transient 5xx (rate limit / WAF).

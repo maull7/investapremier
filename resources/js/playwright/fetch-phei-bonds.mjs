@@ -39,7 +39,27 @@ try {
     const page = await context.newPage();
     page.setDefaultTimeout(PAGE_TIMEOUT);
 
-    await page.goto(URL, { waitUntil: 'networkidle', timeout: PAGE_TIMEOUT });
+    // Block heavy third-party resources that aren't needed (analytics, ads, RUM,
+    // fonts, images). PHEI's table data is plain HTML — none of these matter.
+    await page.route('**/*', (route) => {
+        const req = route.request();
+        const url = req.url();
+        const type = req.resourceType();
+        if (['image', 'font', 'media', 'stylesheet'].includes(type)) {
+            return route.abort();
+        }
+        if (/(googletagmanager|google-analytics|googleadservices|doubleclick|sentry|cloudflareinsights|cdn-cgi\/rum|facebook|hotjar|clarity\.ms|segment\.com|amplitude)/i.test(url)) {
+            return route.abort();
+        }
+        return route.continue();
+    });
+
+    // `networkidle` can hang on slow VPS networks; use `domcontentloaded` + a
+    // bounded best-effort networkidle wait.
+    await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: PAGE_TIMEOUT });
+    try {
+        await page.waitForLoadState('networkidle', { timeout: 8000 });
+    } catch { /* continue regardless */ }
     await page.waitForTimeout(3000);
 
     const allResults = {};

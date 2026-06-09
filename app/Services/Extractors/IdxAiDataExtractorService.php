@@ -23,14 +23,24 @@ class IdxAiDataExtractorService
     {
         $script = escapeshellarg($this->playwrightScript);
         $escapedUrl = escapeshellarg($url);
-        $cmd = "node {$script} {$escapedUrl} 2>/dev/null";
+        $cmd = "node {$script} {$escapedUrl}";
 
         Log::debug('Playwright: calling node script', ['url' => $url]);
-        $output = shell_exec($cmd);
-        Log::debug('Playwright: raw output received', ['length' => strlen($output ?? '')]);
+        // Use runNodeScript so we capture stderr (where Chromium launch errors land)
+        // and have a sane PATH/HOME for PHP-FPM/Apache contexts.
+        [$output, $stderr, $exitCode] = $this->runNodeScript($cmd);
+        Log::debug('Playwright: raw output received', [
+            'length' => strlen($output),
+            'exit_code' => $exitCode,
+            'stderr_len' => strlen($stderr),
+        ]);
 
-        if ($output === null) {
-            Log::error('Playwright: process returned no output', ['url' => $url]);
+        if ($output === '' || $exitCode !== 0) {
+            Log::error('Playwright: process returned no output', [
+                'url' => $url,
+                'exit_code' => $exitCode,
+                'stderr' => mb_substr($stderr, 0, 2000),
+            ]);
             return [
                 'success' => false,
                 'blocked' => false,
@@ -38,15 +48,19 @@ class IdxAiDataExtractorService
                 'status' => 0,
                 'content_type' => '',
                 'size' => 0,
-                'playwright_error' => 'Process returned no output',
+                'playwright_error' => trim($stderr) ?: 'Process returned no output (exit ' . $exitCode . ')',
             ];
         }
 
         $result = json_decode($output, true);
 
         if (!$result || !($result['success'] ?? false)) {
-            $error = $result['error'] ?? 'Unknown Playwright error';
-            Log::warning('Playwright render failed', ['url' => $url, 'error' => $error]);
+            $error = $result['error'] ?? trim($stderr) ?: 'Unknown Playwright error';
+            Log::warning('Playwright render failed', [
+                'url' => $url,
+                'error' => $error,
+                'stderr' => mb_substr($stderr, 0, 1000),
+            ]);
             return [
                 'success' => false,
                 'blocked' => true,
@@ -950,8 +964,12 @@ PROMPT;
     /**
      * Pre-flight check before running any Playwright script. Returns a list of
      * problem strings (empty array = all OK).
+     *
+     * @param bool $launchChromium If true, actually try launching Chromium (slower
+     *                              ~2s, but catches "browser binary not downloaded"
+     *                              and "missing system libs" errors).
      */
-    public function preflightCheck(): array
+    public function preflightCheck(bool $launchChromium = true): array
     {
         $problems = [];
 
@@ -964,12 +982,14 @@ PROMPT;
         [$out, $err, $code] = $this->runNodeScript('node --version');
         if ($code !== 0 || !preg_match('/v\d+/', $out)) {
             $problems[] = 'Node.js tidak ditemukan di PATH PHP-FPM/Apache. stderr: ' . trim($err);
+            return $problems;
         }
 
         // Playwright module
         [$out2, $err2, $code2] = $this->runNodeScript('node -e ' . escapeshellarg("require('playwright')"));
         if ($code2 !== 0) {
             $problems[] = 'Modul `playwright` tidak ter-install di node_modules project. Run `npm ci` lalu `npx playwright install --with-deps chromium`. stderr: ' . trim($err2);
+            return $problems;
         }
 
         // Required scripts present
@@ -977,6 +997,37 @@ PROMPT;
             $p = base_path('resources/js/playwright/' . $f);
             if (!file_exists($p)) {
                 $problems[] = "Script Playwright tidak ditemukan: {$p}. Pastikan deploy meng-upload folder resources/js/playwright/.";
+            }
+        }
+
+        // Chromium actually launch-able? This catches:
+        //  - Browser binary not downloaded (`npx playwright install chromium` belum)
+        //  - Missing system libs (libnss3, libatk1.0-0, libdrm, etc.)
+        //  - Sandbox/permission issues on locked-down hosts
+        if ($launchChromium && empty($problems)) {
+            $probeScript = "
+                const { chromium } = require('playwright');
+                (async () => {
+                    try {
+                        const b = await chromium.launch({ headless: true, args: ['--no-sandbox','--disable-setuid-sandbox'] });
+                        await b.close();
+                        console.log('OK');
+                    } catch (e) {
+                        console.error(e.message || String(e));
+                        process.exit(1);
+                    }
+                })();
+            ";
+            [$out3, $err3, $code3] = $this->runNodeScript('node -e ' . escapeshellarg($probeScript));
+            if ($code3 !== 0 || !str_contains($out3, 'OK')) {
+                $hint = '';
+                $combined = $out3 . ' ' . $err3;
+                if (preg_match('/(Executable doesn\'t exist|browserType\.launch.*ENOENT|browser binary)/i', $combined)) {
+                    $hint = ' → Chromium belum di-download. Run: `npx playwright install chromium` (atau `--with-deps` untuk install system libs sekalian).';
+                } elseif (preg_match('/(libnss3|libatk|libdrm|libgbm|cannot open shared object file|missing dependencies)/i', $combined)) {
+                    $hint = ' → System libraries kurang. Run sebagai root: `npx playwright install-deps chromium` atau `apt-get install libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 libcairo2 libasound2`.';
+                }
+                $problems[] = 'Chromium gagal launch dari context PHP-FPM. stderr: ' . trim(mb_substr($err3 . $out3, 0, 800)) . $hint;
             }
         }
 
