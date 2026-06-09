@@ -43,6 +43,8 @@ use App\Http\Controllers\User\InvestmentManagerController as UserInvestmentManag
 use App\Http\Controllers\User\UnitLinkController as UserUnitLinkController;
 use App\Http\Controllers\User\AnalisaUlController as UserAnalisaUlController;
 use App\Http\Controllers\User\PerencanaanInvestasiController;
+use App\Http\Controllers\User\NotificationController as UserNotificationController;
+use App\Http\Controllers\User\StockPriceAlertController as UserStockPriceAlertController;
 use App\Http\Controllers\ReksaDanaController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\StockDetailController;
@@ -492,6 +494,23 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/portofolio/harga', [PerencanaanInvestasiController::class, 'getHarga'])->name('portofolio.harga');
     Route::get('/portofolio/grafik', [PerencanaanInvestasiController::class, 'getGrafik'])->name('portofolio.grafik');
     Route::get('/portofolio/rekomendasi', [PerencanaanInvestasiController::class, 'getRekomendasi'])->name('portofolio.rekomendasi');
+
+    // Notifikasi (in-app, polling)
+    Route::get('/notifications', [UserNotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/unread', [UserNotificationController::class, 'unread'])->name('notifications.unread');
+    Route::post('/notifications/{id}/read', [UserNotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [UserNotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::delete('/notifications/{id}', [UserNotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::delete('/notifications', [UserNotificationController::class, 'clearAll'])->name('notifications.clear');
+
+    // Alert Harga Saham (member create/manage)
+    Route::get('/price-alerts', [UserStockPriceAlertController::class, 'index'])->name('price-alerts.index');
+    Route::get('/price-alerts/create', [UserStockPriceAlertController::class, 'create'])->name('price-alerts.create');
+    Route::post('/price-alerts', [UserStockPriceAlertController::class, 'store'])->name('price-alerts.store');
+    Route::get('/price-alerts/{priceAlert}/edit', [UserStockPriceAlertController::class, 'edit'])->name('price-alerts.edit');
+    Route::put('/price-alerts/{priceAlert}', [UserStockPriceAlertController::class, 'update'])->name('price-alerts.update');
+    Route::post('/price-alerts/{priceAlert}/toggle', [UserStockPriceAlertController::class, 'toggle'])->name('price-alerts.toggle');
+    Route::delete('/price-alerts/{priceAlert}', [UserStockPriceAlertController::class, 'destroy'])->name('price-alerts.destroy');
 });
 
 Route::middleware(['auth', 'verified'])->prefix('quiz')->name('quiz.')->group(function () {
