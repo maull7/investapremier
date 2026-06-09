@@ -385,6 +385,15 @@ class ObligasiController extends Controller
         // Total ~3 menit: IDX API (~15s) + PHEI Govt (~30s) + PHEI Corp (~110s)
         @set_time_limit(300);
 
+        // Pre-flight: bail out early with a clear message if Node/Playwright/scripts
+        // are missing on the host (most common production failure).
+        $problems = $extractor->preflightCheck();
+        if (!empty($problems)) {
+            Log::error('syncFromIdx preflight failed', ['problems' => $problems]);
+            return redirect()->route('admin.obligasi.index', ['tab' => 'harga-referensi'])
+                ->with('error', 'Sync gagal: lingkungan server belum siap. ' . implode(' | ', $problems));
+        }
+
         $errors = [];
 
         // 1. IDX Korporasi via internal API: ~1419 bonds with rating + emiten in ~15s
