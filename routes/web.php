@@ -186,6 +186,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::post('saham/extraction-batches/{extractionBatch}/save', [ExtractionBatchController::class, 'save'])->name('saham.extraction-batches.save');
     Route::delete('saham/extraction-batches/{extractionBatch}', [ExtractionBatchController::class, 'destroy'])->name('saham.extraction-batches.destroy');
     Route::post('saham/sync-idx', [StockController::class, 'syncFromIdx'])->name('saham.sync-idx');
+    Route::get('saham/sync-idx/status/{run}', [StockController::class, 'syncStatus'])->name('saham.sync-idx.status');
     Route::get('saham/{stock}', [StockDetailController::class, 'show'])->name('saham.show');
     Route::post('saham/{stock}/summarize-news', [StockDetailController::class, 'summarizeNews'])->name('saham.summarize-news');
     Route::post('saham/{stock}/generate-news', [StockDetailController::class, 'generateNews'])->name('saham.generate-news');
@@ -228,6 +229,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     // Daftar & Analisa Obligasi
     Route::get('obligasi', [AdminObligasiController::class, 'index'])->name('obligasi.index');
     Route::post('obligasi/sync-idx', [AdminObligasiController::class, 'syncFromIdx'])->name('obligasi.sync-idx');
+    Route::get('obligasi/sync-idx/status/{run}', [AdminObligasiController::class, 'syncStatus'])->name('obligasi.sync-idx.status');
     Route::post('obligasi/extraction-batches', [ExtractionBatchController::class, 'storeBond'])->name('obligasi.extraction-batches.store');
     Route::post('obligasi/extraction-batches/{extractionBatch}/retry', [ExtractionBatchController::class, 'retry'])->name('obligasi.extraction-batches.retry');
     Route::post('obligasi/extraction-batches/{extractionBatch}/save', [ExtractionBatchController::class, 'save'])->name('obligasi.extraction-batches.save');

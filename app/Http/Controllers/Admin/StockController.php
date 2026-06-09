@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SyncSahamFromIdxJob;
 use App\Models\Stock;
+use App\Models\SyncRun;
 use App\Models\ExtractionBatch;
 use App\Exports\StocksTemplateExport;
 use App\Imports\StocksImport;
@@ -169,50 +171,71 @@ class StockController extends Controller
     }
 
     /**
-     * One-click sync: fetch master IDX stock list + price summary, then upsert into stocks table.
-     * Insert new codes, update existing (preserving manually-set sektor).
+     * One-click ASYNC sync: dispatch a queued job to fetch master IDX stock
+     * list + price summary, then upsert. Returns SyncRun ID immediately so the
+     * frontend can poll for progress. Avoids gateway timeouts.
      */
-    public function syncFromIdx(Request $request, IdxAiDataExtractorService $extractor)
+    public function syncFromIdx(Request $request)
     {
-        @set_time_limit(180);
+        $inflight = SyncRun::where('type', SyncRun::TYPE_SAHAM_IDX)
+            ->whereIn('status', [SyncRun::STATUS_QUEUED, SyncRun::STATUS_RUNNING])
+            ->latest()
+            ->first();
 
-        // Pre-flight check: catch Node/Playwright missing problems early.
-        $problems = $extractor->preflightCheck();
-        if (!empty($problems)) {
-            \Log::error('Stock syncFromIdx preflight failed', ['problems' => $problems]);
+        if ($inflight) {
+            $payload = [
+                'run_id' => $inflight->id,
+                'status' => $inflight->status,
+                'reused' => true,
+            ];
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json($payload);
+            }
             return redirect()->route('admin.saham.index')
-                ->with('error', 'Sync gagal: lingkungan server belum siap. ' . implode(' | ', $problems));
+                ->with('sync_run_id', $inflight->id);
         }
 
-        $masterUrl = 'https://www.idx.co.id/id/data-pasar/data-saham/daftar-saham';
-        $priceUrl = 'https://www.idx.co.id/id/data-pasar/ringkasan-perdagangan/ringkasan-saham';
+        $run = SyncRun::create([
+            'type' => SyncRun::TYPE_SAHAM_IDX,
+            'status' => SyncRun::STATUS_QUEUED,
+            'current_step' => 'queued',
+            'current_step_label' => 'Menunggu worker mengambil job dari antrian',
+            'progress_percent' => 0,
+            'user_id' => $request->user()?->id,
+        ]);
 
-        $result = $extractor->extract($masterUrl, 'saham', null, $priceUrl, true);
+        SyncSahamFromIdxJob::dispatch($run->id);
 
-        if (!($result['success'] ?? false) || empty($result['data'])) {
-            $msg = $result['message'] ?? 'Sync IDX gagal: tidak ada data yang dapat diekstrak.';
-            ActivityLogger::log('Sync Saham dari IDX', $msg, 'error');
-            return redirect()->route('admin.saham.index')->with('error', $msg);
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'run_id' => $run->id,
+                'status' => $run->status,
+            ]);
         }
-
-        $upsert = $extractor->upsertStocks($result['data'], true);
-        $merge = $result['merge_stats'] ?? null;
-
-        $matchInfo = '';
-        if (is_array($merge) && !empty($merge['primary_count'])) {
-            $rate = round((float) ($merge['match_rate'] ?? 0) * 100, 1);
-            $matchInfo = " (harga matched: {$merge['filled_price_count']}/{$merge['primary_count']}, {$rate}%)";
-        }
-
-        $summary = "Baru: {$upsert['created']}, Update: {$upsert['updated']}, Skip: {$upsert['skipped']}";
-
-        ActivityLogger::log(
-            'Sync Saham dari IDX',
-            "{$summary}{$matchInfo}",
-            'success',
-        );
 
         return redirect()->route('admin.saham.index')
-            ->with('success', "Sync IDX selesai. {$summary}.{$matchInfo}");
+            ->with('sync_run_id', $run->id)
+            ->with('success', 'Sync saham dimulai. Modal akan menampilkan progress real-time.');
+    }
+
+    /**
+     * JSON endpoint polled by the frontend modal to track sync progress.
+     */
+    public function syncStatus(SyncRun $run)
+    {
+        return response()->json([
+            'id' => $run->id,
+            'type' => $run->type,
+            'status' => $run->status,
+            'current_step' => $run->current_step,
+            'current_step_label' => $run->current_step_label,
+            'progress_percent' => $run->progress_percent,
+            'message' => $run->message,
+            'errors' => $run->errors,
+            'stats' => $run->stats,
+            'is_terminal' => $run->isTerminal(),
+            'started_at' => $run->started_at?->toIso8601String(),
+            'completed_at' => $run->completed_at?->toIso8601String(),
+        ]);
     }
 }

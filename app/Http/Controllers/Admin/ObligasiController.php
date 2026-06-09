@@ -10,6 +10,8 @@ use App\Exports\ObligasiHargaReferensiTemplateExport;
 use App\Exports\ObligasiBondTemplateExport;
 use App\Imports\ObligasiHargaReferensiImport;
 use App\Imports\ObligasiBondImport;
+use App\Jobs\SyncObligasiFromIdxJob;
+use App\Models\SyncRun;
 use App\Services\Extractors\IdxAiDataExtractorService;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
@@ -375,90 +377,80 @@ class ObligasiController extends Controller
     }
 
     /**
-     * One-click sync of obligasi metadata from IDX + PHEI public sources into the
-     * `obligasi_harga_referensi` table. PRICING fields (harga_persen, ytm, ttm,
-     * current_yield, total_val) are intentionally NOT populated — free sources do
-     * not publish per-bond pricing, so existing manual entries are preserved.
+     * One-click ASYNC sync of obligasi metadata from IDX + PHEI public sources.
+     *
+     * Dispatches a queue job and returns the SyncRun ID immediately. The
+     * frontend polls `syncStatus` to track progress in real time. This avoids
+     * gateway timeouts (504) and lets the user see actual server-side step
+     * progression instead of fake setTimeout-based progress.
+     *
+     * Returns JSON when requested via AJAX, otherwise redirects with the run_id
+     * in the session for the modal to pick up.
      */
-    public function syncFromIdx(Request $request, IdxAiDataExtractorService $extractor)
+    public function syncFromIdx(Request $request)
     {
-        // Total ~3 menit: IDX API (~15s) + PHEI Govt (~30s) + PHEI Corp (~110s)
-        @set_time_limit(300);
+        // Check if a run is already in-flight to avoid double-dispatch
+        $inflight = SyncRun::where('type', SyncRun::TYPE_OBLIGASI_IDX_PHEI)
+            ->whereIn('status', [SyncRun::STATUS_QUEUED, SyncRun::STATUS_RUNNING])
+            ->latest()
+            ->first();
 
-        // Pre-flight: bail out early with a clear message if Node/Playwright/scripts
-        // are missing on the host (most common production failure).
-        $problems = $extractor->preflightCheck();
-        if (!empty($problems)) {
-            Log::error('syncFromIdx preflight failed', ['problems' => $problems]);
+        if ($inflight) {
+            $payload = [
+                'run_id' => $inflight->id,
+                'status' => $inflight->status,
+                'message' => 'Sync sedang berjalan, melanjutkan polling.',
+                'reused' => true,
+            ];
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json($payload);
+            }
             return redirect()->route('admin.obligasi.index', ['tab' => 'harga-referensi'])
-                ->with('error', 'Sync gagal: lingkungan server belum siap. ' . implode(' | ', $problems));
+                ->with('sync_run_id', $inflight->id);
         }
 
-        $errors = [];
+        $run = SyncRun::create([
+            'type' => SyncRun::TYPE_OBLIGASI_IDX_PHEI,
+            'status' => SyncRun::STATUS_QUEUED,
+            'current_step' => 'queued',
+            'current_step_label' => 'Menunggu worker mengambil job dari antrian',
+            'progress_percent' => 0,
+            'user_id' => $request->user()?->id,
+        ]);
 
-        // 1. IDX Korporasi via internal API: ~1419 bonds with rating + emiten in ~15s
-        $idxBonds = [];
-        try {
-            $idxBonds = $extractor->fetchIdxCorporateBonds();
-        } catch (\Throwable $e) {
-            $errors[] = 'IDX fetch gagal: ' . $e->getMessage();
-            Log::warning('syncFromIdx: IDX fetch failed', ['error' => $e->getMessage()]);
-        }
+        SyncObligasiFromIdxJob::dispatch($run->id);
 
-        // 2. PHEI Pemerintah (~296 bonds, ~25 detik)
-        $pheiGovt = [];
-        try {
-            $pheiGovt = $extractor->fetchPheiBonds('pemerintah');
-        } catch (\Throwable $e) {
-            $errors[] = 'PHEI Pemerintah fetch gagal: ' . $e->getMessage();
-            Log::warning('syncFromIdx: PHEI Pemerintah failed', ['error' => $e->getMessage()]);
-        }
-
-        // 3. PHEI Korporasi (~1238 bonds, ~105 detik)
-        $pheiCorp = [];
-        try {
-            $pheiCorp = $extractor->fetchPheiBonds('korporasi');
-        } catch (\Throwable $e) {
-            $errors[] = 'PHEI Korporasi fetch gagal: ' . $e->getMessage();
-            Log::warning('syncFromIdx: PHEI Korporasi failed', ['error' => $e->getMessage()]);
-        }
-
-        if (empty($idxBonds) && empty($pheiGovt) && empty($pheiCorp)) {
-            return redirect()->route('admin.obligasi.index', ['tab' => 'harga-referensi'])
-                ->with('error', 'Sync gagal: tidak ada data berhasil ditarik dari IDX maupun PHEI. ' . implode(' | ', $errors));
-        }
-
-        [$merged, $mergeStats] = $extractor->mergeBondResults($idxBonds, $pheiGovt, $pheiCorp);
-        $upsertStats = $extractor->upsertBonds($merged, true);
-
-        $summary = sprintf(
-            'Sync obligasi selesai. Total %d obligasi (IDX: %d, PHEI Pemerintah: %d, PHEI Korporasi: %d). DB: %d baru, %d diupdate, %d dilewati. Harga & YTM tetap NULL — perlu diisi manual.',
-            $mergeStats['merged_count'] ?? 0,
-            $mergeStats['idx_count'] ?? 0,
-            $mergeStats['phei_govt_count'] ?? 0,
-            $mergeStats['phei_corp_count'] ?? 0,
-            $upsertStats['created'] ?? 0,
-            $upsertStats['updated'] ?? 0,
-            $upsertStats['skipped'] ?? 0,
-        );
-
-        try {
-            ActivityLogger::log(
-                'Sync Obligasi dari IDX+PHEI',
-                $summary,
-                empty($errors) ? 'success' : 'warning',
-            );
-        } catch (\Throwable $e) {
-            Log::warning('ActivityLogger gagal saat sync obligasi', ['error' => $e->getMessage()]);
-        }
-
-        $flashKey = empty($errors) ? 'success' : 'warning';
-        $finalMessage = $summary;
-        if (!empty($errors)) {
-            $finalMessage .= ' Catatan: ' . implode(' | ', $errors);
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'run_id' => $run->id,
+                'status' => $run->status,
+                'message' => 'Sync dimulai, pantau progres via polling.',
+            ]);
         }
 
         return redirect()->route('admin.obligasi.index', ['tab' => 'harga-referensi'])
-            ->with($flashKey, $finalMessage);
+            ->with('sync_run_id', $run->id)
+            ->with('success', 'Sync obligasi dimulai. Modal akan menampilkan progress real-time.');
+    }
+
+    /**
+     * JSON endpoint polled by the frontend modal to track sync progress.
+     */
+    public function syncStatus(SyncRun $run)
+    {
+        return response()->json([
+            'id' => $run->id,
+            'type' => $run->type,
+            'status' => $run->status,
+            'current_step' => $run->current_step,
+            'current_step_label' => $run->current_step_label,
+            'progress_percent' => $run->progress_percent,
+            'message' => $run->message,
+            'errors' => $run->errors,
+            'stats' => $run->stats,
+            'is_terminal' => $run->isTerminal(),
+            'started_at' => $run->started_at?->toIso8601String(),
+            'completed_at' => $run->completed_at?->toIso8601String(),
+        ]);
     }
 }
