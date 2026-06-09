@@ -38,15 +38,39 @@ try {
     });
 
     const page = await context.newPage();
-    page.setDefaultTimeout(45000);
-    page.setDefaultNavigationTimeout(45000);
+    page.setDefaultTimeout(60000);
+    page.setDefaultNavigationTimeout(60000);
 
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 45000 });
+    // Block heavy third-party resources that aren't needed (analytics, ads,
+    // RUM, fonts, images). Speeds up loading dramatically on slow VPS links.
+    await page.route('**/*', (route) => {
+        const req = route.request();
+        const u = req.url();
+        const t = req.resourceType();
+        if (['image', 'font', 'media'].includes(t)) {
+            return route.abort();
+        }
+        if (/(googletagmanager|google-analytics|googleadservices|doubleclick|sentry|cloudflareinsights|cdn-cgi\/rum|facebook|hotjar|clarity\.ms|segment\.com|amplitude)/i.test(u)) {
+            return route.abort();
+        }
+        return route.continue();
+    });
 
-    // Wait for content to render
+    // `networkidle` is unreliable on IDX (third-party RUM/analytics keep the
+    // network busy indefinitely on some VPS networks). Use `domcontentloaded`
+    // which fires as soon as the HTML parser is done, then wait for content/
+    // network to settle separately with shorter individual timeouts.
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+
+    // Wait for body text to appear (real content rendered)
     try {
-        await page.waitForFunction(() => (document.body?.innerText?.length || 0) > 200, { timeout: 10000 });
+        await page.waitForFunction(() => (document.body?.innerText?.length || 0) > 200, { timeout: 15000 });
     } catch { /* continue */ }
+
+    // Best-effort wait for network to quiet down (don't fail if it never does)
+    try {
+        await page.waitForLoadState('networkidle', { timeout: 8000 });
+    } catch { /* continue with whatever we have */ }
 
     await page.waitForTimeout(3000);
 
