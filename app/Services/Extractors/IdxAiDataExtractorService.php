@@ -2,6 +2,7 @@
 
 namespace App\Services\Extractors;
 
+use App\Models\ObligasiHargaReferensi;
 use App\Models\Stock;
 use App\Services\GroqService;
 use Illuminate\Support\Facades\DB;
@@ -356,24 +357,150 @@ class IdxAiDataExtractorService
         foreach ($data as $row) {
             if (!is_array($row) && !is_object($row)) continue;
             $row = (array) $row;
-            $kode = strtoupper(trim($row['Code'] ?? $row['code'] ?? $row['Kode'] ?? $row['kode'] ?? ''));
+
+            $kode = strtoupper(trim(
+                $row['Bond Code'] ?? $row['BondCode'] ?? $row['bond_code']
+                ?? $row['Bond ID'] ?? $row['BondID'] ?? $row['BondId'] ?? $row['bond_id']
+                ?? $row['Code'] ?? $row['code']
+                ?? $row['Kode'] ?? $row['kode']
+                ?? ''
+            ));
             if (!$kode) continue;
+
+            $nama = trim((string)(
+                $row['Bond Name'] ?? $row['BondName'] ?? $row['bond_name']
+                ?? $row['Nama Bond'] ?? $row['NamaBond']
+                ?? $row['Name'] ?? $row['name']
+                ?? $row['Nama'] ?? $row['nama']
+                ?? ''
+            ));
+
+            $emiten = $row['Kode Penerbit'] ?? $row['KodePenerbit'] ?? $row['kode_penerbit']
+                ?? $row['IssuerCode'] ?? $row['Issuer Code'] ?? $row['issuer_code']
+                ?? $row['Emiten'] ?? $row['emiten']
+                ?? $row['Issuer'] ?? $row['issuer']
+                ?? null;
+
+            $rating = $row['Penilaian'] ?? $row['penilaian']
+                ?? $row['Rating'] ?? $row['rating']
+                ?? null;
+
+            $kupon = $this->parseIdrNumber(
+                $row['Coupon (%)'] ?? $row['Coupon(%)'] ?? $row['Coupon%']
+                ?? $row['Kupon'] ?? $row['kupon']
+                ?? $row['Coupon'] ?? $row['coupon']
+                ?? null
+            );
+
+            $jatuhTempoRaw = $row['Maturity Date'] ?? $row['MaturityDate'] ?? $row['maturity_date']
+                ?? $row['MatureDate'] ?? $row['Mature Date'] ?? $row['mature_date']
+                ?? $row['Jatuh Tempo'] ?? $row['JatuhTempo'] ?? $row['jatuh_tempo']
+                ?? $row['Maturity'] ?? $row['maturity']
+                ?? null;
+            $jatuhTempo = $this->parseBondDate($jatuhTempoRaw);
+
+            $hargaPersen = $this->parseIdrNumber(
+                $row['Price'] ?? $row['price'] ?? $row['Harga'] ?? $row['harga'] ?? $row['harga_persen'] ?? null
+            );
+
+            $ytm = $this->parseIdrNumber($row['YTM'] ?? $row['ytm'] ?? null);
+            $currentYield = $this->parseIdrNumber($row['Current Yield'] ?? $row['CurrentYield'] ?? $row['current_yield'] ?? null);
+            $ttm = $this->parseIdrNumber($row['TTM'] ?? $row['ttm'] ?? null);
+
+            $outstanding = $this->parseIdrNumber(
+                $row['Outstanding Amount'] ?? $row['OutstandingAmount'] ?? $row['outstanding_amount']
+                ?? $row['Outstanding'] ?? $row['outstanding'] ?? $row['OutstandingValue']
+                ?? null
+            );
+
+            $denominasi = $row['Currency'] ?? $row['currency']
+                ?? $row['Denominasi'] ?? $row['denominasi']
+                ?? 'IDR';
+
+            $isinCode = $row['ISIN Code'] ?? $row['ISIN'] ?? $row['isin'] ?? $row['isin_code'] ?? null;
+
+            $syariahFlag = $row['Syariah'] ?? $row['syariah'] ?? $row['Sharia'] ?? $row['sharia'] ?? null;
+            if ($syariahFlag === null) {
+                // Derive from name: "Sukuk" prefix indicates syariah/Islamic bond
+                $syariahFlag = (bool) preg_match('/\bsukuk\b/i', $nama);
+            } else {
+                $syariahFlag = filter_var($syariahFlag, FILTER_VALIDATE_BOOLEAN);
+            }
 
             $mapped[] = [
                 'kode' => $kode,
-                'nama' => $row['Name'] ?? $row['name'] ?? $row['Nama'] ?? $row['nama'] ?? '',
-                'emiten' => $row['Emiten'] ?? $row['emiten'] ?? $row['Issuer'] ?? $row['issuer'] ?? null,
-                'rating' => $row['Rating'] ?? $row['rating'] ?? null,
-                'kupon' => $row['Kupon'] ?? $row['kupon'] ?? $row['Coupon'] ?? $row['coupon'] ?? null,
-                'jatuh_tempo' => $row['Maturity'] ?? $row['maturity'] ?? $row['JatuhTempo'] ?? $row['jatuh_tempo'] ?? null,
-                'harga_persen' => $row['Price'] ?? $row['price'] ?? $row['Harga'] ?? $row['harga_persen'] ?? null,
-                'ytm' => $row['YTM'] ?? $row['ytm'] ?? null,
-                'current_yield' => $row['CurrentYield'] ?? $row['current_yield'] ?? null,
-                'syariah' => $row['Syariah'] ?? $row['syariah'] ?? $row['Sharia'] ?? $row['sharia'] ?? false,
-                'denominasi' => $row['Denominasi'] ?? $row['denominasi'] ?? $row['Currency'] ?? $row['currency'] ?? 'IDR',
+                'nama' => $nama,
+                'emiten' => $emiten,
+                'rating' => $rating,
+                'kupon' => $kupon,
+                'jatuh_tempo' => $jatuhTempo,
+                'harga_persen' => $hargaPersen,
+                'ytm' => $ytm,
+                'ttm' => $ttm,
+                'current_yield' => $currentYield,
+                'outstanding_amount' => $outstanding,
+                'syariah' => $syariahFlag,
+                'denominasi' => $denominasi,
+                'isin_code' => $isinCode,
             ];
         }
         return $mapped;
+    }
+
+    /**
+     * Parse Indonesian/English date formats commonly seen on IDX/PHEI bond pages:
+     *  - "DD-MM-YYYY" (PHEI pemerintah)
+     *  - "DD-Mon-YYYY" / "DD Mon YYYY" with Indonesian month names (PHEI korporasi, IDX)
+     *  - "YYYY-MM-DD" (ISO)
+     * Returns ISO "YYYY-MM-DD" or null when unparseable.
+     */
+    private function parseBondDate($value): ?string
+    {
+        if (!$value) return null;
+        $raw = trim((string) $value);
+        if ($raw === '' || strtolower($raw) === 'null') return null;
+
+        $monthMap = [
+            'jan' => '01', 'januari' => '01', 'january' => '01',
+            'feb' => '02', 'februari' => '02', 'february' => '02',
+            'mar' => '03', 'maret' => '03', 'march' => '03',
+            'apr' => '04', 'april' => '04',
+            'mei' => '05', 'may' => '05',
+            'jun' => '06', 'juni' => '06', 'june' => '06',
+            'jul' => '07', 'juli' => '07', 'july' => '07',
+            'agt' => '08', 'agu' => '08', 'agust' => '08', 'agustus' => '08', 'aug' => '08', 'august' => '08',
+            'sep' => '09', 'sept' => '09', 'september' => '09',
+            'okt' => '10', 'oct' => '10', 'oktober' => '10', 'october' => '10',
+            'nov' => '11', 'november' => '11',
+            'des' => '12', 'dec' => '12', 'desember' => '12', 'december' => '12',
+        ];
+
+        // Try ISO YYYY-MM-DD
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})/', $raw, $m)) {
+            return "{$m[1]}-{$m[2]}-{$m[3]}";
+        }
+
+        // Try DD-MM-YYYY (PHEI pemerintah)
+        if (preg_match('/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/', $raw, $m)) {
+            return sprintf('%04d-%02d-%02d', (int) $m[3], (int) $m[2], (int) $m[1]);
+        }
+
+        // Try DD-Mon-YYYY or DD Mon YYYY (PHEI korporasi, IDX)
+        if (preg_match('/^(\d{1,2})[\s\-\/]+([A-Za-z]+)\.?[\s\-\/]+(\d{4})$/', $raw, $m)) {
+            $key = strtolower($m[2]);
+            $month = $monthMap[$key] ?? null;
+            if ($month) {
+                return sprintf('%04d-%s-%02d', (int) $m[3], $month, (int) $m[1]);
+            }
+        }
+
+        // Last resort: try strtotime
+        $ts = strtotime($raw);
+        if ($ts !== false) {
+            return date('Y-m-d', $ts);
+        }
+
+        return null;
     }
 
     private function extractStocks(string $url, string $textContent): array
@@ -787,6 +914,329 @@ PROMPT;
         });
 
         Log::info('upsertStocks completed', $stats);
+        return $stats;
+    }
+
+    /**
+     * Fetch corporate bond rows from the internal IDX API
+     * (/secondary/get/BondSukuk/bond?bondType=1) via Playwright (browser context
+     * is required to bypass Cloudflare challenges).
+     *
+     * Returns raw rows with API field names: BondId, BondName, IssuerCode,
+     * MatureDate (ISO), Rating, Outstanding, Nomor.
+     *
+     * @param int $bondType IDX API bondType: 1=corporate (default), 2/3=gov FR, 4=gov ritel ORI
+     * @param int $pageSize Max rows to fetch in one API call (~1419 total for corporate)
+     */
+    public function fetchIdxCorporateBonds(int $bondType = 1, int $pageSize = 2000): array
+    {
+        $script = base_path('resources/js/playwright/fetch-idx-bonds.mjs');
+        if (!file_exists($script)) {
+            Log::warning('IDX bonds fetch script missing', ['path' => $script]);
+            return [];
+        }
+
+        $cmd = 'node ' . escapeshellarg($script)
+            . ' ' . escapeshellarg((string) $bondType)
+            . ' ' . escapeshellarg((string) $pageSize)
+            . ' 2>/dev/null';
+
+        Log::debug('IDX bonds fetch: calling script', ['bond_type' => $bondType, 'page_size' => $pageSize]);
+        $output = shell_exec($cmd);
+        if (!$output) {
+            Log::warning('IDX bonds fetch returned empty output');
+            return [];
+        }
+
+        $decoded = json_decode($output, true);
+        if (!is_array($decoded) || !($decoded['success'] ?? false)) {
+            Log::warning('IDX bonds fetch failed', ['error' => $decoded['error'] ?? 'unknown']);
+            return [];
+        }
+
+        Log::info('IDX bonds fetch completed', [
+            'bond_type' => $bondType,
+            'total_count' => $decoded['total_count'] ?? 0,
+            'returned_count' => $decoded['returned_count'] ?? 0,
+        ]);
+
+        return $decoded['rows'] ?? [];
+    }
+
+    /**
+     * Fetch bond rows from phei.co.id via the dedicated Playwright script.
+     * $tab can be: 'pemerintah', 'korporasi', or 'all'.
+     *
+     * Returns array of raw rows (raw PHEI keys: "Bond Code", "Bond Name", "ISIN Code",
+     * "Currency", "Outstanding Amount", "Coupon (%)", "Maturity Date").
+     */
+    public function fetchPheiBonds(string $tab = 'all'): array
+    {
+        $script = base_path('resources/js/playwright/fetch-phei-bonds.mjs');
+        if (!file_exists($script)) {
+            Log::warning('PHEI fetch script missing', ['path' => $script]);
+            return [];
+        }
+
+        $cmd = 'node ' . escapeshellarg($script) . ' ' . escapeshellarg($tab) . ' 2>/dev/null';
+        Log::debug('PHEI fetch: calling script', ['tab' => $tab]);
+        $output = shell_exec($cmd);
+        if (!$output) {
+            Log::warning('PHEI fetch returned empty output', ['tab' => $tab]);
+            return [];
+        }
+
+        $decoded = json_decode($output, true);
+        if (!is_array($decoded) || !($decoded['success'] ?? false)) {
+            Log::warning('PHEI fetch failed', ['tab' => $tab, 'error' => $decoded['error'] ?? 'unknown']);
+            return [];
+        }
+
+        // Flatten rows from all returned tabs into a single list.
+        $rows = [];
+        foreach (($decoded['tabs'] ?? []) as $tabKey => $info) {
+            $tabRows = $info['rows'] ?? [];
+            foreach ($tabRows as $r) {
+                if (!is_array($r)) continue;
+                $r['_phei_tab'] = $tabKey;
+                $rows[] = $r;
+            }
+        }
+
+        Log::info('PHEI fetch completed', [
+            'tab' => $tab,
+            'total' => count($rows),
+            'breakdown' => array_map(fn ($t) => ['count' => $t['count'] ?? 0, 'pages' => $t['pages_traversed'] ?? 0, 'stop' => $t['stopped_reason'] ?? null], $decoded['tabs'] ?? []),
+        ]);
+
+        return $rows;
+    }
+
+    /**
+     * Merge IDX corporate bond rows with PHEI government + corporate rows.
+     * Identity key: bond code (uppercase).
+     *
+     * Priority:
+     *  - IDX provides: rating, emiten (and nama)
+     *  - PHEI provides: kupon, outstanding_amount, jatuh_tempo, denominasi, isin_code (more authoritative on these)
+     *  - Unmatched PHEI codes are added as new entries.
+     *
+     * Returns: [mergedItems, stats]
+     */
+    public function mergeBondResults(array $idx, array $pheiGovt, array $pheiCorp): array
+    {
+        $idxMapped = $this->mapExtractedBonds($idx);
+        $pheiGovtMapped = $this->mapExtractedBonds($pheiGovt);
+        $pheiCorpMapped = $this->mapExtractedBonds($pheiCorp);
+
+        $byCode = [];
+        $sourceTags = [];
+
+        // Helper to merge fields from a "secondary" PHEI row into a primary entry,
+        // overwriting only when the secondary value is non-empty.
+        $overlayPhei = function (array $primary, array $phei): array {
+            $pheiFields = [
+                'kupon', 'jatuh_tempo', 'outstanding_amount', 'denominasi',
+                'isin_code', 'syariah',
+            ];
+            foreach ($pheiFields as $f) {
+                $val = $phei[$f] ?? null;
+                if ($val === null || $val === '' || $val === false && $f !== 'syariah') {
+                    // For syariah specifically allow boolean false to overwrite null.
+                    if (!($f === 'syariah' && array_key_exists('syariah', $phei))) {
+                        continue;
+                    }
+                }
+                if ($f === 'syariah') {
+                    // Only set syariah from PHEI when primary didn't already have an explicit true.
+                    if (empty($primary['syariah'])) {
+                        $primary['syariah'] = (bool) $val;
+                    }
+                    continue;
+                }
+                $primary[$f] = $val;
+            }
+            // PHEI nama is sometimes more complete than IDX; only use if primary missing.
+            if (empty($primary['nama']) && !empty($phei['nama'])) {
+                $primary['nama'] = $phei['nama'];
+            }
+            return $primary;
+        };
+
+        // 1) Seed with IDX (rating + emiten authoritative)
+        foreach ($idxMapped as $row) {
+            $code = $row['kode'];
+            $byCode[$code] = $row;
+            $sourceTags[$code] = ['idx'];
+        }
+
+        // 2) Overlay PHEI Pemerintah
+        foreach ($pheiGovtMapped as $row) {
+            $code = $row['kode'];
+            if (isset($byCode[$code])) {
+                $byCode[$code] = $overlayPhei($byCode[$code], $row);
+                $sourceTags[$code][] = 'phei_govt';
+            } else {
+                $row['_bond_class'] = 'government';
+                $byCode[$code] = $row;
+                $sourceTags[$code] = ['phei_govt'];
+            }
+        }
+
+        // 3) Overlay PHEI Korporasi
+        foreach ($pheiCorpMapped as $row) {
+            $code = $row['kode'];
+            if (isset($byCode[$code])) {
+                $byCode[$code] = $overlayPhei($byCode[$code], $row);
+                $sourceTags[$code][] = 'phei_corp';
+            } else {
+                $row['_bond_class'] = 'corporate';
+                $byCode[$code] = $row;
+                $sourceTags[$code] = ['phei_corp'];
+            }
+        }
+
+        $merged = array_values($byCode);
+
+        $idxCodes = array_column($idxMapped, 'kode');
+        $pheiGovtCodes = array_column($pheiGovtMapped, 'kode');
+        $pheiCorpCodes = array_column($pheiCorpMapped, 'kode');
+        $allPheiCodes = array_merge($pheiGovtCodes, $pheiCorpCodes);
+
+        $matchedIdxPhei = count(array_intersect($idxCodes, $allPheiCodes));
+        $idxOnly = array_values(array_diff($idxCodes, $allPheiCodes));
+        $pheiOnly = array_values(array_diff($allPheiCodes, $idxCodes));
+
+        $stats = [
+            'idx_count' => count($idxMapped),
+            'phei_govt_count' => count($pheiGovtMapped),
+            'phei_corp_count' => count($pheiCorpMapped),
+            'phei_total' => count($allPheiCodes),
+            'merged_count' => count($merged),
+            'idx_matched_in_phei' => $matchedIdxPhei,
+            'idx_only_count' => count($idxOnly),
+            'phei_only_count' => count($pheiOnly),
+            'idx_only_sample' => array_slice($idxOnly, 0, 10),
+        ];
+
+        Log::info('mergeBondResults completed', $stats);
+
+        return [$merged, $stats];
+    }
+
+    /**
+     * Upsert merged bond items into the `obligasi_harga_referensi` table.
+     *
+     * Preserve rules when $preserveExisting = true:
+     *  - rating, sektor, sub_sektor, industri, sub_industri: preserve existing non-empty values
+     *  - harga_persen, ytm, ttm, current_yield, total_val: NEVER overwrite when source value
+     *    is null (these come from free sources that don't provide pricing, so existing manual
+     *    entries must be protected)
+     *
+     * Always-overwrite fields (when source has a value):
+     *  - kupon, outstanding_amount, denominasi, jatuh_tempo
+     *
+     * Returns: ['created' => int, 'updated' => int, 'skipped' => int, 'errors' => string[]]
+     */
+    public function upsertBonds(array $items, bool $preserveExisting = true): array
+    {
+        $stats = ['created' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => []];
+
+        DB::transaction(function () use ($items, $preserveExisting, &$stats) {
+            foreach ($items as $item) {
+                $kode = strtoupper(trim($item['kode'] ?? ''));
+                if (!$kode) {
+                    $stats['skipped']++;
+                    continue;
+                }
+
+                try {
+                    $existing = ObligasiHargaReferensi::where('kode', $kode)->first();
+
+                    // Always-overwrite-when-source-has-value fields (PHEI is authoritative)
+                    $payload = [
+                        'kode' => $kode,
+                    ];
+
+                    $incomingNama = trim((string) ($item['nama'] ?? ''));
+                    if ($incomingNama !== '') {
+                        // For existing, only update nama if it changed (avoid useless writes)
+                        if (!$existing || $existing->nama !== $incomingNama) {
+                            $payload['nama'] = $incomingNama;
+                        }
+                    }
+
+                    $incomingEmiten = $item['emiten'] ?? null;
+                    if (!empty($incomingEmiten)) {
+                        $payload['emiten'] = $incomingEmiten;
+                    }
+
+                    $incomingDenom = $item['denominasi'] ?? null;
+                    if (!empty($incomingDenom)) {
+                        $payload['denominasi'] = $incomingDenom;
+                    }
+
+                    $incomingKupon = $item['kupon'] ?? null;
+                    if ($incomingKupon !== null && $incomingKupon !== '') {
+                        $payload['kupon'] = $incomingKupon;
+                    }
+
+                    $incomingJT = $item['jatuh_tempo'] ?? null;
+                    if (!empty($incomingJT)) {
+                        $payload['jatuh_tempo'] = $incomingJT;
+                    }
+
+                    $incomingOutstanding = $item['outstanding_amount'] ?? null;
+                    if ($incomingOutstanding !== null && $incomingOutstanding !== '') {
+                        $payload['outstanding_amount'] = $incomingOutstanding;
+                    }
+
+                    $incomingSyariah = $item['syariah'] ?? null;
+                    if ($incomingSyariah !== null) {
+                        $payload['syariah'] = (bool) $incomingSyariah;
+                    }
+
+                    // Preserve-existing-when-set fields: rating, sektor, sub_sektor, industri, sub_industri
+                    $incomingRating = $item['rating'] ?? null;
+                    if (!empty($incomingRating)) {
+                        $shouldOverwriteRating = !($preserveExisting && $existing && !empty($existing->rating));
+                        if ($shouldOverwriteRating) {
+                            $payload['rating'] = $incomingRating;
+                        }
+                    }
+
+                    // Pricing fields are never set from these free sources, but accept if explicitly provided.
+                    foreach (['harga_persen', 'ytm', 'ttm', 'current_yield', 'total_val'] as $priceField) {
+                        $val = $item[$priceField] ?? null;
+                        if ($val === null || $val === '') {
+                            continue;
+                        }
+                        $payload[$priceField] = $val;
+                    }
+
+                    if ($existing) {
+                        if (count($payload) > 1) { // kode + at least one other field
+                            $existing->update($payload);
+                        }
+                        $stats['updated']++;
+                    } else {
+                        if (empty($payload['nama'])) {
+                            $payload['nama'] = $kode;
+                        }
+                        ObligasiHargaReferensi::create($payload);
+                        $stats['created']++;
+                    }
+                } catch (\Throwable $e) {
+                    $stats['skipped']++;
+                    if (count($stats['errors']) < 10) {
+                        $stats['errors'][] = "{$kode}: " . $e->getMessage();
+                    }
+                    Log::warning('upsertBonds failed for ' . $kode, ['error' => $e->getMessage()]);
+                }
+            }
+        });
+
+        Log::info('upsertBonds completed', $stats);
         return $stats;
     }
 }
