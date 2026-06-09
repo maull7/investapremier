@@ -949,6 +949,20 @@ PROMPT;
         $env['PATH'] = ($env['PATH'] ?? getenv('PATH') ?: '/usr/bin:/bin') . ':/usr/local/bin:/usr/local/sbin';
         $env['HOME'] = $env['HOME'] ?? getenv('HOME') ?: '/tmp';
 
+        // Playwright browser cache location.
+        //
+        // - LOCAL DEV: leave unset → Playwright uses its default (typically
+        //   ~/.cache/ms-playwright for the current user). This keeps the
+        //   developer's `npx playwright install` workflow Just Working.
+        // - PRODUCTION: set PLAYWRIGHT_BROWSERS_PATH in .env to point at the
+        //   shared, www-data-readable cache dir (e.g. /var/www/.cache/ms-playwright).
+        //   Required because PHP-FPM runs as www-data which has no HOME and no
+        //   access to the deploy user's ~/.cache.
+        $browsersPath = config('services.playwright.browsers_path') ?: env('PLAYWRIGHT_BROWSERS_PATH');
+        if (!empty($browsersPath)) {
+            $env['PLAYWRIGHT_BROWSERS_PATH'] = $browsersPath;
+        }
+
         $proc = @proc_open($cmd, $descriptors, $pipes, base_path(), $env);
         if (!is_resource($proc)) {
             return ['', 'Failed to spawn process. Is `node` in PATH?', 127];

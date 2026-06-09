@@ -1,4 +1,11 @@
 import { chromium } from 'playwright';
+import process from 'node:process';
+
+if(process.env.APP_ENV == 'production') {
+    process.env.PLAYWRIGHT_BROWSERS_PATH =
+        process.env.PLAYWRIGHT_BROWSERS_PATH ||
+        '/var/www/.cache/ms-playwright';
+}
 
 const url = process.argv[2];
 if (!url) {
