@@ -918,6 +918,72 @@ PROMPT;
     }
 
     /**
+     * Run a node script and return [stdout, stderr, exit_code].
+     * Uses proc_open so we can capture stderr separately for diagnostics.
+     */
+    private function runNodeScript(string $cmd): array
+    {
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+        $env = $_ENV ?: [];
+        // Ensure /usr/local/bin (where nvm/system Node often lives) is in PATH for
+        // PHP-FPM/Apache that may inherit a stripped PATH from systemd.
+        $env['PATH'] = ($env['PATH'] ?? getenv('PATH') ?: '/usr/bin:/bin') . ':/usr/local/bin:/usr/local/sbin';
+        $env['HOME'] = $env['HOME'] ?? getenv('HOME') ?: '/tmp';
+
+        $proc = @proc_open($cmd, $descriptors, $pipes, base_path(), $env);
+        if (!is_resource($proc)) {
+            return ['', 'Failed to spawn process. Is `node` in PATH?', 127];
+        }
+        fclose($pipes[0]);
+        $stdout = stream_get_contents($pipes[1]);
+        fclose($pipes[1]);
+        $stderr = stream_get_contents($pipes[2]);
+        fclose($pipes[2]);
+        $exit = proc_close($proc);
+        return [$stdout ?: '', $stderr ?: '', $exit];
+    }
+
+    /**
+     * Pre-flight check before running any Playwright script. Returns a list of
+     * problem strings (empty array = all OK).
+     */
+    public function preflightCheck(): array
+    {
+        $problems = [];
+
+        if (!function_exists('shell_exec') || !function_exists('proc_open')) {
+            $problems[] = 'PHP shell_exec/proc_open dinonaktifkan di php.ini (cek disable_functions).';
+            return $problems; // can't continue
+        }
+
+        // Node version
+        [$out, $err, $code] = $this->runNodeScript('node --version');
+        if ($code !== 0 || !preg_match('/v\d+/', $out)) {
+            $problems[] = 'Node.js tidak ditemukan di PATH PHP-FPM/Apache. stderr: ' . trim($err);
+        }
+
+        // Playwright module
+        [$out2, $err2, $code2] = $this->runNodeScript('node -e ' . escapeshellarg("require('playwright')"));
+        if ($code2 !== 0) {
+            $problems[] = 'Modul `playwright` tidak ter-install di node_modules project. Run `npm ci` lalu `npx playwright install --with-deps chromium`. stderr: ' . trim($err2);
+        }
+
+        // Required scripts present
+        foreach (['render-page.mjs', 'fetch-idx-bonds.mjs', 'fetch-phei-bonds.mjs'] as $f) {
+            $p = base_path('resources/js/playwright/' . $f);
+            if (!file_exists($p)) {
+                $problems[] = "Script Playwright tidak ditemukan: {$p}. Pastikan deploy meng-upload folder resources/js/playwright/.";
+            }
+        }
+
+        return $problems;
+    }
+
+    /**
      * Fetch corporate bond rows from the internal IDX API
      * (/secondary/get/BondSukuk/bond?bondType=1) via Playwright (browser context
      * is required to bypass Cloudflare challenges).
@@ -938,19 +1004,26 @@ PROMPT;
 
         $cmd = 'node ' . escapeshellarg($script)
             . ' ' . escapeshellarg((string) $bondType)
-            . ' ' . escapeshellarg((string) $pageSize)
-            . ' 2>/dev/null';
+            . ' ' . escapeshellarg((string) $pageSize);
 
         Log::debug('IDX bonds fetch: calling script', ['bond_type' => $bondType, 'page_size' => $pageSize]);
-        $output = shell_exec($cmd);
-        if (!$output) {
-            Log::warning('IDX bonds fetch returned empty output');
+        [$output, $stderr, $exitCode] = $this->runNodeScript($cmd);
+        if ($exitCode !== 0 || !$output) {
+            Log::warning('IDX bonds fetch returned no output', [
+                'exit_code' => $exitCode,
+                'stderr' => mb_substr($stderr, 0, 2000),
+                'stdout_preview' => mb_substr($output ?? '', 0, 500),
+            ]);
             return [];
         }
 
         $decoded = json_decode($output, true);
         if (!is_array($decoded) || !($decoded['success'] ?? false)) {
-            Log::warning('IDX bonds fetch failed', ['error' => $decoded['error'] ?? 'unknown']);
+            Log::warning('IDX bonds fetch failed', [
+                'error' => $decoded['error'] ?? 'unknown',
+                'stderr' => mb_substr($stderr, 0, 1000),
+                'stdout_preview' => mb_substr($output ?? '', 0, 500),
+            ]);
             return [];
         }
 
@@ -978,17 +1051,27 @@ PROMPT;
             return [];
         }
 
-        $cmd = 'node ' . escapeshellarg($script) . ' ' . escapeshellarg($tab) . ' 2>/dev/null';
+        $cmd = 'node ' . escapeshellarg($script) . ' ' . escapeshellarg($tab);
         Log::debug('PHEI fetch: calling script', ['tab' => $tab]);
-        $output = shell_exec($cmd);
-        if (!$output) {
-            Log::warning('PHEI fetch returned empty output', ['tab' => $tab]);
+        [$output, $stderr, $exitCode] = $this->runNodeScript($cmd);
+        if ($exitCode !== 0 || !$output) {
+            Log::warning('PHEI fetch returned no output', [
+                'tab' => $tab,
+                'exit_code' => $exitCode,
+                'stderr' => mb_substr($stderr, 0, 2000),
+                'stdout_preview' => mb_substr($output ?? '', 0, 500),
+            ]);
             return [];
         }
 
         $decoded = json_decode($output, true);
         if (!is_array($decoded) || !($decoded['success'] ?? false)) {
-            Log::warning('PHEI fetch failed', ['tab' => $tab, 'error' => $decoded['error'] ?? 'unknown']);
+            Log::warning('PHEI fetch failed', [
+                'tab' => $tab,
+                'error' => $decoded['error'] ?? 'unknown',
+                'stderr' => mb_substr($stderr, 0, 1000),
+                'stdout_preview' => mb_substr($output ?? '', 0, 500),
+            ]);
             return [];
         }
 

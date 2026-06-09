@@ -176,6 +176,14 @@ class StockController extends Controller
     {
         @set_time_limit(180);
 
+        // Pre-flight check: catch Node/Playwright missing problems early.
+        $problems = $extractor->preflightCheck();
+        if (!empty($problems)) {
+            \Log::error('Stock syncFromIdx preflight failed', ['problems' => $problems]);
+            return redirect()->route('admin.saham.index')
+                ->with('error', 'Sync gagal: lingkungan server belum siap. ' . implode(' | ', $problems));
+        }
+
         $masterUrl = 'https://www.idx.co.id/id/data-pasar/data-saham/daftar-saham';
         $priceUrl = 'https://www.idx.co.id/id/data-pasar/ringkasan-perdagangan/ringkasan-saham';
 
