@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\DaftarReksaDanaController;
 use App\Http\Controllers\Admin\DataSourceLinkController;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\ExtractionBatchController;
+use App\Http\Controllers\Admin\IdxAiExtractionController;
 use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\ObligasiController as AdminObligasiController;
 use App\Http\Controllers\Admin\InvestmentManagerController as AdminInvestmentManagerController;
@@ -184,6 +185,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::post('saham/extraction-batches/{extractionBatch}/retry', [ExtractionBatchController::class, 'retry'])->name('saham.extraction-batches.retry');
     Route::post('saham/extraction-batches/{extractionBatch}/save', [ExtractionBatchController::class, 'save'])->name('saham.extraction-batches.save');
     Route::delete('saham/extraction-batches/{extractionBatch}', [ExtractionBatchController::class, 'destroy'])->name('saham.extraction-batches.destroy');
+    Route::post('saham/sync-idx', [StockController::class, 'syncFromIdx'])->name('saham.sync-idx');
     Route::get('saham/{stock}', [StockDetailController::class, 'show'])->name('saham.show');
     Route::post('saham/{stock}/summarize-news', [StockDetailController::class, 'summarizeNews'])->name('saham.summarize-news');
     Route::post('saham/{stock}/generate-news', [StockDetailController::class, 'generateNews'])->name('saham.generate-news');
@@ -217,6 +219,11 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::delete('analisa-saham/{analisa}/riset-broker/{document}', [AnalisaSahamBrokerResearchController::class, 'destroy'])->name('analisa-saham.riset-broker.destroy');
     Route::post('analisa-saham/{analisa}/review', [AdminMonitorAnalisaSahamController::class, 'review'])->name('analisa-saham.review');
     Route::delete('analisa-saham/{analisa}', [AdminMonitorAnalisaSahamController::class, 'destroy'])->name('analisa-saham.destroy');
+
+    // AI-Powered Web Extraction (Saham & Obligasi)
+    Route::get('idx-ai-extraction', [IdxAiExtractionController::class, 'index'])->name('idx-ai-extraction.index');
+    Route::post('idx-ai-extraction/extract', [IdxAiExtractionController::class, 'extract'])->name('idx-ai-extraction.extract');
+    Route::post('idx-ai-extraction/save', [IdxAiExtractionController::class, 'save'])->name('idx-ai-extraction.save');
 
     // Daftar & Analisa Obligasi
     Route::get('obligasi', [AdminObligasiController::class, 'index'])->name('obligasi.index');

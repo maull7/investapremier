@@ -7,6 +7,7 @@ use App\Models\Stock;
 use App\Models\ExtractionBatch;
 use App\Exports\StocksTemplateExport;
 use App\Imports\StocksImport;
+use App\Services\Extractors\IdxAiDataExtractorService;
 use App\Support\ActivityLogger;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
@@ -165,5 +166,45 @@ class StockController extends Controller
         }
 
         return $ranges;
+    }
+
+    /**
+     * One-click sync: fetch master IDX stock list + price summary, then upsert into stocks table.
+     * Insert new codes, update existing (preserving manually-set sektor).
+     */
+    public function syncFromIdx(Request $request, IdxAiDataExtractorService $extractor)
+    {
+        @set_time_limit(180);
+
+        $masterUrl = 'https://www.idx.co.id/id/data-pasar/data-saham/daftar-saham';
+        $priceUrl = 'https://www.idx.co.id/id/data-pasar/ringkasan-perdagangan/ringkasan-saham';
+
+        $result = $extractor->extract($masterUrl, 'saham', null, $priceUrl, true);
+
+        if (!($result['success'] ?? false) || empty($result['data'])) {
+            $msg = $result['message'] ?? 'Sync IDX gagal: tidak ada data yang dapat diekstrak.';
+            ActivityLogger::log('Sync Saham dari IDX', $msg, 'error');
+            return redirect()->route('admin.saham.index')->with('error', $msg);
+        }
+
+        $upsert = $extractor->upsertStocks($result['data'], true);
+        $merge = $result['merge_stats'] ?? null;
+
+        $matchInfo = '';
+        if (is_array($merge) && !empty($merge['primary_count'])) {
+            $rate = round((float) ($merge['match_rate'] ?? 0) * 100, 1);
+            $matchInfo = " (harga matched: {$merge['filled_price_count']}/{$merge['primary_count']}, {$rate}%)";
+        }
+
+        $summary = "Baru: {$upsert['created']}, Update: {$upsert['updated']}, Skip: {$upsert['skipped']}";
+
+        ActivityLogger::log(
+            'Sync Saham dari IDX',
+            "{$summary}{$matchInfo}",
+            'success',
+        );
+
+        return redirect()->route('admin.saham.index')
+            ->with('success', "Sync IDX selesai. {$summary}.{$matchInfo}");
     }
 }
