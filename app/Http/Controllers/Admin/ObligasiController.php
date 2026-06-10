@@ -12,10 +12,8 @@ use App\Imports\ObligasiHargaReferensiImport;
 use App\Imports\ObligasiBondImport;
 use App\Jobs\SyncObligasiFromIdxJob;
 use App\Models\SyncRun;
-use App\Services\Extractors\IdxAiDataExtractorService;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use App\Support\ActivityLogger;
 
 class ObligasiController extends Controller
@@ -377,19 +375,11 @@ class ObligasiController extends Controller
     }
 
     /**
-     * One-click ASYNC sync of obligasi metadata from IDX + PHEI public sources.
-     *
-     * Dispatches a queue job and returns the SyncRun ID immediately. The
-     * frontend polls `syncStatus` to track progress in real time. This avoids
-     * gateway timeouts (504) and lets the user see actual server-side step
-     * progression instead of fake setTimeout-based progress.
-     *
-     * Returns JSON when requested via AJAX, otherwise redirects with the run_id
-     * in the session for the modal to pick up.
+     * One-click sync obligasi. Dispatch job (non-blocking).
+     * Job akan pake BackendSyncService kalau BACKEND_SYNC_URL dikonfigurasi.
      */
     public function syncFromIdx(Request $request)
     {
-        // Check if a run is already in-flight to avoid double-dispatch
         $inflight = SyncRun::where('type', SyncRun::TYPE_OBLIGASI_IDX_PHEI)
             ->whereIn('status', [SyncRun::STATUS_QUEUED, SyncRun::STATUS_RUNNING])
             ->latest()

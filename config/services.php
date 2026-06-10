@@ -84,6 +84,11 @@ return [
         ],
     ],
 
+    'backend_sync' => [
+        'url' => env('BACKEND_SYNC_URL', 'http://localhost:3456'),
+        'timeout' => (int) env('BACKEND_SYNC_TIMEOUT', 600),
+    ],
+
     'groq' => [
         'key'   => env('GROQ_API_KEY'),
         'model' => env('GROQ_MODEL', 'llama-3.3-70b-versatile'),

@@ -9,7 +9,6 @@ use App\Models\SyncRun;
 use App\Models\ExtractionBatch;
 use App\Exports\StocksTemplateExport;
 use App\Imports\StocksImport;
-use App\Services\Extractors\IdxAiDataExtractorService;
 use App\Support\ActivityLogger;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
@@ -171,9 +170,8 @@ class StockController extends Controller
     }
 
     /**
-     * One-click ASYNC sync: dispatch a queued job to fetch master IDX stock
-     * list + price summary, then upsert. Returns SyncRun ID immediately so the
-     * frontend can poll for progress. Avoids gateway timeouts.
+     * One-click sync saham. Dispatch job (non-blocking).
+     * Job akan pake BackendSyncService kalau BACKEND_SYNC_URL dikonfigurasi.
      */
     public function syncFromIdx(Request $request)
     {

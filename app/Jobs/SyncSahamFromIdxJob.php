@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\SyncRun;
+use App\Services\BackendSyncService;
 use App\Services\Extractors\IdxAiDataExtractorService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -18,7 +19,7 @@ class SyncSahamFromIdxJob implements ShouldQueue
 
     public function __construct(public int $syncRunId)
     {
-        $this->onQueue('extraction');
+        $this->onConnection('redis')->onQueue('extraction');
     }
 
     public function middleware(): array
@@ -26,7 +27,7 @@ class SyncSahamFromIdxJob implements ShouldQueue
         return [(new WithoutOverlapping('sync-saham-idx'))->expireAfter(400)];
     }
 
-    public function handle(IdxAiDataExtractorService $extractor): void
+    public function handle(IdxAiDataExtractorService $extractor, BackendSyncService $backend): void
     {
         $run = SyncRun::find($this->syncRunId);
         if (!$run) {
@@ -34,7 +35,48 @@ class SyncSahamFromIdxJob implements ShouldQueue
             return;
         }
 
-        // Pre-flight
+        if ($backend->isAvailable()) {
+            $this->handleViaBackend($run, $backend);
+            return;
+        }
+
+        $this->handleViaExtractor($run, $extractor);
+    }
+
+    private function handleViaBackend(SyncRun $run, BackendSyncService $backend): void
+    {
+        $run->markStep('fetch', 'Mengambil data saham dari backend API...', 30);
+
+        try {
+            $data = $backend->fetchSahamData();
+
+            if (empty($data)) {
+                $run->markFailed('Backend API: data saham kosong. Backend mungkin belum menjalankan sync pertama.');
+                return;
+            }
+
+            $run->markStep('upsert', 'Menyimpan ' . count($data) . ' data saham ke database...', 70);
+
+            $extractor = app(IdxAiDataExtractorService::class);
+            $upsert = $extractor->upsertStocks($data, true);
+
+            $summary = "Sync saham via backend API selesai. Baru: {$upsert['created']}, Update: {$upsert['updated']}, Skip: {$upsert['skipped']}";
+
+            $run->markCompleted($summary, [
+                'upsert' => $upsert,
+                'source' => 'backend_api',
+            ]);
+
+            $this->logActivity($run, 'Sync Saham dari Backend API', $summary, 'success');
+        } catch (\Throwable $e) {
+            $msg = 'Backend API tidak merespon. Pastikan backend sync sudah berjalan. (' . $e->getMessage() . ')';
+            $run->markFailed($msg);
+            Log::error('SyncSahamFromIdxJob backend API error', ['error' => $e->getMessage()]);
+        }
+    }
+
+    private function handleViaExtractor(SyncRun $run, IdxAiDataExtractorService $extractor): void
+    {
         $run->markStep('preflight', 'Memeriksa lingkungan server (Node + Playwright + Chromium)', 2);
         $problems = $extractor->preflightCheck(true);
         if (!empty($problems)) {
@@ -79,13 +121,18 @@ class SyncSahamFromIdxJob implements ShouldQueue
             'merge' => $merge,
         ]);
 
+        $this->logActivity($run, 'Sync Saham dari IDX', $summary, 'success');
+    }
+
+    private function logActivity(SyncRun $run, string $aksi, string $keterangan, string $status): void
+    {
         try {
             if ($run->user_id) {
                 \App\Models\ActivityLog::create([
                     'user_id' => $run->user_id,
-                    'aksi' => 'Sync Saham dari IDX',
-                    'keterangan' => $summary,
-                    'status' => 'success',
+                    'aksi' => $aksi,
+                    'keterangan' => $keterangan,
+                    'status' => $status,
                 ]);
             }
         } catch (\Throwable $e) {

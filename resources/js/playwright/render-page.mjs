@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import process from 'node:process';
+import { writeFileSync } from 'node:fs';
 
 if(process.env.APP_ENV == 'production') {
     process.env.PLAYWRIGHT_BROWSERS_PATH =
@@ -282,6 +283,32 @@ try {
         if (converted.length > 0) {
             response.table_data = converted;
             response.table_data_count = converted.length;
+        }
+    }
+
+    // === SAHAM DEBUG: save extracted data to files for inspection ===
+    if (url.includes('saham') || url.includes('stock') || url.includes('data-pasar')) {
+        if (extractedData) {
+            writeFileSync('/tmp/idx-saham-extracted.json', JSON.stringify(extractedData, null, 2));
+            console.error('SAHAM DEBUG: extracted data saved to /tmp/idx-saham-extracted.json');
+            console.error('SAHAM DEBUG: extracted count:', extractedData.length, 'source:', extractionSource);
+            if (extractedData.length > 0) {
+                console.error('SAHAM DEBUG: sample keys:', Object.keys(extractedData[0]));
+                console.error('SAHAM DEBUG: sample row:', JSON.stringify(extractedData[0]));
+            }
+        }
+        if (response.table_data) {
+            writeFileSync('/tmp/idx-saham-table.json', JSON.stringify(response.table_data, null, 2));
+            console.error('SAHAM DEBUG: table data saved to /tmp/idx-saham-table.json');
+            console.error('SAHAM DEBUG: table count:', response.table_data_count);
+            if (response.table_data.length > 0) {
+                console.error('SAHAM DEBUG: table sample keys:', Object.keys(response.table_data[0]));
+                console.error('SAHAM DEBUG: table sample row:', JSON.stringify(response.table_data[0]));
+            }
+        }
+        if (!extractedData && !response.table_data) {
+            console.error('SAHAM DEBUG: no structured data found, text_size:', response.text_size);
+            writeFileSync('/tmp/idx-saham-text.txt', response.text_content || '');
         }
     }
 
