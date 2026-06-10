@@ -7,7 +7,6 @@ use App\Services\BackendSyncService;
 use App\Services\Extractors\IdxAiDataExtractorService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Log;
 
 class SyncSahamFromIdxJob implements ShouldQueue
@@ -22,13 +21,10 @@ class SyncSahamFromIdxJob implements ShouldQueue
         $this->onConnection('redis')->onQueue('extraction');
     }
 
-    public function middleware(): array
-    {
-        return [(new WithoutOverlapping('sync-saham-idx'))->expireAfter(400)];
-    }
-
     public function handle(IdxAiDataExtractorService $extractor, BackendSyncService $backend): void
     {
+        Log::info('SyncSahamFromIdxJob started', ['sync_run_id' => $this->syncRunId]);
+
         $run = SyncRun::find($this->syncRunId);
         if (!$run) {
             Log::warning('SyncSahamFromIdxJob: SyncRun not found', ['id' => $this->syncRunId]);

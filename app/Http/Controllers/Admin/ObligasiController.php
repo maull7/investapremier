@@ -382,6 +382,7 @@ class ObligasiController extends Controller
     {
         $inflight = SyncRun::where('type', SyncRun::TYPE_OBLIGASI_IDX_PHEI)
             ->whereIn('status', [SyncRun::STATUS_QUEUED, SyncRun::STATUS_RUNNING])
+            ->where('updated_at', '>=', now()->subMinutes(10))
             ->latest()
             ->first();
 

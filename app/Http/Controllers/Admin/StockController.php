@@ -177,6 +177,7 @@ class StockController extends Controller
     {
         $inflight = SyncRun::where('type', SyncRun::TYPE_SAHAM_IDX)
             ->whereIn('status', [SyncRun::STATUS_QUEUED, SyncRun::STATUS_RUNNING])
+            ->where('updated_at', '>=', now()->subMinutes(10))
             ->latest()
             ->first();
 
