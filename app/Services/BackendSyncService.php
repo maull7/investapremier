@@ -41,10 +41,25 @@ class BackendSyncService
 
         $data = $res['data'] ?? [];
 
+        $numericFields = [
+            'harga_terbaru', 'harga_pembukaan', 'harga_penutupan_sebelumnya',
+            'harga_tertinggi', 'harga_terendah', 'perubahan_persen',
+            'volume', 'nilai', 'frekuensi', 'jumlah_saham', 'market_capital',
+        ];
+
         foreach ($data as &$item) {
             if (isset($item['value']) && !isset($item['nilai'])) {
                 $item['nilai'] = $item['value'];
             }
+
+            // Cast numeric fields to float so parseIdrNumber() doesn't misinterpret
+            // dots as thousands separators (IDX-Indonesian format).
+            foreach ($numericFields as $field) {
+                if (isset($item[$field]) && $item[$field] !== '' && $item[$field] !== null) {
+                    $item[$field] = (float) $item[$field];
+                }
+            }
+
             unset($item['id'], $item['created_at'], $item['updated_at'], $item['last_update']);
         }
 
