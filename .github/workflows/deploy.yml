@@ -55,8 +55,9 @@ jobs:
             echo "Migrate"
             php artisan migrate --force
 
-            echo "Clear cache"
+            echo "Clear cache & OPcache"
             php artisan optimize:clear
+            php -r "if (function_exists('opcache_reset')) opcache_reset();"
 
             echo "Cache ulang"
             php artisan config:cache
@@ -67,8 +68,8 @@ jobs:
             chmod -R 777 storage bootstrap/cache
             chown -R www-data:www-data storage bootstrap/cache
 
-            echo "Reload PHP & Nginx"
-            sudo systemctl reload php8.3-fpm # SESUAIKAN
+            echo "Restart PHP & Nginx"
+            sudo systemctl restart php8.3-fpm # SESUAIKAN
             sudo systemctl reload nginx
 
             echo "Restart Horizon"
