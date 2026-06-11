@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SyncInvestmentManagerFromPasardanaJob;
+use App\Jobs\SyncInvestmentManagerPeriodsJob;
 use App\Models\InvestmentManager;
 use App\Models\InvestmentManagerPeriod;
 use App\Models\ReksaDana;
 use App\Models\ReksaDanaDocument;
+use App\Models\SyncRun;
 use App\Exports\InvestmentManagerTemplateExport;
 use App\Imports\InvestmentManagerImport;
 use App\Services\InvestmentPersonService;
@@ -64,6 +67,19 @@ class InvestmentManagerController extends Controller
         $manager->load('funds');
         $governanceSections = $personService->sectionsForManager($manager);
 
+        // Pasardana governance data (stored as JSON in text columns)
+        $pasardanaGovernance = [];
+        foreach (['directors', 'commissioners', 'shareholders'] as $field) {
+            $value = $manager->{$field};
+            if (filled($value) && $this->isJson($value)) {
+                $items = json_decode($value, true);
+                $pasardanaGovernance[$field] = collect($items)->map(fn($i) => [
+                    'name' => $i['nama'] ?? $i['name'] ?? '-',
+                    'position' => $i['jabatan'] ?? $i['position'] ?? $i['type'] ?? '-',
+                ])->toArray();
+            }
+        }
+
         $range = request('range', '1y');
         $chartData = $chartDataService->forManager(
             $manager,
@@ -79,8 +95,18 @@ class InvestmentManagerController extends Controller
             ->get();
 
         return view('admin.investment-managers.show', compact(
-            'manager', 'fundsWithProspektus', 'range', 'chartData', 'governanceSections'
+            'manager', 'fundsWithProspektus', 'range', 'chartData', 'governanceSections',
+            'pasardanaGovernance',
         ));
+    }
+
+    private function isJson(string $value): bool
+    {
+        if (empty($value)) return false;
+        $first = trim($value)[0] ?? '';
+        if ($first !== '[' && $first !== '{') return false;
+        json_decode($value);
+        return json_last_error() === JSON_ERROR_NONE;
     }
 
     public function extractProspektus(Request $request, InvestmentManager $investmentManager)
@@ -372,5 +398,111 @@ class InvestmentManagerController extends Controller
         $investmentManagerPeriod->delete();
         return redirect()->route('admin.investment-managers.index')
             ->with('success', 'Periode berhasil dihapus.');
+    }
+
+    public function syncFromPasardana(Request $request)
+    {
+        $inflight = SyncRun::where('type', SyncRun::TYPE_MI_PASARDANA)
+            ->whereIn('status', [SyncRun::STATUS_QUEUED, SyncRun::STATUS_RUNNING])
+            ->where('updated_at', '>=', now()->subMinutes(10))
+            ->latest()
+            ->first();
+
+        if ($inflight) {
+            $payload = [
+                'run_id' => $inflight->id,
+                'status' => $inflight->status,
+                'reused' => true,
+            ];
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json($payload);
+            }
+            return redirect()->route('admin.investment-managers.index')
+                ->with('sync_run_id', $inflight->id);
+        }
+
+        $run = SyncRun::create([
+            'type' => SyncRun::TYPE_MI_PASARDANA,
+            'status' => SyncRun::STATUS_QUEUED,
+            'current_step' => 'queued',
+            'current_step_label' => 'Menunggu worker mengambil job dari antrian',
+            'progress_percent' => 0,
+            'user_id' => $request->user()?->id,
+        ]);
+
+        SyncInvestmentManagerFromPasardanaJob::dispatch($run->id);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'run_id' => $run->id,
+                'status' => $run->status,
+            ]);
+        }
+
+        return redirect()->route('admin.investment-managers.index')
+            ->with('sync_run_id', $run->id)
+            ->with('success', 'Sync MI dari Pasardana dimulai.');
+    }
+
+    public function syncPeriods(Request $request)
+    {
+        $inflight = SyncRun::where('type', SyncRun::TYPE_MI_PERIOD)
+            ->whereIn('status', [SyncRun::STATUS_QUEUED, SyncRun::STATUS_RUNNING])
+            ->where('updated_at', '>=', now()->subMinutes(10))
+            ->latest()
+            ->first();
+
+        if ($inflight) {
+            $payload = [
+                'run_id' => $inflight->id,
+                'status' => $inflight->status,
+                'reused' => true,
+            ];
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json($payload);
+            }
+            return redirect()->route('admin.investment-managers.index')
+                ->with('sync_run_id', $inflight->id);
+        }
+
+        $run = SyncRun::create([
+            'type' => SyncRun::TYPE_MI_PERIOD,
+            'status' => SyncRun::STATUS_QUEUED,
+            'current_step' => 'queued',
+            'current_step_label' => 'Menunggu worker mengambil job dari antrian',
+            'progress_percent' => 0,
+            'user_id' => $request->user()?->id,
+        ]);
+
+        SyncInvestmentManagerPeriodsJob::dispatch($run->id);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'run_id' => $run->id,
+                'status' => $run->status,
+            ]);
+        }
+
+        return redirect()->route('admin.investment-managers.index')
+            ->with('sync_run_id', $run->id)
+            ->with('success', 'Sync periode AUM MI dari data harian dimulai.');
+    }
+
+    public function syncStatus(SyncRun $run)
+    {
+        return response()->json([
+            'id' => $run->id,
+            'type' => $run->type,
+            'status' => $run->status,
+            'current_step' => $run->current_step,
+            'current_step_label' => $run->current_step_label,
+            'progress_percent' => $run->progress_percent,
+            'message' => $run->message,
+            'errors' => $run->errors,
+            'stats' => $run->stats,
+            'is_terminal' => $run->isTerminal(),
+            'started_at' => $run->started_at?->toIso8601String(),
+            'completed_at' => $run->completed_at?->toIso8601String(),
+        ]);
     }
 }

@@ -148,6 +148,8 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::delete('daftar-reksa-dana/harian/destroy/{hargaReksaDana}', [DaftarReksaDanaController::class, 'destroyHarian'])->name('daftar-reksa-dana.harian.destroy');
     Route::get('daftar-reksa-dana/parse-kode', [DaftarReksaDanaController::class, 'parseKode'])->name('daftar-reksa-dana.parse-kode');
     Route::post('daftar-reksa-dana/{reksaDana}/export-investment-manager', [DaftarReksaDanaController::class, 'exportInvestmentManager'])->name('daftar-reksa-dana.export-investment-manager');
+    Route::post('daftar-reksa-dana/sync-pasardana', [DaftarReksaDanaController::class, 'syncFromPasardana'])->name('daftar-reksa-dana.sync-pasardana');
+    Route::get('daftar-reksa-dana/sync-pasardana/status/{run}', [DaftarReksaDanaController::class, 'syncStatus'])->name('daftar-reksa-dana.sync-pasardana.status');
     Route::get('daftar-reksa-dana/{reksaDana}', [DaftarReksaDanaController::class, 'show'])->name('daftar-reksa-dana.show');
 
     Route::post('data-source-links', [DataSourceLinkController::class, 'store'])->name('data-source-links.store');
@@ -306,6 +308,10 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('investment-managers-template', [AdminInvestmentManagerController::class, 'downloadTemplate'])->name('investment-managers.template');
     Route::post('investment-managers-import', [AdminInvestmentManagerController::class, 'import'])->name('investment-managers.import');
     Route::delete('investment-managers-period/{investmentManagerPeriod}', [AdminInvestmentManagerController::class, 'destroyPeriod'])->name('investment-managers.period-destroy');
+    Route::post('investment-managers/sync-pasardana', [AdminInvestmentManagerController::class, 'syncFromPasardana'])->name('investment-managers.sync-pasardana');
+    Route::get('investment-managers/sync-pasardana/status/{run}', [AdminInvestmentManagerController::class, 'syncStatus'])->name('investment-managers.sync-pasardana.status');
+    Route::post('investment-managers/sync-periods', [AdminInvestmentManagerController::class, 'syncPeriods'])->name('investment-managers.sync-periods');
+    Route::get('investment-managers/sync-periods/status/{run}', [AdminInvestmentManagerController::class, 'syncStatus'])->name('investment-managers.sync-periods.status');
     Route::get('investment-person-roles/detail', [AdminInvestmentPersonRoleController::class, 'show'])->name('investment-person-roles.detail');
 
     // Unit Link

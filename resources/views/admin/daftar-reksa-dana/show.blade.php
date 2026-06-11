@@ -67,11 +67,11 @@
     </div>
     <div class="bg-white rounded-xl border border-line p-4">
         <p class="text-xs text-muted mb-1">AUM</p>
-        <p class="text-sm font-bold text-primary">{{ $latestNav && $latestNav->aum ? 'Rp' . number_format($latestNav->aum, 0, ',', '.') : '—' }}</p>
+        <p class="text-sm font-bold text-primary">{{ $latestNav && $latestNav->aum ? 'Rp' . number_format($latestNav->aum, 0, ',', '.') : ($fund->aum ? 'Rp' . number_format($fund->aum, 0, ',', '.') : '—') }}</p>
     </div>
     <div class="bg-white rounded-xl border border-line p-4">
         <p class="text-xs text-muted mb-1">Unit Penyertaan</p>
-        <p class="text-sm font-bold text-primary">{{ $latestNav && $latestNav->unit_participation ? number_format($latestNav->unit_participation, 0, ',', '.') : '—' }}</p>
+        <p class="text-sm font-bold text-primary">{{ $latestNav && $latestNav->unit_participation ? number_format($latestNav->unit_participation, 0, ',', '.') : ($fund->total_unit ? number_format($fund->total_unit, 0, ',', '.') : '—') }}</p>
     </div>
 </div>
 
@@ -111,6 +111,11 @@
                 @if($fund->jenis)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Jenis Reksa Dana</span><span class="text-sm">{{ $fund->jenis }}</span></div>@endif
                 @if($fund->kategori_produk)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Kategori Produk</span><span class="text-sm">{{ $fund->kategori_produk }}</span></div>@endif
                 @if($fund->display_kelas)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Kelas</span><span class="text-sm">{{ $fund->display_kelas }}</span></div>@endif
+                @if($fund->isin_code)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">ISIN Code</span><span class="text-sm font-mono">{{ $fund->isin_code }}</span></div>@endif
+                @if($fund->is_etf !== null)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">ETF</span><span class="text-sm">{{ $fund->is_etf ? 'Ya' : 'Tidak' }}</span></div>@endif
+                @if($fund->is_index !== null)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Index Fund</span><span class="text-sm">{{ $fund->is_index ? 'Ya' : 'Tidak' }}</span></div>@endif
+                @if($fund->conservative_category)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Kategori Konservatif</span><span class="text-sm">{{ $fund->conservative_category }}</span></div>@endif
+                @if($fund->dividend !== null)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Dividen</span><span class="text-sm">{{ $fund->dividend ? 'Ya' : 'Tidak' }}</span></div>@endif
             </div>
         </div>
 
@@ -127,8 +132,8 @@
                 <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Return Harian</span><span class="text-sm font-bold {{ $returnDaily !== null ? ($returnDaily >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $returnDaily !== null ? number_format($returnDaily, 2, ',', '.') . '%' : '—' }}</span></div>
                 <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Return Bulanan</span><span class="text-sm font-bold {{ $returnMonthly !== null ? ($returnMonthly >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $returnMonthly !== null ? number_format($returnMonthly, 2, ',', '.') . '%' : '—' }}</span></div>
                 <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Return Tahunan</span><span class="text-sm font-bold {{ $returnYearly !== null ? ($returnYearly >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $returnYearly !== null ? number_format($returnYearly, 2, ',', '.') . '%' : '—' }}</span></div>
-                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">AUM</span><span class="text-sm font-bold text-primary">{{ $latestNav && $latestNav->aum ? 'Rp' . number_format($latestNav->aum, 0, ',', '.') : '—' }}</span></div>
-                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Unit Penyertaan</span><span class="text-sm font-bold text-primary">{{ $latestNav && $latestNav->unit_participation ? number_format($latestNav->unit_participation, 0, ',', '.') : '—' }}</span></div>
+                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">AUM</span><span class="text-sm font-bold text-primary">{{ $latestNav && $latestNav->aum ? 'Rp' . number_format($latestNav->aum, 0, ',', '.') : ($fund->aum ? 'Rp' . number_format($fund->aum, 0, ',', '.') : '—') }}</span></div>
+                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Unit Penyertaan</span><span class="text-sm font-bold text-primary">{{ $latestNav && $latestNav->unit_participation ? number_format($latestNav->unit_participation, 0, ',', '.') : ($fund->total_unit ? number_format($fund->total_unit, 0, ',', '.') : '—') }}</span></div>
             </div>
         </div>
     </div>
@@ -329,41 +334,98 @@
 
 {{-- TAB: RISIKO --}}
 <div x-show="tab === 'risiko'" x-cloak>
-    <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
-            <h2 class="font-bold text-white text-sm">Informasi Risiko</h2>
-        </div>
-        @if($fund->risk_category || $fund->description)
-        <div class="divide-y divide-line">
-            @if($fund->risk_category)
-            <div class="px-6 py-3.5 flex items-start gap-4">
-                <span class="text-xs font-semibold text-muted w-40 shrink-0">Risk Category</span>
-                <span class="text-sm">{{ $fund->risk_category }}</span>
+    <div class="space-y-6">
+        {{-- Risk Category --}}
+        <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
+                <h2 class="font-bold text-white text-sm">Tingkat Risiko</h2>
             </div>
-            <div class="px-6 py-3.5 flex items-start gap-4">
-                <span class="text-xs font-semibold text-muted w-40 shrink-0">Tingkat Risiko</span>
-                @php
-                    $riskLabel = match($fund->risk_category) {
-                        'Rendah' => 'Risiko Rendah',
-                        'Sedang' => 'Risiko Menengah',
-                        'Tinggi' => 'Risiko Tinggi',
-                        default => $fund->risk_category,
-                    };
-                @endphp
-                <span class="text-sm px-2 py-0.5 rounded-full text-xs font-semibold {{ $fund->risk_category == 'Rendah' ? 'bg-green-100 text-green-700' : ($fund->risk_category == 'Sedang' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700') }}">{{ $riskLabel }}</span>
+            @if($fund->risk_category || $fund->conservative_category)
+            <div class="divide-y divide-line">
+                @if($fund->risk_category)
+                <div class="px-6 py-3.5 flex items-start gap-4">
+                    <span class="text-xs font-semibold text-muted w-40 shrink-0">Risk Category</span>
+                    @php
+                        $riskLabel = match($fund->risk_category) {
+                            'Rendah' => 'Risiko Rendah',
+                            'Sedang' => 'Risiko Menengah',
+                            'Tinggi' => 'Risiko Tinggi',
+                            default => $fund->risk_category,
+                        };
+                    @endphp
+                    <span class="text-sm px-2 py-0.5 rounded-full text-xs font-semibold {{ $fund->risk_category == 'Rendah' ? 'bg-green-100 text-green-700' : ($fund->risk_category == 'Sedang' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700') }}">{{ $riskLabel }}</span>
+                </div>
+                @endif
+                @if($fund->conservative_category)
+                <div class="px-6 py-3.5 flex items-start gap-4">
+                    <span class="text-xs font-semibold text-muted w-40 shrink-0">Kategori Konservatif</span>
+                    <span class="text-sm">{{ $fund->conservative_category }}</span>
+                </div>
+                @endif
+            </div>
+            @else
+            <div class="py-12 text-center text-muted text-sm">
+                <svg class="w-10 h-10 mx-auto mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                Data risiko belum tersedia.
             </div>
             @endif
-            @if($fund->description)
-            <div class="px-6 py-3.5">
-                <span class="text-xs font-semibold text-muted block mb-1">Catatan Risiko</span>
-                <span class="text-sm whitespace-pre-line">{{ $fund->description }}</span>
-            </div>
-            @endif
         </div>
-        @else
-        <div class="py-12 text-center text-muted text-sm">
-            <svg class="w-10 h-10 mx-auto mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
-            Data risiko belum tersedia.
+
+        {{-- Risk Metrics (Pasardana) --}}
+        @php
+            $hasRiskMetrics = collect($riskMetrics)->filter()->isNotEmpty();
+        @endphp
+        @if($hasRiskMetrics)
+        <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
+                <h2 class="font-bold text-white text-sm">Metrik Risiko</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide">
+                            <th class="px-4 py-3 font-semibold">Metrik</th>
+                            <th class="px-4 py-3 font-semibold text-right">1 Tahun</th>
+                            <th class="px-4 py-3 font-semibold text-right">3 Tahun</th>
+                            <th class="px-4 py-3 font-semibold text-right">5 Tahun</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        @if($riskMetrics['sharpe_ratio_1y'] !== null || $riskMetrics['sharpe_ratio_3y'] !== null || $riskMetrics['sharpe_ratio_5y'] !== null)
+                        <tr class="hover:bg-[#f8fafc]">
+                            <td class="px-4 py-3 text-xs font-semibold">Sharpe Ratio</td>
+                            <td class="px-4 py-3 text-xs text-right tabular-nums">{{ $riskMetrics['sharpe_ratio_1y'] !== null ? number_format($riskMetrics['sharpe_ratio_1y'], 4, ',', '.') : '—' }}</td>
+                            <td class="px-4 py-3 text-xs text-right tabular-nums">{{ $riskMetrics['sharpe_ratio_3y'] !== null ? number_format($riskMetrics['sharpe_ratio_3y'], 4, ',', '.') : '—' }}</td>
+                            <td class="px-4 py-3 text-xs text-right tabular-nums">{{ $riskMetrics['sharpe_ratio_5y'] !== null ? number_format($riskMetrics['sharpe_ratio_5y'], 4, ',', '.') : '—' }}</td>
+                        </tr>
+                        @endif
+                        @if($riskMetrics['stdev_1y'] !== null || $riskMetrics['stdev_3y'] !== null || $riskMetrics['stdev_5y'] !== null)
+                        <tr class="hover:bg-[#f8fafc]">
+                            <td class="px-4 py-3 text-xs font-semibold">Std. Deviasi</td>
+                            <td class="px-4 py-3 text-xs text-right tabular-nums">{{ $riskMetrics['stdev_1y'] !== null ? number_format($riskMetrics['stdev_1y'] * 100, 2, ',', '.') . '%' : '—' }}</td>
+                            <td class="px-4 py-3 text-xs text-right tabular-nums">{{ $riskMetrics['stdev_3y'] !== null ? number_format($riskMetrics['stdev_3y'] * 100, 2, ',', '.') . '%' : '—' }}</td>
+                            <td class="px-4 py-3 text-xs text-right tabular-nums">{{ $riskMetrics['stdev_5y'] !== null ? number_format($riskMetrics['stdev_5y'] * 100, 2, ',', '.') . '%' : '—' }}</td>
+                        </tr>
+                        @endif
+                        @if($riskMetrics['beta_1y'] !== null || $riskMetrics['beta_3y'] !== null || $riskMetrics['beta_5y'] !== null)
+                        <tr class="hover:bg-[#f8fafc]">
+                            <td class="px-4 py-3 text-xs font-semibold">Beta</td>
+                            <td class="px-4 py-3 text-xs text-right tabular-nums">{{ $riskMetrics['beta_1y'] !== null ? number_format($riskMetrics['beta_1y'], 4, ',', '.') : '—' }}</td>
+                            <td class="px-4 py-3 text-xs text-right tabular-nums">{{ $riskMetrics['beta_3y'] !== null ? number_format($riskMetrics['beta_3y'], 4, ',', '.') : '—' }}</td>
+                            <td class="px-4 py-3 text-xs text-right tabular-nums">{{ $riskMetrics['beta_5y'] !== null ? number_format($riskMetrics['beta_5y'], 4, ',', '.') : '—' }}</td>
+                        </tr>
+                        @endif
+                        @if($riskMetrics['max_drawdown_1y'] !== null || $riskMetrics['max_drawdown_3y'] !== null || $riskMetrics['max_drawdown_5y'] !== null)
+                        <tr class="hover:bg-[#f8fafc]">
+                            <td class="px-4 py-3 text-xs font-semibold">Max Drawdown</td>
+                            <td class="px-4 py-3 text-xs text-right tabular-nums">{{ $riskMetrics['max_drawdown_1y'] !== null ? number_format($riskMetrics['max_drawdown_1y'] * 100, 2, ',', '.') . '%' : '—' }}</td>
+                            <td class="px-4 py-3 text-xs text-right tabular-nums">{{ $riskMetrics['max_drawdown_3y'] !== null ? number_format($riskMetrics['max_drawdown_3y'] * 100, 2, ',', '.') . '%' : '—' }}</td>
+                            <td class="px-4 py-3 text-xs text-right tabular-nums">{{ $riskMetrics['max_drawdown_5y'] !== null ? number_format($riskMetrics['max_drawdown_5y'] * 100, 2, ',', '.') . '%' : '—' }}</td>
+                        </tr>
+                        @endif
+                    </tbody>
+                </table>
+            </div>
         </div>
         @endif
     </div>
@@ -375,13 +437,18 @@
         <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
             <h2 class="font-bold text-white text-sm">Informasi Biaya</h2>
         </div>
-        @if($fund->subscription_fee || $fund->redemption_fee || $fund->switching_fee || $fund->management_fee || $fund->custodian_fee || $fund->minimum_subscription || $fund->minimum_topup || $fund->minimum_redemption)
+        @php
+            $hasFeeData = $fund->subscription_fee || $fund->redemption_fee || $fund->switching_fee || $fund->management_fee || $fund->custodian_fee || $fund->minimum_subscription || $fund->minimum_topup || $fund->minimum_redemption || $fund->expense_ratio || $fund->investment_manager_fee;
+        @endphp
+        @if($hasFeeData)
         <div class="divide-y divide-line">
             @if($fund->subscription_fee)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Subscription Fee</span><span class="text-sm">{{ number_format($fund->subscription_fee, 2, ',', '.') }}%</span></div>@endif
             @if($fund->redemption_fee)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Redemption Fee</span><span class="text-sm">{{ number_format($fund->redemption_fee, 2, ',', '.') }}%</span></div>@endif
             @if($fund->switching_fee)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Switching Fee</span><span class="text-sm">{{ number_format($fund->switching_fee, 2, ',', '.') }}%</span></div>@endif
             @if($fund->management_fee)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Management Fee</span><span class="text-sm">{{ number_format($fund->management_fee, 2, ',', '.') }}%</span></div>@endif
             @if($fund->custodian_fee)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Custodian Fee</span><span class="text-sm">{{ number_format($fund->custodian_fee, 2, ',', '.') }}%</span></div>@endif
+            @if($fund->expense_ratio)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Expense Ratio</span><span class="text-sm">{{ number_format($fund->expense_ratio, 4, ',', '.') }}%</span></div>@endif
+            @if($fund->investment_manager_fee)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">IM Fee</span><span class="text-sm">{{ $fund->investment_manager_fee }}</span></div>@endif
             @if($fund->minimum_subscription)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Minimum Pembelian</span><span class="text-sm">Rp{{ number_format($fund->minimum_subscription, 0, ',', '.') }}</span></div>@endif
             @if($fund->minimum_topup)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Minimum Top Up</span><span class="text-sm">Rp{{ number_format($fund->minimum_topup, 0, ',', '.') }}</span></div>@endif
             @if($fund->minimum_redemption)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Minimum Redemption</span><span class="text-sm">Rp{{ number_format($fund->minimum_redemption, 0, ',', '.') }}</span></div>@endif

@@ -9,7 +9,6 @@ class WebDataService
     protected array $sources = [
         'bareksa' => 'https://www.bareksa.com',
         'kontan' => 'https://investasi.kontan.co.id',
-        'ojk' => 'https://reksadana.ojk.go.id',
     ];
 
     public function searchNamaReksaDana(string $nama): ?array
@@ -46,41 +45,7 @@ class WebDataService
             'bank' => [],
         ];
 
-        // Try OJK Reksadana data
-        try {
-            $url = "https://reksadana.ojk.go.id/api/reksadana/search?q=" . urlencode($nama);
-            $response = Http::timeout(15)->get($url);
-            if ($response->successful()) {
-                $json = $response->json();
-                // Parse OJK API response
-            }
-        } catch (\Exception $e) {
-            // Fallback to other sources
-        }
-
         return $data;
-    }
-
-    public function searchFundPerformance(string $nama): array
-    {
-        $kinerja = [];
-
-        // Try to get performance data from public APIs
-        try {
-            $url = "https://www.bareksa.com/api/v1/funds/search?name=" . urlencode($nama);
-            $response = Http::timeout(10)
-                ->withHeaders(['User-Agent' => 'Mozilla/5.0'])
-                ->get($url);
-
-            if ($response->successful()) {
-                $data = $response->json();
-                // Parse performance data
-            }
-        } catch (\Exception $e) {
-            // Log or skip
-        }
-
-        return $kinerja;
     }
 
     protected function parseSearchResult(string $source, string $html): array
