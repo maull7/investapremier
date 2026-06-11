@@ -58,12 +58,21 @@ class SyncInvestmentManagerFromPasardanaJob implements ShouldQueue
             $skipped = 0;
 
             foreach ($data as $item) {
-                if (empty($item['name'])) {
+                $nama = $item['name'] ?? '';
+                if (empty($nama)) {
                     $skipped++;
                     continue;
                 }
 
-                $manager = InvestmentManager::where('name', $item['name'])->first();
+                $manager = InvestmentManager::where(function ($q) use ($item, $nama) {
+                    if (!empty($item['kode_mi'])) {
+                        $q->where('kode_mi', $item['kode_mi']);
+                    } elseif (!empty($item['pasardana_id'])) {
+                        $q->where('pasardana_id', $item['pasardana_id']);
+                    } else {
+                        $q->where('name', $nama);
+                    }
+                })->first();
 
                 if ($manager) {
                     $manager->update($item);

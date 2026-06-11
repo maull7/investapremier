@@ -731,6 +731,14 @@ class DaftarReksaDanaController extends Controller
 
     public function syncFromPasardana(Request $request)
     {
+        if (empty(config('services.backend_sync.url'))) {
+            $msg = 'Fitur sync Pasardana dinonaktifkan (BACKEND_SYNC_URL tidak dikonfigurasi).';
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['error' => $msg], 503);
+            }
+            return redirect()->route('admin.daftar-reksa-dana.index')->with('error', $msg);
+        }
+
         $inflight = SyncRun::where('type', SyncRun::TYPE_RD_PASARDANA)
             ->whereIn('status', [SyncRun::STATUS_QUEUED, SyncRun::STATUS_RUNNING])
             ->where('updated_at', '>=', now()->subMinutes(10))

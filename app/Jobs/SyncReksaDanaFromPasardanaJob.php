@@ -67,6 +67,8 @@ class SyncReksaDanaFromPasardanaJob implements ShouldQueue
                 $existing = ReksaDana::where(function ($q) use ($item, $nama) {
                     if (!empty($item['kode_reksa_dana'])) {
                         $q->where('kode_reksa_dana', $item['kode_reksa_dana']);
+                    } elseif (!empty($item['pasardana_id'])) {
+                        $q->where('pasardana_id', $item['pasardana_id']);
                     } else {
                         $q->where('nama_reksa_dana', $nama);
                     }
