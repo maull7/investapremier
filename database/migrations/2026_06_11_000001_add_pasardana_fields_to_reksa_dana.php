@@ -82,16 +82,7 @@ return new class extends Migration
             }
         });
 
-        // AUM, unit, fee, rating
-        Schema::table('reksa_dana', function (Blueprint $table) {
-            $ratingCols = ['yearly_rating', 'one_year_rating', 'three_year_rating', 'five_year_rating', 'ten_year_rating'];
-            foreach ($ratingCols as $col) {
-                if (!Schema::hasColumn('reksa_dana', $col)) {
-                    $table->tinyInteger($col)->nullable()->after('investment_manager_fee');
-                }
-            }
-        });
-
+        // AUM, unit, fee
         Schema::table('reksa_dana', function (Blueprint $table) {
             if (!Schema::hasColumn('reksa_dana', 'aum')) {
                 $table->decimal('aum', 24, 2)->nullable()->after('max_drawdown_10y');
@@ -104,6 +95,16 @@ return new class extends Migration
             }
             if (!Schema::hasColumn('reksa_dana', 'investment_manager_fee')) {
                 $table->string('investment_manager_fee', 100)->nullable()->after('expense_ratio');
+            }
+        });
+
+        // Rating (after investment_manager_fee already exists)
+        Schema::table('reksa_dana', function (Blueprint $table) {
+            $ratingCols = ['yearly_rating', 'one_year_rating', 'three_year_rating', 'five_year_rating', 'ten_year_rating'];
+            foreach ($ratingCols as $col) {
+                if (!Schema::hasColumn('reksa_dana', $col)) {
+                    $table->tinyInteger($col)->nullable()->after('investment_manager_fee');
+                }
             }
         });
 
