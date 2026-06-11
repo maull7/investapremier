@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SyncReksaDanaFromPasardanaJob;
 use App\Models\DataSourceLink;
 use App\Models\DataSourceSyncLog;
 use App\Models\HargaReksaDana;
 use App\Models\InvestmentManager;
 use App\Models\ReksaDana;
 use App\Models\ReksaDanaDocument;
+use App\Models\SyncRun;
 use App\Imports\HargaReksaDanaImport;
 use App\Imports\HarianReksaDanaImport;
 use App\Exports\HargaReksaDanaTemplateExport;
@@ -304,6 +306,7 @@ class DaftarReksaDanaController extends Controller
         $returnMonthly = null;
         $returnYearly = null;
 
+        // — NAV-based returns (when history is available) —
         if ($latestNav && $firstNav && $firstNav->nab_per_unit > 0) {
             $returnYearly = (($latestNav->nab_per_unit - $firstNav->nab_per_unit) / $firstNav->nab_per_unit) * 100;
         }
@@ -321,11 +324,38 @@ class DaftarReksaDanaController extends Controller
             $returnMonthly = (($latestNav->nab_per_unit - $prevMonthNav->nab_per_unit) / $prevMonthNav->nab_per_unit) * 100;
         }
 
+        // — Fallback to Pasardana return fields when NAV history is empty —
+        if ($returnDaily === null && $fund->return_1d !== null) {
+            $returnDaily = (float) $fund->return_1d * 100;
+        }
+        if ($returnMonthly === null && $fund->return_1m !== null) {
+            $returnMonthly = (float) $fund->return_1m * 100;
+        }
+        if ($returnYearly === null && $fund->return_1y !== null) {
+            $returnYearly = (float) $fund->return_1y * 100;
+        }
+
+        // — Pasardana risk metrics —
+        $riskMetrics = [
+            'sharpe_ratio_1y' => $fund->sharpe_ratio_1y,
+            'sharpe_ratio_3y' => $fund->sharpe_ratio_3y,
+            'sharpe_ratio_5y' => $fund->sharpe_ratio_5y,
+            'stdev_1y'        => $fund->stdev_1y,
+            'stdev_3y'        => $fund->stdev_3y,
+            'stdev_5y'        => $fund->stdev_5y,
+            'beta_1y'         => $fund->beta_1y,
+            'beta_3y'         => $fund->beta_3y,
+            'beta_5y'         => $fund->beta_5y,
+            'max_drawdown_1y' => $fund->max_drawdown_1y,
+            'max_drawdown_3y' => $fund->max_drawdown_3y,
+            'max_drawdown_5y' => $fund->max_drawdown_5y,
+        ];
+
         return view('admin.daftar-reksa-dana.show', compact(
             'fund', 'navHistory', 'navLabels', 'navValues', 'aumValues', 'upValues',
             'aaTimeline', 'aaLabels', 'topHoldings', 'portfolioTimeline',
             'latestNav', 'returnDaily', 'returnMonthly', 'returnYearly', 'range',
-            'chartData',
+            'chartData', 'riskMetrics',
         ));
     }
 
@@ -697,5 +727,67 @@ class DaftarReksaDanaController extends Controller
         }
 
         return response()->json($parsed);
+    }
+
+    public function syncFromPasardana(Request $request)
+    {
+        $inflight = SyncRun::where('type', SyncRun::TYPE_RD_PASARDANA)
+            ->whereIn('status', [SyncRun::STATUS_QUEUED, SyncRun::STATUS_RUNNING])
+            ->where('updated_at', '>=', now()->subMinutes(10))
+            ->latest()
+            ->first();
+
+        if ($inflight) {
+            $payload = [
+                'run_id' => $inflight->id,
+                'status' => $inflight->status,
+                'reused' => true,
+            ];
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json($payload);
+            }
+            return redirect()->route('admin.daftar-reksa-dana.index')
+                ->with('sync_run_id', $inflight->id);
+        }
+
+        $run = SyncRun::create([
+            'type' => SyncRun::TYPE_RD_PASARDANA,
+            'status' => SyncRun::STATUS_QUEUED,
+            'current_step' => 'queued',
+            'current_step_label' => 'Menunggu worker mengambil job dari antrian',
+            'progress_percent' => 0,
+            'user_id' => $request->user()?->id,
+        ]);
+
+        SyncReksaDanaFromPasardanaJob::dispatch($run->id);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'run_id' => $run->id,
+                'status' => $run->status,
+            ]);
+        }
+
+        return redirect()->route('admin.daftar-reksa-dana.index')
+            ->with('sync_run_id', $run->id)
+            ->with('success', 'Sync RD dari Pasardana dimulai.');
+    }
+
+    public function syncStatus(SyncRun $run)
+    {
+        return response()->json([
+            'id' => $run->id,
+            'type' => $run->type,
+            'status' => $run->status,
+            'current_step' => $run->current_step,
+            'current_step_label' => $run->current_step_label,
+            'progress_percent' => $run->progress_percent,
+            'message' => $run->message,
+            'errors' => $run->errors,
+            'stats' => $run->stats,
+            'is_terminal' => $run->isTerminal(),
+            'started_at' => $run->started_at?->toIso8601String(),
+            'completed_at' => $run->completed_at?->toIso8601String(),
+        ]);
     }
 }

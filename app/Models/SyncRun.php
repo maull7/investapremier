@@ -15,6 +15,9 @@ class SyncRun extends Model
 
     public const TYPE_OBLIGASI_IDX_PHEI = 'obligasi_idx_phei';
     public const TYPE_SAHAM_IDX = 'saham_idx';
+    public const TYPE_MI_PASARDANA = 'mi_pasardana';
+    public const TYPE_RD_PASARDANA = 'rd_pasardana';
+    public const TYPE_MI_PERIOD = 'mi_period';
 
     protected $fillable = [
         'type', 'status', 'current_step', 'current_step_label',

@@ -145,8 +145,14 @@
             'kode_mi' => 'Kode MI',
             'address' => 'Alamat',
             'phone' => 'Nomor Telepon',
+            'fax' => 'Fax',
             'email' => 'Email',
             'website' => 'Website',
+            'modal_dasar' => 'Modal Dasar',
+            'modal_disetor' => 'Modal Disetor',
+            'izin_mi' => 'Izin MI',
+            'izin_ppe' => 'Izin PPE',
+            'izin_pee' => 'Izin PEE',
             'description' => 'Deskripsi',
             'last_updated_at' => 'Tanggal Update',
         ] as $field => $label)
@@ -159,6 +165,8 @@
                                 @elseif($field === 'website' && $manager->$field)
                                     <a href="{{ $manager->$field }}" target="_blank"
                                         class="text-accent hover:underline">{{ $manager->$field }}</a>
+                                @elseif(in_array($field, ['modal_dasar', 'modal_disetor']) && $manager->$field)
+                                    Rp{{ number_format($manager->$field, 0, ',', '.') }}
                                 @elseif($field === 'last_updated_at' && $manager->$field)
                                     {{ $manager->$field->format('d M Y') }}
                                 @else
@@ -206,6 +214,77 @@
 
 
         </div>
+
+        {{-- Pasardana Governance --}}
+        @if(!empty($pasardanaGovernance['directors']))
+        <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mt-6">
+            <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
+                <h2 class="font-bold text-white text-sm">Direksi (Pasardana)</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead><tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide"><th class="px-4 py-3 font-semibold">Nama</th><th class="px-4 py-3 font-semibold">Jabatan</th></tr></thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach($pasardanaGovernance['directors'] as $item)
+                        <tr class="hover:bg-[#f8fafc] transition-colors">
+                            <td class="px-4 py-3 text-xs font-semibold">
+                                <button type="button" @click="openPerson({{ Js::from($item['name']) }})" class="text-accent hover:underline text-left">{{ $item['name'] }}</button>
+                            </td>
+                            <td class="px-4 py-3 text-xs text-muted">{{ $item['position'] ?: '-' }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
+
+        @if(!empty($pasardanaGovernance['commissioners']))
+        <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mt-6">
+            <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
+                <h2 class="font-bold text-white text-sm">Komisaris (Pasardana)</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead><tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide"><th class="px-4 py-3 font-semibold">Nama</th><th class="px-4 py-3 font-semibold">Jabatan</th></tr></thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach($pasardanaGovernance['commissioners'] as $item)
+                        <tr class="hover:bg-[#f8fafc] transition-colors">
+                            <td class="px-4 py-3 text-xs font-semibold">
+                                <button type="button" @click="openPerson({{ Js::from($item['name']) }})" class="text-accent hover:underline text-left">{{ $item['name'] }}</button>
+                            </td>
+                            <td class="px-4 py-3 text-xs text-muted">{{ $item['position'] ?: '-' }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
+
+        @if(!empty($pasardanaGovernance['shareholders']))
+        <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mt-6">
+            <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
+                <h2 class="font-bold text-white text-sm">Pemegang Saham (Pasardana)</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead><tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide"><th class="px-4 py-3 font-semibold">Nama</th><th class="px-4 py-3 font-semibold">Jabatan</th></tr></thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach($pasardanaGovernance['shareholders'] as $item)
+                        <tr class="hover:bg-[#f8fafc] transition-colors">
+                            <td class="px-4 py-3 text-xs font-semibold">
+                                <button type="button" @click="openPerson({{ Js::from($item['name']) }})" class="text-accent hover:underline text-left">{{ $item['name'] }}</button>
+                            </td>
+                            <td class="px-4 py-3 text-xs text-muted">{{ $item['position'] ?: '-' }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
+
 
         {{-- Tab: Produk --}}
         <div x-show="tab === 'produk'" x-cloak>

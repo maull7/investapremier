@@ -102,6 +102,16 @@ class BackendSyncService
         return $this->post('/api/sync/obligasi');
     }
 
+    public function syncMi(): array
+    {
+        return $this->post('/api/sync/pasardana/mi');
+    }
+
+    public function syncRd(): array
+    {
+        return $this->post('/api/sync/pasardana/rd');
+    }
+
     public function getStocks(array $params = []): array
     {
         return $this->get('/api/saham', $params);
@@ -120,6 +130,40 @@ class BackendSyncService
     public function getBond(string $kode): array
     {
         return $this->get("/api/obligasi/{$kode}");
+    }
+
+    public function fetchMiData(): array
+    {
+        $res = $this->get('/api/manajer-investasi');
+
+        if (!($res['success'] ?? false)) {
+            throw new \RuntimeException($res['message'] ?? 'Backend API MI tidak merespon.');
+        }
+
+        $data = $res['data'] ?? [];
+
+        foreach ($data as &$item) {
+            unset($item['id'], $item['created_at'], $item['updated_at']);
+        }
+
+        return $data;
+    }
+
+    public function fetchRdData(): array
+    {
+        $res = $this->get('/api/reksadana');
+
+        if (!($res['success'] ?? false)) {
+            throw new \RuntimeException($res['message'] ?? 'Backend API RD tidak merespon.');
+        }
+
+        $data = $res['data'] ?? [];
+
+        foreach ($data as &$item) {
+            unset($item['id'], $item['created_at'], $item['updated_at']);
+        }
+
+        return $data;
     }
 
     public function getSyncStatus(): array

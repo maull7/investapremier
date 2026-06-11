@@ -11,10 +11,16 @@ class InvestmentManager extends Model
         'commissioner_president', 'commissioners', 'director_president',
         'directors', 'shareholders', 'investment_committee',
         'investment_management_team', 'last_updated_at', 'description',
+        // pasardana fields
+        'pasardana_id', 'fax', 'modal_dasar', 'modal_disetor',
+        'izin_mi', 'izin_ppe', 'izin_pee',
     ];
 
     protected $casts = [
         'last_updated_at' => 'date',
+        'pasardana_id'    => 'integer',
+        'modal_dasar'     => 'decimal:2',
+        'modal_disetor'   => 'decimal:2',
     ];
 
     public function periods()

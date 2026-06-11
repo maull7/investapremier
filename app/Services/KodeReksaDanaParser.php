@@ -20,11 +20,29 @@ class KodeReksaDanaParser
         'H' => 'DIRE-DINFRA',
     ];
 
+    const JENIS_REVERSE = [
+        'Pasar Uang' => 'A',
+        'Pendapatan Tetap' => 'B',
+        'Campuran' => 'C',
+        'Saham' => 'D',
+        'Terproteksi' => 'E',
+        'Global' => 'F',
+        'Penyertaan terbatas' => 'G',
+        'DIRE-DINFRA' => 'H',
+    ];
+
     const KATEGORI_PRODUK_MAP = [
         '0' => 'Konvensional',
         '1' => 'Syariah',
         'I' => 'Index',
         'E' => 'ETF',
+    ];
+
+    const KATEGORI_PRODUK_REVERSE = [
+        'Konvensional' => '0',
+        'Syariah' => '1',
+        'Index' => 'I',
+        'ETF' => 'E',
     ];
 
     const KELAS_MAP = [
@@ -35,9 +53,22 @@ class KodeReksaDanaParser
         'C0' => 'Kelas C',
     ];
 
+    const KELAS_REVERSE = [
+        'Tidak Ada' => '00',
+        'Kelas A' => 'A0',
+        'Kelas A1' => 'A1',
+        'Kelas B' => 'B0',
+        'Kelas C' => 'C0',
+    ];
+
     const MATA_UANG_MAP = [
         '0' => 'IDR',
         '1' => 'USD',
+    ];
+
+    const MATA_UANG_REVERSE = [
+        'IDR' => '0',
+        'USD' => '1',
     ];
 
     const INDEX_MAP = [
@@ -161,6 +192,86 @@ class KodeReksaDanaParser
         }
 
         return $attributes;
+    }
+
+    public function generate(
+        string $kodeMi,
+        string $jenis,
+        string $kategoriProduk,
+        bool $isIndex,
+        bool $isEft,
+        string $kelas,
+        string $mataUang,
+        ?int $seqNumber = null,
+    ): ?string {
+        $kodeMi = strtoupper(trim($kodeMi));
+        $jenisCode = self::JENIS_REVERSE[$jenis] ?? null;
+        $kategoriProdukCode = self::KATEGORI_PRODUK_REVERSE[$kategoriProduk] ?? null;
+        $kelasCode = self::KELAS_REVERSE[$kelas] ?? null;
+        $mataUangCode = self::MATA_UANG_REVERSE[$mataUang] ?? null;
+
+        if (!$jenisCode || !$kategoriProdukCode || !$kelasCode || !$mataUangCode) {
+            return null;
+        }
+
+        $indexFlag = $isIndex ? '1' : '0';
+        $etfFlag = $isEft ? '1' : '0';
+
+        $prefix = $kodeMi . $jenisCode . $kategoriProdukCode . $indexFlag . $etfFlag;
+
+        if ($seqNumber === null) {
+            $seqNumber = $this->nextSequenceNumber($prefix);
+        }
+
+        if ($seqNumber < 0 || $seqNumber > 9999) {
+            return null;
+        }
+
+        $seq = str_pad((string) $seqNumber, 4, '0', STR_PAD_LEFT);
+
+        return $prefix . $seq . $kelasCode . $mataUangCode;
+    }
+
+    public function generateFromRecord(\App\Models\ReksaDana $record): ?string
+    {
+        $manager = $record->investmentManager;
+        if (!$manager || !filled($manager->kode_mi)) {
+            return null;
+        }
+
+        if (!filled($record->jenis) || !filled($record->kategori_produk)) {
+            return null;
+        }
+
+        $kelas = filled($record->kelas) ? $record->kelas : 'Tidak Ada';
+        $mataUang = filled($record->mata_uang) ? $record->mata_uang : 'IDR';
+
+        return $this->generate(
+            kodeMi: $manager->kode_mi,
+            jenis: $record->jenis,
+            kategoriProduk: $record->kategori_produk,
+            isIndex: (bool) $record->is_index,
+            isEft: (bool) $record->is_etf,
+            kelas: $kelas,
+            mataUang: $mataUang,
+        );
+    }
+
+    private function nextSequenceNumber(string $prefix): int
+    {
+        $existing = \App\Models\ReksaDana::where('kode_reksa_dana', 'like', $prefix . '%')
+            ->whereRaw('LENGTH(kode_reksa_dana) = 16')
+            ->pluck('kode_reksa_dana');
+
+        $max = 0;
+        foreach ($existing as $code) {
+            $seq = (int) substr($code, 9, 4);
+            if ($seq > $max) {
+                $max = $seq;
+            }
+        }
+
+        return $max + 1;
     }
 
     private function resolveManager(string $kode): ?InvestmentManager

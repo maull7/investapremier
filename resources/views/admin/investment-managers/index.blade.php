@@ -3,7 +3,98 @@
 @section('title', 'Manajer Investasi - InvestaPremier')
 
 @section('content')
-<div x-data="{ showImport: false }">
+<div x-data="{
+    showImport: false,
+    isSyncing: false,
+    syncRunId: null,
+    syncStep: 'queued',
+    syncStepLabel: 'Menunggu worker...',
+    syncProgress: 0,
+    syncStatus: 'queued',
+    syncMessage: '',
+    syncErrors: [],
+    syncPollTimer: null,
+
+    syncPollUrl: '/admin/investment-managers/sync-pasardana/status',
+    syncLabel: 'Sinkronisasi MI dari Pasardana',
+
+    init() {
+        const initialRunId = @json(session('sync_run_id'));
+        if (initialRunId) {
+            this.startPolling(initialRunId);
+        }
+    },
+
+    async submitSync(event) {
+        event.preventDefault();
+        const form = event.target;
+        this.syncPollUrl = form.dataset.pollUrl || '/admin/investment-managers/sync-pasardana/status';
+        this.syncLabel = form.dataset.syncLabel || 'Sinkronisasi MI dari Pasardana';
+        this.isSyncing = true;
+        this.syncStep = 'queued';
+        this.syncStepLabel = 'Mengirim job ke antrian...';
+        this.syncProgress = 0;
+        this.syncStatus = 'queued';
+        this.syncErrors = [];
+        this.syncMessage = '';
+
+        try {
+            const res = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': form.querySelector('input[name=_token]').value,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            if (!data.run_id) throw new Error('Server tidak mengembalikan run_id');
+            this.startPolling(data.run_id);
+        } catch (e) {
+            this.isSyncing = false;
+            alert('Gagal memulai sync: ' + e.message);
+        }
+    },
+
+    startPolling(runId) {
+        this.syncRunId = runId;
+        this.isSyncing = true;
+        this.poll();
+    },
+
+    async poll() {
+        if (!this.syncRunId) return;
+        try {
+            const res = await fetch(`${this.syncPollUrl}/${this.syncRunId}`, {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const d = await res.json();
+            this.syncStep = d.current_step || 'queued';
+            this.syncStepLabel = d.current_step_label || '...';
+            this.syncProgress = d.progress_percent || 0;
+            this.syncStatus = d.status;
+            this.syncMessage = d.message || '';
+            this.syncErrors = d.errors || [];
+
+            if (d.is_terminal) {
+                this.syncProgress = 100;
+                setTimeout(() => { window.location.reload(); }, 2500);
+                return;
+            }
+            this.syncPollTimer = setTimeout(() => this.poll(), 2000);
+        } catch (e) {
+            this.syncPollTimer = setTimeout(() => this.poll(), 5000);
+        }
+    },
+
+    cancelSync() {
+        if (this.syncPollTimer) clearTimeout(this.syncPollTimer);
+        this.isSyncing = false;
+        this.syncRunId = null;
+    }
+}">
 
 <div class="mb-6 flex items-center justify-between">
     <div>
@@ -21,6 +112,38 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
             Import
         </button>
+        <form method="POST" action="{{ route('admin.investment-managers.sync-pasardana') }}"
+              @submit="submitSync($event)"
+              data-poll-url="{{ url('admin/investment-managers/sync-pasardana/status') }}"
+              data-sync-label="Sinkronisasi MI dari Pasardana">
+            @csrf
+            <button type="submit" class="btn-outline" :disabled="isSyncing"
+                :class="isSyncing ? 'opacity-50 cursor-not-allowed' : ''"
+                title="Tarik data manajer investasi dari Pasardana API">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    :class="isSyncing ? 'animate-spin' : ''">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Sync dari Pasardana
+            </button>
+        </form>
+        <form method="POST" action="{{ route('admin.investment-managers.sync-periods') }}"
+              @submit="submitSync($event)"
+              data-poll-url="{{ url('admin/investment-managers/sync-periods/status') }}"
+              data-sync-label="Sinkronisasi AUM Periode MI dari Data Harian">
+            @csrf
+            <button type="submit" class="btn-outline" :disabled="isSyncing"
+                :class="isSyncing ? 'opacity-50 cursor-not-allowed' : ''"
+                title="Hitung AUM periode dari data harga harian reksa dana">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    :class="isSyncing ? 'animate-spin' : ''">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Sync Period AUM
+            </button>
+        </form>
         <a href="{{ route('admin.investment-managers.create') }}"
            class="btn-primary">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -191,6 +314,78 @@
     @endif
 </div>
 @endif
+
+{{-- Modal Loading: Sync dari Pasardana (server-polled progress) --}}
+<div x-show="isSyncing" x-cloak
+    class="fixed inset-0 z-[60] bg-white/95 backdrop-blur-sm grid place-items-center px-4"
+    x-transition:enter="transition duration-200" x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100">
+    <div class="text-center max-w-lg w-full">
+        <template x-if="syncStatus !== 'completed' && syncStatus !== 'failed'">
+            <div class="w-14 h-14 border-4 border-accent border-t-transparent rounded-full mx-auto mb-6 animate-spin"></div>
+        </template>
+        <template x-if="syncStatus === 'completed'">
+            <div class="w-14 h-14 rounded-full mx-auto mb-6 bg-green-100 grid place-items-center">
+                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+        </template>
+        <template x-if="syncStatus === 'failed'">
+            <div class="w-14 h-14 rounded-full mx-auto mb-6 bg-red-100 grid place-items-center">
+                <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </div>
+        </template>
+
+        <h3 class="text-lg font-bold text-primary mb-1">
+            <span x-show="syncStatus === 'completed'">Sync Selesai</span>
+            <span x-show="syncStatus === 'failed'">Sync Gagal</span>
+            <span x-show="syncStatus !== 'completed' && syncStatus !== 'failed'" x-text="syncLabel"></span>
+        </h3>
+        <p class="text-sm text-muted mb-2" x-text="syncStepLabel"></p>
+        <p class="text-xs text-muted mb-5">
+            Run ID: <span class="font-mono" x-text="syncRunId"></span> &middot; Status: <span class="font-semibold" x-text="syncStatus"></span>
+        </p>
+
+        <div class="max-w-sm mx-auto mb-5">
+            <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full transition-all duration-500 ease-out"
+                    :style="`width: ${syncProgress}%`"
+                    :class="syncStatus === 'failed' ? 'bg-red-500' : (syncStatus === 'completed' ? 'bg-green-500' : 'bg-accent')"></div>
+            </div>
+            <p class="text-xs text-muted mt-1.5"><span x-text="syncProgress"></span>%</p>
+        </div>
+
+        <template x-if="syncMessage">
+            <div class="mt-2 mx-auto max-w-md text-left rounded-xl border px-4 py-3 text-xs"
+                :class="syncStatus === 'failed' ? 'border-red-200 bg-red-50 text-red-800' : 'border-green-200 bg-green-50 text-green-800'">
+                <p x-text="syncMessage"></p>
+            </div>
+        </template>
+
+        <template x-if="syncErrors && syncErrors.length">
+            <div class="mt-3 mx-auto max-w-md text-left rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                <p class="font-semibold mb-1">Catatan / Error</p>
+                <ul class="list-disc pl-4 space-y-0.5">
+                    <template x-for="err in syncErrors" :key="err">
+                        <li x-text="err"></li>
+                    </template>
+                </ul>
+            </div>
+        </template>
+
+        <p class="text-xs text-muted mt-6" x-show="syncStatus !== 'completed' && syncStatus !== 'failed'">
+            Job berjalan di background. Aman jika kamu tutup tab &mdash; progress akan dilanjutkan oleh worker.
+        </p>
+
+        <button type="button" @click="cancelSync()" x-show="syncStatus === 'failed'"
+            class="mt-4 px-4 py-2 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary transition">
+            Tutup
+        </button>
+    </div>
+</div>
 
 {{-- Modal Import --}}
 <div x-show="showImport" x-cloak
