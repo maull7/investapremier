@@ -449,7 +449,7 @@ class InvestmentManagerController extends Controller
 
         return redirect()->route('admin.investment-managers.index')
             ->with('sync_run_id', $run->id)
-            ->with('success', 'Sync MI dari Pasardana dimulai.');
+            ->with('success', 'Sync MI + Relasi dari Pasardana dimulai.');
     }
 
     public function syncPeriods(Request $request)

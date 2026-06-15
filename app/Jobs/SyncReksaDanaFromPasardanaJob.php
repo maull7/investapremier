@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\HargaReksaDana;
 use App\Models\ReksaDana;
 use App\Models\SyncRun;
 use App\Services\BackendSyncService;
@@ -32,32 +33,26 @@ class SyncReksaDanaFromPasardanaJob implements ShouldQueue
         }
 
         if (!$backend->isAvailable()) {
-            $run->markFailed('Backend sync URL tidak dikonfigurasi. Sync RD dari Pasardana membutuhkan backend sync.');
+            $run->markFailed('Backend sync URL tidak dikonfigurasi. Sync RD membutuhkan backend sync.');
             return;
         }
 
-        $run->markStep('sync_rd', 'Meminta sync RD dari Pasardana API via backend...', 30);
-
         try {
-            $result = $backend->syncRd();
-
-            if (!($result['success'] ?? false)) {
-                $msg = $result['message'] ?? 'Backend API sync RD gagal tanpa pesan.';
-                $run->markFailed($msg);
-                return;
-            }
-
-            $run->markStep('fetch', 'Mengambil data RD yang sudah di-sync dari backend...', 70);
-
-            $data = $backend->fetchRdData();
-
-            $run->markStep('upsert', 'Menyimpan ' . count($data) . ' data RD ke database...', 90);
-
             $created = 0;
             $updated = 0;
             $skipped = 0;
+            $harianCreated = 0;
+            $harianUpdated = 0;
+            $harianSkipped = 0;
 
-            foreach ($data as $item) {
+            // Step 1: Fetch & upsert RD
+            $run->markStep('fetch_rd', 'Mengambil data RD dari backend...', 20);
+
+            $rdData = $backend->fetchRdData();
+
+            $run->markStep('upsert_rd', 'Menyimpan ' . count($rdData) . ' data RD ke database...', 40);
+
+            foreach ($rdData as $item) {
                 $nama = $item['nama_reksa_dana'] ?? $item['name'] ?? '';
                 if (empty($nama)) {
                     $skipped++;
@@ -116,15 +111,56 @@ class SyncReksaDanaFromPasardanaJob implements ShouldQueue
                 }
             }
 
-            $summary = "Sync RD dari Pasardana selesai. Baru: {$created}, Update: {$updated}, Skip: {$skipped}";
+            // Step 2: Fetch & upsert harga harian
+            $run->markStep('fetch_harian', 'Mengambil data harga harian dari backend...', 60);
+
+            $harianData = $backend->fetchHargaReksaDanaData();
+
+            $run->markStep('upsert_harian', 'Menyimpan ' . count($harianData) . ' data harga harian ke database...', 85);
+
+            foreach ($harianData as $item) {
+                $reksaDanaId = $item['reksa_dana_id'] ?? null;
+                $tanggal = $item['tanggal'] ?? null;
+                if (!$reksaDanaId || !$tanggal) {
+                    $harianSkipped++;
+                    continue;
+                }
+
+                // Normalize ISO datetime to MySQL date format (kolom tanggal bertipe date)
+                $tanggal = date('Y-m-d', strtotime($tanggal));
+
+                $attrs = [
+                    'reksa_dana_id' => $reksaDanaId,
+                    'tanggal' => $tanggal,
+                ];
+                if (isset($item['nab_per_unit'])) $attrs['nab_per_unit'] = $item['nab_per_unit'];
+                if (isset($item['aum'])) $attrs['aum'] = $item['aum'];
+                if (isset($item['unit_participation'])) $attrs['unit_participation'] = $item['unit_participation'];
+
+                $record = HargaReksaDana::updateOrCreate(
+                    ['reksa_dana_id' => $reksaDanaId, 'tanggal' => $tanggal],
+                    $attrs
+                );
+
+                if ($record->wasRecentlyCreated) {
+                    $harianCreated++;
+                } else {
+                    $harianUpdated++;
+                }
+            }
+
+            $summary = "Sync RD selesai. RD: {$created} baru, {$updated} update, {$skipped} skip. Harga Harian: {$harianCreated} baru, {$harianUpdated} update, {$harianSkipped} skip.";
             $run->markCompleted($summary, [
-                'created' => $created,
-                'updated' => $updated,
-                'skipped' => $skipped,
-                'source' => 'pasardana_api',
+                'rd_created' => $created,
+                'rd_updated' => $updated,
+                'rd_skipped' => $skipped,
+                'harian_created' => $harianCreated,
+                'harian_updated' => $harianUpdated,
+                'harian_skipped' => $harianSkipped,
+                'source' => 'pasardana_api_get',
             ]);
 
-            $this->logActivity($run, 'Sync RD dari Pasardana', $summary, 'success');
+            $this->logActivity($run, 'Sync RD + Harga Harian dari Pasardana', $summary, 'success');
         } catch (\Throwable $e) {
             $msg = 'Gagal sync RD dari Pasardana: ' . $e->getMessage();
             $run->markFailed($msg);

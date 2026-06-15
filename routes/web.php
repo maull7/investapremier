@@ -150,6 +150,8 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::post('daftar-reksa-dana/{reksaDana}/export-investment-manager', [DaftarReksaDanaController::class, 'exportInvestmentManager'])->name('daftar-reksa-dana.export-investment-manager');
     Route::post('daftar-reksa-dana/sync-pasardana', [DaftarReksaDanaController::class, 'syncFromPasardana'])->name('daftar-reksa-dana.sync-pasardana');
     Route::get('daftar-reksa-dana/sync-pasardana/status/{run}', [DaftarReksaDanaController::class, 'syncStatus'])->name('daftar-reksa-dana.sync-pasardana.status');
+    Route::post('daftar-reksa-dana/sync-all-pasardana', [DaftarReksaDanaController::class, 'syncAllPasardana'])->name('daftar-reksa-dana.sync-all-pasardana');
+    Route::get('daftar-reksa-dana/sync-all-pasardana/status/{run}', [DaftarReksaDanaController::class, 'syncStatus'])->name('daftar-reksa-dana.sync-all-pasardana.status');
     Route::get('daftar-reksa-dana/{reksaDana}', [DaftarReksaDanaController::class, 'show'])->name('daftar-reksa-dana.show');
 
     Route::post('data-source-links', [DataSourceLinkController::class, 'store'])->name('data-source-links.store');
