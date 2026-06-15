@@ -12,6 +12,7 @@
         syncStatus: 'queued',
         syncMessage: '',
         syncErrors: [],
+        syncPollUrl: '/admin/daftar-reksa-dana/sync-pasardana/status',
         syncPollTimer: null,
 
         init() {
@@ -24,6 +25,7 @@
         async submitSync(event) {
             event.preventDefault();
             const form = event.target;
+            this.syncPollUrl = form.dataset.pollUrl || '/admin/daftar-reksa-dana/sync-pasardana/status';
             this.isSyncing = true;
             this.syncStep = 'queued';
             this.syncStepLabel = 'Mengirim job ke antrian...';
@@ -60,7 +62,7 @@
         async poll() {
             if (!this.syncRunId) return;
             try {
-                const res = await fetch(`/admin/daftar-reksa-dana/sync-pasardana/status/${this.syncRunId}`, {
+                const res = await fetch(`${this.syncPollUrl}/${this.syncRunId}`, {
                     headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                 });
                 if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -95,17 +97,32 @@
             <p class="page-sub">Master data reksa dana beserta riwayat harga harian</p>
         </div>
         <div class="flex items-center gap-2">
-            <form method="POST" action="{{ route('admin.daftar-reksa-dana.sync-pasardana') }}" @submit="submitSync($event)">
+            <form method="POST" action="{{ route('admin.daftar-reksa-dana.sync-pasardana') }}" @submit="submitSync($event)"
+                  data-poll-url="{{ url('admin/daftar-reksa-dana/sync-pasardana/status') }}">
                 @csrf
                 <button type="submit" class="btn-outline" :disabled="isSyncing"
                     :class="isSyncing ? 'opacity-50 cursor-not-allowed' : ''"
-                    title="Tarik data reksa dana dari Pasardana API">
+                    title="Sync reksa dana + harga harian dari Pasardana API">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                         :class="isSyncing ? 'animate-spin' : ''">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    Sync dari Pasardana
+                    Sync Reksa Dana
+                </button>
+            </form>
+            <form method="POST" action="{{ route('admin.daftar-reksa-dana.sync-all-pasardana') }}" @submit="submitSync($event)"
+                  data-poll-url="{{ url('admin/daftar-reksa-dana/sync-all-pasardana/status') }}">
+                @csrf
+                <button type="submit" class="btn-primary" :disabled="isSyncing"
+                    :class="isSyncing ? 'opacity-50 cursor-not-allowed' : ''"
+                    title="Sync MI + RD + Relasi + Harga Harian sekaligus">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        :class="isSyncing ? 'animate-spin' : ''">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Sync All Pasardana
                 </button>
             </form>
         </div>

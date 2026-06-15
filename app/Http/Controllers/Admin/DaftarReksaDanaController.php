@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SyncAllPasardanaJob;
 use App\Jobs\SyncReksaDanaFromPasardanaJob;
 use App\Models\DataSourceLink;
 use App\Models\DataSourceSyncLog;
@@ -739,7 +740,7 @@ class DaftarReksaDanaController extends Controller
             return redirect()->route('admin.daftar-reksa-dana.index')->with('error', $msg);
         }
 
-        $inflight = SyncRun::where('type', SyncRun::TYPE_RD_PASARDANA)
+        $inflight = SyncRun::where('type', SyncRun::TYPE_RD_HARGA_HARIAN)
             ->whereIn('status', [SyncRun::STATUS_QUEUED, SyncRun::STATUS_RUNNING])
             ->where('updated_at', '>=', now()->subMinutes(10))
             ->latest()
@@ -759,7 +760,7 @@ class DaftarReksaDanaController extends Controller
         }
 
         $run = SyncRun::create([
-            'type' => SyncRun::TYPE_RD_PASARDANA,
+            'type' => SyncRun::TYPE_RD_HARGA_HARIAN,
             'status' => SyncRun::STATUS_QUEUED,
             'current_step' => 'queued',
             'current_step_label' => 'Menunggu worker mengambil job dari antrian',
@@ -778,7 +779,59 @@ class DaftarReksaDanaController extends Controller
 
         return redirect()->route('admin.daftar-reksa-dana.index')
             ->with('sync_run_id', $run->id)
-            ->with('success', 'Sync RD dari Pasardana dimulai.');
+            ->with('success', 'Sync RD + Harga Harian dari Pasardana dimulai.');
+    }
+
+    public function syncAllPasardana(Request $request)
+    {
+        if (empty(config('services.backend_sync.url'))) {
+            $msg = 'Fitur sync Pasardana dinonaktifkan (BACKEND_SYNC_URL tidak dikonfigurasi).';
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['error' => $msg], 503);
+            }
+            return redirect()->route('admin.daftar-reksa-dana.index')->with('error', $msg);
+        }
+
+        $inflight = SyncRun::where('type', SyncRun::TYPE_ALL_PASARDANA)
+            ->whereIn('status', [SyncRun::STATUS_QUEUED, SyncRun::STATUS_RUNNING])
+            ->where('updated_at', '>=', now()->subMinutes(30))
+            ->latest()
+            ->first();
+
+        if ($inflight) {
+            $payload = [
+                'run_id' => $inflight->id,
+                'status' => $inflight->status,
+                'reused' => true,
+            ];
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json($payload);
+            }
+            return redirect()->route('admin.daftar-reksa-dana.index')
+                ->with('sync_run_id', $inflight->id);
+        }
+
+        $run = SyncRun::create([
+            'type' => SyncRun::TYPE_ALL_PASARDANA,
+            'status' => SyncRun::STATUS_QUEUED,
+            'current_step' => 'queued',
+            'current_step_label' => 'Menunggu worker mengambil job dari antrian',
+            'progress_percent' => 0,
+            'user_id' => $request->user()?->id,
+        ]);
+
+        SyncAllPasardanaJob::dispatch($run->id);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'run_id' => $run->id,
+                'status' => $run->status,
+            ]);
+        }
+
+        return redirect()->route('admin.daftar-reksa-dana.index')
+            ->with('sync_run_id', $run->id)
+            ->with('success', 'Sync All Pasardana dimulai.');
     }
 
     public function syncStatus(SyncRun $run)

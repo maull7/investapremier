@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\InvestmentManager;
+use App\Models\ReksaDana;
 use App\Models\SyncRun;
 use App\Services\BackendSyncService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -32,32 +33,23 @@ class SyncInvestmentManagerFromPasardanaJob implements ShouldQueue
         }
 
         if (!$backend->isAvailable()) {
-            $run->markFailed('Backend sync URL tidak dikonfigurasi. Sync MI dari Pasardana membutuhkan backend sync.');
+            $run->markFailed('Backend sync URL tidak dikonfigurasi. Sync MI membutuhkan backend sync.');
             return;
         }
 
-        $run->markStep('sync_mi', 'Meminta sync MI dari Pasardana API via backend...', 30);
-
         try {
-            $result = $backend->syncMi();
+            // Step 1: Fetch & upsert MI
+            $run->markStep('fetch_mi', 'Mengambil data MI dari backend...', 20);
 
-            if (!($result['success'] ?? false)) {
-                $msg = $result['message'] ?? 'Backend API sync MI gagal tanpa pesan.';
-                $run->markFailed($msg);
-                return;
-            }
+            $miData = $backend->fetchMiData();
 
-            $run->markStep('fetch', 'Mengambil data MI yang sudah di-sync dari backend...', 70);
-
-            $data = $backend->fetchMiData();
-
-            $run->markStep('upsert', 'Menyimpan ' . count($data) . ' data MI ke database...', 90);
+            $run->markStep('upsert_mi', 'Menyimpan ' . count($miData) . ' data MI ke database...', 40);
 
             $created = 0;
             $updated = 0;
             $skipped = 0;
 
-            foreach ($data as $item) {
+            foreach ($miData as $item) {
                 $nama = $item['name'] ?? '';
                 if (empty($nama)) {
                     $skipped++;
@@ -83,15 +75,72 @@ class SyncInvestmentManagerFromPasardanaJob implements ShouldQueue
                 }
             }
 
-            $summary = "Sync MI dari Pasardana selesai. Baru: {$created}, Update: {$updated}, Skip: {$skipped}";
+            // Step 2: Fetch RD & update relasi MI→RD
+            $run->markStep('relasi', 'Mengupdate relasi MI → RD...', 70);
+
+            $rdData = $backend->fetchRdData();
+            $relasiMatched = 0;
+            $relasiSkipped = 0;
+
+            $miByPasardanaId = InvestmentManager::whereNotNull('pasardana_id')
+                ->get(['id', 'pasardana_id'])
+                ->keyBy('pasardana_id');
+
+            foreach ($rdData as $rd) {
+                $rdPasardanaId = $rd['pasardana_id'] ?? null;
+                $rdNamaMi = $rd['nama_manajer_investasi'] ?? null;
+
+                if (!$rdPasardanaId && !$rdNamaMi) {
+                    $relasiSkipped++;
+                    continue;
+                }
+
+                $localRd = ReksaDana::where(function ($q) use ($rd) {
+                    if (!empty($rd['kode_reksa_dana'])) {
+                        $q->where('kode_reksa_dana', $rd['kode_reksa_dana']);
+                    } elseif (!empty($rd['pasardana_id'])) {
+                        $q->where('pasardana_id', $rd['pasardana_id']);
+                    }
+                })->first();
+
+                if (!$localRd) {
+                    $relasiSkipped++;
+                    continue;
+                }
+
+                $miId = null;
+                $rdInvestmentManagerId = $rd['investment_manager_id'] ?? null;
+
+                if ($rdInvestmentManagerId && isset($miByPasardanaId[$rdInvestmentManagerId])) {
+                    $miId = $miByPasardanaId[$rdInvestmentManagerId]->id;
+                }
+
+                if (!$miId && $rdNamaMi) {
+                    $miByName = InvestmentManager::where('name', $rdNamaMi)->first();
+                    if ($miByName) {
+                        $miId = $miByName->id;
+                    }
+                }
+
+                if ($miId && $localRd->investment_manager_id !== $miId) {
+                    $localRd->update(['investment_manager_id' => $miId]);
+                    $relasiMatched++;
+                } else {
+                    $relasiSkipped++;
+                }
+            }
+
+            $summary = "Sync MI selesai. MI: {$created} baru, {$updated} update, {$skipped} skip. Relasi: {$relasiMatched} updated, {$relasiSkipped} skipped.";
             $run->markCompleted($summary, [
-                'created' => $created,
-                'updated' => $updated,
-                'skipped' => $skipped,
-                'source' => 'pasardana_api',
+                'mi_created' => $created,
+                'mi_updated' => $updated,
+                'mi_skipped' => $skipped,
+                'relasi_matched' => $relasiMatched,
+                'relasi_skipped' => $relasiSkipped,
+                'source' => 'pasardana_api_get',
             ]);
 
-            $this->logActivity($run, 'Sync MI dari Pasardana', $summary, 'success');
+            $this->logActivity($run, 'Sync MI + Relasi dari Pasardana', $summary, 'success');
         } catch (\Throwable $e) {
             $msg = 'Gagal sync MI dari Pasardana: ' . $e->getMessage();
             $run->markFailed($msg);

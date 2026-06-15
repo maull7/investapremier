@@ -57,8 +57,7 @@ jobs:
 
             echo "Clear cache & OPcache"
             php artisan optimize:clear
-            php -r "if (function_exists('opcache_reset')) opcache_reset();"
-
+            
             echo "Cache ulang"
             php artisan config:cache
             php artisan route:cache

@@ -166,6 +166,23 @@ class BackendSyncService
         return $data;
     }
 
+    public function fetchHargaReksaDanaData(): array
+    {
+        $res = $this->get('/api/harga-reksa-dana');
+
+        if (!($res['success'] ?? false)) {
+            throw new \RuntimeException($res['message'] ?? 'Backend API harga reksa dana tidak merespon.');
+        }
+
+        $data = $res['data'] ?? [];
+
+        foreach ($data as &$item) {
+            unset($item['id'], $item['created_at'], $item['updated_at']);
+        }
+
+        return $data;
+    }
+
     public function getSyncStatus(): array
     {
         return $this->get('/api/sync/status');
