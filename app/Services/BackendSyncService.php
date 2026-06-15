@@ -160,6 +160,9 @@ class BackendSyncService
         $data = $res['data'] ?? [];
 
         foreach ($data as &$item) {
+            if (isset($item['id'])) {
+                $item['backend_id'] = $item['id'];
+            }
             unset($item['id'], $item['created_at'], $item['updated_at']);
         }
 

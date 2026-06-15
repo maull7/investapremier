@@ -44,6 +44,7 @@ class SyncReksaDanaFromPasardanaJob implements ShouldQueue
             $harianCreated = 0;
             $harianUpdated = 0;
             $harianSkipped = 0;
+            $backendIdToLocalId = [];
 
             // Step 1: Fetch & upsert RD
             $run->markStep('fetch_rd', 'Mengambil data RD dari backend...', 20);
@@ -105,9 +106,15 @@ class SyncReksaDanaFromPasardanaJob implements ShouldQueue
                 if ($existing) {
                     $existing->update($attrs);
                     $updated++;
+                    if (!empty($item['backend_id'])) {
+                        $backendIdToLocalId[$item['backend_id']] = $existing->id;
+                    }
                 } else {
-                    ReksaDana::create($attrs);
+                    $record = ReksaDana::create($attrs);
                     $created++;
+                    if (!empty($item['backend_id'])) {
+                        $backendIdToLocalId[$item['backend_id']] = $record->id;
+                    }
                 }
             }
 
@@ -119,9 +126,15 @@ class SyncReksaDanaFromPasardanaJob implements ShouldQueue
             $run->markStep('upsert_harian', 'Menyimpan ' . count($harianData) . ' data harga harian ke database...', 85);
 
             foreach ($harianData as $item) {
-                $reksaDanaId = $item['reksa_dana_id'] ?? null;
+                $backendRdId = $item['reksa_dana_id'] ?? null;
                 $tanggal = $item['tanggal'] ?? null;
-                if (!$reksaDanaId || !$tanggal) {
+                if (!$backendRdId || !$tanggal) {
+                    $harianSkipped++;
+                    continue;
+                }
+
+                $reksaDanaId = $backendIdToLocalId[$backendRdId] ?? null;
+                if (!$reksaDanaId) {
                     $harianSkipped++;
                     continue;
                 }

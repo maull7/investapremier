@@ -67,6 +67,7 @@ class SyncAllPasardanaJob implements ShouldQueue
             $rdCreated = 0;
             $rdUpdated = 0;
             $rdSkipped = 0;
+            $backendIdToLocalId = [];
 
             foreach ($rdData as $item) {
                 $nama = $item['nama_reksa_dana'] ?? $item['name'] ?? '';
@@ -83,8 +84,19 @@ class SyncAllPasardanaJob implements ShouldQueue
                     if (isset($item[$f])) $attrs[$f] = $item[$f];
                 }
 
-                if ($existing) { $existing->update($attrs); $rdUpdated++; }
-                else { \App\Models\ReksaDana::create($attrs); $rdCreated++; }
+                if ($existing) {
+                    $existing->update($attrs);
+                    $rdUpdated++;
+                    if (!empty($item['backend_id'])) {
+                        $backendIdToLocalId[$item['backend_id']] = $existing->id;
+                    }
+                } else {
+                    $record = \App\Models\ReksaDana::create($attrs);
+                    $rdCreated++;
+                    if (!empty($item['backend_id'])) {
+                        $backendIdToLocalId[$item['backend_id']] = $record->id;
+                    }
+                }
             }
 
             // Step 3: Relasi MI → RD
@@ -138,9 +150,12 @@ class SyncAllPasardanaJob implements ShouldQueue
             $harianSkipped = 0;
 
             foreach ($harianData as $item) {
-                $reksaDanaId = $item['reksa_dana_id'] ?? null;
+                $backendRdId = $item['reksa_dana_id'] ?? null;
                 $tanggal = $item['tanggal'] ?? null;
-                if (!$reksaDanaId || !$tanggal) { $harianSkipped++; continue; }
+                if (!$backendRdId || !$tanggal) { $harianSkipped++; continue; }
+
+                $reksaDanaId = $backendIdToLocalId[$backendRdId] ?? null;
+                if (!$reksaDanaId) { $harianSkipped++; continue; }
 
                 // Normalize ISO datetime to MySQL date format (kolom tanggal bertipe date)
                 $tanggal = date('Y-m-d', strtotime($tanggal));
