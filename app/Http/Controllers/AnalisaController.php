@@ -891,6 +891,7 @@ class AnalisaController extends Controller
                 'user_id'              => auth()->id(),
                 'product_type'         => $this->productType,
                 'kode_reksa_dana'      => $request->kode_reksa_dana ? strtoupper($request->kode_reksa_dana) : null,
+                'reksa_dana_id'        => $this->resolveReksaDanaId($request->kode_reksa_dana, $request->nama_reksa_dana),
                 'nama_reksa_dana'      => $request->nama_reksa_dana,
                 'jenis_reksa_dana'     => $request->jenis_reksa_dana,
                 'kategori'             => $request->kategori ?? [],
@@ -1010,6 +1011,7 @@ class AnalisaController extends Controller
                 'user_id'              => auth()->id(),
                 'product_type'         => $this->productType,
                 'kode_reksa_dana'      => $request->kode_reksa_dana ? strtoupper($request->kode_reksa_dana) : null,
+                'reksa_dana_id'        => $this->resolveReksaDanaId($request->kode_reksa_dana, $request->nama_reksa_dana),
                 'nama_reksa_dana'      => $request->nama_reksa_dana,
                 'jenis_reksa_dana'     => $request->jenis_reksa_dana,
                 'kategori'             => $request->kategori ?? [],
@@ -1140,6 +1142,21 @@ class AnalisaController extends Controller
         return AnalisaReksaDana::where('product_type', $this->productType)
             ->when(!$this->isAdminContext, fn($query) => $query->where('user_id', auth()->id()))
             ->find($request->integer('resume_id'));
+    }
+
+    private function resolveReksaDanaId(?string $kode, ?string $nama): ?int
+    {
+        if ($kode) {
+            $rd = ReksaDana::where('kode_reksa_dana', strtoupper($kode))->first();
+            if ($rd) return $rd->id;
+        }
+
+        if ($nama) {
+            $rd = ReksaDana::where('nama_reksa_dana', $nama)->first();
+            if ($rd) return $rd->id;
+        }
+
+        return null;
     }
 
     private function resolvePdfPath(?string $pdfFile): ?string

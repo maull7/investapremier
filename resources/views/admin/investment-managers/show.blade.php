@@ -334,11 +334,11 @@
                                             {{ $fund->nab_per_unit ? number_format($fund->nab_per_unit, 4, ',', '.') : '-' }}
                                         </td>
                                         <td class="px-4 py-3 text-xs text-right tabular-nums text-primary font-semibold">
-                                            {{ '-' }}</td>
+                                            {{ $fund->aum ? number_format($fund->aum, 2, ',', '.') : '-' }}</td>
                                         <td class="px-4 py-3 text-xs">
                                             {{ $fund->tanggal_nab ? $fund->tanggal_nab->format('d M Y') : '-' }}</td>
                                         <td class="px-4 py-3 text-right">
-                                            <a href="{{ route('admin.daftar-reksa-dana.index') }}"
+                                            <a href="{{ route('admin.daftar-reksa-dana.show', $fund) }}"
                                                 class="p-1.5 rounded-lg text-muted hover:text-accent hover:bg-accent/5 transition inline-block"
                                                 title="Lihat detail">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor"

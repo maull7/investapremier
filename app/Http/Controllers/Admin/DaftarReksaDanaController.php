@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ReplaceRewriteReksaDanaJob;
 use App\Jobs\SyncAllPasardanaJob;
 use App\Jobs\SyncReksaDanaFromPasardanaJob;
 use App\Models\DataSourceLink;
@@ -832,6 +833,50 @@ class DaftarReksaDanaController extends Controller
         return redirect()->route('admin.daftar-reksa-dana.index')
             ->with('sync_run_id', $run->id)
             ->with('success', 'Sync All Pasardana dimulai.');
+    }
+
+    public function replaceRewrite(Request $request)
+    {
+        $inflight = SyncRun::where('type', SyncRun::TYPE_REPLACE_REWRITE)
+            ->whereIn('status', [SyncRun::STATUS_QUEUED, SyncRun::STATUS_RUNNING])
+            ->where('updated_at', '>=', now()->subMinutes(10))
+            ->latest()
+            ->first();
+
+        if ($inflight) {
+            $payload = [
+                'run_id' => $inflight->id,
+                'status' => $inflight->status,
+                'reused' => true,
+            ];
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json($payload);
+            }
+            return redirect()->route('admin.daftar-reksa-dana.index')
+                ->with('sync_run_id', $inflight->id);
+        }
+
+        $run = SyncRun::create([
+            'type' => SyncRun::TYPE_REPLACE_REWRITE,
+            'status' => SyncRun::STATUS_QUEUED,
+            'current_step' => 'queued',
+            'current_step_label' => 'Menunggu worker mengambil job dari antrian',
+            'progress_percent' => 0,
+            'user_id' => $request->user()?->id,
+        ]);
+
+        ReplaceRewriteReksaDanaJob::dispatch($run->id);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'run_id' => $run->id,
+                'status' => $run->status,
+            ]);
+        }
+
+        return redirect()->route('admin.daftar-reksa-dana.index')
+            ->with('sync_run_id', $run->id)
+            ->with('success', 'Bersihkan & Perbaiki Data dimulai.');
     }
 
     public function syncStatus(SyncRun $run)
