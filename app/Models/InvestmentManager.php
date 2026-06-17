@@ -14,6 +14,8 @@ class InvestmentManager extends Model
         // pasardana fields
         'pasardana_id', 'fax', 'modal_dasar', 'modal_disetor',
         'izin_mi', 'izin_ppe', 'izin_pee',
+        // source tracking
+        'source', 'prospektus_source_reksa_dana_id', 'prospektus_source_tahun',
     ];
 
     protected $casts = [
@@ -41,5 +43,15 @@ class InvestmentManager extends Model
     public function personRoles()
     {
         return $this->hasMany(InvestmentPersonRole::class, 'investment_manager_id');
+    }
+
+    public function prospektusSourceReksaDana()
+    {
+        return $this->belongsTo(ReksaDana::class, 'prospektus_source_reksa_dana_id');
+    }
+
+    public function prospektusHistory()
+    {
+        return $this->hasMany(InvestmentManagerProspektus::class, 'investment_manager_id')->orderBy('tahun');
     }
 }

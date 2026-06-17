@@ -232,6 +232,51 @@ PROMPT,
         return self::parseJsonOutput($raw);
     }
 
+    public function parseProspektusPdf(string $pdfText): array
+    {
+        $text = mb_substr($pdfText, 0, 10000);
+        $messages = [
+            [
+                'role'    => 'system',
+                'content' => 'Kamu adalah parser dokumen Prospektus Reksa Dana Indonesia. Ekstrak data Manajer Investasi dari teks prospektus dan kembalikan HANYA JSON valid tanpa teks lain.',
+            ],
+            [
+                'role'    => 'user',
+                'content' => <<<PROMPT
+Ekstrak data Manajer Investasi dari teks Prospektus Reksa Dana berikut. Kembalikan HANYA JSON valid dengan struktur PERSIS ini:
+
+{
+  "address": "alamat lengkap manajer investasi atau null",
+  "phone": "nomor telepon atau null",
+  "email": "alamat email atau null",
+  "website": "URL website atau null",
+  "commissioner_president": "nama Komisaris Utama atau null",
+  "commissioners": "daftar komisaris lain, pisahkan dengan newline (\\n). Format: Nama - Jabatan. Atau null jika tidak ada.",
+  "director_president": "nama Direktur Utama atau null",
+  "directors": "daftar direktur lain, pisahkan dengan newline (\\n). Format: Nama - Jabatan. Atau null jika tidak ada.",
+  "shareholders": "daftar pemegang saham/newline. Format: Nama - Persentase. Atau null jika tidak ada.",
+  "investment_committee": "daftar komite investasi/newline. Format: Nama - Jabatan. Atau null jika tidak ada.",
+  "investment_management_team": "daftar tim pengelola investasi/newline. Format: Nama - Jabatan. Atau null jika tidak ada.",
+  "description": "deskripsi singkat manajer investasi (1-2 kalimat pertama) atau null"
+}
+
+ATURAN:
+- Hanya ekstrak data yang terkait Manajer Investasi (penerbit reksa dana), BUKAN data produk reksa dana-nya.
+- address: ambil alamat lengkap MI (biasanya setelah "Alamat" atau "Berkedudukan").
+- Untuk commissioners, directors, shareholders, investment_committee, investment_management_team: tulis setiap orang dalam format "Nama - Jabatan" per baris.
+- Jika suatu data tidak tersedia di teks, gunakan null (jangan string kosong).
+- Output HANYA JSON valid, tanpa markdown, tanpa penjelasan.
+
+TEKS PROSPEKTUS:
+{$text}
+PROMPT,
+            ],
+        ];
+
+        $raw = $this->callAi($messages, 120, 0.1);
+        return self::parseJsonOutput($raw);
+    }
+
     public function parseFfsPdfVision(string $pdfPath, ?string $filename = null): array
     {
         $prompt = <<<PROMPT

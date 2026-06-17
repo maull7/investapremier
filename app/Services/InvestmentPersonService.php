@@ -141,6 +141,15 @@ class InvestmentPersonService
         ];
     }
 
+    private function isJson(string $value): bool
+    {
+        if (empty($value)) return false;
+        $first = trim($value)[0] ?? '';
+        if ($first !== '[' && $first !== '{') return false;
+        json_decode($value);
+        return json_last_error() === JSON_ERROR_NONE;
+    }
+
     public function normalizeName(?string $name): string
     {
         return Str::of((string) $name)
@@ -154,6 +163,31 @@ class InvestmentPersonService
     public function parsePeople(?string $text, ?string $defaultPosition = null): array
     {
         if (!filled($text)) {
+            return [];
+        }
+
+        if ($this->isJson($text)) {
+            return [];
+        }
+
+        $trimmed = trim($text);
+        if (preg_match('/^[[{]/', $trimmed)) {
+            preg_match_all('/"(?:nama|name)"\s*(?::\s*"|")([^"]+)"/i', $text, $matches);
+            if (!empty($matches[1])) {
+                $items = [];
+                foreach ($matches[1] as $name) {
+                    $name = $this->cleanName($name);
+                    if ($name === '' || mb_strlen($name) < 3) {
+                        continue;
+                    }
+                    $key = $this->normalizeName($name);
+                    $items[$key] = [
+                        'name' => $name,
+                        'position' => $defaultPosition,
+                    ];
+                }
+                return array_values($items);
+            }
             return [];
         }
 
@@ -268,6 +302,7 @@ class InvestmentPersonService
             'code' => $role->reksaDana?->kode_reksa_dana,
             'role' => self::ROLE_LABELS[$role->role_type] ?? $role->role_type,
             'position' => $role->role_title,
+            'source' => $role->source,
         ]);
 
         foreach ($fallbackFunds as $fund) {
@@ -277,6 +312,7 @@ class InvestmentPersonService
                     'code' => $fund->kode_reksa_dana,
                     'role' => $team->type === 'committee' ? 'Komite Investasi' : 'Tim Pengelola Investasi',
                     'position' => $team->position,
+                    'source' => 'Prospektus',
                 ]);
             }
         }
@@ -290,6 +326,7 @@ class InvestmentPersonService
             'name' => $role->investmentManager?->name,
             'role' => self::ROLE_LABELS[$role->role_type] ?? $role->role_type,
             'position' => $role->role_title,
+            'source' => $role->source,
         ]);
 
         foreach ($fallbackManagers as $manager) {
@@ -297,6 +334,7 @@ class InvestmentPersonService
                 'name' => $manager->name,
                 'role' => 'Terkait',
                 'position' => null,
+                'source' => 'Prospektus',
             ]);
         }
 

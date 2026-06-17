@@ -7,11 +7,13 @@ use App\Jobs\SyncInvestmentManagerFromPasardanaJob;
 use App\Jobs\SyncInvestmentManagerPeriodsJob;
 use App\Models\InvestmentManager;
 use App\Models\InvestmentManagerPeriod;
+use App\Models\InvestmentManagerProspektus;
 use App\Models\ReksaDana;
 use App\Models\ReksaDanaDocument;
 use App\Models\SyncRun;
 use App\Exports\InvestmentManagerTemplateExport;
 use App\Imports\InvestmentManagerImport;
+use App\Services\GroqService;
 use App\Services\InvestmentPersonService;
 use App\Services\ReksaDanaChartDataService;
 use Maatwebsite\Excel\Facades\Excel;
@@ -94,9 +96,15 @@ class InvestmentManagerController extends Controller
             ->orderBy('nama_reksa_dana')
             ->get();
 
+        $prospektusHistory = InvestmentManagerProspektus::where('investment_manager_id', $manager->id)
+            ->with('reksaDana')
+            ->orderBy('tahun')
+            ->orderBy('created_at')
+            ->get();
+
         return view('admin.investment-managers.show', compact(
             'manager', 'fundsWithProspektus', 'range', 'chartData', 'governanceSections',
-            'pasardanaGovernance',
+            'pasardanaGovernance', 'prospektusHistory',
         ));
     }
 
@@ -109,7 +117,7 @@ class InvestmentManagerController extends Controller
         return json_last_error() === JSON_ERROR_NONE;
     }
 
-    public function extractProspektus(Request $request, InvestmentManager $investmentManager)
+    public function extractProspektus(Request $request, InvestmentManager $investmentManager, GroqService $groq)
     {
         $request->validate([
             'reksa_dana_id' => 'required|integer|exists:reksa_dana,id',
@@ -130,10 +138,37 @@ class InvestmentManagerController extends Controller
             $pdf = $parser->parseFile(Storage::disk('public')->path($doc->file_path));
             $text = $pdf->getText();
 
-            $data = $this->parseProspektusText($text);
+            $data = $request->boolean('use_ai')
+                ? $groq->parseProspektusPdf($text)
+                : $this->parseProspektusText($text);
 
-            return response()->json(['success' => true, 'data' => $data, 'raw_preview' => substr($text, 0, 2000)]);
+            return response()->json([
+                'success'     => true,
+                'data'        => $data,
+                'ai_used'     => $request->boolean('use_ai'),
+                'raw_preview' => substr($text, 0, 2000),
+            ]);
         } catch (\Throwable $e) {
+            // Fallback: if AI fails, try regex
+            if ($request->boolean('use_ai')) {
+                try {
+                    $parser = new Parser();
+                    $pdf = $parser->parseFile(Storage::disk('public')->path($doc->file_path));
+                    $text = $pdf->getText();
+                    $data = $this->parseProspektusText($text);
+
+                    return response()->json([
+                        'success'     => true,
+                        'data'        => $data,
+                        'ai_used'     => false,
+                        'ai_error'    => $e->getMessage(),
+                        'raw_preview' => substr($text, 0, 2000),
+                    ]);
+                } catch (\Throwable $e2) {
+                    return response()->json(['error' => 'Gagal memproses prospektus: ' . $e2->getMessage()], 500);
+                }
+            }
+
             return response()->json(['error' => 'Gagal membaca PDF: ' . $e->getMessage()], 500);
         }
     }
@@ -143,8 +178,8 @@ class InvestmentManagerController extends Controller
         $validated = $request->validate([
             'address'                => 'nullable|string|max:500',
             'phone'                  => 'nullable|string|max:100',
-            'email'                  => 'nullable|email|max:255',
-            'website'                => 'nullable|url|max:255',
+            'email'                  => 'nullable|string|max:255',
+            'website'                => 'nullable|string|max:255',
             'commissioner_president' => 'nullable|string|max:255',
             'commissioners'          => 'nullable|string',
             'director_president'     => 'nullable|string|max:255',
@@ -153,6 +188,8 @@ class InvestmentManagerController extends Controller
             'investment_committee'    => 'nullable|string',
             'investment_management_team' => 'nullable|string',
             'description'            => 'nullable|string',
+            'reksa_dana_id'          => 'nullable|integer|exists:reksa_dana,id',
+            'tahun'                  => 'nullable|integer',
         ]);
 
         $update = array_filter($validated, fn($v) => $v !== null && $v !== '');
@@ -168,12 +205,33 @@ class InvestmentManagerController extends Controller
             }
         }
 
+        // Source tracking
+        $update['source'] = 'prospektus';
+        $update['last_updated_at'] = now()->toDateString();
+        if ($request->filled('reksa_dana_id')) {
+            $update['prospektus_source_reksa_dana_id'] = $request->integer('reksa_dana_id');
+        }
+        if ($request->filled('tahun')) {
+            $update['prospektus_source_tahun'] = $request->integer('tahun');
+        }
+
+        // Preserve history (raw extraction per year)
+        $historyData = collect($validated)->except('reksa_dana_id', 'tahun')->filter()->toArray();
+        if (!empty($historyData)) {
+            InvestmentManagerProspektus::create([
+                'investment_manager_id' => $investmentManager->id,
+                'reksa_dana_id'         => $request->integer('reksa_dana_id') ?: $investmentManager->prospektus_source_reksa_dana_id,
+                'tahun'                 => $request->integer('tahun') ?: $investmentManager->prospektus_source_tahun,
+                'data'                  => $historyData,
+            ]);
+        }
+
         $investmentManager->update($update);
         $personService->syncInvestmentManager($investmentManager->refresh(), 'prospektus');
 
         ActivityLogger::log(
             'Menyimpan Prospektus',
-            "Prospektus untuk {$investmentManager->name} berhasil disimpan",
+            "Prospektus untuk {$investmentManager->name} berhasil disimpan (sumber: reksa_dana_id={$request->reksa_dana_id}, tahun={$request->tahun})",
             'success',
             $investmentManager,
         );
