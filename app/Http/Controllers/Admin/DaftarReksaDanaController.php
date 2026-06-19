@@ -123,12 +123,26 @@ class DaftarReksaDanaController extends Controller
 
         $hargaTanggal = $request->get('harga_tanggal');
 
+        $recentSyncRuns = SyncRun::whereIn('type', [
+            SyncRun::TYPE_RD_HARGA_HARIAN,
+            SyncRun::TYPE_ALL_PASARDANA,
+            SyncRun::TYPE_RELASI_MI_RD,
+        ])->latest()->paginate(15, ['*'], 'runs_page');
+        $selectedRunId = $request->integer('selected_run') ?: $recentSyncRuns->first()?->id;
+        $selectedRun = $selectedRunId ? SyncRun::find($selectedRunId) : null;
+        $changesUrl = $selectedRun ? route('admin.daftar-reksa-dana.sync-pasardana.changes', $selectedRun) : null;
+        $detailTypes = [
+            'rd' => 'Reksa Dana',
+            'rd_harian' => 'Harga Harian RD',
+        ];
+
         return view('admin.daftar-reksa-dana.index', compact(
             'reksaDanas', 'harian', 'tab',
             'dataSourceLinks', 'syncLogs', 'reksaDanaList', 'editingLink',
             'reksaDanaOptions',
             'documents', 'documentFunds',
             'harianTanggal', 'hargaTanggal',
+            'recentSyncRuns', 'selectedRun', 'changesUrl', 'detailTypes',
         ));
     }
 
@@ -895,5 +909,19 @@ class DaftarReksaDanaController extends Controller
             'started_at' => $run->started_at?->toIso8601String(),
             'completed_at' => $run->completed_at?->toIso8601String(),
         ]);
+    }
+
+    public function syncChanges(SyncRun $run, \Illuminate\Http\Request $request)
+    {
+        $query = \App\Models\SyncChangeLog::where('sync_run_id', $run->id);
+
+        if ($request->filled('entity_type')) {
+            $query->where('entity_type', $request->entity_type);
+        }
+
+        $changes = $query->orderBy('created_at')->orderBy('id')
+            ->paginate($request->per_page ?? 50);
+
+        return response()->json($changes);
     }
 }

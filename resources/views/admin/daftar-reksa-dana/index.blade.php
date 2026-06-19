@@ -185,6 +185,10 @@
             class="px-5 py-2.5 text-sm font-semibold border-b-2 transition -mb-px {{ $tab === 'prospektus-ffs' ? 'border-emerald-700 text-emerald-700' : 'border-transparent text-muted hover:text-primary' }}">
             Prospektus dan FFS
         </a>
+        <a href="{{ route('admin.daftar-reksa-dana.index', ['tab' => 'riwayat-sync']) }}"
+            class="px-5 py-2.5 text-sm font-semibold border-b-2 transition -mb-px {{ $tab === 'riwayat-sync' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-primary' }}">
+            Riwayat Sync
+        </a>
     </div>
 
     {{-- ===================== TAB HARGA ===================== --}}
@@ -642,6 +646,97 @@
         @include('admin.daftar-reksa-dana.partials.tab-link-website')
     @elseif($tab === 'prospektus-ffs')
         @include('admin.daftar-reksa-dana.partials.tab-prospektus-ffs')
+    @elseif($tab === 'riwayat-sync')
+    <div class="grid lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.9fr)] gap-5">
+        <div class="table-card">
+            <div class="table-head">
+                <h2 class="th-title">Riwayat Sync Pasardana</h2>
+                <span class="th-meta">{{ $recentSyncRuns->total() }} total</span>
+            </div>
+
+            @if($recentSyncRuns->isEmpty())
+                <div class="py-16 text-center text-muted">
+                    <p class="font-medium">Belum ada riwayat sync</p>
+                    <p class="text-sm mt-1">Klik "Sync Reksa Dana" untuk memulai sinkronisasi.</p>
+                </div>
+            @else
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide">
+                                <th class="px-4 py-3 font-semibold">#</th>
+                                <th class="px-4 py-3 font-semibold">Tanggal</th>
+                                <th class="px-4 py-3 font-semibold">Status</th>
+                                <th class="px-4 py-3 font-semibold">Progress</th>
+                                <th class="px-4 py-3 font-semibold">Pesan</th>
+                                <th class="px-4 py-3 font-semibold">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-line">
+                            @foreach($recentSyncRuns as $run)
+                                @php
+                                    $statusClass = match ($run->status) {
+                                        'completed' => 'bg-green-50 text-green-700 border-green-200',
+                                        'failed' => 'bg-red-50 text-red-700 border-red-200',
+                                        'running' => 'bg-blue-50 text-blue-700 border-blue-200',
+                                        default => 'bg-slate-50 text-slate-600 border-slate-200',
+                                    };
+                                    $isSelected = $selectedRun && $selectedRun->id === $run->id;
+                                @endphp
+                                <tr class="hover:bg-[#f8fafc] transition-colors {{ $isSelected ? 'bg-primary/5' : '' }}">
+                                    <td class="px-4 py-3 font-mono text-xs">#{{ $run->id }}</td>
+                                    <td class="px-4 py-3 text-xs text-muted">{{ $run->created_at->format('d M Y H:i') }}</td>
+                                    <td class="px-4 py-3">
+                                        <span class="inline-flex px-2 py-0.5 rounded border text-xs font-semibold {{ $statusClass }}">
+                                            {{ $run->status }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 text-xs">{{ $run->progress_percent }}%</td>
+                                    <td class="px-4 py-3 text-xs text-muted max-w-[200px] truncate">{{ $run->message ?: '—' }}</td>
+                                    <td class="px-4 py-3">
+                                        <a href="{{ route('admin.daftar-reksa-dana.index', ['tab' => 'riwayat-sync', 'selected_run' => $run->id]) }}"
+                                            class="px-3 py-1.5 rounded-lg text-xs font-semibold {{ $isSelected ? 'bg-primary text-white' : 'bg-primary/10 text-primary hover:bg-primary/20' }} transition">
+                                            {{ $isSelected ? 'Dipilih' : 'Lihat' }}
+                                        </a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                @if($recentSyncRuns->hasPages())
+                    <div class="px-6 py-4 border-t border-line">
+                        {{ $recentSyncRuns->links() }}
+                    </div>
+                @endif
+            @endif
+        </div>
+
+        <div class="table-card">
+            <div class="table-head">
+                <h2 class="th-title">
+                    Perubahan Data
+                    @if($selectedRun)
+                        <span class="text-xs text-white/70 font-normal ml-2">Run #{{ $selectedRun->id }}</span>
+                    @endif
+                </h2>
+            </div>
+
+            @if($selectedRun && $changesUrl)
+                <div class="p-4">
+                    @include('admin.components.sync-changes-list', [
+                        'changesUrl' => $changesUrl,
+                        'detailTypes' => $detailTypes,
+                    ])
+                </div>
+            @else
+                <div class="py-16 text-center text-muted">
+                    <p class="font-medium">Pilih run untuk melihat perubahan</p>
+                </div>
+            @endif
+        </div>
+    </div>
     @endif
     {{-- ===================== MODAL HARGA CREATE ===================== --}}
     <div id="modal-harga-create" class="fixed inset-0 z-50 hidden bg-black/40 flex items-center justify-center p-4"

@@ -256,10 +256,14 @@
                         </div>
                     </div>
 
-                    {{-- Informasi Umum --}}
+                    {{-- Informasi Reksa Dana --}}
                     <div class="border-t border-line pt-4">
-                        <h4 class="font-semibold text-primary text-sm mb-3">Informasi Umum</h4>
+                        <h4 class="font-semibold text-primary text-sm mb-3">Informasi Reksa Dana</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <x-input-label for="benchmark_manual" value="Benchmark" />
+                                <x-text-input id="benchmark_manual" name="benchmark" type="text" class="mt-1 block w-full" x-model="benchmark" />
+                            </div>
                             <div>
                                 <x-input-label for="manajer_investasi_manual" value="Manajer Investasi" />
                                 <x-text-input id="manajer_investasi_manual" name="manajer_investasi" type="text" class="mt-1 block w-full" x-model="manajerInvestasi" />
@@ -267,6 +271,14 @@
                             <div>
                                 <x-input-label for="bank_kustodian_manual" value="Bank Kustodian" />
                                 <x-text-input id="bank_kustodian_manual" name="bank_kustodian" type="text" class="mt-1 block w-full" x-model="bankKustodian" />
+                            </div>
+                            <div>
+                                <x-input-label for="tanggal_peluncuran_manual" value="Tanggal Peluncuran" />
+                                <x-text-input id="tanggal_peluncuran_manual" name="tanggal_peluncuran" type="date" class="mt-1 block w-full" x-model="tanggalPeluncuran" />
+                            </div>
+                            <div>
+                                <x-input-label for="mata_uang_manual" value="Mata Uang" />
+                                <x-text-input id="mata_uang_manual" name="mata_uang" type="text" class="mt-1 block w-full" x-model="mataUang" />
                             </div>
                         </div>
                     </div>
@@ -443,35 +455,8 @@
                         </div>
                     </div>
 
-                    {{-- Laporan Tahunan: Extra Fields --}}
-                    <div x-show="jenisLaporan === 'laporan_tahunan'" x-cloak class="space-y-8">
-
-                        {{-- Informasi Reksa Dana --}}
-                        <div class="border-t border-line pt-4">
-                            <h4 class="font-semibold text-primary text-sm mb-3">Informasi Reksa Dana</h4>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <x-input-label for="benchmark_lengkap" value="Benchmark" />
-                                    <x-text-input id="benchmark_lengkap" name="benchmark" type="text" class="mt-1 block w-full" x-model="benchmark" />
-                                </div>
-                                <div>
-                                    <x-input-label for="manajer_investasi_lengkap" value="Manajer Investasi" />
-                                    <x-text-input id="manajer_investasi_lengkap" name="manajer_investasi" type="text" class="mt-1 block w-full" x-model="manajerInvestasi" />
-                                </div>
-                                <div>
-                                    <x-input-label for="bank_kustodian_lengkap" value="Bank Kustodian" />
-                                    <x-text-input id="bank_kustodian_lengkap" name="bank_kustodian" type="text" class="mt-1 block w-full" x-model="bankKustodian" />
-                                </div>
-                                <div>
-                                    <x-input-label for="tanggal_peluncuran_lengkap" value="Tanggal Peluncuran" />
-                                    <x-text-input id="tanggal_peluncuran_lengkap" name="tanggal_peluncuran" type="date" class="mt-1 block w-full" x-model="tanggalPeluncuran" />
-                                </div>
-                                <div>
-                                    <x-input-label for="mata_uang_lengkap" value="Mata Uang" />
-                                    <x-text-input id="mata_uang_lengkap" name="mata_uang" type="text" class="mt-1 block w-full" x-model="mataUang" />
-                                </div>
-                            </div>
-                        </div>
+                    {{-- Laporan Keuangan & Informasi Lengkap --}}
+                    <div x-cloak class="space-y-8">
 
                         {{-- Laporan Keuangan - Neraca --}}
                         <div class="border-t border-line pt-4">
@@ -1691,6 +1676,50 @@
                         this.$watch('ffsBulan', () => this.fetchExistingDocuments());
                         this.$watch('ffsTahun', () => this.fetchExistingDocuments());
                         this.$watch('tahunLaporan', () => this.fetchExistingDocuments());
+
+                        this.$watch('unitMilikInvestor', () => this.autoCalcDerived());
+                        this.$watch('unitMilikMi', () => this.autoCalcDerived());
+                        this.$watch('pendapatanBunga', () => this.autoCalcDerived());
+                        this.$watch('pendapatanDividen', () => this.autoCalcDerived());
+                        this.$watch('gainRealized', () => this.autoCalcDerived());
+                        this.$watch('gainUnrealized', () => this.autoCalcDerived());
+                        this.$watch('bebanMi', () => this.autoCalcDerived());
+                        this.$watch('bebanKustodian', () => this.autoCalcDerived());
+                        this.$watch('bebanLain', () => this.autoCalcDerived());
+                        this.$watch('totalAset', () => this.autoCalcDerived());
+                        this.$watch('kasDanBank', () => this.autoCalcDerived());
+                        this.$watch('kasAwalTahun', () => this.autoCalcDerived());
+                        this.$watch('kasAkhirTahun', () => this.autoCalcDerived());
+                        this.$watch('arusKasOperasi', () => this.autoCalcDerived());
+                        this.$watch('arusKasPendanaan', () => this.autoCalcDerived());
+                    },
+
+                    autoCalcDerived() {
+                        const inv = parseFloat(this.unitMilikInvestor);
+                        const mi = parseFloat(this.unitMilikMi);
+                        if (!isNaN(inv) && !isNaN(mi) && !this.totalUnitBeredar) {
+                            this.totalUnitBeredar = (inv + mi).toFixed(4);
+                        }
+
+                        const pb = parseFloat(this.pendapatanBunga) || 0;
+                        const pd = parseFloat(this.pendapatanDividen) || 0;
+                        const gr = parseFloat(this.gainRealized) || 0;
+                        const gu = parseFloat(this.gainUnrealized) || 0;
+                        const bm = parseFloat(this.bebanMi) || 0;
+                        const bk = parseFloat(this.bebanKustodian) || 0;
+                        const bl = parseFloat(this.bebanLain) || 0;
+                        const hasIncome = pb || pd || gr || gu;
+                        const hasExpense = bm || bk || bl;
+                        if (hasIncome && hasExpense && !this.labaBersih) {
+                            this.labaBersih = ((pb + pd + gr + gu) - (bm + bk + bl)).toFixed(2);
+                        }
+
+                        const ako = parseFloat(this.arusKasOperasi) || 0;
+                        const akp = parseFloat(this.arusKasPendanaan) || 0;
+                        const kaw = parseFloat(this.kasAwalTahun) || 0;
+                        if ((ako || akp) && kaw && !this.kasAkhirTahun) {
+                            this.kasAkhirTahun = (kaw + ako + akp).toFixed(2);
+                        }
                     },
 
                     addRow(type) {
@@ -2057,6 +2086,11 @@
                         this.unitPenyertaan = data.unit_penyertaan ?? this.unitPenyertaan;
                         this.nabPerUnit = data.nab_per_unit ?? this.nabPerUnit;
                         this.tanggalData = data.tanggal_data ?? this.tanggalData;
+                        this.managementFee = data.management_fee ?? this.managementFee;
+                        this.custodianFee = data.custodian_fee ?? this.custodianFee;
+                        this.returnYtd = data.return_ytd ?? this.returnYtd;
+                        this.return1y = data.return_1y ?? this.return1y;
+                        this.biayaOperasi = data.expense_ratio ?? this.biayaOperasi;
                         this.applyKategori(data.kategori || []);
                         if (data.sektor?.length) this.sektor = data.sektor;
                         if (data.efek?.length) {
@@ -2434,6 +2468,12 @@
                         return Boolean(
                             data.total_aum ||
                             data.total_marcap_10_efek ||
+                            data.total_aset ||
+                            data.laba_bersih ||
+                            data.arus_kas_operasi ||
+                            data.total_hasil_investasi ||
+                            data.fair_value_level_1 ||
+                            data.unit_milik_investor ||
                             data.sektor?.length ||
                             data.efek?.length ||
                             data.kinerja?.length ||
@@ -2471,6 +2511,9 @@
                         this.portfolioTurnoverRatio = data.portfolio_turnover_ratio ?? this.portfolioTurnoverRatio;
                         this.managementFee = data.management_fee ?? this.managementFee;
                         this.custodianFee = data.custodian_fee ?? this.custodianFee;
+                        if (data.ffs_bulan) this.ffsBulan = data.ffs_bulan;
+                        if (data.ffs_tahun) this.ffsTahun = data.ffs_tahun;
+                        if (data.tahun_laporan) this.tahunLaporan = data.tahun_laporan;
                         this.totalAset = data.total_aset ?? this.totalAset;
                         this.totalLiabilitas = data.total_liabilitas ?? this.totalLiabilitas;
                         this.kasDanBank = data.kas_dan_bank ?? this.kasDanBank;
@@ -2795,12 +2838,16 @@
 
                         const params = new URLSearchParams();
 
-                        // Filter berdasarkan kode reksa dana yang sudah dipilih
                         const kode = (document.getElementById('kode_reksa_dana')?.value || '').trim();
                         if (kode) params.append('kode_reksa_dana', kode);
 
-                        params.append('jenis_laporan', 'laporan_tahunan');
-                        if (this.tahunLaporan) params.append('tahun_laporan', this.tahunLaporan);
+                        params.append('jenis_laporan', this.jenisLaporan);
+                        if (this.jenisLaporan === 'kalender_ffs') {
+                            if (this.ffsBulan) params.append('ffs_bulan', this.ffsBulan);
+                            if (this.ffsTahun) params.append('ffs_tahun', this.ffsTahun);
+                        } else {
+                            if (this.tahunLaporan) params.append('tahun_laporan', this.tahunLaporan);
+                        }
 
                         fetch(`${this.existingDocsUrl}?${params.toString()}`, {
                                 headers: { Accept: 'application/json' }

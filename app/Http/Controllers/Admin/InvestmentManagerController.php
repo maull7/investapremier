@@ -26,6 +26,7 @@ class InvestmentManagerController extends Controller
 {
     public function index(Request $request)
     {
+        $tab = $request->get('tab', 'daftar');
         $perPage = in_array($request->per_page, [10, 25, 50]) ? $request->per_page : 10;
         $query = InvestmentManager::with('periods');
 
@@ -60,7 +61,13 @@ class InvestmentManagerController extends Controller
 
         $tahunList = InvestmentManagerPeriod::select('tahun')->distinct()->whereNotNull('tahun')->orderBy('tahun', 'desc')->pluck('tahun');
 
-        return view('admin.investment-managers.index', compact('managers', 'perPage', 'tahunList'));
+        $recentSyncRuns = SyncRun::where('type', SyncRun::TYPE_MI_PASARDANA)->latest()->paginate(15, ['*'], 'runs_page');
+        $selectedRunId = $request->integer('selected_run') ?: $recentSyncRuns->first()?->id;
+        $selectedRun = $selectedRunId ? SyncRun::find($selectedRunId) : null;
+        $changesUrl = $selectedRun ? route('admin.investment-managers.sync-pasardana.changes', $selectedRun) : null;
+        $detailTypes = [];
+
+        return view('admin.investment-managers.index', compact('tab', 'managers', 'perPage', 'tahunList', 'recentSyncRuns', 'selectedRun', 'changesUrl', 'detailTypes'));
     }
 
     public function show($id, ReksaDanaChartDataService $chartDataService, InvestmentPersonService $personService)
@@ -570,5 +577,19 @@ class InvestmentManagerController extends Controller
             'started_at' => $run->started_at?->toIso8601String(),
             'completed_at' => $run->completed_at?->toIso8601String(),
         ]);
+    }
+
+    public function syncChanges(SyncRun $run, \Illuminate\Http\Request $request)
+    {
+        $query = \App\Models\SyncChangeLog::where('sync_run_id', $run->id);
+
+        if ($request->filled('entity_type')) {
+            $query->where('entity_type', $request->entity_type);
+        }
+
+        $changes = $query->orderBy('created_at')->orderBy('id')
+            ->paginate($request->per_page ?? 50);
+
+        return response()->json($changes);
     }
 }

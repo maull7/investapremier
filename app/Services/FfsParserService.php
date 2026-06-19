@@ -15,60 +15,62 @@ class FfsParserService
         $lines = array_filter(array_map('trim', explode("\n", $text)));
         $fullText = implode("\n", $lines);
 
+        $lk = $this->safeExtract('extractLaporanKeuangan', [$lines, $fullText]) ?? [];
+
         return [
             'nama_reksa_dana' => $this->safeExtract('extractNamaReksaDana', [$lines, $fullText]),
             'jenis_reksa_dana' => $this->safeExtract('extractJenisReksaDana', [$lines, $fullText]),
             'kategori' => [],
-            'manajer_investasi' => null,
-            'bank_kustodian' => null,
-            'tanggal_peluncuran' => null,
-            'mata_uang' => null,
-            'benchmark' => null,
-            'tujuan_investasi' => null,
-            'kebijakan_investasi' => null,
+            'manajer_investasi' => $this->safeExtract('extractManajerInvestasi', [$lines, $fullText]),
+            'bank_kustodian' => $this->safeExtract('extractBankKustodian', [$lines, $fullText]),
+            'tanggal_peluncuran' => $this->safeExtract('extractTanggalPeluncuran', [$lines, $fullText]),
+            'mata_uang' => $this->safeExtract('extractMataUang', [$lines, $fullText]),
+            'benchmark' => $this->safeExtract('extractBenchmark', [$lines, $fullText]),
+            'tujuan_investasi' => $this->safeExtract('extractTujuanInvestasi', [$lines, $fullText]),
+            'kebijakan_investasi' => $this->safeExtract('extractKebijakanInvestasi', [$lines, $fullText]),
             'total_aum' => $this->safeExtract('extractAum', [$lines, $fullText]),
-            'unit_penyertaan' => null,
-            'nab_per_unit' => null,
+            'unit_penyertaan' => $this->safeExtract('extractUnitPenyertaan', [$lines, $fullText]),
+            'nab_per_unit' => $this->safeExtract('extractNabPerUnit', [$lines, $fullText]),
             'total_marcap_10_efek' => $this->safeExtract('extractTotalMarcap', [$lines, $fullText]),
-            'tanggal_data' => null,
+            'tanggal_data' => $this->safeExtract('extractTanggalData', [$lines, $fullText]),
             'ffs_bulan' => null,
             'ffs_tahun' => null,
-            'return_ytd' => null,
-            'return_1y' => null,
-            'total_return' => null,
-            'biaya_operasi' => null,
-            'portfolio_turnover_ratio' => null,
-            'management_fee' => null,
-            'custodian_fee' => null,
-            'total_aset' => null,
-            'total_liabilitas' => null,
-            'kas_dan_bank' => null,
-            'piutang_bunga' => null,
-            'piutang_dividen' => null,
-            'piutang_lain' => null,
-            'utang_pajak' => null,
-            'utang_lain' => null,
-            'pendapatan_bunga' => null,
-            'pendapatan_dividen' => null,
-            'gain_realized' => null,
-            'gain_unrealized' => null,
-            'beban_mi' => null,
-            'beban_kustodian' => null,
-            'beban_lain' => null,
-            'laba_bersih' => null,
-            'arus_kas_operasi' => null,
-            'arus_kas_pendanaan' => null,
-            'kas_awal_tahun' => null,
-            'kas_akhir_tahun' => null,
-            'total_hasil_investasi' => null,
-            'hasil_investasi_setelah_biaya' => null,
-            'persentase_pph' => null,
-            'fair_value_level_1' => null,
-            'fair_value_level_2' => null,
-            'fair_value_level_3' => null,
-            'unit_milik_investor' => null,
-            'unit_milik_mi' => null,
-            'total_unit_beredar' => null,
+            'return_ytd' => $this->safeExtract('extractReturnYtd', [$lines, $fullText]),
+            'return_1y' => $this->safeExtract('extractReturn1y', [$lines, $fullText]),
+            'total_return' => $lk['total_return'] ?? null,
+            'biaya_operasi' => $lk['biaya_operasi'] ?? null,
+            'portfolio_turnover_ratio' => $lk['portfolio_turnover_ratio'] ?? null,
+            'management_fee' => $this->safeExtract('extractManagementFee', [$lines, $fullText]),
+            'custodian_fee' => $this->safeExtract('extractCustodianFee', [$lines, $fullText]),
+            'total_aset' => $lk['total_aset'] ?? null,
+            'total_liabilitas' => $lk['total_liabilitas'] ?? null,
+            'kas_dan_bank' => $lk['kas_dan_bank'] ?? null,
+            'piutang_bunga' => $lk['piutang_bunga'] ?? null,
+            'piutang_dividen' => $lk['piutang_dividen'] ?? null,
+            'piutang_lain' => $lk['piutang_lain'] ?? null,
+            'utang_pajak' => $lk['utang_pajak'] ?? null,
+            'utang_lain' => $lk['utang_lain'] ?? null,
+            'pendapatan_bunga' => $lk['pendapatan_bunga'] ?? null,
+            'pendapatan_dividen' => $lk['pendapatan_dividen'] ?? null,
+            'gain_realized' => $lk['gain_realized'] ?? null,
+            'gain_unrealized' => $lk['gain_unrealized'] ?? null,
+            'beban_mi' => $lk['beban_mi'] ?? null,
+            'beban_kustodian' => $lk['beban_kustodian'] ?? null,
+            'beban_lain' => $lk['beban_lain'] ?? null,
+            'laba_bersih' => $lk['laba_bersih'] ?? null,
+            'arus_kas_operasi' => $lk['arus_kas_operasi'] ?? null,
+            'arus_kas_pendanaan' => $lk['arus_kas_pendanaan'] ?? null,
+            'kas_awal_tahun' => $lk['kas_awal_tahun'] ?? null,
+            'kas_akhir_tahun' => $lk['kas_akhir_tahun'] ?? null,
+            'total_hasil_investasi' => $lk['total_hasil_investasi'] ?? null,
+            'hasil_investasi_setelah_biaya' => $lk['hasil_investasi_setelah_biaya'] ?? null,
+            'persentase_pph' => $lk['persentase_pph'] ?? null,
+            'fair_value_level_1' => $lk['fair_value_level_1'] ?? null,
+            'fair_value_level_2' => $lk['fair_value_level_2'] ?? null,
+            'fair_value_level_3' => $lk['fair_value_level_3'] ?? null,
+            'unit_milik_investor' => $lk['unit_milik_investor'] ?? null,
+            'unit_milik_mi' => $lk['unit_milik_mi'] ?? null,
+            'total_unit_beredar' => $lk['total_unit_beredar'] ?? null,
             'alokasi_aset' => [],
             'sektor' => $this->safeExtract('extractSektor', [$lines, $fullText]),
             'efek' => $this->safeExtract('extractEfek', [$lines, $fullText]),
@@ -81,6 +83,7 @@ class FfsParserService
 
     public function parseWithAi(string $pdfPath, GroqService $groq): array
     {
+        set_time_limit(300);
         $parser = new Parser;
         $pdf = $parser->parseFile($pdfPath);
         $text = $pdf->getText();
@@ -88,60 +91,80 @@ class FfsParserService
         $lines = array_filter(array_map('trim', explode("\n", $text)));
         $fullText = implode("\n", $lines);
 
+        $lk = $this->safeExtract('extractLaporanKeuangan', [$lines, $fullText]) ?? [];
+
+        // Log keyword LK yang ditemukan dalam teks PDF
+        $lkKeywords = ['total aset','total liabilitas','kas dan bank','piutang bunga','piutang dividen',
+            'piutang lain','utang pajak','utang lain','pendapatan bunga','pendapatan dividen',
+            'gain realized','gain unrealized','beban mi','beban kustodian','beban lain',
+            'laba bersih','arus kas operasi','arus kas pendanaan','kas awal','kas akhir',
+            'total hasil investasi','hasil investasi setelah','portfolio turnover','penghasilan kena pajak',
+            'fair value','nilai wajar','unit milik investor','unit milik mi','total unit beredar'];
+        $foundKeywords = [];
+        $lowerText = strtolower($fullText);
+        foreach ($lkKeywords as $kw) {
+            if (str_contains($lowerText, $kw)) $foundKeywords[] = $kw;
+        }
+        \Log::info('[PARSE] LK keywords found in text: ' . json_encode($foundKeywords));
+        \Log::info('[PARSE] Text length: ' . strlen($fullText) . ' chars, lines: ' . count($lines));
+        // Log 10 baris terakhir dari teks (biasanya LK ada di akhir)
+        $lastLines = array_slice($lines, -15);
+        \Log::info('[PARSE] Last 15 lines of text: ' . json_encode($lastLines));
+
         $regex = [
             'nama_reksa_dana' => $this->safeExtract('extractNamaReksaDana', [$lines, $fullText]),
             'jenis_reksa_dana' => $this->safeExtract('extractJenisReksaDana', [$lines, $fullText]),
             'kategori' => [],
-            'manajer_investasi' => null,
-            'bank_kustodian' => null,
-            'tanggal_peluncuran' => null,
-            'mata_uang' => null,
-            'benchmark' => null,
-            'tujuan_investasi' => null,
-            'kebijakan_investasi' => null,
+            'manajer_investasi' => $this->safeExtract('extractManajerInvestasi', [$lines, $fullText]),
+            'bank_kustodian' => $this->safeExtract('extractBankKustodian', [$lines, $fullText]),
+            'tanggal_peluncuran' => $this->safeExtract('extractTanggalPeluncuran', [$lines, $fullText]),
+            'mata_uang' => $this->safeExtract('extractMataUang', [$lines, $fullText]),
+            'benchmark' => $this->safeExtract('extractBenchmark', [$lines, $fullText]),
+            'tujuan_investasi' => $this->safeExtract('extractTujuanInvestasi', [$lines, $fullText]),
+            'kebijakan_investasi' => $this->safeExtract('extractKebijakanInvestasi', [$lines, $fullText]),
             'total_aum' => $this->safeExtract('extractAum', [$lines, $fullText]),
-            'unit_penyertaan' => null,
-            'nab_per_unit' => null,
+            'unit_penyertaan' => $this->safeExtract('extractUnitPenyertaan', [$lines, $fullText]),
+            'nab_per_unit' => $this->safeExtract('extractNabPerUnit', [$lines, $fullText]),
             'total_marcap_10_efek' => $this->safeExtract('extractTotalMarcap', [$lines, $fullText]),
-            'tanggal_data' => null,
+            'tanggal_data' => $this->safeExtract('extractTanggalData', [$lines, $fullText]),
             'ffs_bulan' => null,
             'ffs_tahun' => null,
-            'return_ytd' => null,
-            'return_1y' => null,
-            'total_return' => null,
-            'biaya_operasi' => null,
-            'portfolio_turnover_ratio' => null,
-            'management_fee' => null,
-            'custodian_fee' => null,
-            'total_aset' => null,
-            'total_liabilitas' => null,
-            'kas_dan_bank' => null,
-            'piutang_bunga' => null,
-            'piutang_dividen' => null,
-            'piutang_lain' => null,
-            'utang_pajak' => null,
-            'utang_lain' => null,
-            'pendapatan_bunga' => null,
-            'pendapatan_dividen' => null,
-            'gain_realized' => null,
-            'gain_unrealized' => null,
-            'beban_mi' => null,
-            'beban_kustodian' => null,
-            'beban_lain' => null,
-            'laba_bersih' => null,
-            'arus_kas_operasi' => null,
-            'arus_kas_pendanaan' => null,
-            'kas_awal_tahun' => null,
-            'kas_akhir_tahun' => null,
-            'total_hasil_investasi' => null,
-            'hasil_investasi_setelah_biaya' => null,
-            'persentase_pph' => null,
-            'fair_value_level_1' => null,
-            'fair_value_level_2' => null,
-            'fair_value_level_3' => null,
-            'unit_milik_investor' => null,
-            'unit_milik_mi' => null,
-            'total_unit_beredar' => null,
+            'return_ytd' => $this->safeExtract('extractReturnYtd', [$lines, $fullText]),
+            'return_1y' => $this->safeExtract('extractReturn1y', [$lines, $fullText]),
+            'total_return' => $lk['total_return'] ?? null,
+            'biaya_operasi' => $lk['biaya_operasi'] ?? null,
+            'portfolio_turnover_ratio' => $lk['portfolio_turnover_ratio'] ?? null,
+            'management_fee' => $this->safeExtract('extractManagementFee', [$lines, $fullText]),
+            'custodian_fee' => $this->safeExtract('extractCustodianFee', [$lines, $fullText]),
+            'total_aset' => $lk['total_aset'] ?? null,
+            'total_liabilitas' => $lk['total_liabilitas'] ?? null,
+            'kas_dan_bank' => $lk['kas_dan_bank'] ?? null,
+            'piutang_bunga' => $lk['piutang_bunga'] ?? null,
+            'piutang_dividen' => $lk['piutang_dividen'] ?? null,
+            'piutang_lain' => $lk['piutang_lain'] ?? null,
+            'utang_pajak' => $lk['utang_pajak'] ?? null,
+            'utang_lain' => $lk['utang_lain'] ?? null,
+            'pendapatan_bunga' => $lk['pendapatan_bunga'] ?? null,
+            'pendapatan_dividen' => $lk['pendapatan_dividen'] ?? null,
+            'gain_realized' => $lk['gain_realized'] ?? null,
+            'gain_unrealized' => $lk['gain_unrealized'] ?? null,
+            'beban_mi' => $lk['beban_mi'] ?? null,
+            'beban_kustodian' => $lk['beban_kustodian'] ?? null,
+            'beban_lain' => $lk['beban_lain'] ?? null,
+            'laba_bersih' => $lk['laba_bersih'] ?? null,
+            'arus_kas_operasi' => $lk['arus_kas_operasi'] ?? null,
+            'arus_kas_pendanaan' => $lk['arus_kas_pendanaan'] ?? null,
+            'kas_awal_tahun' => $lk['kas_awal_tahun'] ?? null,
+            'kas_akhir_tahun' => $lk['kas_akhir_tahun'] ?? null,
+            'total_hasil_investasi' => $lk['total_hasil_investasi'] ?? null,
+            'hasil_investasi_setelah_biaya' => $lk['hasil_investasi_setelah_biaya'] ?? null,
+            'persentase_pph' => $lk['persentase_pph'] ?? null,
+            'fair_value_level_1' => $lk['fair_value_level_1'] ?? null,
+            'fair_value_level_2' => $lk['fair_value_level_2'] ?? null,
+            'fair_value_level_3' => $lk['fair_value_level_3'] ?? null,
+            'unit_milik_investor' => $lk['unit_milik_investor'] ?? null,
+            'unit_milik_mi' => $lk['unit_milik_mi'] ?? null,
+            'total_unit_beredar' => $lk['total_unit_beredar'] ?? null,
             'alokasi_aset' => [],
             'sektor' => $this->safeExtract('extractSektor', [$lines, $fullText]),
             'efek' => $this->safeExtract('extractEfek', [$lines, $fullText]),
@@ -151,9 +174,122 @@ class FfsParserService
             'bank' => $this->safeExtract('extractBank', [$lines, $fullText]),
         ];
 
-        $ai = $groq->parseFfsPdf($fullText);
+        // Vision fallback jika text terlalu pendek (scanned PDF)
+        if (mb_strlen($fullText) < 500) {
+            $ai = $groq->parseFfsPdfVision($pdfPath, basename($pdfPath));
+            \Log::info('[PARSE-VISION] AI LK fields: ' . json_encode([
+                'total_aset' => $ai['total_aset'] ?? null,
+                'laba_bersih' => $ai['laba_bersih'] ?? null,
+                'arus_kas_operasi' => $ai['arus_kas_operasi'] ?? null,
+                'total_hasil_investasi' => $ai['total_hasil_investasi'] ?? null,
+                'unit_milik_investor' => $ai['unit_milik_investor'] ?? null,
+            ]));
+            $merged = $this->merge($regex, $this->normalizeAiData($ai));
+            \Log::info('[PARSE-VISION] Merged LK fields: ' . json_encode([
+                'total_aset' => $merged['total_aset'] ?? null,
+                'laba_bersih' => $merged['laba_bersih'] ?? null,
+            ]));
+            return $merged;
+        }
 
-        return $this->merge($regex, $this->normalizeAiData($ai));
+        // Sampling teks dari seluruh halaman agar AI lihat semua bagian dokumen
+        $maxChars = 60000;
+        $sampled = '';
+
+        $pageTexts = [];
+        try {
+            foreach ($pdf->getPages() as $page) {
+                $pageTexts[] = $page->getText();
+            }
+        } catch (\Throwable) {
+            $pageTexts = [];
+        }
+
+        // Jika page-level gagal, fallback ke fullText polos
+        if (empty($pageTexts)) {
+            $sampled = mb_substr($fullText, 0, $maxChars);
+        } else {
+            $totalPages = count($pageTexts);
+
+            // Bagian 1: halaman 1-5 (identitas reksa dana) — ambil full
+            $end = min(5, $totalPages);
+            for ($i = 0; $i < $end; $i++) {
+                $sampled .= $pageTexts[$i] . "\n\n";
+            }
+
+            // Bagian 2: halaman 6-40 (portofolio, holdings)
+            if ($totalPages > 5) {
+                $budget = (int)(($maxChars - strlen($sampled)) * 0.6);
+                $text = '';
+                for ($i = 5; $i < min(40, $totalPages); $i++) {
+                    $text .= $pageTexts[$i] . "\n\n";
+                }
+                if (strlen($text) > $budget) {
+                    $text = mb_substr($text, 0, max(0, $budget));
+                }
+                $sampled .= $text;
+            }
+
+            // Bagian 3: halaman 40+ (laporan keuangan)
+            if ($totalPages > 40) {
+                $remaining = $maxChars - strlen($sampled) - 1000;
+                if ($remaining > 0) {
+                    $text = '';
+                    for ($i = 40; $i < $totalPages; $i++) {
+                        $text .= $pageTexts[$i] . "\n\n";
+                    }
+                    $sampled .= mb_substr($text, 0, $remaining);
+                }
+            }
+
+            $sampled = mb_substr($sampled, 0, $maxChars);
+        }
+
+        $ai = $groq->parseFfsPdf($sampled);
+
+        \Log::info('[PARSE] AI response keys: ' . json_encode(array_keys($ai)));
+        \Log::info('[PARSE] AI LK fields: ' . json_encode([
+            'total_aset' => $ai['total_aset'] ?? null,
+            'total_liabilitas' => $ai['total_liabilitas'] ?? null,
+            'kas_dan_bank' => $ai['kas_dan_bank'] ?? null,
+            'piutang_bunga' => $ai['piutang_bunga'] ?? null,
+            'piutang_dividen' => $ai['piutang_dividen'] ?? null,
+            'piutang_lain' => $ai['piutang_lain'] ?? null,
+            'utang_pajak' => $ai['utang_pajak'] ?? null,
+            'utang_lain' => $ai['utang_lain'] ?? null,
+            'pendapatan_bunga' => $ai['pendapatan_bunga'] ?? null,
+            'pendapatan_dividen' => $ai['pendapatan_dividen'] ?? null,
+            'gain_realized' => $ai['gain_realized'] ?? null,
+            'gain_unrealized' => $ai['gain_unrealized'] ?? null,
+            'beban_mi' => $ai['beban_mi'] ?? null,
+            'beban_kustodian' => $ai['beban_kustodian'] ?? null,
+            'beban_lain' => $ai['beban_lain'] ?? null,
+            'laba_bersih' => $ai['laba_bersih'] ?? null,
+            'arus_kas_operasi' => $ai['arus_kas_operasi'] ?? null,
+            'arus_kas_pendanaan' => $ai['arus_kas_pendanaan'] ?? null,
+            'kas_awal_tahun' => $ai['kas_awal_tahun'] ?? null,
+            'kas_akhir_tahun' => $ai['kas_akhir_tahun'] ?? null,
+            'total_hasil_investasi' => $ai['total_hasil_investasi'] ?? null,
+            'hasil_investasi_setelah_biaya' => $ai['hasil_investasi_setelah_biaya'] ?? null,
+            'persentase_pph' => $ai['persentase_pph'] ?? null,
+            'fair_value_level_1' => $ai['fair_value_level_1'] ?? null,
+            'fair_value_level_2' => $ai['fair_value_level_2'] ?? null,
+            'fair_value_level_3' => $ai['fair_value_level_3'] ?? null,
+            'unit_milik_investor' => $ai['unit_milik_investor'] ?? null,
+            'unit_milik_mi' => $ai['unit_milik_mi'] ?? null,
+            'total_unit_beredar' => $ai['total_unit_beredar'] ?? null,
+        ]));
+
+        $merged = $this->merge($regex, $this->normalizeAiData($ai));
+
+        \Log::info('[PARSE] Merged LK fields: ' . json_encode([
+            'total_aset' => $merged['total_aset'] ?? null,
+            'total_liabilitas' => $merged['total_liabilitas'] ?? null,
+            'laba_bersih' => $merged['laba_bersih'] ?? null,
+            'arus_kas_operasi' => $merged['arus_kas_operasi'] ?? null,
+        ]));
+
+        return $merged;
     }
 
     public function normalizeAiParseResult(array $ai): array
@@ -163,20 +299,34 @@ class FfsParserService
 
     private function merge(array $regex, array $ai): array
     {
-        $arrayFields = ['alokasi_aset', 'sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank'];
+        $aiPreferredArrayFields = ['sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasi_aset'];
+
+        $aiPreferredScalarFields = [
+            'total_aset', 'total_liabilitas', 'kas_dan_bank',
+            'piutang_bunga', 'piutang_dividen', 'piutang_lain',
+            'utang_pajak', 'utang_lain',
+            'pendapatan_bunga', 'pendapatan_dividen',
+            'gain_realized', 'gain_unrealized',
+            'beban_mi', 'beban_kustodian', 'beban_lain',
+            'laba_bersih',
+            'arus_kas_operasi', 'arus_kas_pendanaan',
+            'kas_awal_tahun', 'kas_akhir_tahun',
+            'total_hasil_investasi', 'hasil_investasi_setelah_biaya', 'persentase_pph',
+            'fair_value_level_1', 'fair_value_level_2', 'fair_value_level_3',
+            'unit_milik_investor', 'unit_milik_mi', 'total_unit_beredar',
+            'biaya_operasi', 'portfolio_turnover_ratio', 'total_return',
+        ];
 
         foreach ($regex as $key => $value) {
             $aiValue = $ai[$key] ?? null;
 
-            if (in_array($key, $arrayFields)) {
-                // Pakai AI jika regex kosong atau AI punya lebih banyak data
-                if (empty($value) && !empty($aiValue)) {
+            if (in_array($key, $aiPreferredArrayFields)) {
+                if (!empty($aiValue)) {
                     $regex[$key] = $aiValue;
-                } elseif (!empty($aiValue) && count($aiValue) > count($value)) {
+                }
+            } elseif (in_array($key, $aiPreferredScalarFields)) {
+                if ($aiValue !== null && $aiValue !== '' && $aiValue !== 0) {
                     $regex[$key] = $aiValue;
-                } elseif (!empty($value) && !empty($aiValue)) {
-                    // Enrich existing regex rows dengan field tambahan dari AI (sektor, kontribusi_kinerja, dll)
-                    $regex[$key] = $this->enrichRows($key, $value, $aiValue);
                 }
             } else {
                 if ($key === 'nama_reksa_dana' && $this->looksLikeFundName($aiValue)) {
@@ -184,7 +334,6 @@ class FfsParserService
                     continue;
                 }
 
-                // Pakai AI jika regex null/kosong
                 if (empty($value) && !empty($aiValue)) {
                     $regex[$key] = $aiValue;
                 }
@@ -640,48 +789,25 @@ class FfsParserService
         $inEfek = false;
 
         $efekStart = ['portofolio', '10 efek', 'top 10', '10 besar', 'komposisi efek',
-                       'efek', 'holding', 'saham', 'equity portfolio', 'securities'];
+                       'efek terbesar', 'daftar efek', 'holding', 'saham terbesar',
+                       'equity portfolio', 'securities', 'top holding', '10 saham'];
 
         foreach ($lines as $i => $line) {
             $lower = strtolower($line);
 
             foreach ($efekStart as $keyword) {
-                if (str_contains($lower, $keyword) && strlen($lower) < 50) {
+                if (str_contains($lower, $keyword) && strlen($lower) < 80) {
                     $inEfek = true;
                     continue 2;
                 }
             }
 
             if ($inEfek) {
-                if (count($efekData) > 0 && preg_match('/^(obligasi|kinerja|bank|total)/i', $lower)) break;
+                if (count($efekData) > 0 && preg_match('/^(obligasi|sukuk|kinerja|bank|total|jumlah|catatan|laporan)/i', $lower)) break;
 
-                // "BBCA Bank Central Asia 10.50" or "BBCA Bank Central Asia 10.50 9250" or "BBCA Bank Central Asia 10.50 9250 9300"
-                if (preg_match('/^([A-Z]{2,6})\s+(.+?)\s+([\d.,]+)\s*%?\s*(?:([\d.,]+))?\s*(?:([\d.,]+))?$/', $line, $m)) {
-                    $bobot = (float) str_replace(',', '.', $m[3]);
-                    if ($bobot > 0 && $bobot <= 100) {
-                        $harga = !empty($m[4]) ? (float) str_replace(',', '.', $m[4]) : null;
-                        $efekData[] = [
-                            'kode_efek' => $m[1],
-                            'nama_efek' => trim($m[2]),
-                            'bobot' => $bobot,
-                            'harga' => $harga,
-                        ];
-                    }
-                    continue;
-                }
-
-                // "Bank Central Asia (BBCA) 10.50" or "Bank Central Asia (BBCA) 10.50 9250"
-                if (preg_match('/^([A-Za-z\s,.]+)\s*\(([A-Z]{2,6})\)\s+([\d.,]+)\s*%?\s*(?:([\d.,]+))?\s*(?:([\d.,]+))?$/', $line, $m)) {
-                    $bobot = (float) str_replace(',', '.', $m[3]);
-                    if ($bobot > 0 && $bobot <= 100) {
-                        $harga = !empty($m[4]) ? (float) str_replace(',', '.', $m[4]) : null;
-                        $efekData[] = [
-                            'kode_efek' => $m[2],
-                            'nama_efek' => trim($m[1]),
-                            'bobot' => $bobot,
-                            'harga' => $harga,
-                        ];
-                    }
+                $efek = $this->parseEfekLine($line);
+                if ($efek) {
+                    $efekData[] = $efek;
                     continue;
                 }
 
@@ -689,7 +815,75 @@ class FfsParserService
             }
         }
 
+        if (empty($efekData)) {
+            foreach ($lines as $line) {
+                $efek = $this->parseEfekLine($line);
+                if ($efek) {
+                    $efekData[] = $efek;
+                    if (count($efekData) >= 30) break;
+                }
+            }
+        }
+
         return $efekData;
+    }
+
+    private function parseEfekLine(string $line): ?array
+    {
+        if (preg_match('/^([A-Z][A-Z0-9]{1,5})\s+(.+?)\s+([\d.,]+)\s*%/', $line, $m)) {
+            $bobot = (float) str_replace(',', '.', $m[3]);
+            if ($bobot > 0 && $bobot <= 100 && strlen(trim($m[2])) > 1) {
+                $rest = trim(substr($line, strpos($line, $m[3]) + strlen($m[3])));
+                $extraNumbers = [];
+                if (preg_match_all('/([\d][\d.,]*)/', $rest, $extra)) {
+                    $extraNumbers = $extra[1];
+                }
+                return [
+                    'kode_efek' => $m[1],
+                    'nama_efek' => trim($m[2]),
+                    'bobot' => $bobot,
+                    'harga' => !empty($extraNumbers[0]) ? (float) str_replace(',', '.', $extraNumbers[0]) : null,
+                ];
+            }
+        }
+
+        if (preg_match('/^([A-Z][A-Z0-9]{1,5})\s+(.+?)\s+([\d.,]+)\s*$/', $line, $m)) {
+            $bobot = (float) str_replace(',', '.', $m[3]);
+            if ($bobot > 0 && $bobot <= 100 && strlen(trim($m[2])) > 1) {
+                return [
+                    'kode_efek' => $m[1],
+                    'nama_efek' => trim($m[2]),
+                    'bobot' => $bobot,
+                    'harga' => null,
+                ];
+            }
+        }
+
+        if (preg_match('/^([A-Za-z][A-Za-z\s,.]{3,}?)\s*\(([A-Z][A-Z0-9]{1,5})\)\s+([\d.,]+)\s*%?/', $line, $m)) {
+            $bobot = (float) str_replace(',', '.', $m[3]);
+            if ($bobot > 0 && $bobot <= 100) {
+                return [
+                    'kode_efek' => $m[2],
+                    'nama_efek' => trim($m[1]),
+                    'bobot' => $bobot,
+                    'harga' => null,
+                ];
+            }
+        }
+
+        if (preg_match('/^\s*\d+\.?\s+([A-Z][A-Z0-9]{1,5})\s+(.+?)\s+([\d.,]+)\s*%?/', $line, $m)) {
+            $bobot = (float) str_replace(',', '.', $m[3]);
+            if ($bobot > 0 && $bobot <= 100 && strlen(trim($m[2])) > 1) {
+                return [
+                    'kode_efek' => $m[1],
+                    'nama_efek' => trim($m[2]),
+                    'bobot' => $bobot,
+                    'harga' => null,
+                ];
+            }
+        }
+
+        return null;
     }
 
     private function extractKinerja(array $lines, string $fullText): array
@@ -759,19 +953,40 @@ class FfsParserService
     private function extractObligasi(array $lines, string $fullText): array
     {
         $obligasiData = [];
+        $inObligasi = false;
+
+        $obligasiStart = ['obligasi', 'bond', 'fixed income', 'surat utang', 'daftar obligasi',
+                          'komposisi obligasi', 'portofolio obligasi', 'obligasi terbesar'];
 
         foreach ($lines as $i => $line) {
             $lower = strtolower($line);
 
-            if (str_contains($lower, 'obligasi') || str_contains($lower, 'bond') || str_contains($lower, 'sukuk')) {
-                if (preg_match('/^([A-Z0-9]+)\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+([A-Z+]+)/', $line, $m)) {
-                    $obligasiData[] = [
-                        'kode_obligasi' => $m[1],
-                        'nama_obligasi' => trim($m[2]),
-                        'bobot' => (float) str_replace(',', '.', $m[3]),
-                        'durasi' => (float) str_replace(',', '.', $m[4]),
-                        'rating' => $m[5],
-                    ];
+            foreach ($obligasiStart as $keyword) {
+                if (str_contains($lower, $keyword) && strlen($lower) < 80) {
+                    $inObligasi = true;
+                    continue 2;
+                }
+            }
+
+            if ($inObligasi) {
+                if (count($obligasiData) > 0 && preg_match('/^(kinerja|sektor|efek|bank|total|jumlah|sukuk|catatan)/i', $lower)) break;
+
+                $ob = $this->parseObligasiLine($line);
+                if ($ob) {
+                    $obligasiData[] = $ob;
+                    continue;
+                }
+
+                if (count($obligasiData) >= 30) break;
+            }
+        }
+
+        if (empty($obligasiData)) {
+            foreach ($lines as $line) {
+                $ob = $this->parseObligasiLine($line);
+                if ($ob) {
+                    $obligasiData[] = $ob;
+                    if (count($obligasiData) >= 30) break;
                 }
             }
         }
@@ -779,34 +994,85 @@ class FfsParserService
         return $obligasiData;
     }
 
+    private function parseObligasiLine(string $line): ?array
+    {
+        if (preg_match('/^((?:FR|INDON|SUN|ORI|SR|PBS|SPN|ST|SBR)[A-Z0-9]*)\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+([A-Z][A-Z+\-]*)/i', $line, $m)) {
+            return [
+                'kode_obligasi' => strtoupper($m[1]),
+                'nama_obligasi' => trim($m[2]),
+                'bobot' => (float) str_replace(',', '.', $m[3]),
+                'durasi' => (float) str_replace(',', '.', $m[4]),
+                'rating' => $m[5],
+            ];
+        }
+
+        if (preg_match('/^((?:FR|INDON|SUN|ORI|SR|PBS|SPN|ST|SBR)[A-Z0-9]*)\s+(.+?)\s+([\d.,]+)\s*%?/', $line, $m)) {
+            $bobot = (float) str_replace(',', '.', $m[3]);
+            if ($bobot > 0 && $bobot <= 100 && strlen(trim($m[2])) > 1) {
+                return [
+                    'kode_obligasi' => strtoupper($m[1]),
+                    'nama_obligasi' => trim($m[2]),
+                    'bobot' => $bobot,
+                    'durasi' => null,
+                    'rating' => null,
+                ];
+            }
+        }
+
+        if (preg_match('/^\s*\d+\.?\s+((?:FR|INDON|SUN|ORI|SR|PBS|SPN|ST|SBR)[A-Z0-9]*)\s+(.+?)\s+([\d.,]+)\s*%?/i', $line, $m)) {
+            $bobot = (float) str_replace(',', '.', $m[3]);
+            if ($bobot > 0 && $bobot <= 100 && strlen(trim($m[2])) > 1) {
+                return [
+                    'kode_obligasi' => strtoupper($m[1]),
+                    'nama_obligasi' => trim($m[2]),
+                    'bobot' => $bobot,
+                    'durasi' => null,
+                    'rating' => null,
+                ];
+            }
+        }
+
+        return null;
+    }
+
     private function extractSukuk(array $lines, string $fullText): array
     {
         $sukukData = [];
-        $sukukKeywords = ['sukuk', 'sbsn', 'surat berharga syariah negara', 'sukuk ritel',
-                          'project based sukuk', 'pbs', 'sr', 'st'];
+        $inSukuk = false;
+
+        $sukukStart = ['sukuk', 'sbsn', 'surat berharga syariah', 'daftar sukuk',
+                       'komposisi sukuk', 'portofolio sukuk', 'sukuk ritel',
+                       'sukuk negara', 'sukuk korporasi'];
 
         foreach ($lines as $i => $line) {
             $lower = strtolower($line);
 
-            $isSukukLine = false;
-            foreach ($sukukKeywords as $keyword) {
-                if (str_contains($lower, $keyword)) {
-                    $isSukukLine = true;
-                    break;
+            foreach ($sukukStart as $keyword) {
+                if (str_contains($lower, $keyword) && strlen($lower) < 80) {
+                    $inSukuk = true;
+                    continue 2;
                 }
             }
 
-            if ($isSukukLine) {
-                // Format: KODE NAMA BOBOT YIELD JATUH_TEMPO RATING
-                if (preg_match('/^([A-Z0-9]+)\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+(\d{4})\s+([A-Z+]+)/', $line, $m)) {
-                    $sukukData[] = [
-                        'kode_sukuk'  => $m[1],
-                        'nama_sukuk'  => trim($m[2]),
-                        'bobot'       => (float) str_replace(',', '.', $m[3]),
-                        'yield'       => (float) str_replace(',', '.', $m[4]),
-                        'jatuh_tempo' => $m[5],
-                        'rating'      => $m[6],
-                    ];
+            if ($inSukuk) {
+                if (count($sukukData) > 0 && preg_match('/^(kinerja|sektor|efek|bank|total|jumlah|obligasi|catatan)/i', $lower)) break;
+
+                $sk = $this->parseSukukLine($line);
+                if ($sk) {
+                    $sukukData[] = $sk;
+                    continue;
+                }
+
+                if (count($sukukData) >= 30) break;
+            }
+        }
+
+        if (empty($sukukData)) {
+            foreach ($lines as $line) {
+                $sk = $this->parseSukukLine($line);
+                if ($sk) {
+                    $sukukData[] = $sk;
+                    if (count($sukukData) >= 30) break;
                 }
             }
         }
@@ -814,26 +1080,410 @@ class FfsParserService
         return $sukukData;
     }
 
+    private function parseSukukLine(string $line): ?array
+    {
+        if (preg_match('/^((?:SR|PBS|ST|SBR|CWGR|SUKUK)[A-Z0-9]*)\s+(.+?)\s+([\d.,]+)\s*%?/', $line, $m)) {
+            $bobot = (float) str_replace(',', '.', $m[3]);
+            if ($bobot > 0 && $bobot <= 100 && strlen(trim($m[2])) > 1) {
+                $kode = strtoupper($m[1]);
+                $jenis = str_starts_with($kode, 'PBS') || str_starts_with($kode, 'SR') || str_starts_with($kode, 'ST') || str_starts_with($kode, 'SBR')
+                    ? 'Negara' : null;
+                return [
+                    'kode_sukuk'  => $kode,
+                    'nama_sukuk'  => trim($m[2]),
+                    'bobot'       => $bobot,
+                    'yield'       => null,
+                    'jatuh_tempo' => null,
+                    'rating'      => null,
+                    'jenis_sukuk' => $jenis,
+                ];
+            }
+        }
+
+        if (preg_match('/^\s*\d+\.?\s+((?:SR|PBS|ST|SBR|CWGR|SUKUK)[A-Z0-9]*)\s+(.+?)\s+([\d.,]+)\s*%?/i', $line, $m)) {
+            $bobot = (float) str_replace(',', '.', $m[3]);
+            if ($bobot > 0 && $bobot <= 100 && strlen(trim($m[2])) > 1) {
+                $kode = strtoupper($m[1]);
+                return [
+                    'kode_sukuk'  => $kode,
+                    'nama_sukuk'  => trim($m[2]),
+                    'bobot'       => $bobot,
+                    'yield'       => null,
+                    'jatuh_tempo' => null,
+                    'rating'      => null,
+                    'jenis_sukuk' => str_starts_with($kode, 'PBS') || str_starts_with($kode, 'SR') || str_starts_with($kode, 'ST') ? 'Negara' : null,
+                ];
+            }
+        }
+
+        $lower = strtolower($line);
+        if (str_contains($lower, 'sukuk') && preg_match('/^(.+?)\s+([\d.,]+)\s*%/', $line, $m)) {
+            $bobot = (float) str_replace(',', '.', $m[2]);
+            if ($bobot > 0 && $bobot <= 100 && strlen(trim($m[1])) > 3) {
+                return [
+                    'kode_sukuk'  => '',
+                    'nama_sukuk'  => trim($m[1]),
+                    'bobot'       => $bobot,
+                    'yield'       => null,
+                    'jatuh_tempo' => null,
+                    'rating'      => null,
+                    'jenis_sukuk' => null,
+                ];
+            }
+        }
+
+        return null;
+    }
+
     private function extractBank(array $lines, string $fullText): array
     {
         $bankData = [];
+        $inBank = false;
+
+        $bankStart = ['bank', 'deposito', 'deposito berjangka', 'kas di bank',
+                      'komposisi bank', 'daftar bank', 'cash in bank'];
 
         foreach ($lines as $i => $line) {
             $lower = strtolower($line);
 
-            if (str_contains($lower, 'bank') && !str_contains($lower, 'obligasi') && !str_contains($lower, 'sektor')) {
-                if (preg_match('/bank\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s+(\w+)/i', $line, $m)) {
-                    $bankData[] = [
-                        'nama_bank' => 'Bank ' . trim($m[1]),
-                        'bobot' => (float) str_replace(',', '.', $m[2]),
-                        'car' => (float) str_replace(',', '.', $m[3]),
-                        'npl' => (float) str_replace(',', '.', $m[4]),
-                        'klasifikasi_risiko' => $m[5],
-                    ];
+            foreach ($bankStart as $keyword) {
+                if (str_contains($lower, $keyword) && strlen($lower) < 80 && !str_contains($lower, 'obligasi') && !str_contains($lower, 'sektor')) {
+                    $inBank = true;
+                    continue 2;
+                }
+            }
+
+            if ($inBank) {
+                if (count($bankData) > 0 && preg_match('/^(kinerja|sektor|efek|obligasi|total|jumlah|catatan)/i', $lower)) break;
+
+                $bk = $this->parseBankLine($line);
+                if ($bk) {
+                    $bankData[] = $bk;
+                    continue;
+                }
+
+                if (count($bankData) >= 20) break;
+            }
+        }
+
+        if (empty($bankData)) {
+            foreach ($lines as $line) {
+                $bk = $this->parseBankLine($line);
+                if ($bk) {
+                    $bankData[] = $bk;
+                    if (count($bankData) >= 20) break;
                 }
             }
         }
 
         return $bankData;
+    }
+
+    private function parseBankLine(string $line): ?array
+    {
+        if (!preg_match('/bank/i', $line) && !preg_match('/deposito/i', $line)) return null;
+
+        if (preg_match('/(?:^|\b)(bank\s+\S+(?:\s+\S+){0,5}?)\s+([\d.,]+)\s*%?/', $line, $m)) {
+            $nama = trim($m[1]);
+            $bobot = (float) str_replace(',', '.', $m[2]);
+            if ($bobot > 0 && $bobot <= 100 && strlen($nama) > 3) {
+                $rest = trim(substr($line, strpos($line, $m[2]) + strlen($m[2])));
+                $extras = [];
+                if (preg_match_all('/([\d.,]+)/', $rest, $extra)) {
+                    $extras = $extra[1];
+                }
+                return [
+                    'nama_bank' => $nama,
+                    'bobot' => $bobot,
+                    'car' => !empty($extras[0]) ? (float) str_replace(',', '.', $extras[0]) : null,
+                    'npl' => !empty($extras[1]) ? (float) str_replace(',', '.', $extras[1]) : null,
+                    'klasifikasi_risiko' => null,
+                ];
+            }
+        }
+
+        return null;
+    }
+
+    private function extractManajerInvestasi(array $lines, string $fullText): ?string
+    {
+        foreach ($lines as $i => $line) {
+            if (preg_match('/(?:manajer\s+investasi|investment\s+manager|dikelola\s+oleh|manager)\s*[:\-]?\s*(.+)/i', $line, $m)) {
+                $name = trim($m[1]);
+                $name = preg_replace('/^(PT\.?\s*)/i', 'PT ', $name);
+                if (strlen($name) > 3 && strlen($name) < 100) return $name;
+            }
+        }
+        return null;
+    }
+
+    private function extractBankKustodian(array $lines, string $fullText): ?string
+    {
+        foreach ($lines as $line) {
+            if (preg_match('/(?:bank\s+kustodian|kustodian|custodian\s*bank|custodian)\s*[:\-]?\s*(.+)/i', $line, $m)) {
+                $name = trim($m[1]);
+                if (strlen($name) > 3 && strlen($name) < 100) return $name;
+            }
+        }
+        return null;
+    }
+
+    private function extractTanggalPeluncuran(array $lines, string $fullText): ?string
+    {
+        foreach ($lines as $line) {
+            if (preg_match('/(?:tanggal\s+peluncuran|inception\s+date|launch\s+date|tanggal\s+pendirian)\s*[:\-]?\s*(.+)/i', $line, $m)) {
+                $dateStr = trim($m[1]);
+                try {
+                    $date = \Carbon\Carbon::parse($dateStr);
+                    return $date->format('Y-m-d');
+                } catch (\Throwable) {
+                    if (preg_match('/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/', $dateStr, $dm)) {
+                        return $dm[3] . '-' . str_pad($dm[2], 2, '0', STR_PAD_LEFT) . '-' . str_pad($dm[1], 2, '0', STR_PAD_LEFT);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private function extractMataUang(array $lines, string $fullText): ?string
+    {
+        foreach ($lines as $line) {
+            if (preg_match('/(?:mata\s+uang|currency)\s*[:\-]?\s*(.+)/i', $line, $m)) {
+                $val = strtoupper(trim($m[1]));
+                if (preg_match('/\b(IDR|USD|SGD|EUR|JPY|GBP|AUD|MYR|CNY)\b/', $val, $cm)) {
+                    return $cm[1];
+                }
+            }
+        }
+        if (preg_match('/(?:mata\s+uang|currency)\s*[:\-]?\s*(?:Rupiah|IDR)/i', $fullText)) return 'IDR';
+        if (preg_match('/(?:mata\s+uang|currency)\s*[:\-]?\s*(?:Dollar|USD)/i', $fullText)) return 'USD';
+        return null;
+    }
+
+    private function extractBenchmark(array $lines, string $fullText): ?string
+    {
+        foreach ($lines as $line) {
+            if (preg_match('/(?:benchmark|index\s+acuan|acuan|indeks\s+acuan)\s*[:\-]?\s*(.+)/i', $line, $m)) {
+                $val = trim($m[1]);
+                if (strlen($val) > 2 && strlen($val) < 150) return $val;
+            }
+        }
+        return null;
+    }
+
+    private function extractTujuanInvestasi(array $lines, string $fullText): ?string
+    {
+        foreach ($lines as $i => $line) {
+            if (preg_match('/(?:tujuan\s+investasi|investment\s+objective)\s*[:\-]?\s*(.+)/i', $line, $m)) {
+                $text = trim($m[1]);
+                if (strlen($text) > 5) return mb_substr($text, 0, 500);
+                if (isset($lines[$i + 1]) && strlen(trim($lines[$i + 1])) > 5) {
+                    return mb_substr(trim($lines[$i + 1]), 0, 500);
+                }
+            }
+        }
+        return null;
+    }
+
+    private function extractKebijakanInvestasi(array $lines, string $fullText): ?string
+    {
+        foreach ($lines as $i => $line) {
+            if (preg_match('/(?:kebijakan\s+investasi|investment\s+policy)\s*[:\-]?\s*(.+)/i', $line, $m)) {
+                $text = trim($m[1]);
+                if (strlen($text) > 5) return mb_substr($text, 0, 500);
+                if (isset($lines[$i + 1]) && strlen(trim($lines[$i + 1])) > 5) {
+                    return mb_substr(trim($lines[$i + 1]), 0, 500);
+                }
+            }
+        }
+        return null;
+    }
+
+    private function extractNabPerUnit(array $lines, string $fullText): ?float
+    {
+        foreach ($lines as $line) {
+            if (preg_match('/(?:NAB\s*\/\s*UP|NAV\s*\/\s*Unit|NAB\s+per\s+Unit|nilai\s+aktiva\s+bersih\s+per\s+unit)\s*[:\-]?\s*(?:Rp\.?\s*)?([\d.,]+)/i', $line, $m)) {
+                $value = str_replace(['.', ','], ['', '.'], $m[1]);
+                $val = (float) $value;
+                if ($val > 0) return $val;
+            }
+        }
+        return null;
+    }
+
+    private function extractUnitPenyertaan(array $lines, string $fullText): ?float
+    {
+        foreach ($lines as $line) {
+            if (preg_match('/(?:unit\s+penyertaan|units\s+outstanding|jumlah\s+unit)\s*[:\-]?\s*([\d.,]+)/i', $line, $m)) {
+                $value = str_replace(['.', ','], ['', '.'], $m[1]);
+                $val = (float) $value;
+                if ($val > 0) return $val;
+            }
+        }
+        return null;
+    }
+
+    private function extractTanggalData(array $lines, string $fullText): ?string
+    {
+        foreach ($lines as $line) {
+            if (preg_match('/(?:periode|as\s+at|per\s+tanggal|tanggal\s+data|data\s+per)\s*[:\-]?\s*(.+)/i', $line, $m)) {
+                $dateStr = trim($m[1]);
+                try {
+                    $date = \Carbon\Carbon::parse($dateStr);
+                    return $date->format('Y-m-d');
+                } catch (\Throwable) {
+                    if (preg_match('/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/', $dateStr, $dm)) {
+                        return $dm[3] . '-' . str_pad($dm[2], 2, '0', STR_PAD_LEFT) . '-' . str_pad($dm[1], 2, '0', STR_PAD_LEFT);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private function extractReturnYtd(array $lines, string $fullText): ?float
+    {
+        foreach ($lines as $line) {
+            if (preg_match('/(?:return\s+YTD|YTD|imbal\s+hasil\s+tahun\s+berjalan|return\s+tahun\s+berjalan)\s*[:\-]?\s*([\-+]?[\d.,]+)\s*%?/i', $line, $m)) {
+                $val = (float) str_replace(',', '.', $m[1]);
+                return $val;
+            }
+        }
+        return null;
+    }
+
+    private function extractReturn1y(array $lines, string $fullText): ?float
+    {
+        foreach ($lines as $line) {
+            if (preg_match('/(?:1\s+tahun|1\s*thn|1\s*yr|1\s*Y|return\s+1\s*tahun|1\s+year\s+return)\s*[:\-]?\s*([\-+]?[\d.,]+)\s*%?/i', $line, $m)) {
+                $val = (float) str_replace(',', '.', $m[1]);
+                return $val;
+            }
+        }
+        return null;
+    }
+
+    private function extractManagementFee(array $lines, string $fullText): ?float
+    {
+        foreach ($lines as $line) {
+            if (preg_match('/(?:management\s+fee|biaya\s+pengelolaan|imbal\s+jasa\s+manajer\s+investasi)\s*[:\-]?\s*([\d.,]+)\s*%?/i', $line, $m)) {
+                $val = (float) str_replace(',', '.', $m[1]);
+                if ($val > 0 && $val <= 100) return $val;
+            }
+        }
+        return null;
+    }
+
+    private function extractCustodianFee(array $lines, string $fullText): ?float
+    {
+        foreach ($lines as $line) {
+            if (preg_match('/(?:custodian\s+fee|biaya\s+kustodian|imbal\s+jasa\s+kustodian)\s*[:\-]?\s*([\d.,]+)\s*%?/i', $line, $m)) {
+                $val = (float) str_replace(',', '.', $m[1]);
+                if ($val > 0 && $val <= 100) return $val;
+            }
+        }
+        return null;
+    }
+
+    private function extractLabelValue(string $line, array $labels): ?float
+    {
+        $lower = strtolower($line);
+        foreach ($labels as $label) {
+            if (str_contains($lower, strtolower($label))) {
+                if (preg_match('/([\d][\d.,]*(?:[.,]\d+)?)\s*(?:miliar|milyar|triliun|juta)?\s*$/i', $line, $m)) {
+                    $value = str_replace(['.', ','], ['', '.'], $m[1]);
+                    $val = (float) $value;
+                    $suffix = strtolower($m[0]);
+                    if (str_contains($suffix, 'triliun')) return $val * 1000000000000;
+                    if (str_contains($suffix, 'miliar') || str_contains($suffix, 'milyar')) return $val * 1000000000;
+                    if (str_contains($suffix, 'juta')) return $val * 1000000;
+                    return $val;
+                }
+            }
+        }
+        return null;
+    }
+
+    private function extractLabelPercent(string $line, array $labels): ?float
+    {
+        $lower = strtolower($line);
+        foreach ($labels as $label) {
+            if (str_contains($lower, strtolower($label))) {
+                if (preg_match('/([\-+]?[\d.,]+)\s*%/', $line, $m)) {
+                    return (float) str_replace(',', '.', $m[1]);
+                }
+                if (preg_match('/([\-+]?[\d.,]+)\s*$/', $line, $m)) {
+                    $val = (float) str_replace(',', '.', $m[1]);
+                    if (abs($val) < 1000) return $val;
+                }
+            }
+        }
+        return null;
+    }
+
+    public function extractLaporanKeuangan(array $lines, string $fullText): array
+    {
+        $result = [];
+
+        $fieldMap = [
+            'total_aset'          => ['total aset', 'total assets', 'total aktiva'],
+            'total_liabilitas'    => ['total liabilitas', 'total liabilities', 'total kewajiban'],
+            'kas_dan_bank'        => ['kas dan bank', 'cash and bank', 'kas & bank'],
+            'piutang_bunga'       => ['piutang bunga', 'interest receivable'],
+            'piutang_dividen'     => ['piutang dividen', 'dividend receivable'],
+            'piutang_lain'        => ['piutang lain', 'other receivable', 'piutang lain-lain'],
+            'utang_pajak'         => ['utang pajak', 'tax payable'],
+            'utang_lain'          => ['utang lain', 'other payable', 'utang lain-lain'],
+            'pendapatan_bunga'    => ['pendapatan bunga', 'interest income'],
+            'pendapatan_dividen'  => ['pendapatan dividen', 'dividend income'],
+            'gain_realized'       => ['gain realized', 'keuntungan realisasi', 'laba realisasi'],
+            'gain_unrealized'     => ['gain unrealized', 'keuntungan belum realisasi', 'laba belum realisasi', 'unrealized gain'],
+            'beban_mi'            => ['beban manajer investasi', 'beban mi', 'investment manager fee', 'imbal jasa manajer'],
+            'beban_kustodian'     => ['beban kustodian', 'custodian fee expense', 'imbal jasa kustodian'],
+            'beban_lain'          => ['beban lain', 'other expense', 'beban lain-lain'],
+            'laba_bersih'         => ['laba bersih', 'net income', 'net profit', 'kenaikan aset bersih'],
+            'arus_kas_operasi'    => ['arus kas operasi', 'cash flow from operating', 'kas dari aktivitas operasi'],
+            'arus_kas_pendanaan'  => ['arus kas pendanaan', 'cash flow from financing', 'kas dari aktivitas pendanaan'],
+            'kas_awal_tahun'      => ['kas awal', 'cash at beginning', 'kas awal tahun'],
+            'kas_akhir_tahun'     => ['kas akhir', 'cash at end', 'kas akhir tahun'],
+            'fair_value_level_1'  => ['fair value level 1', 'nilai wajar level 1', 'tingkat 1'],
+            'fair_value_level_2'  => ['fair value level 2', 'nilai wajar level 2', 'tingkat 2'],
+            'fair_value_level_3'  => ['fair value level 3', 'nilai wajar level 3', 'tingkat 3'],
+            'unit_milik_investor' => ['unit milik investor', 'units held by investors', 'unit penyertaan pemegang'],
+            'unit_milik_mi'       => ['unit milik manajer', 'units held by manager', 'unit milik mi'],
+            'total_unit_beredar'  => ['total unit beredar', 'total units outstanding', 'unit beredar'],
+        ];
+
+        $percentMap = [
+            'total_hasil_investasi'          => ['total hasil investasi', 'total investment return'],
+            'hasil_investasi_setelah_biaya'  => ['hasil investasi setelah biaya', 'investment return after marketing'],
+            'persentase_pph'                 => ['persentase pph', 'penghasilan kena pajak', 'taxable income percentage'],
+            'biaya_operasi'                  => ['biaya operasi', 'expense ratio', 'operating expense', 'rasio biaya'],
+            'portfolio_turnover_ratio'       => ['portfolio turnover', 'turnover ratio', 'rasio perputaran'],
+            'total_return'                   => ['total return', 'total imbal hasil'],
+        ];
+
+        foreach ($fieldMap as $field => $labels) {
+            foreach ($lines as $line) {
+                $val = $this->extractLabelValue($line, $labels);
+                if ($val !== null && $val != 0) {
+                    $result[$field] = $val;
+                    break;
+                }
+            }
+        }
+
+        foreach ($percentMap as $field => $labels) {
+            foreach ($lines as $line) {
+                $val = $this->extractLabelPercent($line, $labels);
+                if ($val !== null) {
+                    $result[$field] = $val;
+                    break;
+                }
+            }
+        }
+
+        return $result;
     }
 }

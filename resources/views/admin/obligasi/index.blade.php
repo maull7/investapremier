@@ -162,6 +162,10 @@
            class="px-4 py-2 rounded-lg text-sm font-semibold transition {{ $tab === 'hasil-ekstrak' ? 'bg-white text-primary shadow-sm' : 'text-muted hover:text-primary' }}">
             Hasil Ekstrak
         </a>
+        <a href="{{ route('admin.obligasi.index', ['tab' => 'riwayat-sync']) }}"
+           class="px-4 py-2 rounded-lg text-sm font-semibold transition {{ $tab === 'riwayat-sync' ? 'bg-white text-primary shadow-sm' : 'text-muted hover:text-primary' }}">
+            Riwayat Sync
+        </a>
     </div>
 </div>
 
@@ -169,8 +173,99 @@
     @include('admin.obligasi._tab-harga-referensi')
 @elseif($tab === 'bond')
     @include('admin.obligasi._tab-bond')
-@else
+@elseif($tab === 'hasil-ekstrak')
     @include('admin.obligasi._tab-hasil-ekstrak')
+@else
+<div class="grid lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.9fr)] gap-5">
+    <div class="table-card">
+        <div class="table-head">
+            <h2 class="th-title">Riwayat Sync IDX + PHEI</h2>
+            <span class="th-meta">{{ $recentSyncRuns->total() }} total</span>
+        </div>
+
+        @if($recentSyncRuns->isEmpty())
+            <div class="py-16 text-center text-muted">
+                <p class="font-medium">Belum ada riwayat sync</p>
+                <p class="text-sm mt-1">Klik "Sync dari IDX + PHEI" untuk memulai sinkronisasi.</p>
+            </div>
+        @else
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide">
+                            <th class="px-4 py-3 font-semibold">#</th>
+                            <th class="px-4 py-3 font-semibold">Tanggal</th>
+                            <th class="px-4 py-3 font-semibold">Status</th>
+                            <th class="px-4 py-3 font-semibold">Progress</th>
+                            <th class="px-4 py-3 font-semibold">Pesan</th>
+                            <th class="px-4 py-3 font-semibold">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach($recentSyncRuns as $run)
+                            @php
+                                $statusClass = match ($run->status) {
+                                    'completed' => 'bg-green-50 text-green-700 border-green-200',
+                                    'failed' => 'bg-red-50 text-red-700 border-red-200',
+                                    'running' => 'bg-blue-50 text-blue-700 border-blue-200',
+                                    default => 'bg-slate-50 text-slate-600 border-slate-200',
+                                };
+                                $isSelected = $selectedRun && $selectedRun->id === $run->id;
+                            @endphp
+                            <tr class="hover:bg-[#f8fafc] transition-colors {{ $isSelected ? 'bg-primary/5' : '' }}">
+                                <td class="px-4 py-3 font-mono text-xs">#{{ $run->id }}</td>
+                                <td class="px-4 py-3 text-xs text-muted">{{ $run->created_at->format('d M Y H:i') }}</td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex px-2 py-0.5 rounded border text-xs font-semibold {{ $statusClass }}">
+                                        {{ $run->status }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-xs">{{ $run->progress_percent }}%</td>
+                                <td class="px-4 py-3 text-xs text-muted max-w-[200px] truncate">{{ $run->message ?: '—' }}</td>
+                                <td class="px-4 py-3">
+                                    <a href="{{ route('admin.obligasi.index', ['tab' => 'riwayat-sync', 'selected_run' => $run->id]) }}"
+                                        class="px-3 py-1.5 rounded-lg text-xs font-semibold {{ $isSelected ? 'bg-primary text-white' : 'bg-primary/10 text-primary hover:bg-primary/20' }} transition">
+                                        {{ $isSelected ? 'Dipilih' : 'Lihat' }}
+                                    </a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+
+            @if($recentSyncRuns->hasPages())
+                <div class="px-6 py-4 border-t border-line">
+                    {{ $recentSyncRuns->links() }}
+                </div>
+            @endif
+        @endif
+    </div>
+
+    <div class="table-card">
+        <div class="table-head">
+            <h2 class="th-title">
+                Perubahan Data
+                @if($selectedRun)
+                    <span class="text-xs text-white/70 font-normal ml-2">Run #{{ $selectedRun->id }}</span>
+                @endif
+            </h2>
+        </div>
+
+        @if($selectedRun && $changesUrl)
+            <div class="p-4">
+                @include('admin.components.sync-changes-list', [
+                    'changesUrl' => $changesUrl,
+                    'detailTypes' => $detailTypes,
+                ])
+            </div>
+        @else
+            <div class="py-16 text-center text-muted">
+                <p class="font-medium">Pilih run untuk melihat perubahan</p>
+            </div>
+        @endif
+    </div>
+</div>
 @endif
 
 {{-- Modal Ekstrak Data Obligasi --}}

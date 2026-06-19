@@ -72,7 +72,7 @@ class GroqService
 
     public function parseFfsPdf(string $pdfText): array
     {
-        $text = mb_substr($pdfText, 0, 8000);
+        $text = mb_substr($pdfText, 0, 60000);
         $messages = [
             [
                 'role'    => 'system',
@@ -228,7 +228,7 @@ PROMPT,
             ],
         ];
 
-        $raw = $this->callAi($messages, 90, 0.1);
+        $raw = $this->callAi($messages, 180, 0.1);
         return self::parseJsonOutput($raw);
     }
 
@@ -397,7 +397,7 @@ ATURAN:
 - Output HANYA JSON valid, tanpa markdown.
 PROMPT;
 
-        $raw = $this->callOpenAiPdf($pdfPath, $filename, $prompt, 180, 0.1);
+        $raw = $this->callOpenAiPdf($pdfPath, $filename, $prompt, 300, 0.1);
 
         return self::parseJsonOutput($raw);
     }
@@ -1204,7 +1204,7 @@ ATURAN:
 - Output HANYA JSON valid, tanpa markdown.
 PROMPT;
 
-        $raw = $this->callOpenAiPdf($pdfPath, $filename, $prompt, 180, 0.1);
+        $raw = $this->callOpenAiPdf($pdfPath, $filename, $prompt, 300, 0.1);
 
         return self::normalizeLapkeuPdfData(self::parseJsonOutput($raw), $isObligasi);
     }

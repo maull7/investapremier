@@ -65,7 +65,13 @@ class ObligasiController extends Controller
 
         $extractionRanges = $this->buildRangeOptions(ObligasiHargaReferensi::count());
 
-        return view('admin.obligasi.index', compact('tab', 'perPage', 'hargaReferensi', 'bonds', 'extractionBatches', 'detailBatch', 'extractionRanges'));
+        $recentSyncRuns = SyncRun::where('type', SyncRun::TYPE_OBLIGASI_IDX_PHEI)->latest()->paginate(15, ['*'], 'runs_page');
+        $selectedRunId = $request->integer('selected_run') ?: $recentSyncRuns->first()?->id;
+        $selectedRun = $selectedRunId ? SyncRun::find($selectedRunId) : null;
+        $changesUrl = $selectedRun ? route('admin.obligasi.sync-idx.changes', $selectedRun) : null;
+        $detailTypes = [];
+
+        return view('admin.obligasi.index', compact('tab', 'perPage', 'hargaReferensi', 'bonds', 'extractionBatches', 'detailBatch', 'extractionRanges', 'recentSyncRuns', 'selectedRun', 'changesUrl', 'detailTypes'));
     }
 
     public function createHargaReferensi()
@@ -443,5 +449,19 @@ class ObligasiController extends Controller
             'started_at' => $run->started_at?->toIso8601String(),
             'completed_at' => $run->completed_at?->toIso8601String(),
         ]);
+    }
+
+    public function syncChanges(SyncRun $run, \Illuminate\Http\Request $request)
+    {
+        $query = \App\Models\SyncChangeLog::where('sync_run_id', $run->id);
+
+        if ($request->filled('entity_type')) {
+            $query->where('entity_type', $request->entity_type);
+        }
+
+        $changes = $query->orderBy('created_at')->orderBy('id')
+            ->paginate($request->per_page ?? 50);
+
+        return response()->json($changes);
     }
 }

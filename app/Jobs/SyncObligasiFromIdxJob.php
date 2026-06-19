@@ -99,7 +99,7 @@ class SyncObligasiFromIdxJob implements ShouldQueue
 
         // 5. Upsert
         $run->markStep('upsert', 'Menyimpan ke database (preserve harga manual)', 95);
-        $upsertStats = $extractor->upsertBonds($merged, true);
+        $upsertStats = $extractor->upsertBonds($merged, true, $run->id);
 
         $summary = sprintf(
             'Sync obligasi selesai. Total %d obligasi (IDX: %d, PHEI Pemerintah: %d, PHEI Korporasi: %d). DB: %d baru, %d diupdate, %d dilewati. Harga & YTM tetap NULL — perlu diisi manual.',
@@ -135,7 +135,7 @@ class SyncObligasiFromIdxJob implements ShouldQueue
             $run->markStep('upsert', 'Menyimpan ' . count($data) . ' data obligasi ke database...', 70);
 
             $extractor = app(IdxAiDataExtractorService::class);
-            $upsert = $extractor->upsertBonds($data, true);
+            $upsert = $extractor->upsertBonds($data, true, $run->id);
 
             $summary = "Sync obligasi via backend API selesai. Baru: {$upsert['created']}, Update: {$upsert['updated']}, Skip: {$upsert['skipped']}";
 

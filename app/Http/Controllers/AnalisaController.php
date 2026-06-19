@@ -200,7 +200,7 @@ class AnalisaController extends Controller
         ]);
 
         $kode = strtoupper(trim($request->kode_reksa_dana));
-        $master = ReksaDana::whereRaw('UPPER(kode_reksa_dana) = ?', [$kode])->first();
+        $master = ReksaDana::with('investmentManager')->whereRaw('UPPER(kode_reksa_dana) = ?', [$kode])->first();
         $lastAnalisa = AnalisaReksaDana::with(['sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasiAset'])
             ->where('product_type', $this->productType)
             ->whereRaw('UPPER(kode_reksa_dana) = ?', [$kode])
@@ -219,6 +219,17 @@ class AnalisaController extends Controller
                 'kebijakan_investasi' => $master->kebijakan_investasi,
                 'nab_per_unit'        => $master->nab_per_unit,
                 'tanggal_data'        => $master->tanggal_nab?->format('Y-m-d'),
+                'manajer_investasi'    => $master->nama_manajer_investasi ?? $master->investmentManager?->name,
+                'bank_kustodian'       => $master->custodian_bank,
+                'tanggal_peluncuran'   => $master->launch_date?->format('Y-m-d'),
+                'mata_uang'            => $master->mata_uang,
+                'management_fee'       => $master->management_fee,
+                'custodian_fee'        => $master->custodian_fee,
+                'total_aum'            => $master->aum,
+                'unit_penyertaan'      => $master->total_unit,
+                'return_ytd'           => $master->return_ytd,
+                'return_1y'            => $master->return_1y,
+                'expense_ratio'        => $master->expense_ratio,
             ] : null,
             'last_analisa' => $lastAnalisa ? $this->serializeAnalisaForForm($lastAnalisa) : null,
         ]);
@@ -392,7 +403,7 @@ class AnalisaController extends Controller
 
     public function parsePdf(Request $request, FfsParserService $ffsParser, GroqService $groq)
     {
-        set_time_limit(120);
+        set_time_limit(300);
 
         $request->validate([
             'file_pdf' => 'required|file|max:10240',
@@ -441,6 +452,12 @@ class AnalisaController extends Controller
         if (!empty($data['nab_per_unit'])) $extracted[] = 'NAB/UP';
         if (!empty($data['return_ytd'])) $extracted[] = 'Return YTD';
         if (!empty($data['tanggal_data'])) $extracted[] = 'Tanggal Data';
+        if (!empty($data['total_aset'])) $extracted[] = 'Neraca';
+        if (!empty($data['laba_bersih'])) $extracted[] = 'Laba Bersih';
+        if (!empty($data['arus_kas_operasi'])) $extracted[] = 'Arus Kas';
+        if (!empty($data['total_hasil_investasi'])) $extracted[] = 'Rasio';
+        if (!empty($data['fair_value_level_1'])) $extracted[] = 'Fair Value';
+        if (!empty($data['unit_milik_investor'])) $extracted[] = 'Unit MI';
         if (!empty($data['alokasi_aset'])) $extracted[] = count($data['alokasi_aset']) . ' Alokasi Aset';
         if ($data['sektor']) $extracted[] = count($data['sektor']) . ' Sektor';
         if ($data['efek']) $extracted[] = count($data['efek']) . ' Efek';
@@ -582,7 +599,7 @@ class AnalisaController extends Controller
         $fullPath = Storage::disk('public')->path($document->file_path);
 
         try {
-            set_time_limit(120);
+            set_time_limit(300);
             $data = $ffsParser->parseWithAi($fullPath, $groq);
         } catch (\Throwable $e) {
             return response()->json([
@@ -590,6 +607,24 @@ class AnalisaController extends Controller
                 'message' => 'Gagal membaca PDF: ' . $e->getMessage(),
                 'data' => null,
             ], 422);
+        }
+
+        if (!empty($data['efek'])) {
+            $tanggal = now()->subDay()->toDateString();
+            foreach ($data['efek'] as $efek) {
+                if (!empty($efek['kode_efek'])) {
+                    $harga = !empty($efek['harga']) ? $efek['harga'] : null;
+                    StockPrice::updateOrCreate(
+                        ['kode_efek' => strtoupper($efek['kode_efek']), 'tanggal' => $tanggal],
+                        [
+                            'nama_efek' => $efek['nama_efek'] ?? null,
+                            'jenis' => 'Saham',
+                            'harga' => $harga ?? 0,
+                            'sumber' => 'PDF Dokumen Tersimpan',
+                        ]
+                    );
+                }
+            }
         }
 
         $extracted = [];

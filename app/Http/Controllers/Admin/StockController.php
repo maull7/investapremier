@@ -43,7 +43,13 @@ class StockController extends Controller
             ])->where('data_type', 'stock_daily_transaction')->find($request->integer('detail_batch'))
             : null;
 
-        return view('admin.stocks.index', compact('stocks', 'perPage', 'tab', 'extractionBatches', 'detailBatch', 'extractionRanges'));
+        $recentSyncRuns = SyncRun::where('type', SyncRun::TYPE_SAHAM_IDX)->latest()->paginate(15, ['*'], 'runs_page');
+        $selectedRunId = $request->integer('selected_run') ?: $recentSyncRuns->first()?->id;
+        $selectedRun = $selectedRunId ? SyncRun::find($selectedRunId) : null;
+        $changesUrl = $selectedRun ? route('admin.saham.sync-idx.changes', $selectedRun) : null;
+        $detailTypes = [];
+
+        return view('admin.stocks.index', compact('stocks', 'perPage', 'tab', 'extractionBatches', 'detailBatch', 'extractionRanges', 'recentSyncRuns', 'selectedRun', 'changesUrl', 'detailTypes'));
     }
 
     public function create()
@@ -236,5 +242,19 @@ class StockController extends Controller
             'started_at' => $run->started_at?->toIso8601String(),
             'completed_at' => $run->completed_at?->toIso8601String(),
         ]);
+    }
+
+    public function syncChanges(SyncRun $run, \Illuminate\Http\Request $request)
+    {
+        $query = \App\Models\SyncChangeLog::where('sync_run_id', $run->id);
+
+        if ($request->filled('entity_type')) {
+            $query->where('entity_type', $request->entity_type);
+        }
+
+        $changes = $query->orderBy('created_at')->orderBy('id')
+            ->paginate($request->per_page ?? 50);
+
+        return response()->json($changes);
     }
 }
