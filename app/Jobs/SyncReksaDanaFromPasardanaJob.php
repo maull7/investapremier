@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\HargaReksaDana;
 use App\Models\ReksaDana;
+use App\Models\SyncChangeLog;
 use App\Models\SyncRun;
 use App\Services\BackendSyncService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -104,17 +105,30 @@ class SyncReksaDanaFromPasardanaJob implements ShouldQueue
                 if (isset($item['pasardana_id'])) $attrs['pasardana_id'] = $item['pasardana_id'];
 
                 if ($existing) {
+                    $oldAttrs = $existing->getRawOriginal();
                     $existing->update($attrs);
                     $updated++;
                     if (!empty($item['backend_id'])) {
                         $backendIdToLocalId[$item['backend_id']] = $existing->id;
                     }
+
+                    $oldModel = new ReksaDana;
+                    $oldModel->setRawAttributes($oldAttrs);
+                    SyncChangeLog::captureModelDiff(
+                        $run->id, 'rd', $oldModel, $attrs,
+                        $nama, $existing->id
+                    );
                 } else {
                     $record = ReksaDana::create($attrs);
                     $created++;
                     if (!empty($item['backend_id'])) {
                         $backendIdToLocalId[$item['backend_id']] = $record->id;
                     }
+
+                    SyncChangeLog::logCreated(
+                        $run->id, 'rd', $attrs,
+                        $nama, $record->id
+                    );
                 }
             }
 
@@ -139,7 +153,6 @@ class SyncReksaDanaFromPasardanaJob implements ShouldQueue
                     continue;
                 }
 
-                // Normalize ISO datetime to MySQL date format (kolom tanggal bertipe date)
                 $tanggal = date('Y-m-d', strtotime($tanggal));
 
                 $attrs = [
@@ -150,15 +163,40 @@ class SyncReksaDanaFromPasardanaJob implements ShouldQueue
                 if (isset($item['aum'])) $attrs['aum'] = $item['aum'];
                 if (isset($item['unit_participation'])) $attrs['unit_participation'] = $item['unit_participation'];
 
-                $record = HargaReksaDana::updateOrCreate(
-                    ['reksa_dana_id' => $reksaDanaId, 'tanggal' => $tanggal],
-                    $attrs
-                );
+                $existing = HargaReksaDana::where('reksa_dana_id', $reksaDanaId)
+                    ->where('tanggal', $tanggal)
+                    ->first();
 
-                if ($record->wasRecentlyCreated) {
-                    $harianCreated++;
-                } else {
+                if ($existing) {
+                    $oldAttrs = $existing->getRawOriginal();
+                    $existing->update($attrs);
                     $harianUpdated++;
+
+                    $rdLabel = ReksaDana::find($reksaDanaId)?->nama_reksa_dana ?? 'RD#' . $reksaDanaId;
+                    $diffs = [];
+                    foreach ($attrs as $field => $newVal) {
+                        if (in_array($field, ['reksa_dana_id', 'tanggal'])) continue;
+                        $oldVal = $oldAttrs[$field] ?? null;
+                        if ($oldVal instanceof \DateTime) $oldVal = $oldVal->format('Y-m-d');
+                        if ((string) $oldVal !== (string) $newVal) {
+                            $diffs[$field] = ['old' => $oldVal, 'new' => $newVal];
+                        }
+                    }
+                    if ($diffs) {
+                        SyncChangeLog::logUpdated(
+                            $run->id, 'rd_harian', $diffs,
+                            $rdLabel . ' - ' . $tanggal, $existing->id
+                        );
+                    }
+                } else {
+                    $record = HargaReksaDana::create($attrs);
+                    $harianCreated++;
+
+                    $rdLabel = ReksaDana::find($reksaDanaId)?->nama_reksa_dana ?? 'RD#' . $reksaDanaId;
+                    SyncChangeLog::logCreated(
+                        $run->id, 'rd_harian', array_diff_key($attrs, ['reksa_dana_id' => true, 'tanggal' => true]),
+                        $rdLabel . ' - ' . $tanggal, $record->id
+                    );
                 }
             }
 

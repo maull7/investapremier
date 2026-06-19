@@ -54,7 +54,7 @@ class SyncSahamFromIdxJob implements ShouldQueue
             $run->markStep('upsert', 'Menyimpan ' . count($data) . ' data saham ke database...', 70);
 
             $extractor = app(IdxAiDataExtractorService::class);
-            $upsert = $extractor->upsertStocks($data, true);
+            $upsert = $extractor->upsertStocks($data, true, $run->id);
 
             $summary = "Sync saham via backend API selesai. Baru: {$upsert['created']}, Update: {$upsert['updated']}, Skip: {$upsert['skipped']}";
 
@@ -101,7 +101,7 @@ class SyncSahamFromIdxJob implements ShouldQueue
         }
 
         $run->markStep('upsert', 'Menyimpan ke database (preserve sektor manual)', 80);
-        $upsert = $extractor->upsertStocks($result['data'], true);
+        $upsert = $extractor->upsertStocks($result['data'], true, $run->id);
         $merge = $result['merge_stats'] ?? null;
 
         $matchInfo = '';

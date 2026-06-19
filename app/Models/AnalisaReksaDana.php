@@ -16,7 +16,7 @@ class AnalisaReksaDana extends Model
     ];
 
     protected $fillable = [
-        'user_id', 'product_type', 'kode_reksa_dana', 'nama_reksa_dana',
+        'user_id', 'product_type', 'reksa_dana_id', 'kode_reksa_dana', 'nama_reksa_dana',
         'jenis_reksa_dana', 'kategori', 'benchmark', 'manajer_investasi', 'bank_kustodian',
         'tanggal_peluncuran', 'tujuan_investasi', 'kebijakan_investasi', 'mata_uang',
         'total_aum', 'unit_penyertaan', 'nab_per_unit', 'return_1m', 'return_ytd', 'return_1y',
@@ -46,6 +46,11 @@ class AnalisaReksaDana extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function reksaDana(): BelongsTo
+    {
+        return $this->belongsTo(ReksaDana::class);
     }
 
     public function sektor(): HasMany

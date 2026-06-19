@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ReplaceRewriteReksaDanaJob;
 use App\Jobs\SyncAllPasardanaJob;
 use App\Jobs\SyncReksaDanaFromPasardanaJob;
 use App\Models\DataSourceLink;
@@ -122,12 +123,26 @@ class DaftarReksaDanaController extends Controller
 
         $hargaTanggal = $request->get('harga_tanggal');
 
+        $recentSyncRuns = SyncRun::whereIn('type', [
+            SyncRun::TYPE_RD_HARGA_HARIAN,
+            SyncRun::TYPE_ALL_PASARDANA,
+            SyncRun::TYPE_RELASI_MI_RD,
+        ])->latest()->paginate(15, ['*'], 'runs_page');
+        $selectedRunId = $request->integer('selected_run') ?: $recentSyncRuns->first()?->id;
+        $selectedRun = $selectedRunId ? SyncRun::find($selectedRunId) : null;
+        $changesUrl = $selectedRun ? route('admin.daftar-reksa-dana.sync-pasardana.changes', $selectedRun) : null;
+        $detailTypes = [
+            'rd' => 'Reksa Dana',
+            'rd_harian' => 'Harga Harian RD',
+        ];
+
         return view('admin.daftar-reksa-dana.index', compact(
             'reksaDanas', 'harian', 'tab',
             'dataSourceLinks', 'syncLogs', 'reksaDanaList', 'editingLink',
             'reksaDanaOptions',
             'documents', 'documentFunds',
             'harianTanggal', 'hargaTanggal',
+            'recentSyncRuns', 'selectedRun', 'changesUrl', 'detailTypes',
         ));
     }
 
@@ -834,6 +849,50 @@ class DaftarReksaDanaController extends Controller
             ->with('success', 'Sync All Pasardana dimulai.');
     }
 
+    public function replaceRewrite(Request $request)
+    {
+        $inflight = SyncRun::where('type', SyncRun::TYPE_REPLACE_REWRITE)
+            ->whereIn('status', [SyncRun::STATUS_QUEUED, SyncRun::STATUS_RUNNING])
+            ->where('updated_at', '>=', now()->subMinutes(10))
+            ->latest()
+            ->first();
+
+        if ($inflight) {
+            $payload = [
+                'run_id' => $inflight->id,
+                'status' => $inflight->status,
+                'reused' => true,
+            ];
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json($payload);
+            }
+            return redirect()->route('admin.daftar-reksa-dana.index')
+                ->with('sync_run_id', $inflight->id);
+        }
+
+        $run = SyncRun::create([
+            'type' => SyncRun::TYPE_REPLACE_REWRITE,
+            'status' => SyncRun::STATUS_QUEUED,
+            'current_step' => 'queued',
+            'current_step_label' => 'Menunggu worker mengambil job dari antrian',
+            'progress_percent' => 0,
+            'user_id' => $request->user()?->id,
+        ]);
+
+        ReplaceRewriteReksaDanaJob::dispatch($run->id);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'run_id' => $run->id,
+                'status' => $run->status,
+            ]);
+        }
+
+        return redirect()->route('admin.daftar-reksa-dana.index')
+            ->with('sync_run_id', $run->id)
+            ->with('success', 'Bersihkan & Perbaiki Data dimulai.');
+    }
+
     public function syncStatus(SyncRun $run)
     {
         return response()->json([
@@ -850,5 +909,19 @@ class DaftarReksaDanaController extends Controller
             'started_at' => $run->started_at?->toIso8601String(),
             'completed_at' => $run->completed_at?->toIso8601String(),
         ]);
+    }
+
+    public function syncChanges(SyncRun $run, \Illuminate\Http\Request $request)
+    {
+        $query = \App\Models\SyncChangeLog::where('sync_run_id', $run->id);
+
+        if ($request->filled('entity_type')) {
+            $query->where('entity_type', $request->entity_type);
+        }
+
+        $changes = $query->orderBy('created_at')->orderBy('id')
+            ->paginate($request->per_page ?? 50);
+
+        return response()->json($changes);
     }
 }

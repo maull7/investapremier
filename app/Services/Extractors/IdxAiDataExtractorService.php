@@ -4,6 +4,7 @@ namespace App\Services\Extractors;
 
 use App\Models\ObligasiHargaReferensi;
 use App\Models\Stock;
+use App\Models\SyncChangeLog;
 use App\Services\GroqService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -844,11 +845,11 @@ PROMPT;
      *
      * Returns: ['created' => int, 'updated' => int, 'skipped' => int, 'errors' => string[]]
      */
-    public function upsertStocks(array $items, bool $preserveExistingSector = true): array
+    public function upsertStocks(array $items, bool $preserveExistingSector = true, ?int $syncRunId = null): array
     {
         $stats = ['created' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => []];
 
-        DB::transaction(function () use ($items, $preserveExistingSector, &$stats) {
+        DB::transaction(function () use ($items, $preserveExistingSector, $syncRunId, &$stats) {
             foreach ($items as $item) {
                 $kode = strtoupper(trim($item['kode'] ?? ''));
                 if (!$kode) {
@@ -862,8 +863,6 @@ PROMPT;
                     $hargaTerbaru = $this->parseIdrNumber($item['harga_terbaru'] ?? null);
                     $jumlahSaham = $this->parseIdrNumber($item['jumlah_saham'] ?? null);
 
-                    // Fallback: kalau jumlah_saham tidak ada di extraction tapi sudah tersimpan di DB,
-                    // tetap pakai existing untuk hitung market cap (data emiten jarang berubah).
                     if (($jumlahSaham === null || $jumlahSaham == 0) && $existing && $existing->jumlah_saham) {
                         $jumlahSaham = (float) $existing->jumlah_saham;
                     }
@@ -895,6 +894,8 @@ PROMPT;
                     $incomingSub = $item['sub_industri'] ?? null;
 
                     if ($existing) {
+                        $oldAttrs = $existing->getRawOriginal();
+
                         if ($incomingNama !== '' && $incomingNama !== $existing->nama) {
                             $payload['nama'] = $incomingNama;
                         }
@@ -911,12 +912,28 @@ PROMPT;
 
                         $existing->update($payload);
                         $stats['updated']++;
+
+                        if ($syncRunId) {
+                            $oldModel = new Stock;
+                            $oldModel->setRawAttributes($oldAttrs);
+                            SyncChangeLog::captureModelDiff(
+                                $syncRunId, 'stock', $oldModel, $payload,
+                                $kode . ' - ' . ($incomingNama !== '' ? $incomingNama : $kode), $existing->id
+                            );
+                        }
                     } else {
                         $payload['nama'] = $incomingNama !== '' ? $incomingNama : $kode;
                         if (!empty($incomingSektor)) $payload['sektor'] = $incomingSektor;
                         if (!empty($incomingSub)) $payload['sub_industri'] = $incomingSub;
-                        Stock::create($payload);
+                        $record = Stock::create($payload);
                         $stats['created']++;
+
+                        if ($syncRunId) {
+                            SyncChangeLog::logCreated(
+                                $syncRunId, 'stock', $payload,
+                                $kode . ' - ' . ($payload['nama'] ?? $kode), $record->id
+                            );
+                        }
                     }
                 } catch (\Throwable $e) {
                     $stats['skipped']++;
@@ -1287,11 +1304,11 @@ PROMPT;
      *
      * Returns: ['created' => int, 'updated' => int, 'skipped' => int, 'errors' => string[]]
      */
-    public function upsertBonds(array $items, bool $preserveExisting = true): array
+    public function upsertBonds(array $items, bool $preserveExisting = true, ?int $syncRunId = null): array
     {
         $stats = ['created' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => []];
 
-        DB::transaction(function () use ($items, $preserveExisting, &$stats) {
+        DB::transaction(function () use ($items, $preserveExisting, $syncRunId, &$stats) {
             foreach ($items as $item) {
                 $kode = strtoupper(trim($item['kode'] ?? ''));
                 if (!$kode) {
@@ -1301,15 +1318,14 @@ PROMPT;
 
                 try {
                     $existing = ObligasiHargaReferensi::where('kode', $kode)->first();
+                    $oldAttrs = $existing ? $existing->getRawOriginal() : null;
 
-                    // Always-overwrite-when-source-has-value fields (PHEI is authoritative)
                     $payload = [
                         'kode' => $kode,
                     ];
 
                     $incomingNama = trim((string) ($item['nama'] ?? ''));
                     if ($incomingNama !== '') {
-                        // For existing, only update nama if it changed (avoid useless writes)
                         if (!$existing || $existing->nama !== $incomingNama) {
                             $payload['nama'] = $incomingNama;
                         }
@@ -1345,7 +1361,6 @@ PROMPT;
                         $payload['syariah'] = (bool) $incomingSyariah;
                     }
 
-                    // Preserve-existing-when-set fields: rating, sektor, sub_sektor, industri, sub_industri
                     $incomingRating = $item['rating'] ?? null;
                     if (!empty($incomingRating)) {
                         $shouldOverwriteRating = !($preserveExisting && $existing && !empty($existing->rating));
@@ -1354,7 +1369,6 @@ PROMPT;
                         }
                     }
 
-                    // Pricing fields are never set from these free sources, but accept if explicitly provided.
                     foreach (['harga_persen', 'ytm', 'ttm', 'current_yield', 'total_val'] as $priceField) {
                         $val = $item[$priceField] ?? null;
                         if ($val === null || $val === '') {
@@ -1364,16 +1378,32 @@ PROMPT;
                     }
 
                     if ($existing) {
-                        if (count($payload) > 1) { // kode + at least one other field
+                        if (count($payload) > 1) {
                             $existing->update($payload);
                         }
                         $stats['updated']++;
+
+                        if ($syncRunId && $oldAttrs) {
+                            $oldModel = new ObligasiHargaReferensi;
+                            $oldModel->setRawAttributes($oldAttrs);
+                            SyncChangeLog::captureModelDiff(
+                                $syncRunId, 'bond', $oldModel, $payload,
+                                $kode . ($incomingNama !== '' ? ' - ' . $incomingNama : ''), $existing->id
+                            );
+                        }
                     } else {
                         if (empty($payload['nama'])) {
                             $payload['nama'] = $kode;
                         }
-                        ObligasiHargaReferensi::create($payload);
+                        $record = ObligasiHargaReferensi::create($payload);
                         $stats['created']++;
+
+                        if ($syncRunId) {
+                            SyncChangeLog::logCreated(
+                                $syncRunId, 'bond', $payload,
+                                $kode . ' - ' . ($payload['nama'] ?? $kode), $record->id
+                            );
+                        }
                     }
                 } catch (\Throwable $e) {
                     $stats['skipped']++;

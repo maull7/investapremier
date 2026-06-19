@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\InvestmentManager;
 use App\Models\ReksaDana;
+use App\Models\SyncChangeLog;
 use App\Models\SyncRun;
 use App\Services\BackendSyncService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -67,11 +68,24 @@ class SyncInvestmentManagerFromPasardanaJob implements ShouldQueue
                 })->first();
 
                 if ($manager) {
+                    $oldAttrs = $manager->getRawOriginal();
                     $manager->update($item);
                     $updated++;
+
+                    $oldModel = new InvestmentManager;
+                    $oldModel->setRawAttributes($oldAttrs);
+                    SyncChangeLog::captureModelDiff(
+                        $run->id, 'mi', $oldModel, $item,
+                        $nama . ($manager->kode_mi ? ' (' . $manager->kode_mi . ')' : ''), $manager->id
+                    );
                 } else {
-                    InvestmentManager::create($item);
+                    $record = InvestmentManager::create($item);
                     $created++;
+
+                    SyncChangeLog::logCreated(
+                        $run->id, 'mi', $item,
+                        $nama, $record->id
+                    );
                 }
             }
 
@@ -123,8 +137,16 @@ class SyncInvestmentManagerFromPasardanaJob implements ShouldQueue
                 }
 
                 if ($miId && $localRd->investment_manager_id !== $miId) {
+                    $oldMiId = $localRd->investment_manager_id;
                     $localRd->update(['investment_manager_id' => $miId]);
                     $relasiMatched++;
+
+                    SyncChangeLog::logUpdated($run->id, 'relasi_mi_rd', [
+                        'investment_manager_id' => [
+                            'old' => $oldMiId,
+                            'new' => $miId,
+                        ],
+                    ], $localRd->nama_reksa_dana . ' → MI #' . $miId, $localRd->id);
                 } else {
                     $relasiSkipped++;
                 }

@@ -21,6 +21,7 @@ class SyncRun extends Model
     public const TYPE_RD_HARGA_HARIAN = 'rd_harga_harian';
     public const TYPE_RELASI_MI_RD = 'relasi_mi_rd';
     public const TYPE_ALL_PASARDANA = 'all_pasardana';
+    public const TYPE_REPLACE_REWRITE = 'replace_rewrite';
 
     protected $fillable = [
         'type', 'status', 'current_step', 'current_step_label',

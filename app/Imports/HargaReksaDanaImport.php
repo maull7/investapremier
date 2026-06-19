@@ -24,6 +24,11 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows, W
     public int $imported = 0;
     public int $skipped = 0;
 
+    private function resolveInvestmentManagerId(string $nama): ?int
+    {
+        return InvestmentManager::where('name', $nama)->value('id');
+    }
+
     public function model(array $row): ?ReksaDana
     {
         if (empty($row['nama_reksa_dana'])) {
@@ -47,10 +52,15 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows, W
             $existing = ReksaDana::where('nama_reksa_dana', $nama)->first();
         }
 
+        $investmentManagerId = !empty($row['nama_manajer_investasi'])
+            ? $this->resolveInvestmentManagerId(trim($row['nama_manajer_investasi']))
+            : null;
+
         if ($existing) {
             $updateData = [
                 'nama_reksa_dana'        => $nama,
                 'nama_manajer_investasi' => trim($row['nama_manajer_investasi'] ?? ''),
+                'investment_manager_id'  => $investmentManagerId,
                 'jenis'                  => trim($row['jenis'] ?? ''),
                 'kategori'               => array_filter($kategori),
                 'mata_uang'              => strtoupper(trim($row['mata_uang'] ?? 'IDR')),
@@ -81,6 +91,7 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows, W
         $kategoriProduk = trim($row['kategori_produk'] ?? '');
         $data = [
             'nama_manajer_investasi' => trim($row['nama_manajer_investasi'] ?? ''),
+            'investment_manager_id'  => $investmentManagerId,
             'jenis'                  => trim($row['jenis'] ?? ''),
             'kategori'               => array_filter($kategori),
             'kategori_produk'        => $kategoriProduk ?: null,

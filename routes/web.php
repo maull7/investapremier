@@ -152,6 +152,8 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('daftar-reksa-dana/sync-pasardana/status/{run}', [DaftarReksaDanaController::class, 'syncStatus'])->name('daftar-reksa-dana.sync-pasardana.status');
     Route::post('daftar-reksa-dana/sync-all-pasardana', [DaftarReksaDanaController::class, 'syncAllPasardana'])->name('daftar-reksa-dana.sync-all-pasardana');
     Route::get('daftar-reksa-dana/sync-all-pasardana/status/{run}', [DaftarReksaDanaController::class, 'syncStatus'])->name('daftar-reksa-dana.sync-all-pasardana.status');
+    Route::get('daftar-reksa-dana/sync-pasardana/changes/{run}', [DaftarReksaDanaController::class, 'syncChanges'])->name('daftar-reksa-dana.sync-pasardana.changes');
+    Route::post('daftar-reksa-dana/replace-rewrite', [DaftarReksaDanaController::class, 'replaceRewrite'])->name('daftar-reksa-dana.replace-rewrite');
     Route::get('daftar-reksa-dana/{reksaDana}', [DaftarReksaDanaController::class, 'show'])->name('daftar-reksa-dana.show');
 
     Route::post('data-source-links', [DataSourceLinkController::class, 'store'])->name('data-source-links.store');
@@ -191,6 +193,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::delete('saham/extraction-batches/{extractionBatch}', [ExtractionBatchController::class, 'destroy'])->name('saham.extraction-batches.destroy');
     Route::post('saham/sync-idx', [StockController::class, 'syncFromIdx'])->name('saham.sync-idx');
     Route::get('saham/sync-idx/status/{run}', [StockController::class, 'syncStatus'])->name('saham.sync-idx.status');
+    Route::get('saham/sync-idx/changes/{run}', [StockController::class, 'syncChanges'])->name('saham.sync-idx.changes');
     Route::get('saham/{stock}', [StockDetailController::class, 'show'])->name('saham.show');
     Route::post('saham/{stock}/summarize-news', [StockDetailController::class, 'summarizeNews'])->name('saham.summarize-news');
     Route::post('saham/{stock}/generate-news', [StockDetailController::class, 'generateNews'])->name('saham.generate-news');
@@ -234,6 +237,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('obligasi', [AdminObligasiController::class, 'index'])->name('obligasi.index');
     Route::post('obligasi/sync-idx', [AdminObligasiController::class, 'syncFromIdx'])->name('obligasi.sync-idx');
     Route::get('obligasi/sync-idx/status/{run}', [AdminObligasiController::class, 'syncStatus'])->name('obligasi.sync-idx.status');
+    Route::get('obligasi/sync-idx/changes/{run}', [AdminObligasiController::class, 'syncChanges'])->name('obligasi.sync-idx.changes');
     Route::post('obligasi/extraction-batches', [ExtractionBatchController::class, 'storeBond'])->name('obligasi.extraction-batches.store');
     Route::post('obligasi/extraction-batches/{extractionBatch}/retry', [ExtractionBatchController::class, 'retry'])->name('obligasi.extraction-batches.retry');
     Route::post('obligasi/extraction-batches/{extractionBatch}/save', [ExtractionBatchController::class, 'save'])->name('obligasi.extraction-batches.save');
@@ -314,6 +318,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('investment-managers/sync-pasardana/status/{run}', [AdminInvestmentManagerController::class, 'syncStatus'])->name('investment-managers.sync-pasardana.status');
     Route::post('investment-managers/sync-periods', [AdminInvestmentManagerController::class, 'syncPeriods'])->name('investment-managers.sync-periods');
     Route::get('investment-managers/sync-periods/status/{run}', [AdminInvestmentManagerController::class, 'syncStatus'])->name('investment-managers.sync-periods.status');
+    Route::get('investment-managers/sync-pasardana/changes/{run}', [AdminInvestmentManagerController::class, 'syncChanges'])->name('investment-managers.sync-pasardana.changes');
     Route::get('investment-person-roles/detail', [AdminInvestmentPersonRoleController::class, 'show'])->name('investment-person-roles.detail');
 
     // Unit Link

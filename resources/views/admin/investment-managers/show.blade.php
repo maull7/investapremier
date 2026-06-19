@@ -60,6 +60,7 @@
         <div x-show="tab === 'detail'" x-cloak x-data="{
             reksaDanaId: '',
             tahun: '',
+            useAi: true,
             loading: false,
             error: null,
             success: null,
@@ -77,18 +78,39 @@
                 this.error = null;
                 this.success = null;
                 try {
-                    const res = await fetch(this.extractUrl + '?reksa_dana_id=' + this.reksaDanaId + '&tahun=' + this.tahun, {
+                    const params = new URLSearchParams({ reksa_dana_id: this.reksaDanaId, tahun: this.tahun, use_ai: this.useAi });
+                    const res = await fetch(this.extractUrl + '?' + params, {
                         headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
                     });
                     const json = await res.json();
                     if (!res.ok) { this.error = json.error || 'Gagal mengekstrak.'; return; }
-                    // langsung simpan
+                    // langsung simpan beserta sumber prospektus
                     const form = new FormData();
                     form.append('_token', this.csrfToken);
-                    Object.entries(json.data).forEach(([k, v]) => { if (v) form.append(k, v); });
+                    form.append('reksa_dana_id', this.reksaDanaId);
+                    form.append('tahun', this.tahun);
+                    Object.entries(json.data).forEach(([k, v]) => {
+                        if (v) {
+                            // Clean website: add https:// if missing
+                            let val = v;
+                            if (k === 'website' && val && !/^https?:\/\//i.test(val)) {
+                                val = 'https://' + val;
+                            }
+                            form.append(k, val);
+                        }
+                    });
                     const saveRes = await fetch(this.saveUrl, { method: 'POST', body: form, headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
-                    if (!saveRes.ok) { this.error = 'Ekstrak berhasil tapi gagal menyimpan.'; return; }
-                    this.success = 'Data berhasil diekstrak dan disimpan. Refresh halaman untuk melihat perubahan.';
+                    if (!saveRes.ok) {
+                        try {
+                            const errJson = await saveRes.json();
+                            this.error = errJson.errors ? Object.values(errJson.errors).flat().join(', ') : (errJson.error || 'Ekstrak berhasil tapi gagal menyimpan.');
+                        } catch(e2) {
+                            this.error = 'Ekstrak berhasil tapi gagal menyimpan (HTTP ' + saveRes.status + ').';
+                        }
+                        return;
+                    }
+                    const mode = json.ai_used ? 'AI' : 'RegEx';
+                    this.success = 'Data berhasil diekstrak (' + mode + ') dan disimpan. Refresh halaman untuk melihat perubahan.';
                 } catch (e) { this.error = e.message; } finally { this.loading = false; }
             }
         }">
@@ -117,6 +139,11 @@
                             </template>
                         </select>
                     </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="useAi" x-model="useAi"
+                            class="rounded border-gray-300 text-accent focus:ring-accent/30">
+                        <label for="useAi" class="text-xs text-muted cursor-pointer">Gunakan AI <span class="text-[10px] opacity-60">(lebih akurat)</span></label>
+                    </div>
                     <button @click="extract()" :disabled="!reksaDanaId || !tahun || loading"
                         class="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition disabled:opacity-50 flex items-center gap-2">
                         <span x-show="loading"
@@ -136,8 +163,19 @@
             </div>
             {{-- Informasi MI --}}
             <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden">
-                <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
+                <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light flex items-center justify-between">
                     <h2 class="font-bold text-white text-sm">Informasi Manajer Investasi</h2>
+                    @if($manager->source)
+                        <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full
+                            @if($manager->source === 'prospektus') bg-yellow-300 text-yellow-900
+                            @elseif($manager->source === 'pasardana') bg-blue-300 text-blue-900
+                            @else bg-gray-300 text-gray-800 @endif">
+                            Sumber: {{ ucfirst($manager->source) }}
+                            @if($manager->source === 'prospektus' && $manager->prospektusSourceReksaDana)
+                                &middot; {{ $manager->prospektus_source_tahun }}
+                            @endif
+                        </span>
+                    @endif
                 </div>
                 <div class="divide-y divide-line">
                     @foreach ([
@@ -182,7 +220,11 @@
                 @if(!empty($section['items']))
                     <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mt-6">
                         <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
-                            <h2 class="font-bold text-white text-sm">{{ $section['label'] }}</h2>
+                            <h2 class="font-bold text-white text-sm">{{ $section['label'] }}
+                                @if($manager->source === 'prospektus' && $manager->prospektus_source_tahun)
+                                    <span class="text-[10px] font-normal opacity-75 ml-2">(Prospektus {{ $manager->prospektus_source_tahun }})</span>
+                                @endif
+                            </h2>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
@@ -285,6 +327,46 @@
         </div>
         @endif
 
+        {{-- Riwayat Prospektus --}}
+        @if($prospektusHistory->isNotEmpty())
+        <div class="mt-6 space-y-4">
+            <h3 class="font-bold text-primary text-sm">Riwayat Ekstraksi Prospektus</h3>
+            @foreach($prospektusHistory as $entry)
+            <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden">
+                <div class="px-6 py-3 border-b border-line bg-gray-50 flex items-center justify-between">
+                    <h4 class="font-semibold text-sm text-primary">
+                        {{ $entry->tahun }}
+                        @if($entry->reksaDana)
+                            &middot; {{ $entry->reksaDana->nama_reksa_dana }}
+                        @endif
+                    </h4>
+                    <span class="text-[10px] text-muted">{{ $entry->created_at->format('d M Y H:i') }}</span>
+                </div>
+                <div class="divide-y divide-line text-xs">
+                    @php $fields = [
+                        'address' => 'Alamat', 'phone' => 'Telepon', 'email' => 'Email', 'website' => 'Website',
+                        'commissioner_president' => 'Komisaris Utama', 'commissioners' => 'Komisaris',
+                        'director_president' => 'Direktur Utama', 'directors' => 'Direktur',
+                        'shareholders' => 'Pemegang Saham',
+                        'investment_committee' => 'Komite Investasi',
+                        'investment_management_team' => 'Tim Pengelola Investasi',
+                        'description' => 'Deskripsi',
+                    ]; @endphp
+                    @foreach($fields as $key => $label)
+                        @php $val = $entry->data[$key] ?? null; @endphp
+                        @if(filled($val))
+                        <div class="px-6 py-2.5 flex items-start gap-4">
+                            <span class="font-semibold text-muted w-36 shrink-0">{{ $label }}</span>
+                            <span class="whitespace-pre-line">{{ $val }}</span>
+                        </div>
+                        @endif
+                    @endforeach
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @endif
+
 
         {{-- Tab: Produk --}}
         <div x-show="tab === 'produk'" x-cloak>
@@ -334,11 +416,11 @@
                                             {{ $fund->nab_per_unit ? number_format($fund->nab_per_unit, 4, ',', '.') : '-' }}
                                         </td>
                                         <td class="px-4 py-3 text-xs text-right tabular-nums text-primary font-semibold">
-                                            {{ '-' }}</td>
+                                            {{ $fund->aum ? number_format($fund->aum, 2, ',', '.') : '-' }}</td>
                                         <td class="px-4 py-3 text-xs">
                                             {{ $fund->tanggal_nab ? $fund->tanggal_nab->format('d M Y') : '-' }}</td>
                                         <td class="px-4 py-3 text-right">
-                                            <a href="{{ route('admin.daftar-reksa-dana.index') }}"
+                                            <a href="{{ route('admin.daftar-reksa-dana.show', $fund) }}"
                                                 class="p-1.5 rounded-lg text-muted hover:text-accent hover:bg-accent/5 transition inline-block"
                                                 title="Lihat detail">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor"
@@ -490,10 +572,10 @@
                                 </template>
                                 <div class="overflow-x-auto" x-show="personModal.data.funds.length > 0">
                                     <table class="w-full text-sm">
-                                        <thead><tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide"><th class="px-3 py-2">Reksa Dana</th><th class="px-3 py-2">Kode</th><th class="px-3 py-2">Peran</th><th class="px-3 py-2">Jabatan</th></tr></thead>
+                                        <thead><tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide"><th class="px-3 py-2">Reksa Dana</th><th class="px-3 py-2">Kode</th><th class="px-3 py-2">Peran</th><th class="px-3 py-2">Jabatan</th><th class="px-3 py-2">Sumber</th></tr></thead>
                                         <tbody class="divide-y divide-line">
                                             <template x-for="row in personModal.data.funds" :key="row.name + row.role + row.position">
-                                                <tr><td class="px-3 py-2 font-semibold" x-text="row.name"></td><td class="px-3 py-2 font-mono text-xs" x-text="row.code || '-'"></td><td class="px-3 py-2" x-text="row.role || '-'"></td><td class="px-3 py-2 text-muted" x-text="row.position || '-'"></td></tr>
+                                                <tr><td class="px-3 py-2 font-semibold" x-text="row.name"></td><td class="px-3 py-2 font-mono text-xs" x-text="row.code || '-'"></td><td class="px-3 py-2" x-text="row.role || '-'"></td><td class="px-3 py-2 text-muted" x-text="row.position || '-'"></td><td class="px-3 py-2 text-xs text-muted" x-text="row.source || '-'"></td></tr>
                                             </template>
                                         </tbody>
                                     </table>
@@ -506,10 +588,10 @@
                                 </template>
                                 <div class="overflow-x-auto" x-show="personModal.data.managers.length > 0">
                                     <table class="w-full text-sm">
-                                        <thead><tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide"><th class="px-3 py-2">Manajer Investasi</th><th class="px-3 py-2">Peran</th><th class="px-3 py-2">Jabatan</th></tr></thead>
+                                        <thead><tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide"><th class="px-3 py-2">Manajer Investasi</th><th class="px-3 py-2">Peran</th><th class="px-3 py-2">Jabatan</th><th class="px-3 py-2">Sumber</th></tr></thead>
                                         <tbody class="divide-y divide-line">
                                             <template x-for="row in personModal.data.managers" :key="row.name + row.role + row.position">
-                                                <tr><td class="px-3 py-2 font-semibold" x-text="row.name"></td><td class="px-3 py-2" x-text="row.role || '-'"></td><td class="px-3 py-2 text-muted" x-text="row.position || '-'"></td></tr>
+                                                <tr><td class="px-3 py-2 font-semibold" x-text="row.name"></td><td class="px-3 py-2" x-text="row.role || '-'"></td><td class="px-3 py-2 text-muted" x-text="row.position || '-'"></td><td class="px-3 py-2 text-xs text-muted" x-text="row.source || '-'"></td></tr>
                                             </template>
                                         </tbody>
                                     </table>
