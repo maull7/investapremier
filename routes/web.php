@@ -169,6 +169,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::put('analisa-rd/{analisa}', [AdminAnalisaRdController::class, 'update'])->name('analisa-rd.update');
     Route::get('analisa-rd/template', [AdminAnalisaRdController::class, 'downloadTemplate'])->name('analisa-rd.template');
     Route::post('analisa-rd/parse-pdf', [AdminAnalisaRdController::class, 'parsePdf'])->name('analisa-rd.parse-pdf');
+    Route::post('analisa-rd/parse-prospektus-pdf', [AdminAnalisaRdController::class, 'parseProspektusPdf'])->name('analisa-rd.parse-prospektus-pdf');
     Route::post('analisa-rd/parse-pdf-vision', [AnalisaFfsVisionController::class, 'parsePdf'])->name('analisa-rd.parse-pdf-vision');
     Route::post('analisa-rd/parse-web-file', [AdminAnalisaRdController::class, 'parseWebFile'])->name('analisa-rd.parse-web-file');
     Route::post('analisa-rd/scrape-web-data', [AdminAnalisaRdController::class, 'scrapeWebData'])->name('analisa-rd.scrape-web-data');
@@ -176,6 +177,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('analisa-rd/lookup-kode', [AdminAnalisaRdController::class, 'lookupKode'])->name('analisa-rd.lookup-kode');
     Route::get('analisa-rd/existing-documents', [AdminAnalisaRdController::class, 'getExistingDocuments'])->name('analisa-rd.existing-documents');
     Route::post('analisa-rd/parse-existing-document', [AdminAnalisaRdController::class, 'parseExistingDocument'])->name('analisa-rd.parse-existing-document');
+    Route::post('analisa-rd/parse-existing-prospektus', [AdminAnalisaRdController::class, 'parseExistingProspektus'])->name('analisa-rd.parse-existing-prospektus');
     Route::post('analisa-rd/preview-ai', [AdminAnalisaRdController::class, 'previewAi'])->name('analisa-rd.preview-ai');
     Route::post('analisa-rd/preview-ai-plus', [AdminAnalisaRdController::class, 'previewAiPlus'])->name('analisa-rd.preview-ai-plus');
     Route::get('analisa-rd/lookup-sektor', [AdminAnalisaRdController::class, 'lookupSektor'])->name('analisa-rd.lookup-sektor');
@@ -194,6 +196,8 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::post('saham/sync-idx', [StockController::class, 'syncFromIdx'])->name('saham.sync-idx');
     Route::get('saham/sync-idx/status/{run}', [StockController::class, 'syncStatus'])->name('saham.sync-idx.status');
     Route::get('saham/sync-idx/changes/{run}', [StockController::class, 'syncChanges'])->name('saham.sync-idx.changes');
+    Route::get('saham/search-stock', [StockDetailController::class, 'searchComparison'])->name('saham.search-stock');
+    Route::get('saham/compare-chart', [StockDetailController::class, 'fetchComparison'])->name('saham.compare-chart');
     Route::get('saham/{stock}', [StockDetailController::class, 'show'])->name('saham.show');
     Route::post('saham/{stock}/summarize-news', [StockDetailController::class, 'summarizeNews'])->name('saham.summarize-news');
     Route::post('saham/{stock}/generate-news', [StockDetailController::class, 'generateNews'])->name('saham.generate-news');
@@ -399,6 +403,8 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/analisa/resume', [AnalisaController::class, 'resume'])->name('analisa.resume');
     Route::post('/analisa', [AnalisaController::class, 'store'])->name('analisa.store');
     Route::post('/analisa/parse-pdf', [AnalisaController::class, 'parsePdf'])->name('analisa.parse-pdf');
+    Route::post('/analisa/parse-prospektus-pdf', [AnalisaController::class, 'parseProspektusPdf'])->name('analisa.parse-prospektus-pdf');
+    Route::post('/analisa/parse-existing-prospektus', [AnalisaController::class, 'parseExistingProspektus'])->name('analisa.parse-existing-prospektus');
     Route::post('/analisa/parse-pdf-vision', [AnalisaFfsVisionController::class, 'parsePdf'])->name('analisa.parse-pdf-vision');
     Route::get('/analisa/existing-documents', [AnalisaController::class, 'getExistingDocuments'])->name('analisa.existing-documents');
     Route::post('/analisa/parse-existing-document', [AnalisaController::class, 'parseExistingDocument'])->name('analisa.parse-existing-document');
@@ -428,6 +434,8 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
 
     // Daftar & Analisa Saham
     Route::resource('/saham', UserStockController::class)->except(['show']);
+    Route::get('/saham/search-stock', [StockDetailController::class, 'searchComparison'])->name('saham.search-stock');
+    Route::get('/saham/compare-chart', [StockDetailController::class, 'fetchComparison'])->name('saham.compare-chart');
     Route::get('/saham/{stock}', [StockDetailController::class, 'show'])->name('saham.show');
     Route::post('/saham/{stock}/summarize-news', [StockDetailController::class, 'summarizeNews'])->name('saham.summarize-news');
     Route::post('/saham/{stock}/generate-news', [StockDetailController::class, 'generateNews'])->name('saham.generate-news');

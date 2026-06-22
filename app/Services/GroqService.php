@@ -277,6 +277,287 @@ PROMPT,
         return self::parseJsonOutput($raw);
     }
 
+    public function parseProspektusSection(string $section, string $text): array
+    {
+        $text = mb_substr($text, 0, 60000);
+
+        $method = match ($section) {
+            'cover' => 'prospektus_cover',
+            'mi_profile' => 'prospektus_mi_profile',
+            'fund_info' => 'prospektus_fund_info',
+            'financial_statements' => 'prospektus_financial_statements',
+            'portfolio' => 'prospektus_portfolio',
+            'performance' => 'prospektus_performance',
+            'risk' => 'prospektus_risk',
+            default => 'prospektus_general',
+        };
+
+        $prompts = $this->getSectionPrompts();
+        $systemKey = $prompts[$method]['system'] ?? 'prospektus_default';
+        $fields = $prompts[$method]['fields'] ?? '{}';
+        $rules = $prompts[$method]['rules'] ?? '';
+
+        $systemPrompt = $this->getProspektusSystemPrompt($systemKey, $method);
+
+        $userPrompt = <<<PROMPT
+Berikut adalah teks dari bagian {$section} dari dokumen Prospektus Reksa Dana.
+
+{$rules}
+
+Ekstrak data dari teks berikut dan kembalikan HANYA JSON valid dengan struktur PERSIS ini (gunakan null jika tidak ada data):
+
+{$fields}
+
+PERHATIAN:
+- Perhatikan label-label tabel seperti "Total Aset", "JUMLAH ASET", "ASET LANCAR", "Total Liabilitas", "JUMLAH LIABILITAS", "Laba Bersih", "Pendapatan Bunga", dll.
+- Angka dalam Rupiah penuh (misal 1,5 triliun = 1500000000000). Jangan gunakan titik sebagai pemisah ribuan dalam output JSON.
+- Persentase dalam angka desimal biasa (misal 12,5 untuk 12,5%). Jangan gunakan koma sebagai pemisah desimal dalam output JSON.
+- Jika tidak ada data, gunakan null untuk scalar atau [] untuk array.
+- Output HANYA JSON valid tanpa teks lain, tanpa markdown.
+
+TEKS:
+{$text}
+PROMPT;
+
+        $raw = $this->callAi([
+            ['role' => 'system', 'content' => $systemPrompt],
+            ['role' => 'user', 'content' => $userPrompt],
+        ], 120, 0.1);
+
+        return self::parseJsonOutput($raw);
+    }
+
+    private function getProspektusSystemPrompt(string $key, string $method): string
+    {
+        $prompts = [
+            'prospektus_default' => 'Kamu adalah parser dokumen Prospektus Reksa Dana Indonesia. Ekstrak data dari teks yang diberikan dan kembalikan HANYA JSON valid tanpa teks lain.',
+            'prospektus_cover' => 'Kamu adalah parser dokumen Prospektus Reksa Dana Indonesia. Ekstrak informasi sampul/halaman judul prospektus.',
+            'prospektus_mi_profile' => 'Kamu adalah parser data Manajer Investasi Indonesia. Ekstrak profil perusahaan Manajer Investasi dari teks prospektus.',
+            'prospektus_fund_info' => 'Kamu adalah parser data Reksa Dana Indonesia. Ekstrak informasi produk reksa dana dari teks prospektus.',
+            'prospektus_financial_statements' => 'Kamu adalah parser laporan keuangan Reksa Dana Indonesia. Ekstrak data laporan keuangan (neraca, laba rugi, arus kas) dari teks prospektus.',
+            'prospektus_portfolio' => 'Kamu adalah parser portofolio Reksa Dana Indonesia. Ekstrak data portofolio, alokasi aset, sektor, efek, obligasi, sukuk, dan bank dari teks prospektus.',
+            'prospektus_performance' => 'Kamu adalah parser kinerja Reksa Dana Indonesia. Ekstrak data kinerja historis dan return dari teks prospektus.',
+            'prospektus_risk' => 'Kamu adalah parser profil risiko Reksa Dana Indonesia. Ekstrak informasi risiko dari teks prospektus.',
+        ];
+
+        return $prompts[$key] ?? $prompts['prospektus_default'];
+    }
+
+    private function getSectionPrompts(): array
+    {
+        return [
+            'prospektus_cover' => [
+                'system' => 'prospektus_cover',
+                'fields' => <<<'FIELDS'
+{
+  "nama_reksa_dana": "string nama reksa dana atau null",
+  "jenis_reksa_dana": "Saham/Pendapatan Tetap/Campuran/Pasar Uang/Terproteksi atau null",
+  "manajer_investasi": "string nama manajer investasi atau null",
+  "bank_kustodian": "string nama bank kustodian atau null",
+  "tahun_prospektus": "angka tahun prospektus (YYYY) atau null"
+}
+FIELDS,
+                'rules' => 'Ambil hanya dari halaman sampul/cover. Nama reksa dana biasanya judul besar di halaman pertama.',
+            ],
+            'prospektus_mi_profile' => [
+                'system' => 'prospektus_mi_profile',
+                'fields' => <<<'FIELDS'
+{
+  "manajer_investasi": "string nama lengkap manajer investasi atau null",
+  "alamat_mi": "string alamat lengkap manajer investasi atau null",
+  "telepon_mi": "string nomor telepon atau null",
+  "email_mi": "string alamat email atau null",
+  "website_mi": "string URL website atau null",
+  "komisaris_utama": "string nama komisaris utama atau null",
+  "direktur_utama": "string nama direktur utama atau null",
+  "daftar_komisaris": "string daftar komisaris lain, pisahkan dengan newline (\\n). Format: Nama - Jabatan. Atau null.",
+  "daftar_direksi": "string daftar direksi, pisahkan dengan newline (\\n). Format: Nama - Jabatan. Atau null.",
+  "daftar_pemegang_saham": "string daftar pemegang saham, pisahkan dengan newline (\\n). Format: Nama - Persentase. Atau null.",
+  "deskripsi_mi": "string deskripsi singkat manajer investasi (1-3 kalimat) atau null"
+}
+FIELDS,
+                'rules' => 'Hanya ekstrak data yang terkait Manajer Investasi (perusahaan penerbit reksa dana), BUKAN data produk reksa dana-nya.',
+            ],
+            'prospektus_fund_info' => [
+                'system' => 'prospektus_fund_info',
+                'fields' => <<<'FIELDS'
+{
+  "nama_reksa_dana": "string nama produk reksa dana atau null",
+  "jenis_reksa_dana": "Saham/Pendapatan Tetap/Campuran/Pasar Uang/Terproteksi/Global/DIRE-DINFRA/Penyertaan terbatas atau null",
+  "kategori": ["Konvensional", "Syariah", "index", "ETF"],
+  "manajer_investasi": "string nama MI atau null",
+  "bank_kustodian": "string nama bank kustodian atau null",
+  "tanggal_peluncuran": "YYYY-MM-DD tanggal peluncuran atau null",
+  "mata_uang": "string mata uang misal IDR, USD atau null",
+  "benchmark": "string nama benchmark/index acuan atau null",
+  "tujuan_investasi": "string tujuan investasi atau null",
+  "kebijakan_investasi": "string kebijakan investasi atau null",
+  "total_aum": angka rupiah penuh atau null,
+  "unit_penyertaan": angka jumlah unit penyertaan atau null,
+  "nab_per_unit": angka NAB/UP atau null,
+  "total_marcap_10_efek": angka rupiah penuh atau null,
+  "tanggal_data": "YYYY-MM-DD tanggal data atau null",
+  "return_ytd": angka persen return YTD atau null,
+  "return_1y": angka persen return 1 tahun atau null,
+  "total_return": angka persen total return atau null,
+  "biaya_operasi": angka persen biaya operasi atau null,
+  "portfolio_turnover_ratio": angka portfolio turnover ratio atau null,
+  "management_fee": angka persen management fee atau null,
+  "custodian_fee": angka persen custodian fee atau null
+}
+FIELDS,
+                'rules' => 'Ekstrak informasi produk reksa dana. ffs_bulan dan ffs_tahun bisa diambil dari tanggal_data jika disebutkan.',
+            ],
+            'prospektus_financial_statements' => [
+                'system' => 'prospektus_financial_statements',
+                'fields' => <<<'FIELDS'
+{
+  "total_aset": angka rupiah penuh total aset atau null,
+  "total_liabilitas": angka rupiah penuh total liabilitas atau null,
+  "kas_dan_bank": angka rupiah penuh kas dan bank atau null,
+  "piutang_bunga": angka rupiah penuh piutang bunga atau null,
+  "piutang_dividen": angka rupiah penuh piutang dividen atau null,
+  "piutang_lain": angka rupiah penuh piutang lain-lain atau null,
+  "utang_pajak": angka rupiah penuh utang pajak atau null,
+  "utang_lain": angka rupiah penuh utang lain-lain atau null,
+  "pendapatan_bunga": angka rupiah penuh pendapatan bunga atau null,
+  "pendapatan_dividen": angka rupiah penuh pendapatan dividen atau null,
+  "gain_realized": angka rupiah penuh gain realized atau null,
+  "gain_unrealized": angka rupiah penuh gain unrealized atau null,
+  "beban_mi": angka rupiah penuh beban manajer investasi atau null,
+  "beban_kustodian": angka rupiah penuh beban kustodian atau null,
+  "beban_lain": angka rupiah penuh beban lain-lain atau null,
+  "laba_bersih": angka rupiah penuh laba bersih atau null,
+  "arus_kas_operasi": angka rupiah penuh arus kas operasi atau null,
+  "arus_kas_pendanaan": angka rupiah penuh arus kas pendanaan atau null,
+  "kas_awal_tahun": angka rupiah penuh kas awal tahun atau null,
+  "kas_akhir_tahun": angka rupiah penuh kas akhir tahun atau null,
+  "total_hasil_investasi": angka persen total hasil investasi atau null,
+  "hasil_investasi_setelah_biaya": angka persen hasil investasi setelah biaya pemasaran atau null,
+  "persentase_pph": angka persen penghasilan kena pajak atau null,
+  "fair_value_level_1": angka rupiah penuh fair value level 1 atau null,
+  "fair_value_level_2": angka rupiah penuh fair value level 2 atau null,
+  "fair_value_level_3": angka rupiah penuh fair value level 3 atau null,
+  "unit_milik_investor": angka jumlah unit milik investor atau null,
+  "unit_milik_mi": angka jumlah unit milik manajer investasi atau null,
+  "total_unit_beredar": angka jumlah total unit beredar atau null
+}
+FIELDS,
+                'rules' => 'Ekstrak data laporan keuangan dari teks yang mengandung Neraca (Laporan Posisi Keuangan), Laba Rugi (Laporan Penghasilan Komprehensif), Arus Kas, dan Catatan atas Laporan Keuangan.
+
+Cari label-label berikut di tabel:
+- NERACA: Total Aset/JUMLAH ASET, Total Liabilitas/JUMLAH LIABILITAS, Kas dan Bank/Kas & Setara Kas, Piutang Bunga, Piutang Dividen, Piutang Lain-lain, Utang Pajak, Utang Lain-lain
+- LABA RUGI: Pendapatan Bunga, Pendapatan Dividen, Gain Realized, Gain Unrealized/Laba Belum Realisasi, Beban MI/Beban Manajer Investasi, Beban Kustodian, Beban Lain-lain, Laba Bersih
+- ARUS KAS: Arus Kas Operasi/Kas dari Aktivitas Operasi, Arus Kas Pendanaan/Kas dari Aktivitas Pendanaan, Kas Awal Tahun, Kas Akhir Tahun
+- RASIO: Total Hasil Investasi, Biaya Operasi/Rasio Biaya, Portfolio Turnover, Persentase PPH
+- FAIR VALUE: Level 1/Tingkat 1, Level 2/Tingkat 2, Level 3/Tingkat 3
+- UNIT: Unit Milik Investor, Unit Milik MI, Total Unit Beredar
+
+Format tabel umum di prospektus Indonesia:
+- Kolom: Nama Akun | (Rp) atau dalam ribuan/jutaan
+- Label biasanya rata kiri, angka rata kanan
+- "Jumlah" atau "Total" menandakan subtotal
+- Perhatikan apakah angka dalam Rupiah penuh, ribuan (000-an), atau jutaan
+
+Angka dalam Rupiah penuh (misal 1.5 triliun = 1500000000000). Persen dalam desimal (misal 12.5 untuk 12.5%).',
+            ],
+            'prospektus_portfolio' => [
+                'system' => 'prospektus_portfolio',
+                'fields' => <<<'FIELDS'
+{
+  "alokasi_aset": [
+    {"nama_aset": "Saham/Obligasi/Pasar Uang/Kas/Deposito/lainnya", "persentase": angka_persen}
+  ],
+  "sektor": [
+    {"nama_sektor": "string", "bobot": angka_persen}
+  ],
+  "efek": [
+    {
+      "kode_efek": "string misal BBCA",
+      "nama_efek": "string nama lengkap",
+      "sektor": "string nama sektor atau kosong",
+      "bobot": angka_persen,
+      "kontribusi_kinerja": angka_persen_atau_null,
+      "market_cap": angka_rupiah_penuh_atau_null,
+      "nilai_pasar": angka_rupiah_penuh_atau_null,
+      "harga_perolehan": angka_rupiah_penuh_atau_null,
+      "persen_nab": angka_persen_terhadap_nab_atau_null,
+      "top_10": true jika masuk 10 efek terbesar
+    }
+  ],
+  "obligasi": [
+    {
+      "kode_obligasi": "string misal FR0091",
+      "nama_obligasi": "string nama lengkap",
+      "bobot": angka_persen,
+      "nilai_pasar": angka_rupiah_penuh_atau_null,
+      "durasi": angka_tahun_atau_null,
+      "ytm": angka_persen_yield_to_maturity_atau_null,
+      "kupon": angka_persen_kupon_atau_null,
+      "tanggal_jatuh_tempo": "YYYY-MM-DD atau null",
+      "penerbit": "string nama penerbit atau null",
+      "persen_nab": angka_persen_terhadap_nab_atau_null,
+      "rating": "AAA/AA+/AA/AA-/A+/A/A-/BBB+/BBB/BBB-/BB/B/CCC/D atau null"
+    }
+  ],
+  "sukuk": [
+    {
+      "kode_sukuk": "string misal SR019, PBS037",
+      "nama_sukuk": "string nama lengkap",
+      "jenis_sukuk": "Negara atau Korporasi atau null",
+      "bobot": angka_persen,
+      "yield": angka_persen_atau_null,
+      "jatuh_tempo": "string tahun misal 2028 atau null",
+      "persen_nab": angka_persen_terhadap_nab_atau_null,
+      "rating": "AAA/AA+/AA/AA-/A+ atau null"
+    }
+  ],
+  "bank": [
+    {
+      "nama_bank": "string",
+      "jenis_bank": "string jenis bank atau null",
+      "bobot": angka_persen_atau_null,
+      "nilai_pasar": angka_rupiah_penuh_atau_null,
+      "tingkat_bunga": angka_persen_atau_null,
+      "jangka_waktu": angka_jangka_waktu_hari_atau_null,
+      "persen_nab": angka_persen_terhadap_nab_atau_null,
+      "car": angka_persen_atau_null,
+      "npl": angka_persen_atau_null,
+      "klasifikasi_risiko": "Rendah/Sedang/Tinggi atau null"
+    }
+  ]
+}
+FIELDS,
+                'rules' => 'Ekstrak data portofolio. bobot dalam persen (misal 12.5, bukan 0.125). Alokasi aset adalah komposisi jenis aset (saham, obligasi, dll) bukan sektor.',
+            ],
+            'prospektus_performance' => [
+                'system' => 'prospektus_performance',
+                'fields' => <<<'FIELDS'
+{
+  "kinerja": [
+    {"periode": "YYYY-MM", "return_pct": angka}
+  ],
+  "return_ytd": angka_persen_return_YTD_atau_null,
+  "return_1y": angka_persen_return_1_tahun_atau_null,
+  "total_return": angka_persen_total_return_atau_null
+}
+FIELDS,
+                'rules' => 'Ekstrak data kinerja historis. Periode format YYYY-MM (misal 2024-03). Return dalam persen.',
+            ],
+            'prospektus_risk' => [
+                'system' => 'prospektus_risk',
+                'fields' => <<<'FIELDS'
+{
+  "profil_risiko": "string deskripsi profil risiko atau null",
+  "tingkat_risiko": "Rendah/Sedang/Tinggi atau null",
+  "risiko_utama": "string deskripsi risiko utama atau null"
+}
+FIELDS,
+                'rules' => 'Ekstrak informasi profil risiko reksa dana.',
+            ],
+        ];
+    }
+
     public function parseFfsPdfVision(string $pdfPath, ?string $filename = null): array
     {
         $prompt = <<<PROMPT
@@ -1209,7 +1490,66 @@ PROMPT;
         return self::normalizeLapkeuPdfData(self::parseJsonOutput($raw), $isObligasi);
     }
 
-    private function callOpenAiPdf(string $pdfPath, ?string $filename, string $prompt, int $timeout = 180, float $temperature = 0.1): string
+    public function parseProspektusFinancialVision(string $pdfPath, ?string $filename = null): array
+    {
+        $systemPrompt = 'Kamu adalah data entry clerk yang membaca dokumen PDF reksa dana. Tugasmu hanya membaca angka dari tabel dan mengembalikannya dalam format JSON. Ini murni tugas administratif pengolahan data, bukan rekomendasi investasi.';
+
+        $userPrompt = <<<PROMPT
+Baca halaman PDF prospektus reksa dana ini. Cari tabel LAPORAN KEUANGAN (neraca, laba rugi, arus kas). Salin angka-angka berikut dalam Rupiah penuh ke JSON:
+
+{
+  "total_aset": angka atau null,
+  "total_liabilitas": angka atau null,
+  "kas_dan_bank": angka atau null,
+  "piutang_bunga": angka atau null,
+  "piutang_dividen": angka atau null,
+  "piutang_lain": angka atau null,
+  "utang_pajak": angka atau null,
+  "utang_lain": angka atau null,
+  "pendapatan_bunga": angka atau null,
+  "pendapatan_dividen": angka atau null,
+  "gain_realized": angka atau null,
+  "gain_unrealized": angka atau null,
+  "beban_mi": angka atau null,
+  "beban_kustodian": angka atau null,
+  "beban_lain": angka atau null,
+  "laba_bersih": angka atau null,
+  "arus_kas_operasi": angka atau null,
+  "arus_kas_pendanaan": angka atau null,
+  "kas_awal_tahun": angka atau null,
+  "kas_akhir_tahun": angka atau null,
+  "total_hasil_investasi": angka persen (misal 12.5) atau null,
+  "hasil_investasi_setelah_biaya": angka persen atau null,
+  "persentase_pph": angka persen atau null,
+  "fair_value_level_1": angka atau null,
+  "fair_value_level_2": angka atau null,
+  "fair_value_level_3": angka atau null,
+  "unit_milik_investor": angka atau null,
+  "unit_milik_mi": angka atau null,
+  "total_unit_beredar": angka atau null
+}
+
+ATURAN:
+- Jika ada tulisan "dalam jutaan", kalikan 1.000.000; jika "dalam ribuan", kalikan 1.000
+- gain_unrealized = laba/(rugi) yang belum direalisasi
+- gain_realized = laba/(rugi) yang telah direalisasi
+- beban_mi = beban manajer investasi / beban investasi
+- Persen dalam desimal: 12,5% = 12.5
+- Ambil kolom periode terbaru (paling kanan) jika ada beberapa periode
+- Output HANYA JSON, tanpa teks lain, tanpa markdown
+PROMPT;
+
+        $raw = $this->callOpenAiPdf($pdfPath, $filename, $userPrompt, 300, 0.1, 'gpt-4o', $systemPrompt);
+        $data = self::parseJsonOutput($raw);
+
+        \Log::info('[PROSPEKTUS_VISION] Hasil vision extraction', [
+            'fields' => array_keys(array_filter($data, fn($v) => $v !== null && $v !== '' && $v !== [])),
+        ]);
+
+        return $data;
+    }
+
+    private function callOpenAiPdf(string $pdfPath, ?string $filename, string $prompt, int $timeout = 180, float $temperature = 0.1, ?string $model = null, ?string $systemPrompt = null): string
     {
         if (!$this->openaiKey) {
             throw new \RuntimeException('OpenAI API key belum tersedia untuk scan PDF vision.');
@@ -1220,34 +1560,42 @@ PROMPT;
             throw new \RuntimeException('File PDF tidak dapat dibaca untuk scan AI.');
         }
 
+        $messages = [];
+        if ($systemPrompt) {
+            $messages[] = ['role' => 'system', 'content' => $systemPrompt];
+        }
+        $messages[] = [
+            'role' => 'user',
+            'content' => [
+                [
+                    'type' => 'file',
+                    'file' => [
+                        'filename' => $filename ?: basename($pdfPath),
+                        'file_data' => 'data:application/pdf;base64,' . base64_encode($bytes),
+                    ],
+                ],
+                [
+                    'type' => 'text',
+                    'text' => $prompt,
+                ],
+            ],
+        ];
+
         $response = \Illuminate\Support\Facades\Http::withToken($this->openaiKey)
             ->timeout($timeout)
             ->post($this->openaiUrl, [
-                'model' => $this->openaiModel,
+                'model' => $model ?: $this->openaiModel,
                 'temperature' => $temperature,
-                'messages' => [[
-                    'role' => 'user',
-                    'content' => [
-                        [
-                            'type' => 'file',
-                            'file' => [
-                                'filename' => $filename ?: basename($pdfPath),
-                                'file_data' => 'data:application/pdf;base64,' . base64_encode($bytes),
-                            ],
-                        ],
-                        [
-                            'type' => 'text',
-                            'text' => $prompt,
-                        ],
-                    ],
-                ]],
+                'messages' => $messages,
             ]);
 
         if ($response->failed()) {
             throw new \RuntimeException('OpenAI PDF vision error: ' . $response->body());
         }
 
-        return $response->json('choices.0.message.content', '');
+        $content = $response->json('choices.0.message.content', '');
+        \Log::info('[OPENAI_PDF] Raw response preview: ' . mb_substr($content, 0, 500));
+        return $content;
     }
 
     private static function normalizeLapkeuPdfData(array $data, bool $isObligasi): array

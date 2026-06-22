@@ -16,6 +16,9 @@ use App\Services\BondMarketService;
 use App\Services\DataSourceAutoDownloadService;
 use App\Services\FfsParserService;
 use App\Services\IdxMarketService;
+use App\Services\PageClassifierService;
+use App\Services\ProspektusPipelineService;
+use App\Services\ProspektusValidator;
 use App\Services\WebDataFileParserService;
 use App\Services\WebScraperService;
 use App\Services\AnalisaAiValidator;
@@ -77,8 +80,9 @@ class AnalisaController extends Controller
             'store'           => route("{$prefix}.store"),
             'template'        => route("{$prefix}.template"),
             'cancel'          => $cancelRoute,
-            'parse_pdf'       => route("{$prefix}.parse-pdf"),
-            'parse_pdf_vision' => \Illuminate\Support\Facades\Route::has("{$prefix}.parse-pdf-vision") ? route("{$prefix}.parse-pdf-vision") : null,
+            'parse_pdf'              => route("{$prefix}.parse-pdf"),
+            'parse_pdf_vision'      => \Illuminate\Support\Facades\Route::has("{$prefix}.parse-pdf-vision") ? route("{$prefix}.parse-pdf-vision") : null,
+            'parse_prospektus_pdf'  => \Illuminate\Support\Facades\Route::has("{$prefix}.parse-prospektus-pdf") ? route("{$prefix}.parse-prospektus-pdf") : null,
             'preview_ai'      => route("{$prefix}.preview-ai"),
             'preview_ai_plus' => route("{$prefix}.preview-ai-plus"),
             'lookup_kode'     => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-kode") ? route("{$prefix}.lookup-kode") : null,
@@ -533,6 +537,7 @@ class AnalisaController extends Controller
                     'uploaded_at' => $doc->created_at?->format('d/m/Y') ?? '',
                     'uploader_name' => $doc->uploader?->name,
                     'file_size' => $doc->file_size,
+                    'notes' => $doc->notes,
                     'url' => $doc->file_path && Storage::disk('public')->exists($doc->file_path)
                         ? Storage::disk('public')->url($doc->file_path) : null,
                 ]);
@@ -649,6 +654,146 @@ class AnalisaController extends Controller
                 : 'Tidak dapat mengekstrak data dari PDF ini.',
             'data' => $data,
             'document_label' => $this->getDocumentLabel($document),
+        ]);
+    }
+
+    public function parseProspektusPdf(Request $request, ProspektusPipelineService $pipeline)
+    {
+        set_time_limit(600);
+
+        $request->validate([
+            'file_pdf' => 'required|file|max:10240',
+        ]);
+
+        $file = $request->file('file_pdf');
+        $path = $file->getPathname();
+
+        try {
+            $result = $pipeline->process($path, 'prospektus');
+        } catch (\Throwable $e) {
+            \Log::error('[PROSPEKTUS] Pipeline error: ' . $e->getMessage(), [
+                'file' => $file->getClientOriginalName(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memproses Prospektus PDF: ' . $e->getMessage(),
+                'data' => null,
+            ], 422);
+        }
+
+        $filename = 'prospektus-' . now()->format('Ymd-His') . '-' . Str::random(8) . '.pdf';
+        $storedPath = $file->storeAs('analisa-pdfs', $filename, 'public');
+
+        $data = $result['data'];
+        $validation = $result['validation'];
+
+        $sectionLabels = [
+            'cover' => 'Sampul',
+            'mi_profile' => 'Profil MI',
+            'fund_info' => 'Info RD',
+            'financial_statements' => 'Laporan Keuangan',
+            'portfolio' => 'Portofolio',
+            'performance' => 'Kinerja',
+            'risk' => 'Risiko',
+        ];
+
+        $extractedSections = [];
+        foreach ($result['section_results'] as $section => $sectionData) {
+            if (!empty($sectionData)) {
+                $label = $sectionLabels[$section] ?? $section;
+                $fields = array_keys(array_filter($sectionData, fn($v) => $v !== null && $v !== '' && $v !== []));
+                if (!empty($fields)) {
+                    $extractedSections[] = $label . ' (' . implode(', ', array_slice($fields, 0, 5)) . ')';
+                }
+            }
+        }
+
+        $success = !empty($extractedSections);
+
+        $message = $success
+            ? 'Berhasil mengekstrak dari Prospektus: ' . implode('; ', $extractedSections) . '.'
+            : 'Tidak dapat mengekstrak data dari Prospektus PDF ini. Format mungkin tidak didukung.';
+
+        if ($validation && !empty($validation['warnings'])) {
+            $message .= ' Peringatan: ' . implode(', ', $validation['warnings']);
+        }
+
+        return response()->json([
+            'success' => $success,
+            'message' => $message,
+            'data' => $data,
+            'pdf_file' => $storedPath,
+            'validation' => $validation,
+            'classifications' => $result['classifications'],
+        ]);
+    }
+
+    public function parseExistingProspektus(Request $request, ProspektusPipelineService $pipeline)
+    {
+        $request->merge([
+            'jenis_laporan' => 'laporan_tahunan',
+            'ffs_bulan' => null,
+            'ffs_tahun' => null,
+            'tahun_laporan' => $request->tahun_laporan ?: now()->year,
+        ]);
+
+        $request->validate([
+            'document_id' => 'required|exists:reksa_dana_documents,id',
+        ]);
+
+        $document = ReksaDanaDocument::findOrFail($request->document_id);
+
+        if (!$document->file_path || !Storage::disk('public')->exists($document->file_path)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File PDF dokumen tidak ditemukan di penyimpanan.',
+                'data' => null,
+            ], 404);
+        }
+
+        $fullPath = Storage::disk('public')->path($document->file_path);
+
+        try {
+            set_time_limit(600);
+            $result = $pipeline->process($fullPath, 'prospektus');
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membaca Prospektus PDF: ' . $e->getMessage(),
+                'data' => null,
+            ], 422);
+        }
+
+        $data = $result['data'];
+        $validation = $result['validation'];
+
+        $extracted = [];
+        if ($data['nama_reksa_dana']) $extracted[] = 'Nama RD';
+        if ($data['jenis_reksa_dana']) $extracted[] = 'Jenis RD';
+        if ($data['manajer_investasi']) $extracted[] = 'MI';
+        if ($data['total_aum']) $extracted[] = 'Total AUM';
+        if (!empty($data['unit_penyertaan'])) $extracted[] = 'Unit Penyertaan';
+        if (!empty($data['nab_per_unit'])) $extracted[] = 'NAB/UP';
+        if (!empty($data['tanggal_data'])) $extracted[] = 'Tanggal Data';
+        if (!empty($data['total_aset'])) $extracted[] = 'Neraca';
+        if (!empty($data['alokasi_aset'])) $extracted[] = count($data['alokasi_aset']) . ' Alokasi Aset';
+        if ($data['sektor']) $extracted[] = count($data['sektor']) . ' Sektor';
+        if ($data['efek']) $extracted[] = count($data['efek']) . ' Efek';
+        if ($data['kinerja']) $extracted[] = count($data['kinerja']) . ' Bulan Kinerja';
+        if ($data['obligasi']) $extracted[] = count($data['obligasi']) . ' Obligasi';
+        if ($data['bank']) $extracted[] = count($data['bank']) . ' Bank';
+
+        $success = count($extracted) > 0;
+
+        return response()->json([
+            'success' => $success,
+            'message' => $success
+                ? 'Berhasil mengekstrak Prospektus: ' . implode(', ', $extracted) . '.'
+                : 'Tidak dapat mengekstrak data dari Prospektus PDF ini.',
+            'data' => $data,
+            'document_label' => $this->getDocumentLabel($document),
+            'validation' => $validation,
         ]);
     }
 

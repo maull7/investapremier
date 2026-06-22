@@ -17,7 +17,19 @@
         ];
     @endphp
 
-    <div x-data="stockDetail(@js($activeTab), @js(route($routePrefix . '.saham.fetch-yahoo', $stock)), @js(route($routePrefix . '.saham.fetch-summary', $stock)))" x-init="init()" class="space-y-6">
+    <div x-data="stockDetail(
+        @js($activeTab),
+        @js(route($routePrefix . '.saham.fetch-yahoo', $stock)),
+        @js(route($routePrefix . '.saham.fetch-summary', $stock)),
+        @js(route($routePrefix . '.saham.search-stock')),
+        @js(route($routePrefix . '.saham.compare-chart')),
+        @js($stock->corporateActions->map(fn($a) => [
+            'action_type' => $a->action_type,
+            'action_date' => $a->action_date->format('Y-m-d'),
+            'description' => $a->description,
+            'value' => $a->value,
+        ]))
+    )" x-init="init()" class="space-y-6">
         <div class="flex items-start justify-between gap-4">
             <div>
                 <a href="{{ route($routePrefix . '.saham.index') }}" class="text-sm text-muted hover:text-primary">← Daftar
@@ -213,14 +225,43 @@
             <div x-show="tab==='grafik'" class="p-6 space-y-4">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div class="flex flex-wrap gap-2">
-                        @foreach (['1D' => '1d', '5D' => '5d', '1M' => '1mo', '3M' => '3mo', '6M' => '6mo', '1Y' => '1y'] as $label => $val)
+                        @foreach (['1D' => '1d', '5D' => '5d', '1M' => '1mo', '3M' => '3mo', '6M' => '6mo', '1Y' => '1y', '5Y' => '5y', 'Sejak IPO' => 'max'] as $label => $val)
                             <button type="button" @click="changeRange('{{ $val }}')"
                                 :class="range === '{{ $val }}' ? 'bg-primary text-white border-primary' :
                                     'border-line text-muted hover:text-primary'"
                                 class="px-3 py-1.5 rounded-lg border text-xs font-semibold">{{ $label }}</button>
                         @endforeach
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <div class="flex gap-1 p-0.5 border border-line rounded-lg">
+                            <button type="button" @click="chartType = 'candle'"
+                                :class="chartType === 'candle' ? 'bg-primary text-white' : 'text-muted hover:text-primary'"
+                                class="px-2.5 py-1 rounded-md text-xs font-semibold transition">Candle</button>
+                            <button type="button" @click="chartType = 'line'"
+                                :class="chartType === 'line' ? 'bg-primary text-white' : 'text-muted hover:text-primary'"
+                                class="px-2.5 py-1 rounded-md text-xs font-semibold transition">Line</button>
+                        </div>
+                        <div class="flex gap-1 p-0.5 border border-line rounded-lg">
+                            <template x-for="[key, label] of Object.entries({ sma: 'SMA', ema: 'EMA', bb: 'BB', rsi: 'RSI', macd: 'MACD' })" :key="key">
+                                <button type="button" @click="toggleIndicator(key)"
+                                    :class="indicators[key] ? 'bg-indigo-600 text-white' : 'text-muted hover:text-primary'"
+                                    class="px-2 py-1 rounded-md text-xs font-semibold transition" x-text="label"></button>
+                            </template>
+                        </div>
+                        <div class="relative" x-data="{ open: false, search: '', results: [] }" @click.outside="open = false">
+                            <input type="text" x-model="search" @input.debounce="open = true; searchStock(search, results)"
+                                placeholder="Cari saham pembanding..."
+                                class="w-36 text-xs border border-line rounded-lg px-2 py-1.5">
+                            <div x-show="open && results.length > 0" class="absolute top-full right-0 mt-1 w-64 bg-white border border-line rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto">
+                                <template x-for="s in results" :key="s.kode">
+                                    <button type="button" @click="addComparison(s); search = ''; results = []; open = false"
+                                        class="w-full text-left px-3 py-2 hover:bg-indigo-50 text-xs border-b border-line last:border-0">
+                                        <span class="font-semibold" x-text="s.kode"></span>
+                                        <span class="text-muted" x-text="' - ' + s.nama"></span>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
                         <span x-show="loading" class="text-xs text-muted flex items-center gap-1">
                             <span
                                 class="inline-block w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
@@ -267,9 +308,20 @@
                     </div>
                 </div>
 
+                {{-- Comparison chips --}}
+                <div x-show="comparisons.length > 0" class="flex flex-wrap gap-2">
+                    <template x-for="(cmp, i) in comparisons" :key="cmp.kode">
+                        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
+                            :style="'background-color: ' + cmp.color + '18; color: ' + cmp.color + '; border: 1px solid ' + cmp.color + '40'">
+                            <span x-text="cmp.kode"></span>
+                            <button type="button" @click="removeComparison(i)" class="hover:opacity-60">✕</button>
+                        </div>
+                    </template>
+                </div>
+
                 {{-- Chart --}}
                 <div x-show="meta && chartHasData" class="border border-line rounded-xl p-4">
-                    <canvas id="yahooChartCanvas" height="100"></canvas>
+                    <div id="yahooChartContainer"></div>
                 </div>
                 <div x-show="meta && !chartHasData"
                     class="px-4 py-3 rounded-xl text-sm bg-yellow-50 border border-yellow-200 text-yellow-700">
@@ -714,20 +766,26 @@
 @endsection
 
 @push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/lightweight-charts@4/dist/lightweight-charts.standalone.production.js"></script>
     <script>
-        function stockDetail(activeTab, fetchUrl, summaryUrl) {
+        function stockDetail(activeTab, fetchUrl, summaryUrl, searchUrl, compareUrl, corporateEvents) {
             return {
                 tab: activeTab,
                 loading: false,
                 chartError: null,
                 meta: null,
                 range: '1d',
+                chartType: 'candle',
                 chartInstance: null,
                 chartHasData: false,
                 summary: null,
                 summaryLoading: false,
                 summaryError: null,
+                corporateEvents: corporateEvents || [],
+                comparisons: [],
+                indicators: { sma: false, ema: false, bb: false, rsi: false, macd: false },
+                indicatorSeries: {},
+                COMPARE_COLORS: ['#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'],
 
                 init() {
                     this.fetchSummary();
@@ -739,6 +797,11 @@
                     if (this.tab === 'grafik') {
                         this.$nextTick(() => this.fetchData());
                     }
+                    this.$watch('chartType', val => {
+                        if (this.chartInstance) {
+                            this.applyChartType(val);
+                        }
+                    });
                 },
 
                 fmt(val) {
@@ -765,10 +828,7 @@
                     this.summaryError = null;
                     try {
                         const res = await fetch(summaryUrl, {
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json'
-                            }
+                            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
                         });
                         const json = await res.json();
                         if (!json.success) throw new Error(json.message || 'Gagal mengambil ringkasan saham.');
@@ -785,10 +845,7 @@
                     this.chartError = null;
                     try {
                         const res = await fetch(fetchUrl + '?range=' + this.range, {
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json'
-                            }
+                            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
                         });
                         const json = await res.json();
                         if (!json.success) throw new Error(json.message || 'Gagal mengambil data.');
@@ -809,75 +866,419 @@
                     if (this.loading) return;
                     this.range = r;
                     this.meta = null;
+                    this.comparisons = [];
                     this.fetchData();
                 },
 
-                renderChart(chartData) {
-                    const canvas = document.getElementById('yahooChartCanvas');
-                    if (!canvas) return;
-                    if (this.chartInstance) {
-                        this.chartInstance.destroy();
+                // ─── Chart Type ───────────────────────────────────────
+
+                applyChartType(type) {
+                    const inst = this.chartInstance;
+                    if (!inst || !inst.candleSeries) return;
+                    const showCandle = type === 'candle';
+                    inst.candleSeries.applyOptions({ visible: showCandle });
+                    inst.lineSeries.applyOptions({ visible: !showCandle });
+                },
+
+                // ─── Comparison ───────────────────────────────────────
+
+                async searchStock(query, results) {
+                    if (!query || query.length < 1) { results.length = 0; return; }
+                    try {
+                        const res = await fetch(searchUrl + '?q=' + encodeURIComponent(query), {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                        });
+                        const data = await res.json();
+                        results.splice(0, results.length, ...data);
+                    } catch (e) {
+                        results.length = 0;
                     }
+                },
 
-                    const isIntraday = this.range === '1d' || this.range === '5d';
-                    const labels = chartData.map(d => {
-                        const dt = new Date(d.time * 1000);
-                        return isIntraday ?
-                            dt.toLocaleTimeString('id-ID', {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            }) :
-                            dt.toLocaleDateString('id-ID', {
-                                day: '2-digit',
-                                month: 'short',
-                                year: '2-digit'
-                            });
-                    });
-                    const closes = chartData.map(d => d.close);
-                    const prevClose = this.meta?.previousClose ?? closes[0];
-                    const color = (closes[closes.length - 1] ?? 0) >= prevClose ? '#22c55e' : '#ef4444';
-
-                    this.chartInstance = new Chart(canvas, {
-                        type: 'line',
-                        data: {
-                            labels,
-                            datasets: [{
-                                label: 'Harga (IDR)',
-                                data: closes,
-                                borderColor: color,
-                                backgroundColor: color + '18',
-                                borderWidth: 2,
-                                pointRadius: chartData.length > 60 ? 0 : 3,
-                                fill: true,
-                                tension: 0.1,
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            interaction: {
-                                intersect: false,
-                                mode: 'index'
-                            },
-                            plugins: {
-                                legend: {
-                                    display: false
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: ctx => 'Rp ' + Number(ctx.parsed.y).toLocaleString('id-ID')
-                                    }
-                                }
-                            },
-                            scales: {
-                                y: {
-                                    ticks: {
-                                        callback: val => 'Rp ' + Number(val).toLocaleString('id-ID')
-                                    }
-                                }
+                async addComparison(stock) {
+                    if (this.comparisons.some(c => c.kode === stock.kode)) return;
+                    const color = this.COMPARE_COLORS[this.comparisons.length % this.COMPARE_COLORS.length];
+                    const cmp = { ...stock, color, data: null, series: null };
+                    this.comparisons.push(cmp);
+                    const idx = this.comparisons.length - 1;
+                    try {
+                        const res = await fetch(compareUrl + '?code=' + encodeURIComponent(stock.kode) + '&range=' + this.range, {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                        });
+                        const json = await res.json();
+                        if (json.success && json.data.chart) {
+                            this.comparisons[idx].data = json.data.chart;
+                            if (this.chartInstance) {
+                                this.addComparisonSeries(idx);
                             }
                         }
+                    } catch (e) {}
+                },
+
+                removeComparison(idx) {
+                    const cmp = this.comparisons[idx];
+                    if (cmp && cmp.series && this.chartInstance) {
+                        this.chartInstance.chart.removeSeries(cmp.series);
+                    }
+                    this.comparisons.splice(idx, 1);
+                },
+
+                addComparisonSeries(idx) {
+                    const cmp = this.comparisons[idx];
+                    if (!cmp || !cmp.data || !this.chartInstance) return;
+                    const series = this.chartInstance.chart.addLineSeries({
+                        color: cmp.color,
+                        lineWidth: 2,
+                        lastValueVisible: true,
+                        priceLineVisible: false,
                     });
-                }
+                    series.setData(cmp.data.filter(d => d.time != null && d.close != null).map(d => ({ time: d.time, value: d.close })));
+                    cmp.series = series;
+                },
+
+                // ─── Indicators ──────────────────────────────────────
+
+                toggleIndicator(key) {
+                    this.indicators[key] = !this.indicators[key];
+                    if (this.chartInstance && this.chartInstance.candleSeries) {
+                        this.updateIndicators();
+                    }
+                },
+
+                calcSMA(data, period) {
+                    const result = [];
+                    for (let i = 0; i < data.length; i++) {
+                        if (i < period - 1) { result.push(null); continue; }
+                        let sum = 0;
+                        for (let j = i - period + 1; j <= i; j++) sum += data[j].close;
+                        result.push({ time: data[i].time, value: sum / period });
+                    }
+                    return result;
+                },
+
+                calcEMA(data, period) {
+                    const multiplier = 2 / (period + 1);
+                    let ema = data[0].close;
+                    const result = [{ time: data[0].time, value: ema }];
+                    for (let i = 1; i < data.length; i++) {
+                        ema = (data[i].close - ema) * multiplier + ema;
+                        result.push({ time: data[i].time, value: ema });
+                    }
+                    return result;
+                },
+
+                calcBB(data, period, stddev) {
+                    const sma = this.calcSMA(data, period);
+                    const result = [];
+                    for (let i = 0; i < data.length; i++) {
+                        if (i < period - 1) { result.push(null); continue; }
+                        let sum = 0;
+                        for (let j = i - period + 1; j <= i; j++) sum += data[j].close;
+                        const mean = sum / period;
+                        let sqSum = 0;
+                        for (let j = i - period + 1; j <= i; j++) sqSum += (data[j].close - mean) ** 2;
+                        const sd = Math.sqrt(sqSum / period);
+                        result.push({ time: data[i].time, upper: mean + stddev * sd, middle: mean, lower: mean - stddev * sd });
+                    }
+                    return result;
+                },
+
+                calcRSI(data, period) {
+                    const result = [];
+                    for (let i = 0; i < data.length; i++) {
+                        if (i < period) { result.push(null); continue; }
+                        let gain = 0, loss = 0;
+                        for (let j = i - period + 1; j <= i; j++) {
+                            const diff = data[j].close - data[j - 1].close;
+                            if (diff >= 0) gain += diff; else loss -= diff;
+                        }
+                        const avgGain = gain / period;
+                        const avgLoss = loss / period;
+                        const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+                        result.push({ time: data[i].time, value: 100 - 100 / (1 + rs) });
+                    }
+                    return result;
+                },
+
+                calcMACD(data, fast, slow, signal) {
+                    const emaFast = this.calcEMA(data, fast);
+                    const emaSlow = this.calcEMA(data, slow);
+                    const macdLine = emaFast.map((v, i) => ({
+                        time: v.time,
+                        value: v.value - emaSlow[i].value,
+                    }));
+                    const signalLine = this.calcEMA(
+                        macdLine.filter(v => v.value != null).map(v => ({ time: v.time, close: v.value })),
+                        signal
+                    );
+                    const histogram = macdLine.map((v, i) => ({
+                        time: v.time,
+                        value: v.value - (signalLine.find(s => s.time === v.time)?.value ?? 0),
+                    }));
+                    return { macdLine, signalLine, histogram };
+                },
+
+                updateIndicators() {
+                    const inst = this.chartInstance;
+                    if (!inst) return;
+                    const data = inst._chartData;
+
+                    // Clean old indicator series
+                    Object.values(this.indicatorSeries).forEach(s => {
+                        if (Array.isArray(s)) s.forEach(x => inst.chart.removeSeries(x));
+                        else if (s) inst.chart.removeSeries(s);
+                    });
+                    this.indicatorSeries = {};
+
+                    if (this.indicators.sma) {
+                        const sma20 = inst.chart.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
+                        sma20.setData(this.calcSMA(data, 20).filter(v => v.value != null));
+                        const sma50 = inst.chart.addLineSeries({ color: '#ef4444', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
+                        sma50.setData(this.calcSMA(data, 50).filter(v => v.value != null));
+                        this.indicatorSeries.sma = [sma20, sma50];
+                    }
+
+                    if (this.indicators.ema) {
+                        const ema20 = inst.chart.addLineSeries({ color: '#8b5cf6', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
+                        ema20.setData(this.calcEMA(data, 20).filter(v => v.value != null));
+                        const ema50 = inst.chart.addLineSeries({ color: '#ec4899', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
+                        ema50.setData(this.calcEMA(data, 50).filter(v => v.value != null));
+                        this.indicatorSeries.ema = [ema20, ema50];
+                    }
+
+                    if (this.indicators.bb) {
+                        const bb = this.calcBB(data, 20, 2);
+                        const valid = bb.filter(v => v != null);
+                        const upper = inst.chart.addLineSeries({ color: '#14b8a6', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+                        upper.setData(valid.map(v => ({ time: v.time, value: v.upper })));
+                        const middle = inst.chart.addLineSeries({ color: '#14b8a6', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+                        middle.setData(valid.map(v => ({ time: v.time, value: v.middle })));
+                        const lower = inst.chart.addLineSeries({ color: '#14b8a6', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+                        lower.setData(valid.map(v => ({ time: v.time, value: v.lower })));
+                        this.indicatorSeries.bb = [upper, middle, lower];
+                    }
+
+                    if (this.indicators.rsi) {
+                        const rsiScale = inst.chart.priceScale('rsi');
+                        rsiScale.applyOptions({
+                            scaleMargins: { top: 0.52, bottom: 0.35 },
+                            visible: true,
+                        });
+                        const rsiData = this.calcRSI(data, 14).filter(v => v.value != null && v.time != null);
+                        const rsiLine = inst.chart.addLineSeries({
+                            priceScaleId: 'rsi',
+                            color: '#f97316',
+                            lineWidth: 2,
+                            priceLineVisible: false,
+                            lastValueVisible: true,
+                        });
+                        rsiLine.setData(rsiData);
+                        // Overbought/oversold lines
+                        const obLine = inst.chart.addLineSeries({
+                            priceScaleId: 'rsi',
+                            color: '#ef4444',
+                            lineWidth: 1,
+                            lineStyle: 2,
+                            priceLineVisible: false,
+                            lastValueVisible: false,
+                        });
+                        obLine.setData(rsiData.map(d => ({ time: d.time, value: 70 })));
+                        const osLine = inst.chart.addLineSeries({
+                            priceScaleId: 'rsi',
+                            color: '#22c55e',
+                            lineWidth: 1,
+                            lineStyle: 2,
+                            priceLineVisible: false,
+                            lastValueVisible: false,
+                        });
+                        osLine.setData(rsiData.map(d => ({ time: d.time, value: 30 })));
+                        this.indicatorSeries.rsi = [rsiLine, obLine, osLine];
+                    } else {
+                        inst.chart.priceScale('rsi').applyOptions({ visible: false });
+                    }
+
+                    if (this.indicators.macd) {
+                        const macdScale = inst.chart.priceScale('macd');
+                        macdScale.applyOptions({
+                            scaleMargins: { top: 0.70, bottom: 0 },
+                            visible: true,
+                        });
+                        const { macdLine, signalLine, histogram } = this.calcMACD(data, 12, 26, 9);
+                        const macdSeries = inst.chart.addLineSeries({
+                            priceScaleId: 'macd',
+                            color: '#2563eb',
+                            lineWidth: 2,
+                            priceLineVisible: false,
+                            lastValueVisible: true,
+                        });
+                        macdSeries.setData(macdLine.filter(v => v.value != null));
+                        const signal = inst.chart.addLineSeries({
+                            priceScaleId: 'macd',
+                            color: '#f59e0b',
+                            lineWidth: 1.5,
+                            priceLineVisible: false,
+                            lastValueVisible: false,
+                        });
+                        signal.setData(signalLine.filter(v => v.value != null));
+                        const hist = inst.chart.addHistogramSeries({
+                            priceScaleId: 'macd',
+                            priceFormat: { type: 'volume' },
+                        });
+                        const histData = histogram.filter(v => v.value != null);
+                        hist.setData(histData.map(d => ({
+                            time: d.time,
+                            value: d.value,
+                            color: d.value >= 0 ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)',
+                        })));
+                        this.indicatorSeries.macd = [macdSeries, signal, hist];
+                    } else {
+                        inst.chart.priceScale('macd').applyOptions({ visible: false });
+                    }
+                },
+
+                // ─── Corporate Events ────────────────────────────────
+
+                getEventConfig(type) {
+                    const map = {
+                        dividen: { color: '#22c55e', shape: 'circle', position: 'aboveBar' },
+                        stock_split: { color: '#3b82f6', shape: 'arrowDown', position: 'belowBar' },
+                        rights_issue: { color: '#f59e0b', shape: 'square', position: 'aboveBar' },
+                        buyback: { color: '#8b5cf6', shape: 'arrowUp', position: 'belowBar' },
+                        private_placement: { color: '#6b7280', shape: 'diamond', position: 'aboveBar' },
+                        merger_akuisisi: { color: '#ef4444', shape: 'cross', position: 'belowBar' },
+                    };
+                    return map[type] || { color: '#6b7280', shape: 'circle', position: 'aboveBar' };
+                },
+
+                // ─── Render Chart ─────────────────────────────────────
+
+                renderChart(chartData) {
+                    const container = document.getElementById('yahooChartContainer');
+                    if (!container) return;
+
+                    if (this.chartInstance && this.chartInstance.chart) {
+                        this.chartInstance.chart.remove();
+                        this.chartInstance = null;
+                    }
+                    container.innerHTML = '';
+
+                    if (!chartData || chartData.length === 0) return;
+
+                    const isIntraday = this.range === '1d' || this.range === '5d';
+
+                    container.style.height = '480px';
+
+                    const chart = LightweightCharts.createChart(container, {
+                        layout: {
+                            background: { color: '#ffffff' },
+                            textColor: '#6b7280',
+                        },
+                        grid: {
+                            vertLines: { color: '#f1f5f9' },
+                            horzLines: { color: '#f1f5f9' },
+                        },
+                        timeScale: {
+                            timeVisible: isIntraday,
+                            secondsVisible: false,
+                            borderColor: '#e2e8f0',
+                        },
+                        rightPriceScale: {
+                            borderColor: '#e2e8f0',
+                            scaleMargins: { top: 0.02, bottom: 0.32 },
+                        },
+                        handleScroll: { vertTouchDrag: true },
+                        handleScale: { axisPressedMouseMove: true },
+                        autoSize: true,
+                        height: 480,
+                    });
+
+                    // Deduplicate and sort by time (required by lightweight-charts)
+                    const seen = new Set();
+                    chartData = chartData.filter(d => {
+                        if (d.time == null || d.close == null) return false;
+                        if (seen.has(d.time)) return false;
+                        seen.add(d.time);
+                        return true;
+                    }).sort((a, b) => a.time - b.time);
+
+                    // Candlestick
+                    const candleSeries = chart.addCandlestickSeries({
+                        upColor: '#22c55e',
+                        downColor: '#ef4444',
+                        borderUpColor: '#22c55e',
+                        borderDownColor: '#ef4444',
+                        wickUpColor: '#22c55e',
+                        wickDownColor: '#ef4444',
+                        priceFormat: { type: 'price', precision: 0, minMove: 1 },
+                    });
+                    candleSeries.setData(chartData.map(d => ({
+                        time: d.time, open: d.open, high: d.high, low: d.low, close: d.close,
+                    })));
+
+                    // Line series (hidden by default, shown when chartType is 'line')
+                    const lineSeries = chart.addLineSeries({
+                        color: '#2563eb',
+                        lineWidth: 2,
+                        crosshairMarkerVisible: true,
+                        lastValueVisible: true,
+                        priceFormat: { type: 'price', precision: 0, minMove: 1 },
+                        visible: false,
+                    });
+                    lineSeries.setData(chartData.map(d => ({ time: d.time, value: d.close })));
+
+                    // Volume
+                    const volumeSeries = chart.addHistogramSeries({
+                        priceScaleId: 'volume',
+                        priceFormat: { type: 'volume' },
+                    });
+                    chart.priceScale('volume').applyOptions({
+                        scaleMargins: { top: 0.65, bottom: 0 },
+                    });
+                    volumeSeries.setData(chartData.map(d => ({
+                        time: d.time,
+                        value: d.volume || 0,
+                        color: d.close >= d.open ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)',
+                    })));
+
+                    // Corporate events markers
+                    const chartTimes = new Set(chartData.map(d => d.time));
+                    const markers = this.corporateEvents
+                        .filter(ev => ev.action_date && ev.action_type)
+                        .map(ev => {
+                            const cfg = this.getEventConfig(ev.action_type);
+                            const evTs = Math.floor(new Date(ev.action_date).getTime() / 1000);
+                            // Find closest time in chart data
+                            let closest = chartData.reduce((prev, curr) =>
+                                Math.abs(curr.time - evTs) < Math.abs(prev.time - evTs) ? curr : prev
+                            );
+                            return {
+                                time: closest.time,
+                                position: cfg.position,
+                                color: cfg.color,
+                                shape: cfg.shape,
+                                text: ev.action_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                            };
+                        })
+                        .filter(m => chartTimes.has(m.time))
+                        .sort((a, b) => a.time - b.time);
+                    if (markers.length > 0) candleSeries.setMarkers(markers);
+
+                    // Store reference
+                    this.chartInstance = {
+                        chart, candleSeries, lineSeries, volumeSeries,
+                        _chartData: chartData,
+                    };
+                    this.applyChartType(this.chartType);
+
+                    // Re-render comparison series
+                    this.comparisons.forEach((_, i) => this.addComparisonSeries(i));
+
+                    // Re-render indicators
+                    const hasIndicators = Object.values(this.indicators).some(v => v);
+                    if (hasIndicators) this.updateIndicators();
+
+                    chart.timeScale().fitContent();
+                },
             };
         }
     </script>

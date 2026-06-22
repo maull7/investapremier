@@ -1404,44 +1404,49 @@
                                 </div>
                                 <div class="space-y-2 max-h-48 overflow-y-auto">
                                     <template x-for="doc in existingDocs" :key="doc.id">
-                                        <div class="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-200"
+                                        <div class="p-2.5 bg-white rounded-lg border border-gray-200"
                                             :class="{'border-primary/40 bg-primary/[0.03]': selectedDocIds.includes(doc.id)}">
-                                            <div class="flex items-center gap-2 min-w-0">
-                                                <input type="checkbox" :value="doc.id"
-                                                    :checked="selectedDocIds.includes(doc.id)"
-                                                    @change="toggleDocSelection(doc.id)"
-                                                    class="shrink-0 rounded border-gray-300 text-primary focus:ring-primary/20">
-                                                <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                                                    :class="{
-                                                        'bg-blue-100 text-blue-700': doc.document_type === 'prospektus',
-                                                        'bg-emerald-100 text-emerald-700': doc.document_type === 'ffs',
-                                                        'bg-amber-100 text-amber-700': doc.document_type === 'laporan_tahunan',
-                                                    }"
-                                                    x-text="{
-                                                        'prospektus': 'Prospektus',
-                                                        'ffs': 'FFS',
-                                                        'laporan_tahunan': 'Laporan Tahunan',
-                                                    }[doc.document_type] || doc.document_type"></span>
-                                                <span class="text-sm font-medium truncate" x-text="doc.label"></span>
-                                                <span class="text-xs text-muted shrink-0 hidden sm:inline" x-text="doc.reksa_dana_kode"></span>
-                                                <span class="text-xs text-muted shrink-0" x-text="doc.uploaded_at"></span>
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center gap-2 min-w-0">
+                                                    <input type="checkbox" :value="doc.id"
+                                                        :checked="selectedDocIds.includes(doc.id)"
+                                                        @change="toggleDocSelection(doc.id)"
+                                                        class="shrink-0 rounded border-gray-300 text-primary focus:ring-primary/20">
+                                                    <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                                                        :class="{
+                                                            'bg-blue-100 text-blue-700': doc.document_type === 'prospektus',
+                                                            'bg-emerald-100 text-emerald-700': doc.document_type === 'ffs',
+                                                            'bg-amber-100 text-amber-700': doc.document_type === 'laporan_tahunan',
+                                                        }"
+                                                        x-text="{
+                                                            'prospektus': 'Prospektus',
+                                                            'ffs': 'FFS',
+                                                            'laporan_tahunan': 'Laporan Tahunan',
+                                                        }[doc.document_type] || doc.document_type"></span>
+                                                    <span class="text-sm font-medium truncate" x-text="doc.label"></span>
+                                                    <span class="text-xs text-muted shrink-0 hidden sm:inline" x-text="doc.reksa_dana_kode"></span>
+                                                    <span class="text-xs text-muted shrink-0" x-text="doc.uploaded_at"></span>
+                                                </div>
+                                                <div class="flex items-center gap-1 shrink-0" x-show="doc.url">
+                                                    <a :href="doc.url" target="_blank"
+                                                        class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition">
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                        </svg>
+                                                        Lihat
+                                                    </a>
+                                                    <a :href="doc.url" download
+                                                        class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-md hover:bg-emerald-100 transition">
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                        </svg>
+                                                        Download
+                                                    </a>
+                                                </div>
                                             </div>
-                                            <div class="flex items-center gap-1 shrink-0" x-show="doc.url">
-                                                <a :href="doc.url" target="_blank"
-                                                    class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition">
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                                    </svg>
-                                                    Lihat
-                                                </a>
-                                                <a :href="doc.url" download
-                                                    class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-md hover:bg-emerald-100 transition">
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                                    </svg>
-                                                    Download
-                                                </a>
+                                            <div x-show="doc.notes" class="mt-1.5 pl-6">
+                                                <p class="text-xs text-muted italic leading-relaxed" x-text="doc.notes"></p>
                                             </div>
                                         </div>
                                     </template>

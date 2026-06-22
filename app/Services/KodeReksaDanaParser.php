@@ -31,6 +31,22 @@ class KodeReksaDanaParser
         'DIRE-DINFRA' => 'H',
     ];
 
+    const JENIS_NORMALIZE = [
+        'Capital Protected Fund' => 'Terproteksi',
+        'Indeks' => 'Saham',
+        'Global Fund' => 'Global',
+        'Portofolio Sendiri' => 'Campuran',
+        'Infrastruktur' => 'Penyertaan terbatas',
+        'Exchanged Traded Fund' => 'Saham',
+        'Sukuk Based Fund' => 'Pendapatan Tetap',
+        'D.I.R.E.' => 'DIRE-DINFRA',
+        'RD - Terproteksi' => 'Terproteksi',
+        'RD - Saham' => 'Saham',
+        'RD - Fixed Income' => 'Pendapatan Tetap',
+        'RD - Syariah - Fixed Income' => 'Pendapatan Tetap',
+        'RD - Syariah - Terproteksi' => 'Terproteksi',
+    ];
+
     const KATEGORI_PRODUK_MAP = [
         '0' => 'Konvensional',
         '1' => 'Syariah',
@@ -43,6 +59,27 @@ class KodeReksaDanaParser
         'Syariah' => '1',
         'Index' => 'I',
         'ETF' => 'E',
+    ];
+
+    const KATEGORI_PRODUK_NORMALIZE = [
+        'Protected Fund' => 'Konvensional',
+        'Fixed Income Fund' => 'Konvensional',
+        'Equity Fund' => 'Konvensional',
+        'Money Market Fund' => 'Konvensional',
+        'Mixed Asset Fund' => 'Konvensional',
+        'Index Fund' => 'Index',
+        'Global Fund' => 'Konvensional',
+        'Own Portofolio' => 'Konvensional',
+        'Sukuk Based Fund' => 'Syariah',
+        'RD - Terproteksi' => 'Konvensional',
+        'RD - Fixed Income' => 'Konvensional',
+        'RD - Saham' => 'Konvensional',
+        'Syariah Fixed Income' => 'Syariah',
+        'Syariah Terproteksi' => 'Syariah',
+        'pasar_uang' => 'Konvensional',
+        'campuran' => 'Konvensional',
+        'pendapatan_tetap' => 'Konvensional',
+        'saham' => 'Konvensional',
     ];
 
     const KELAS_MAP = [
@@ -210,7 +247,7 @@ class KodeReksaDanaParser
         $kelasCode = self::KELAS_REVERSE[$kelas] ?? null;
         $mataUangCode = self::MATA_UANG_REVERSE[$mataUang] ?? null;
 
-        if (!$jenisCode || !$kategoriProdukCode || !$kelasCode || !$mataUangCode) {
+        if ($jenisCode === null || $kategoriProdukCode === null || $kelasCode === null || $mataUangCode === null) {
             return null;
         }
 
@@ -232,6 +269,16 @@ class KodeReksaDanaParser
         return $prefix . $seq . $kelasCode . $mataUangCode;
     }
 
+    public function normalizeJenis(string $jenis): string
+    {
+        return self::JENIS_NORMALIZE[$jenis] ?? $jenis;
+    }
+
+    public function normalizeKategoriProduk(string $kategoriProduk): string
+    {
+        return self::KATEGORI_PRODUK_NORMALIZE[$kategoriProduk] ?? $kategoriProduk;
+    }
+
     public function generateFromRecord(\App\Models\ReksaDana $record): ?string
     {
         $manager = $record->investmentManager;
@@ -243,13 +290,15 @@ class KodeReksaDanaParser
             return null;
         }
 
+        $jenis = $this->normalizeJenis($record->jenis);
+        $kategoriProduk = $this->normalizeKategoriProduk($record->kategori_produk);
         $kelas = filled($record->kelas) ? $record->kelas : 'Tidak Ada';
         $mataUang = filled($record->mata_uang) ? $record->mata_uang : 'IDR';
 
         return $this->generate(
             kodeMi: $manager->kode_mi,
-            jenis: $record->jenis,
-            kategoriProduk: $record->kategori_produk,
+            jenis: $jenis,
+            kategoriProduk: $kategoriProduk,
             isIndex: (bool) $record->is_index,
             isEft: (bool) $record->is_etf,
             kelas: $kelas,
@@ -259,17 +308,9 @@ class KodeReksaDanaParser
 
     private function nextSequenceNumber(string $prefix): int
     {
-        $existing = \App\Models\ReksaDana::where('kode_reksa_dana', 'like', $prefix . '%')
+        $max = (int) \App\Models\ReksaDana::where('kode_reksa_dana', 'like', $prefix . '%')
             ->whereRaw('LENGTH(kode_reksa_dana) = 16')
-            ->pluck('kode_reksa_dana');
-
-        $max = 0;
-        foreach ($existing as $code) {
-            $seq = (int) substr($code, 9, 4);
-            if ($seq > $max) {
-                $max = $seq;
-            }
-        }
+            ->max(\Illuminate\Support\Facades\DB::raw('CAST(SUBSTRING(kode_reksa_dana, 10, 4) AS UNSIGNED)'));
 
         return $max + 1;
     }

@@ -289,6 +289,21 @@ class FfsParserService
             'arus_kas_operasi' => $merged['arus_kas_operasi'] ?? null,
         ]));
 
+        // Vision fallback jika field financial masih kosong (tabel rusak di text extraction)
+        $essentialLkFields = ['total_aset', 'total_liabilitas', 'laba_bersih', 'arus_kas_operasi', 'kas_dan_bank'];
+        $filled = array_filter($essentialLkFields, fn($f) => !empty($merged[$f]));
+        if (count($filled) < 2) {
+            \Log::info('[PARSE] Financial fields minimal (' . count($filled) . '/5), jalankan vision fallback');
+            try {
+                $vision = $groq->parseProspektusFinancialVision($pdfPath);
+                $visionFields = array_keys(array_filter($vision, fn($v) => $v !== null && $v !== '' && $v !== []));
+                \Log::info('[PARSE-VISION] Vision hasil: ' . count($visionFields) . ' fields: ' . json_encode($visionFields));
+                $merged = $this->merge($merged, $vision);
+            } catch (\Throwable $e) {
+                \Log::warning('[PARSE-VISION] Vision fallback gagal: ' . $e->getMessage());
+            }
+        }
+
         return $merged;
     }
 

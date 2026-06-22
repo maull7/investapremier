@@ -83,6 +83,104 @@
 </div>
 
 <div class="table-card">
+    <div class="px-6 py-4 border-b border-line flex items-center justify-between gap-3 bg-gradient-to-r from-emerald-700 to-emerald-600">
+        <h2 class="font-bold text-white text-sm">Daftar Reksa Dana (Alfabetis)</h2>
+        <span class="text-xs text-white/80">{{ $reksaDanaList->count() }} reksa dana</span>
+    </div>
+    @if ($lastSyncRun)
+        <div class="px-5 py-2 bg-emerald-50 border-b border-emerald-200 flex items-center gap-2 text-xs text-emerald-800">
+            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span class="font-semibold">Sinkronisasi Terakhir :</span>
+            <span>{{ $lastSyncRun->completed_at ? $lastSyncRun->completed_at->format('d M Y H:i') : $lastSyncRun->created_at->format('d M Y H:i') }} WIB</span>
+            @if ($lastSyncRun->stats && isset($lastSyncRun->stats['total']))
+                <span class="text-emerald-600">({{ number_format($lastSyncRun->stats['total']) }} data)</span>
+            @endif
+        </div>
+    @endif
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase">
+                    <th class="px-4 py-3 font-semibold">Reksa Dana</th>
+                    <th class="px-4 py-3 font-semibold">Catatan</th>
+                    <th class="px-4 py-3 font-semibold">Prospektus</th>
+                    <th class="px-4 py-3 font-semibold">Fund Fact Sheet</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-line">
+                @forelse ($reksaDanaList as $rd)
+                    @php
+                        $prospectuses = $rd->documents->where('document_type', 'prospektus');
+                        $ffsDocuments = $rd->documents->where('document_type', 'ffs')->sortByDesc(fn($d) => sprintf('%04d%02d', $d->ffs_year, $d->ffs_month));
+                    @endphp
+                    <tr class="align-top hover:bg-emerald-50/50 transition-colors">
+                        <td class="px-4 py-3 min-w-56">
+                            <a href="{{ route('admin.daftar-reksa-dana.show', $rd) }}" class="font-semibold text-primary hover:underline text-sm">{{ $rd->nama_reksa_dana }}</a>
+                            @if ($rd->kode_reksa_dana)
+                                <p class="text-xs text-muted mt-0.5 font-mono">{{ $rd->kode_reksa_dana }}</p>
+                            @endif
+                            @if ($rd->nama_manajer_investasi)
+                                <p class="text-xs text-muted">{{ $rd->nama_manajer_investasi }}</p>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 text-xs text-muted max-w-xs">
+                            @php
+                                $allNotes = $rd->documents->pluck('notes')->filter()->unique();
+                            @endphp
+                            @if ($allNotes->isNotEmpty())
+                                @foreach ($allNotes as $note)
+                                    <p class="mb-1 last:mb-0">{{ $note }}</p>
+                                @endforeach
+                            @else
+                                <span class="italic">Tidak ada catatan</span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3">
+                            @forelse ($prospectuses as $document)
+                                <div class="py-1 first:pt-0">
+                                    <p class="text-xs font-semibold text-primary">{{ $document->ffs_year ?? $document->original_name }}</p>
+                                    <div class="flex flex-wrap gap-1.5 mt-1">
+                                        <a target="_blank" href="{{ route('admin.daftar-reksa-dana.documents.view', $document) }}" class="px-2 py-0.5 border border-line rounded text-[11px] font-semibold text-muted hover:text-primary">Preview</a>
+                                        <a href="{{ route('admin.daftar-reksa-dana.documents.download', $document) }}" class="px-2 py-0.5 border border-line rounded text-[11px] font-semibold text-muted hover:text-primary">Download</a>
+                                    </div>
+                                    @if ($document->notes)
+                                        <p class="text-[11px] text-muted mt-0.5">{{ $document->notes }}</p>
+                                    @endif
+                                </div>
+                            @empty
+                                <span class="text-xs text-muted italic">Belum diupload</span>
+                            @endforelse
+                        </td>
+                        <td class="px-4 py-3">
+                            @forelse ($ffsDocuments as $document)
+                                <div class="py-1 first:pt-0">
+                                    <p class="text-xs font-semibold text-primary">{{ $months[$document->ffs_month - 1] ?? '-' }} {{ $document->ffs_year }}</p>
+                                    <div class="flex flex-wrap gap-1.5 mt-1">
+                                        <a target="_blank" href="{{ route('admin.daftar-reksa-dana.documents.view', $document) }}" class="px-2 py-0.5 border border-line rounded text-[11px] font-semibold text-muted hover:text-primary">Preview</a>
+                                        <a href="{{ route('admin.daftar-reksa-dana.documents.download', $document) }}" class="px-2 py-0.5 border border-line rounded text-[11px] font-semibold text-muted hover:text-primary">Download</a>
+                                    </div>
+                                    @if ($document->notes)
+                                        <p class="text-[11px] text-muted mt-0.5">{{ $document->notes }}</p>
+                                    @endif
+                                </div>
+                            @empty
+                                <span class="text-xs text-muted italic">Belum diupload</span>
+                            @endforelse
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="4" class="px-6 py-12 text-center text-muted">Belum ada data Reksa Dana.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="table-card">
     <div
         class="px-6 py-4 border-b border-line flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-emerald-700 to-emerald-600">
         <h2 class="font-bold text-white text-sm">Daftar Reksa Dana dengan Prospektus dan FFS</h2>
@@ -131,7 +229,16 @@
                             @endforelse
                         </td>
                         <td class="px-4 py-4 min-w-72">
-                            <p class="text-xs text-muted">{{ $fund->notes ?? 'Tidak ada catatan' }}</p>
+                            @php
+                                $allNotes = $fund->documents->pluck('notes')->filter()->unique();
+                            @endphp
+                            @if ($allNotes->isNotEmpty())
+                                @foreach ($allNotes as $note)
+                                    <p class="text-xs text-muted mb-1 last:mb-0">{{ $note }}</p>
+                                @endforeach
+                            @else
+                                <p class="text-xs text-muted italic">Tidak ada catatan</p>
+                            @endif
                         </td>
                         <td class="px-4 py-4 min-w-80">
                             @forelse ($ffsDocuments as $document)

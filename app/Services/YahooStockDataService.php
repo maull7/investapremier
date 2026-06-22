@@ -384,13 +384,15 @@ class YahooStockDataService
             '1d'  => '1m',
             '5d'  => '5m',
             '1mo' => '1h',
+            '5y'  => '1wk',
+            'max' => '1mo',
             default => '1d',
         };
     }
 
     private function normalizeRange(string $range): string
     {
-        return in_array($range, ['5d', '1mo', '3mo', '6mo', 'ytd', '1y', '2y', '5y'], true)
+        return in_array($range, ['5d', '1mo', '3mo', '6mo', 'ytd', '1y', '2y', '5y', 'max'], true)
             ? $range : '1y';
     }
 }

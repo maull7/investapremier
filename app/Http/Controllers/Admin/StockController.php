@@ -49,7 +49,12 @@ class StockController extends Controller
         $changesUrl = $selectedRun ? route('admin.saham.sync-idx.changes', $selectedRun) : null;
         $detailTypes = [];
 
-        return view('admin.stocks.index', compact('stocks', 'perPage', 'tab', 'extractionBatches', 'detailBatch', 'extractionRanges', 'recentSyncRuns', 'selectedRun', 'changesUrl', 'detailTypes'));
+        $lastSyncRun = SyncRun::where('type', SyncRun::TYPE_SAHAM_IDX)
+            ->where('status', SyncRun::STATUS_COMPLETED)
+            ->latest()
+            ->first();
+
+        return view('admin.stocks.index', compact('stocks', 'perPage', 'tab', 'extractionBatches', 'detailBatch', 'extractionRanges', 'recentSyncRuns', 'selectedRun', 'changesUrl', 'detailTypes', 'lastSyncRun'));
     }
 
     public function create()

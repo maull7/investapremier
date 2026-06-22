@@ -125,7 +125,7 @@ class StockDetailController extends Controller
     public function fetchYahoo(Request $request, Stock $stock, YahooStockDataService $service)
     {
         $range = $request->input('range', '1d');
-        $allowed = ['1d', '5d', '1mo', '3mo', '6mo', '1y'];
+        $allowed = ['1d', '5d', '1mo', '3mo', '6mo', '1y', '5y', 'max'];
         if (!in_array($range, $allowed)) {
             $range = '1d';
         }
@@ -216,6 +216,43 @@ class StockDetailController extends Controller
         abort_if($research->stock_id !== $stock->id, 404);
     }
 
+    public function searchComparison(Request $request)
+    {
+        $q = $request->get('q');
+        if (!$q || strlen($q) < 1) {
+            return response()->json([]);
+        }
+
+        $stocks = Stock::where('kode', 'like', "%{$q}%")
+            ->orWhere('nama', 'like', "%{$q}%")
+            ->limit(10)
+            ->get(['id', 'kode', 'nama', 'sektor', 'harga_terbaru']);
+
+        return response()->json($stocks);
+    }
+
+    public function fetchComparison(Request $request, YahooStockDataService $service)
+    {
+        $code = $request->get('code');
+        $range = $request->get('range', '1y');
+
+        $stock = Stock::where('kode', $code)->first();
+        if (!$stock) {
+            return response()->json(['success' => false, 'message' => 'Saham tidak ditemukan.'], 404);
+        }
+
+        try {
+            $data = $service->fetchYahooData($stock, $range);
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'stock' => ['kode' => $stock->kode, 'nama' => $stock->nama],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
     private function timeframeStart(string $timeframe): Carbon
     {
         return match ($timeframe) {
@@ -225,6 +262,8 @@ class StockDetailController extends Controller
             '6M' => now()->subMonths(6),
             'YTD' => now()->startOfYear(),
             '1Y' => now()->subYear(),
+            '5Y' => now()->subYears(5),
+            'MAX' => now()->subYears(50),
             default => now()->subMonth(),
         };
     }

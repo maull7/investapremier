@@ -71,7 +71,12 @@ class ObligasiController extends Controller
         $changesUrl = $selectedRun ? route('admin.obligasi.sync-idx.changes', $selectedRun) : null;
         $detailTypes = [];
 
-        return view('admin.obligasi.index', compact('tab', 'perPage', 'hargaReferensi', 'bonds', 'extractionBatches', 'detailBatch', 'extractionRanges', 'recentSyncRuns', 'selectedRun', 'changesUrl', 'detailTypes'));
+        $lastSyncRun = SyncRun::where('type', SyncRun::TYPE_OBLIGASI_IDX_PHEI)
+            ->where('status', SyncRun::STATUS_COMPLETED)
+            ->latest()
+            ->first();
+
+        return view('admin.obligasi.index', compact('tab', 'perPage', 'hargaReferensi', 'bonds', 'extractionBatches', 'detailBatch', 'extractionRanges', 'recentSyncRuns', 'selectedRun', 'changesUrl', 'detailTypes', 'lastSyncRun'));
     }
 
     public function createHargaReferensi()
