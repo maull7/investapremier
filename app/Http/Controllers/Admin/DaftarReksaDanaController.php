@@ -81,6 +81,7 @@ class DaftarReksaDanaController extends Controller
         $editingLink = null;
         $documents = collect();
         $documentFunds = collect();
+        $lastSyncRun = null;
 
         if ($tab === 'link-website') {
             $linkQuery = DataSourceLink::global()->with(['reksaDana', 'urls'])->latest();
@@ -119,7 +120,15 @@ class DaftarReksaDanaController extends Controller
 
             $documentFunds = $documentFundQuery->paginate(20, ['*'], 'document_page')->withQueryString();
 
+            $reksaDanaList = ReksaDana::with('documents')->orderBy('nama_reksa_dana')->get(['id', 'kode_reksa_dana', 'nama_reksa_dana', 'nama_manajer_investasi', 'jenis', 'description']);
         }
+
+        $lastSyncRun = SyncRun::whereIn('type', [
+            SyncRun::TYPE_RD_PASARDANA,
+            SyncRun::TYPE_RD_HARGA_HARIAN,
+            SyncRun::TYPE_ALL_PASARDANA,
+            SyncRun::TYPE_RELASI_MI_RD,
+        ])->where('status', SyncRun::STATUS_COMPLETED)->latest()->first();
 
         $hargaTanggal = $request->get('harga_tanggal');
 
@@ -143,6 +152,7 @@ class DaftarReksaDanaController extends Controller
             'documents', 'documentFunds',
             'harianTanggal', 'hargaTanggal',
             'recentSyncRuns', 'selectedRun', 'changesUrl', 'detailTypes',
+            'lastSyncRun',
         ));
     }
 

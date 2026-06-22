@@ -271,6 +271,18 @@
                 </div>
             </div>
 
+            @if ($lastSyncRun)
+                <div class="px-5 py-2 bg-blue-50 border-b border-blue-200 flex items-center gap-2 text-xs text-blue-800">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span class="font-semibold">Sinkronisasi Terakhir :</span>
+                    <span>{{ $lastSyncRun->completed_at ? $lastSyncRun->completed_at->format('d M Y H:i') : $lastSyncRun->created_at->format('d M Y H:i') }} WIB</span>
+                    @if ($lastSyncRun->stats && isset($lastSyncRun->stats['total']))
+                        <span class="text-blue-600">({{ number_format($lastSyncRun->stats['total']) }} data)</span>
+                    @endif
+                </div>
+            @endif
             {{-- Filter Jenis --}}
             <div class="px-6 py-3 border-b border-line flex gap-2 text-xs flex-wrap">
                 @foreach (['', 'Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang', 'Terproteksi', 'Global', 'DIRE-DINFRA', 'Penyertaan terbatas'] as $j)
@@ -522,8 +534,18 @@
                         @endif
                     </form>
                 </div>
-            </div>
-
+            @if ($lastSyncRun)
+                <div class="px-5 py-2 bg-orange-50 border-b border-orange-200 flex items-center gap-2 text-xs text-orange-800">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span class="font-semibold">Sinkronisasi Terakhir :</span>
+                    <span>{{ $lastSyncRun->completed_at ? $lastSyncRun->completed_at->format('d M Y H:i') : $lastSyncRun->created_at->format('d M Y H:i') }} WIB</span>
+                    @if ($lastSyncRun->stats && isset($lastSyncRun->stats['total']))
+                        <span class="text-orange-600">({{ number_format($lastSyncRun->stats['total']) }} data)</span>
+                    @endif
+                </div>
+            @endif
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>

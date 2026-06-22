@@ -67,7 +67,12 @@ class InvestmentManagerController extends Controller
         $changesUrl = $selectedRun ? route('admin.investment-managers.sync-pasardana.changes', $selectedRun) : null;
         $detailTypes = [];
 
-        return view('admin.investment-managers.index', compact('tab', 'managers', 'perPage', 'tahunList', 'recentSyncRuns', 'selectedRun', 'changesUrl', 'detailTypes'));
+        $lastSyncRun = SyncRun::where('type', SyncRun::TYPE_MI_PASARDANA)
+            ->where('status', SyncRun::STATUS_COMPLETED)
+            ->latest()
+            ->first();
+
+        return view('admin.investment-managers.index', compact('tab', 'managers', 'perPage', 'tahunList', 'recentSyncRuns', 'selectedRun', 'changesUrl', 'detailTypes', 'lastSyncRun'));
     }
 
     public function show($id, ReksaDanaChartDataService $chartDataService, InvestmentPersonService $personService)

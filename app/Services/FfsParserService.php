@@ -78,10 +78,12 @@ class FfsParserService
             'obligasi' => $this->safeExtract('extractObligasi', [$lines, $fullText]),
             'sukuk' => $this->safeExtract('extractSukuk', [$lines, $fullText]),
             'bank' => $this->safeExtract('extractBank', [$lines, $fullText]),
+            'pasar_uang' => [],
+            'piutang_bunga_detail' => [],
         ];
     }
 
-    public function parseWithAi(string $pdfPath, GroqService $groq): array
+    public function parseWithAi(string $pdfPath, GroqService $groq, ?string $documentType = null): array
     {
         set_time_limit(300);
         $parser = new Parser;
@@ -172,6 +174,8 @@ class FfsParserService
             'obligasi' => $this->safeExtract('extractObligasi', [$lines, $fullText]),
             'sukuk' => $this->safeExtract('extractSukuk', [$lines, $fullText]),
             'bank' => $this->safeExtract('extractBank', [$lines, $fullText]),
+            'pasar_uang' => [],
+            'piutang_bunga_detail' => [],
         ];
 
         // Vision fallback jika text terlalu pendek (scanned PDF)
@@ -203,6 +207,32 @@ class FfsParserService
             }
         } catch (\Throwable) {
             $pageTexts = [];
+        }
+
+        // Smart text trimming per document_type: send only relevant pages
+        if ($documentType && !empty($pageTexts)) {
+            $totalPages = count($pageTexts);
+            $sampled = match ($documentType) {
+                // Informasi lainnya: halaman awal (identitas RD, info umum)
+                'informasi_lainnya' => implode("\n\n", array_slice($pageTexts, 0, min(5, $totalPages))),
+                // Portofolio efek: halaman 2 sampai akhir (holdings ada di mana saja)
+                'portofolio_efek' => implode("\n\n", array_slice($pageTexts, min(1, $totalPages - 1))),
+                // Pengukuran nilai wajar: halaman 40% ke belakang (catatan LK)
+                'pengukuran_nilai_wajar' => implode("\n\n", array_slice($pageTexts, max(0, (int)($totalPages * 0.4)))),
+                // BS/IS/CF/PUP: halaman 30% ke belakang (LK biasanya di paruh kedua)
+                'bs_is_cf_pup' => implode("\n\n", array_slice($pageTexts, max(0, (int)($totalPages * 0.3)))),
+                default => '',
+            };
+            if ($sampled) {
+                $ai = match ($documentType) {
+                    'informasi_lainnya' => $groq->parseInformasiLainnya($sampled),
+                    'portofolio_efek' => $groq->parsePortofolioEfek($sampled),
+                    'pengukuran_nilai_wajar' => $groq->parsePengukuranNilaiWajar($sampled),
+                    'bs_is_cf_pup' => $groq->parseBsIsCfPup($sampled),
+                    default => $groq->parseFfsPdf($sampled, $documentType),
+                };
+                return $this->merge($regex, $this->normalizeAiData($ai));
+            }
         }
 
         // Jika page-level gagal, fallback ke fullText polos
@@ -245,7 +275,7 @@ class FfsParserService
             $sampled = mb_substr($sampled, 0, $maxChars);
         }
 
-        $ai = $groq->parseFfsPdf($sampled);
+        $ai = $groq->parseFfsPdf($sampled, $documentType);
 
         \Log::info('[PARSE] AI response keys: ' . json_encode(array_keys($ai)));
         \Log::info('[PARSE] AI LK fields: ' . json_encode([
@@ -289,6 +319,21 @@ class FfsParserService
             'arus_kas_operasi' => $merged['arus_kas_operasi'] ?? null,
         ]));
 
+        // Vision fallback jika field financial masih kosong (tabel rusak di text extraction)
+        $essentialLkFields = ['total_aset', 'total_liabilitas', 'laba_bersih', 'arus_kas_operasi', 'kas_dan_bank'];
+        $filled = array_filter($essentialLkFields, fn($f) => !empty($merged[$f]));
+        if (count($filled) < 2) {
+            \Log::info('[PARSE] Financial fields minimal (' . count($filled) . '/5), jalankan vision fallback');
+            try {
+                $vision = $groq->parseProspektusFinancialVision($pdfPath);
+                $visionFields = array_keys(array_filter($vision, fn($v) => $v !== null && $v !== '' && $v !== []));
+                \Log::info('[PARSE-VISION] Vision hasil: ' . count($visionFields) . ' fields: ' . json_encode($visionFields));
+                $merged = $this->merge($merged, $vision);
+            } catch (\Throwable $e) {
+                \Log::warning('[PARSE-VISION] Vision fallback gagal: ' . $e->getMessage());
+            }
+        }
+
         return $merged;
     }
 
@@ -299,7 +344,7 @@ class FfsParserService
 
     private function merge(array $regex, array $ai): array
     {
-        $aiPreferredArrayFields = ['sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasi_aset'];
+        $aiPreferredArrayFields = ['sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasi_aset', 'pasar_uang', 'piutang_bunga_detail'];
 
         $aiPreferredScalarFields = [
             'total_aset', 'total_liabilitas', 'kas_dan_bank',
@@ -493,6 +538,8 @@ class FfsParserService
             'obligasi' => [],
             'sukuk' => [],
             'bank' => [],
+            'pasar_uang' => [],
+            'piutang_bunga_detail' => [],
         ];
 
         $data = array_merge($defaults, array_intersect_key($data, $defaults));
@@ -504,7 +551,7 @@ class FfsParserService
             $data['kategori'] = [];
         }
 
-        foreach (['alokasi_aset', 'sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank'] as $field) {
+        foreach (['alokasi_aset', 'sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'pasar_uang', 'piutang_bunga_detail'] as $field) {
             $data[$field] = is_array($data[$field]) ? array_values($data[$field]) : [];
         }
 
@@ -564,6 +611,9 @@ class FfsParserService
                 'persen_terhadap_nab' => 'persen_nab',
                 'persentase_nab' => 'persen_nab',
                 'pct_nab' => 'persen_nab',
+                'number_of_shares' => 'jumlah_lembar',
+                'shares' => 'jumlah_lembar',
+                'average_cost' => 'harga_perolehan_rata_rata',
             ] as $alias => $target) {
                 if (isset($row[$alias]) && !isset($row[$target])) {
                     $row[$target] = $row[$alias];
@@ -811,7 +861,7 @@ class FfsParserService
                     continue;
                 }
 
-                if (count($efekData) >= 30) break;
+                if (count($efekData) >= 100) break;
             }
         }
 
@@ -820,7 +870,7 @@ class FfsParserService
                 $efek = $this->parseEfekLine($line);
                 if ($efek) {
                     $efekData[] = $efek;
-                    if (count($efekData) >= 30) break;
+                    if (count($efekData) >= 100) break;
                 }
             }
         }
@@ -977,7 +1027,7 @@ class FfsParserService
                     continue;
                 }
 
-                if (count($obligasiData) >= 30) break;
+                if (count($obligasiData) >= 100) break;
             }
         }
 
@@ -986,7 +1036,7 @@ class FfsParserService
                 $ob = $this->parseObligasiLine($line);
                 if ($ob) {
                     $obligasiData[] = $ob;
-                    if (count($obligasiData) >= 30) break;
+                    if (count($obligasiData) >= 100) break;
                 }
             }
         }
@@ -1063,7 +1113,7 @@ class FfsParserService
                     continue;
                 }
 
-                if (count($sukukData) >= 30) break;
+                if (count($sukukData) >= 100) break;
             }
         }
 
@@ -1072,7 +1122,7 @@ class FfsParserService
                 $sk = $this->parseSukukLine($line);
                 if ($sk) {
                     $sukukData[] = $sk;
-                    if (count($sukukData) >= 30) break;
+                    if (count($sukukData) >= 100) break;
                 }
             }
         }
@@ -1391,6 +1441,7 @@ class FfsParserService
         $lower = strtolower($line);
         foreach ($labels as $label) {
             if (str_contains($lower, strtolower($label))) {
+                // 1. Angka di akhir baris (pola asli)
                 if (preg_match('/([\d][\d.,]*(?:[.,]\d+)?)\s*(?:miliar|milyar|triliun|juta)?\s*$/i', $line, $m)) {
                     $value = str_replace(['.', ','], ['', '.'], $m[1]);
                     $val = (float) $value;
@@ -1399,6 +1450,21 @@ class FfsParserService
                     if (str_contains($suffix, 'miliar') || str_contains($suffix, 'milyar')) return $val * 1000000000;
                     if (str_contains($suffix, 'juta')) return $val * 1000000;
                     return $val;
+                }
+                // 2. Angka pertama setelah label (untuk format tabel dengan multiple kolom)
+                $labelPos = stripos($lower, strtolower($label));
+                $afterLabel = substr($line, $labelPos + strlen($label));
+                if (preg_match('/[\s:]+(\(?\s*[\d][\d.,]*(?:[.,]\d+)?\s*\)?)\s*(?:miliar|milyar|triliun|juta)?/i', $afterLabel, $m)) {
+                    $raw = trim($m[1], " \t()");
+                    $isNegative = str_contains($m[1], '(') && str_contains($m[1], ')');
+                    $value = str_replace(['.', ','], ['', '.'], $raw);
+                    $val = (float) $value;
+                    if ($isNegative) $val = -$val;
+                    $suffix = strtolower($m[0]);
+                    if (str_contains($suffix, 'triliun')) return $val * 1000000000000;
+                    if (str_contains($suffix, 'miliar') || str_contains($suffix, 'milyar')) return $val * 1000000000;
+                    if (str_contains($suffix, 'juta')) return $val * 1000000;
+                    if ($val != 0) return $val;
                 }
             }
         }
@@ -1410,10 +1476,19 @@ class FfsParserService
         $lower = strtolower($line);
         foreach ($labels as $label) {
             if (str_contains($lower, strtolower($label))) {
+                // 1. Angka diikuti % sign
                 if (preg_match('/([\-+]?[\d.,]+)\s*%/', $line, $m)) {
                     return (float) str_replace(',', '.', $m[1]);
                 }
+                // 2. Angka di akhir baris (tanpa %)
                 if (preg_match('/([\-+]?[\d.,]+)\s*$/', $line, $m)) {
+                    $val = (float) str_replace(',', '.', $m[1]);
+                    if (abs($val) < 1000) return $val;
+                }
+                // 3. Angka setelah label (di tengah baris, dipisah spasi/tab)
+                $labelPos = stripos($lower, strtolower($label));
+                $afterLabel = substr($line, $labelPos + strlen($label));
+                if (preg_match('/[\s:]+(-?[\d.,]+)/', $afterLabel, $m)) {
                     $val = (float) str_replace(',', '.', $m[1]);
                     if (abs($val) < 1000) return $val;
                 }
@@ -1427,41 +1502,41 @@ class FfsParserService
         $result = [];
 
         $fieldMap = [
-            'total_aset'          => ['total aset', 'total assets', 'total aktiva'],
-            'total_liabilitas'    => ['total liabilitas', 'total liabilities', 'total kewajiban'],
-            'kas_dan_bank'        => ['kas dan bank', 'cash and bank', 'kas & bank'],
-            'piutang_bunga'       => ['piutang bunga', 'interest receivable'],
-            'piutang_dividen'     => ['piutang dividen', 'dividend receivable'],
-            'piutang_lain'        => ['piutang lain', 'other receivable', 'piutang lain-lain'],
-            'utang_pajak'         => ['utang pajak', 'tax payable'],
-            'utang_lain'          => ['utang lain', 'other payable', 'utang lain-lain'],
-            'pendapatan_bunga'    => ['pendapatan bunga', 'interest income'],
-            'pendapatan_dividen'  => ['pendapatan dividen', 'dividend income'],
-            'gain_realized'       => ['gain realized', 'keuntungan realisasi', 'laba realisasi'],
-            'gain_unrealized'     => ['gain unrealized', 'keuntungan belum realisasi', 'laba belum realisasi', 'unrealized gain'],
-            'beban_mi'            => ['beban manajer investasi', 'beban mi', 'investment manager fee', 'imbal jasa manajer'],
-            'beban_kustodian'     => ['beban kustodian', 'custodian fee expense', 'imbal jasa kustodian'],
-            'beban_lain'          => ['beban lain', 'other expense', 'beban lain-lain'],
-            'laba_bersih'         => ['laba bersih', 'net income', 'net profit', 'kenaikan aset bersih'],
-            'arus_kas_operasi'    => ['arus kas operasi', 'cash flow from operating', 'kas dari aktivitas operasi'],
-            'arus_kas_pendanaan'  => ['arus kas pendanaan', 'cash flow from financing', 'kas dari aktivitas pendanaan'],
-            'kas_awal_tahun'      => ['kas awal', 'cash at beginning', 'kas awal tahun'],
-            'kas_akhir_tahun'     => ['kas akhir', 'cash at end', 'kas akhir tahun'],
-            'fair_value_level_1'  => ['fair value level 1', 'nilai wajar level 1', 'tingkat 1'],
-            'fair_value_level_2'  => ['fair value level 2', 'nilai wajar level 2', 'tingkat 2'],
-            'fair_value_level_3'  => ['fair value level 3', 'nilai wajar level 3', 'tingkat 3'],
-            'unit_milik_investor' => ['unit milik investor', 'units held by investors', 'unit penyertaan pemegang'],
-            'unit_milik_mi'       => ['unit milik manajer', 'units held by manager', 'unit milik mi'],
-            'total_unit_beredar'  => ['total unit beredar', 'total units outstanding', 'unit beredar'],
+            'total_aset'          => ['total aset', 'total assets', 'total aktiva', 'jumlah aset', 'jumlah aktiva'],
+            'total_liabilitas'    => ['total liabilitas', 'total liabilities', 'total kewajiban', 'jumlah liabilitas', 'jumlah kewajiban'],
+            'kas_dan_bank'        => ['kas dan bank', 'cash and bank', 'kas & bank', 'kas dan setara kas', 'cash and cash equivalent'],
+            'piutang_bunga'       => ['piutang bunga', 'interest receivable', 'piutang atas bunga'],
+            'piutang_dividen'     => ['piutang dividen', 'dividend receivable', 'piutang atas dividen'],
+            'piutang_lain'        => ['piutang lain', 'other receivable', 'piutang lain-lain', 'piutang lainnya'],
+            'utang_pajak'         => ['utang pajak', 'tax payable', 'hutang pajak', 'kewajiban pajak', 'liabilitas pajak'],
+            'utang_lain'          => ['utang lain', 'other payable', 'utang lain-lain', 'hutang lain', 'liabilitas lain'],
+            'pendapatan_bunga'    => ['pendapatan bunga', 'interest income', 'penghasilan bunga'],
+            'pendapatan_dividen'  => ['pendapatan dividen', 'dividend income', 'penghasilan dividen'],
+            'gain_realized'       => ['gain realized', 'keuntungan realisasi', 'laba realisasi', 'keuntungan investasi yang telah direalisasi', 'keuntungan yang telah direalisasi'],
+            'gain_unrealized'     => ['gain unrealized', 'keuntungan belum realisasi', 'laba belum realisasi', 'unrealized gain', 'keuntungan investasi yang belum direalisasi', 'keuntungan yang belum direalisasi'],
+            'beban_mi'            => ['beban manajer investasi', 'beban mi', 'investment manager fee', 'imbal jasa manajer', 'beban pengelolaan investasi', 'biaya jasa pengelolaan'],
+            'beban_kustodian'     => ['beban kustodian', 'custodian fee expense', 'imbal jasa kustodian', 'beban jasa kustodian', 'biaya jasa kustodian'],
+            'beban_lain'          => ['beban lain', 'other expense', 'beban lain-lain', 'beban lainnya'],
+            'laba_bersih'         => ['laba bersih', 'net income', 'net profit', 'kenaikan aset bersih', 'kenaikan bersih aset', 'penurunan aset bersih', 'kenaikan (penurunan) aset bersih'],
+            'arus_kas_operasi'    => ['arus kas operasi', 'cash flow from operating', 'kas dari aktivitas operasi', 'kas bersih dari aktivitas operasi', 'arus kas dari aktivitas operasi'],
+            'arus_kas_pendanaan'  => ['arus kas pendanaan', 'cash flow from financing', 'kas dari aktivitas pendanaan', 'kas bersih dari aktivitas pendanaan', 'arus kas dari aktivitas pendanaan'],
+            'kas_awal_tahun'      => ['kas awal', 'cash at beginning', 'kas awal tahun', 'kas dan setara kas awal', 'saldo awal kas'],
+            'kas_akhir_tahun'     => ['kas akhir', 'cash at end', 'kas akhir tahun', 'kas dan setara kas akhir', 'saldo akhir kas'],
+            'fair_value_level_1'  => ['fair value level 1', 'nilai wajar level 1', 'tingkat 1', 'level 1'],
+            'fair_value_level_2'  => ['fair value level 2', 'nilai wajar level 2', 'tingkat 2', 'level 2'],
+            'fair_value_level_3'  => ['fair value level 3', 'nilai wajar level 3', 'tingkat 3', 'level 3'],
+            'unit_milik_investor' => ['unit milik investor', 'units held by investors', 'unit penyertaan pemegang', 'pemegang unit penyertaan', 'unit penyertaan yang dimiliki investor', 'dimiliki pemegang unit'],
+            'unit_milik_mi'       => ['unit milik manajer', 'units held by manager', 'unit milik mi', 'dimiliki manajer investasi', 'unit penyertaan manajer investasi'],
+            'total_unit_beredar'  => ['total unit beredar', 'total units outstanding', 'unit beredar', 'jumlah unit penyertaan beredar', 'total unit penyertaan beredar', 'unit penyertaan beredar'],
         ];
 
         $percentMap = [
-            'total_hasil_investasi'          => ['total hasil investasi', 'total investment return'],
-            'hasil_investasi_setelah_biaya'  => ['hasil investasi setelah biaya', 'investment return after marketing'],
-            'persentase_pph'                 => ['persentase pph', 'penghasilan kena pajak', 'taxable income percentage'],
-            'biaya_operasi'                  => ['biaya operasi', 'expense ratio', 'operating expense', 'rasio biaya'],
-            'portfolio_turnover_ratio'       => ['portfolio turnover', 'turnover ratio', 'rasio perputaran'],
-            'total_return'                   => ['total return', 'total imbal hasil'],
+            'total_hasil_investasi'          => ['total hasil investasi', 'total investment return', 'hasil investasi', 'jumlah hasil investasi'],
+            'hasil_investasi_setelah_biaya'  => ['hasil investasi setelah biaya', 'investment return after marketing', 'hasil investasi setelah memperhitungkan', 'setelah biaya pemasaran', 'hasil investasi bersih'],
+            'persentase_pph'                 => ['persentase pph', 'penghasilan kena pajak', 'taxable income percentage', 'persentase penghasilan kena pajak', 'pph yang bersifat final'],
+            'biaya_operasi'                  => ['biaya operasi', 'expense ratio', 'operating expense', 'rasio biaya', 'rasio biaya operasi', 'beban operasi'],
+            'portfolio_turnover_ratio'       => ['portfolio turnover', 'turnover ratio', 'rasio perputaran', 'perputaran portofolio', 'portfolio turnover ratio'],
+            'total_return'                   => ['total return', 'total imbal hasil', 'imbal hasil total'],
         ];
 
         foreach ($fieldMap as $field => $labels) {

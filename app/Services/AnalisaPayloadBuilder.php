@@ -74,7 +74,7 @@ class AnalisaPayloadBuilder
             ])));
 
         $analisa->setRelation('efek', collect($request->input('efek', []))
-            ->filter(fn ($r) => !empty($r['kode_efek']) && !empty($r['nama_efek']))
+            ->filter(fn ($r) => !empty($r['nama_efek']))
             ->map(fn ($r) => new AnalisaEfek([
                 'kode_efek'           => $r['kode_efek'],
                 'nama_efek'           => $r['nama_efek'],

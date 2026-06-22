@@ -16,6 +16,9 @@ use App\Services\BondMarketService;
 use App\Services\DataSourceAutoDownloadService;
 use App\Services\FfsParserService;
 use App\Services\IdxMarketService;
+use App\Services\PageClassifierService;
+use App\Services\ProspektusPipelineService;
+use App\Services\ProspektusValidator;
 use App\Services\WebDataFileParserService;
 use App\Services\WebScraperService;
 use App\Services\AnalisaAiValidator;
@@ -77,8 +80,9 @@ class AnalisaController extends Controller
             'store'           => route("{$prefix}.store"),
             'template'        => route("{$prefix}.template"),
             'cancel'          => $cancelRoute,
-            'parse_pdf'       => route("{$prefix}.parse-pdf"),
-            'parse_pdf_vision' => \Illuminate\Support\Facades\Route::has("{$prefix}.parse-pdf-vision") ? route("{$prefix}.parse-pdf-vision") : null,
+            'parse_pdf'              => route("{$prefix}.parse-pdf"),
+            'parse_pdf_vision'      => \Illuminate\Support\Facades\Route::has("{$prefix}.parse-pdf-vision") ? route("{$prefix}.parse-pdf-vision") : null,
+            'parse_prospektus_pdf'  => \Illuminate\Support\Facades\Route::has("{$prefix}.parse-prospektus-pdf") ? route("{$prefix}.parse-prospektus-pdf") : null,
             'preview_ai'      => route("{$prefix}.preview-ai"),
             'preview_ai_plus' => route("{$prefix}.preview-ai-plus"),
             'lookup_kode'     => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-kode") ? route("{$prefix}.lookup-kode") : null,
@@ -407,13 +411,15 @@ class AnalisaController extends Controller
 
         $request->validate([
             'file_pdf' => 'required|file|max:10240',
+            'document_type' => 'nullable|string|in:ffs,prospektus,laporan_tahunan,laporan_keuangan,informasi_lainnya,portofolio_efek,pengukuran_nilai_wajar,bs_is_cf_pup',
         ]);
 
         $file = $request->file('file_pdf');
         $path = $file->getPathname();
+        $documentType = $request->input('document_type');
 
         try {
-            $data = $ffsParser->parseWithAi($path, $groq);
+            $data = $ffsParser->parseWithAi($path, $groq, $documentType);
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
@@ -466,6 +472,8 @@ class AnalisaController extends Controller
         if ($data['sukuk']) $extracted[] = count($data['sukuk']) . ' Sukuk';
         if ($data['bank']) $extracted[] = count($data['bank']) . ' Bank';
 
+        if (!empty($data['pasar_uang'])) $extracted[] = count($data['pasar_uang']) . ' Pasar Uang';
+        if (!empty($data['piutang_bunga_detail'])) $extracted[] = count($data['piutang_bunga_detail']) . ' Piutang Bunga';
         $success = count($extracted) > 0;
 
         return response()->json([
@@ -473,6 +481,7 @@ class AnalisaController extends Controller
             'message' => $success
                 ? 'Berhasil mengekstrak: ' . implode(', ', $extracted) . '.'
                 : 'Tidak dapat mengekstrak data dari PDF ini. Format mungkin tidak didukung.',
+            'warning' => $success ? 'Data hasil ekstraksi AI bisa saja tidak akurat. Mohon periksa dan validasi setiap field sebelum menyimpan.' : null,
             'data' => $data,
             'pdf_file' => $storedPath,
         ]);
@@ -533,6 +542,7 @@ class AnalisaController extends Controller
                     'uploaded_at' => $doc->created_at?->format('d/m/Y') ?? '',
                     'uploader_name' => $doc->uploader?->name,
                     'file_size' => $doc->file_size,
+                    'notes' => $doc->notes,
                     'url' => $doc->file_path && Storage::disk('public')->exists($doc->file_path)
                         ? Storage::disk('public')->url($doc->file_path) : null,
                 ]);
@@ -584,9 +594,11 @@ class AnalisaController extends Controller
 
         $request->validate([
             'document_id' => 'required|exists:reksa_dana_documents,id',
+            'document_type' => 'nullable|string|in:ffs,prospektus,laporan_tahunan,laporan_keuangan,informasi_lainnya,portofolio_efek,pengukuran_nilai_wajar,bs_is_cf_pup',
         ]);
 
         $document = ReksaDanaDocument::findOrFail($request->document_id);
+        $documentType = $request->input('document_type');
 
         if (!$document->file_path || !Storage::disk('public')->exists($document->file_path)) {
             return response()->json([
@@ -600,7 +612,7 @@ class AnalisaController extends Controller
 
         try {
             set_time_limit(300);
-            $data = $ffsParser->parseWithAi($fullPath, $groq);
+            $data = $ffsParser->parseWithAi($fullPath, $groq, $documentType);
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
@@ -649,6 +661,146 @@ class AnalisaController extends Controller
                 : 'Tidak dapat mengekstrak data dari PDF ini.',
             'data' => $data,
             'document_label' => $this->getDocumentLabel($document),
+        ]);
+    }
+
+    public function parseProspektusPdf(Request $request, ProspektusPipelineService $pipeline)
+    {
+        set_time_limit(600);
+
+        $request->validate([
+            'file_pdf' => 'required|file|max:10240',
+        ]);
+
+        $file = $request->file('file_pdf');
+        $path = $file->getPathname();
+
+        try {
+            $result = $pipeline->process($path, 'prospektus');
+        } catch (\Throwable $e) {
+            \Log::error('[PROSPEKTUS] Pipeline error: ' . $e->getMessage(), [
+                'file' => $file->getClientOriginalName(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memproses Prospektus PDF: ' . $e->getMessage(),
+                'data' => null,
+            ], 422);
+        }
+
+        $filename = 'prospektus-' . now()->format('Ymd-His') . '-' . Str::random(8) . '.pdf';
+        $storedPath = $file->storeAs('analisa-pdfs', $filename, 'public');
+
+        $data = $result['data'];
+        $validation = $result['validation'];
+
+        $sectionLabels = [
+            'cover' => 'Sampul',
+            'mi_profile' => 'Profil MI',
+            'fund_info' => 'Info RD',
+            'financial_statements' => 'Laporan Keuangan',
+            'portfolio' => 'Portofolio',
+            'performance' => 'Kinerja',
+            'risk' => 'Risiko',
+        ];
+
+        $extractedSections = [];
+        foreach ($result['section_results'] as $section => $sectionData) {
+            if (!empty($sectionData)) {
+                $label = $sectionLabels[$section] ?? $section;
+                $fields = array_keys(array_filter($sectionData, fn($v) => $v !== null && $v !== '' && $v !== []));
+                if (!empty($fields)) {
+                    $extractedSections[] = $label . ' (' . implode(', ', array_slice($fields, 0, 5)) . ')';
+                }
+            }
+        }
+
+        $success = !empty($extractedSections);
+
+        $message = $success
+            ? 'Berhasil mengekstrak dari Prospektus: ' . implode('; ', $extractedSections) . '.'
+            : 'Tidak dapat mengekstrak data dari Prospektus PDF ini. Format mungkin tidak didukung.';
+
+        if ($validation && !empty($validation['warnings'])) {
+            $message .= ' Peringatan: ' . implode(', ', $validation['warnings']);
+        }
+
+        return response()->json([
+            'success' => $success,
+            'message' => $message,
+            'data' => $data,
+            'pdf_file' => $storedPath,
+            'validation' => $validation,
+            'classifications' => $result['classifications'],
+        ]);
+    }
+
+    public function parseExistingProspektus(Request $request, ProspektusPipelineService $pipeline)
+    {
+        $request->merge([
+            'jenis_laporan' => 'laporan_tahunan',
+            'ffs_bulan' => null,
+            'ffs_tahun' => null,
+            'tahun_laporan' => $request->tahun_laporan ?: now()->year,
+        ]);
+
+        $request->validate([
+            'document_id' => 'required|exists:reksa_dana_documents,id',
+        ]);
+
+        $document = ReksaDanaDocument::findOrFail($request->document_id);
+
+        if (!$document->file_path || !Storage::disk('public')->exists($document->file_path)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File PDF dokumen tidak ditemukan di penyimpanan.',
+                'data' => null,
+            ], 404);
+        }
+
+        $fullPath = Storage::disk('public')->path($document->file_path);
+
+        try {
+            set_time_limit(600);
+            $result = $pipeline->process($fullPath, 'prospektus');
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membaca Prospektus PDF: ' . $e->getMessage(),
+                'data' => null,
+            ], 422);
+        }
+
+        $data = $result['data'];
+        $validation = $result['validation'];
+
+        $extracted = [];
+        if ($data['nama_reksa_dana']) $extracted[] = 'Nama RD';
+        if ($data['jenis_reksa_dana']) $extracted[] = 'Jenis RD';
+        if ($data['manajer_investasi']) $extracted[] = 'MI';
+        if ($data['total_aum']) $extracted[] = 'Total AUM';
+        if (!empty($data['unit_penyertaan'])) $extracted[] = 'Unit Penyertaan';
+        if (!empty($data['nab_per_unit'])) $extracted[] = 'NAB/UP';
+        if (!empty($data['tanggal_data'])) $extracted[] = 'Tanggal Data';
+        if (!empty($data['total_aset'])) $extracted[] = 'Neraca';
+        if (!empty($data['alokasi_aset'])) $extracted[] = count($data['alokasi_aset']) . ' Alokasi Aset';
+        if ($data['sektor']) $extracted[] = count($data['sektor']) . ' Sektor';
+        if ($data['efek']) $extracted[] = count($data['efek']) . ' Efek';
+        if ($data['kinerja']) $extracted[] = count($data['kinerja']) . ' Bulan Kinerja';
+        if ($data['obligasi']) $extracted[] = count($data['obligasi']) . ' Obligasi';
+        if ($data['bank']) $extracted[] = count($data['bank']) . ' Bank';
+
+        $success = count($extracted) > 0;
+
+        return response()->json([
+            'success' => $success,
+            'message' => $success
+                ? 'Berhasil mengekstrak Prospektus: ' . implode(', ', $extracted) . '.'
+                : 'Tidak dapat mengekstrak data dari Prospektus PDF ini.',
+            'data' => $data,
+            'document_label' => $this->getDocumentLabel($document),
+            'validation' => $validation,
         ]);
     }
 
@@ -999,17 +1151,21 @@ class AnalisaController extends Controller
                 $analisa->sukuk()->delete();
                 $analisa->bank()->delete();
                 $analisa->alokasiAset()->delete();
+                $analisa->pasarUang()->delete();
+                $analisa->piutangBungaDetail()->delete();
             } else {
                 $analisa = AnalisaReksaDana::create($payload);
             }
 
             $sektor   = collect($request->sektor)->filter(fn($r) => !empty($r['nama_sektor']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
-            $efek     = collect($request->efek)->filter(fn($r) => !empty($r['kode_efek']) && !empty($r['nama_efek']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
+            $efek     = collect($request->efek)->filter(fn($r) => !empty($r['nama_efek']) && (isset($r['bobot']) && $r['bobot'] !== '' || !empty($r['persen_nab'])))->values()->all();
             $kinerja  = collect($request->kinerja)->filter(fn($r) => !empty($r['periode']) && isset($r['return_pct']) && $r['return_pct'] !== '')->values()->all();
             $obligasi = collect($request->obligasi)->filter(fn($r) => !empty($r['kode_obligasi']) && !empty($r['nama_obligasi']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
             $sukuk    = collect($request->sukuk)->filter(fn($r) => !empty($r['kode_sukuk']) && !empty($r['nama_sukuk']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
-            $bank     = collect($request->bank)->filter(fn($r) => !empty($r['nama_bank']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
+            $bank     = collect($request->bank)->filter(fn($r) => !empty($r['nama_bank']) && (isset($r['bobot']) && $r['bobot'] !== '' || !empty($r['saldo'])))->values()->all();
             $alokasiAset = $this->filteredAlokasiAset($request);
+            $pasarUang = collect($request->pasar_uang ?? [])->filter(fn($r) => !empty($r['nama_instrumen']))->values()->all();
+            $piutangBungaDetail = collect($request->piutang_bunga_detail ?? [])->filter(fn($r) => !empty($r['jenis_instrumen']) && !empty($r['jumlah']))->values()->all();
 
             if ($sektor)   $analisa->sektor()->createMany($sektor);
             if ($efek)     $analisa->efek()->createMany($efek);
@@ -1018,6 +1174,8 @@ class AnalisaController extends Controller
             if ($sukuk)    $analisa->sukuk()->createMany($sukuk);
             if ($bank)     $analisa->bank()->createMany($bank);
             if ($alokasiAset) $analisa->alokasiAset()->createMany($alokasiAset);
+            if ($pasarUang) $analisa->pasarUang()->createMany($pasarUang);
+            if ($piutangBungaDetail) $analisa->piutangBungaDetail()->createMany($piutangBungaDetail);
 
             if (!$isSimpan) {
                 $this->persistAiFromRequest($request, $analisa);
@@ -1119,6 +1277,8 @@ class AnalisaController extends Controller
                 $analisa->sukuk()->delete();
                 $analisa->bank()->delete();
                 $analisa->alokasiAset()->delete();
+                $analisa->pasarUang()->delete();
+                $analisa->piutangBungaDetail()->delete();
             } else {
                 $analisa = AnalisaReksaDana::create($payload);
             }
@@ -1557,12 +1717,14 @@ class AnalisaController extends Controller
             ]);
 
             $sektor   = collect($request->sektor ?? [])->filter(fn($r) => !empty($r['nama_sektor']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
-            $efek     = collect($request->efek ?? [])->filter(fn($r) => !empty($r['kode_efek']) && !empty($r['nama_efek']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
+            $efek     = collect($request->efek ?? [])->filter(fn($r) => !empty($r['nama_efek']) && (isset($r['bobot']) && $r['bobot'] !== '' || !empty($r['persen_nab'])))->values()->all();
             $kinerja  = collect($request->kinerja ?? [])->filter(fn($r) => !empty($r['periode']) && isset($r['return_pct']) && $r['return_pct'] !== '')->values()->all();
             $obligasi = collect($request->obligasi ?? [])->filter(fn($r) => !empty($r['kode_obligasi']) && !empty($r['nama_obligasi']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
             $sukuk    = collect($request->sukuk ?? [])->filter(fn($r) => !empty($r['kode_sukuk']) && !empty($r['nama_sukuk']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
-            $bank     = collect($request->bank ?? [])->filter(fn($r) => !empty($r['nama_bank']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
+            $bank     = collect($request->bank ?? [])->filter(fn($r) => !empty($r['nama_bank']) && (isset($r['bobot']) && $r['bobot'] !== '' || !empty($r['saldo'])))->values()->all();
             $alokasiAset = $this->filteredAlokasiAset($request);
+            $pasarUang = collect($request->pasar_uang ?? [])->filter(fn($r) => !empty($r['nama_instrumen']))->values()->all();
+            $piutangBungaDetail = collect($request->piutang_bunga_detail ?? [])->filter(fn($r) => !empty($r['jenis_instrumen']) && !empty($r['jumlah']))->values()->all();
 
             $analisa->sektor()->delete();
             $analisa->efek()->delete();
@@ -1571,6 +1733,8 @@ class AnalisaController extends Controller
             $analisa->sukuk()->delete();
             $analisa->bank()->delete();
             $analisa->alokasiAset()->delete();
+            $analisa->pasarUang()->delete();
+            $analisa->piutangBungaDetail()->delete();
 
             if ($sektor)   $analisa->sektor()->createMany($sektor);
             if ($efek)     $analisa->efek()->createMany($efek);
@@ -1579,6 +1743,8 @@ class AnalisaController extends Controller
             if ($sukuk)    $analisa->sukuk()->createMany($sukuk);
             if ($bank)     $analisa->bank()->createMany($bank);
             if ($alokasiAset) $analisa->alokasiAset()->createMany($alokasiAset);
+            if ($pasarUang) $analisa->pasarUang()->createMany($pasarUang);
+            if ($piutangBungaDetail) $analisa->piutangBungaDetail()->createMany($piutangBungaDetail);
         });
 
         return redirect()

@@ -7,6 +7,7 @@ use App\Models\Stock;
 use App\Models\StockBrokerDocument;
 use App\Models\StockBrokerResearch;
 use App\Services\AIAnalysisService;
+use App\Services\NewsService;
 use App\Services\YahooStockDataService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -82,16 +83,6 @@ class StockDetailController extends Controller
         return $this->summarize($request, fn() => $service->summarizeStockNews($stock->id), 'berita');
     }
 
-    public function generateNews(Request $request, Stock $stock, AIAnalysisService $service)
-    {
-        try {
-            $count = $service->generateNewsFromAI($stock->id);
-            return back()->with('success', "{$count} berita berhasil di-generate oleh AI.")->with('active_tab', 'berita');
-        } catch (\Throwable $e) {
-            return back()->with('error', $e->getMessage())->with('active_tab', 'berita');
-        }
-    }
-
     public function summarizeBrokerResearch(Request $request, Stock $stock, AIAnalysisService $service)
     {
         return $this->summarize($request, fn() => $service->summarizeBrokerResearch($stock->id), 'riset-broker');
@@ -113,19 +104,47 @@ class StockDetailController extends Controller
         return Storage::disk('public')->download($research->pdf_file);
     }
 
-    public function fetchSummary(Request $request, Stock $stock, YahooStockDataService $service)
+    public function fetchSummary(Request $request, Stock $stock, YahooStockDataService $yahoo, NewsService $news)
     {
         try {
-            return response()->json(['success' => true, 'data' => $service->fetchSummary($stock)]);
+            $data = $yahoo->fetchSummary($stock);
+
+            $googleNews = $news->fetchGoogleNews($stock);
+            if (!empty($googleNews)) {
+                $existing = $data['news'] ?? [];
+                $data['news'] = array_merge($existing, $googleNews);
+                usort($data['news'], fn($a, $b) => strcmp($b['publishedAt'] ?? '', $a['publishedAt'] ?? ''));
+            }
+
+            return response()->json(['success' => true, 'data' => $data]);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function refreshNews(Request $request, Stock $stock, NewsService $news)
+    {
+        try {
+            $symbol = strtoupper($stock->kode) . '.JK';
+            \Illuminate\Support\Facades\Cache::forget("yfapi_summary_v2_{$symbol}");
+
+            $allNews = $news->fetchNews($stock);
+            $count = count($allNews);
+
+            return back()
+                ->with('success', "{$count} berita terbaru berhasil dimuat.")
+                ->with('active_tab', 'berita');
+        } catch (\Throwable $e) {
+            return back()
+                ->with('error', 'Gagal memuat berita: ' . $e->getMessage())
+                ->with('active_tab', 'berita');
         }
     }
 
     public function fetchYahoo(Request $request, Stock $stock, YahooStockDataService $service)
     {
         $range = $request->input('range', '1d');
-        $allowed = ['1d', '5d', '1mo', '3mo', '6mo', '1y'];
+        $allowed = ['1d', '5d', '1mo', '3mo', '6mo', '1y', '5y', 'max'];
         if (!in_array($range, $allowed)) {
             $range = '1d';
         }
@@ -216,6 +235,43 @@ class StockDetailController extends Controller
         abort_if($research->stock_id !== $stock->id, 404);
     }
 
+    public function searchComparison(Request $request)
+    {
+        $q = $request->get('q');
+        if (!$q || strlen($q) < 1) {
+            return response()->json([]);
+        }
+
+        $stocks = Stock::where('kode', 'like', "%{$q}%")
+            ->orWhere('nama', 'like', "%{$q}%")
+            ->limit(10)
+            ->get(['id', 'kode', 'nama', 'sektor', 'harga_terbaru']);
+
+        return response()->json($stocks);
+    }
+
+    public function fetchComparison(Request $request, YahooStockDataService $service)
+    {
+        $code = $request->get('code');
+        $range = $request->get('range', '1y');
+
+        $stock = Stock::where('kode', $code)->first();
+        if (!$stock) {
+            return response()->json(['success' => false, 'message' => 'Saham tidak ditemukan.'], 404);
+        }
+
+        try {
+            $data = $service->fetchYahooData($stock, $range);
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'stock' => ['kode' => $stock->kode, 'nama' => $stock->nama],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
     private function timeframeStart(string $timeframe): Carbon
     {
         return match ($timeframe) {
@@ -225,6 +281,8 @@ class StockDetailController extends Controller
             '6M' => now()->subMonths(6),
             'YTD' => now()->startOfYear(),
             '1Y' => now()->subYear(),
+            '5Y' => now()->subYears(5),
+            'MAX' => now()->subYears(50),
             default => now()->subMonth(),
         };
     }

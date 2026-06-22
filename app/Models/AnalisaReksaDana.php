@@ -88,6 +88,16 @@ class AnalisaReksaDana extends Model
         return $this->hasMany(AnalisaSukuk::class, 'analisa_reksa_dana_id');
     }
 
+    public function pasarUang(): HasMany
+    {
+        return $this->hasMany(AnalisaPasarUang::class, 'analisa_reksa_dana_id');
+    }
+
+    public function piutangBungaDetail(): HasMany
+    {
+        return $this->hasMany(AnalisaPiutangBunga::class, 'analisa_reksa_dana_id');
+    }
+
     public function getDisplayMataUangAttribute(): string
     {
         return app(KodeReksaDanaParser::class)->resolveCurrencyName($this->mata_uang, (string) $this->kode_reksa_dana);

@@ -1404,44 +1404,49 @@
                                 </div>
                                 <div class="space-y-2 max-h-48 overflow-y-auto">
                                     <template x-for="doc in existingDocs" :key="doc.id">
-                                        <div class="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-200"
+                                        <div class="p-2.5 bg-white rounded-lg border border-gray-200"
                                             :class="{'border-primary/40 bg-primary/[0.03]': selectedDocIds.includes(doc.id)}">
-                                            <div class="flex items-center gap-2 min-w-0">
-                                                <input type="checkbox" :value="doc.id"
-                                                    :checked="selectedDocIds.includes(doc.id)"
-                                                    @change="toggleDocSelection(doc.id)"
-                                                    class="shrink-0 rounded border-gray-300 text-primary focus:ring-primary/20">
-                                                <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                                                    :class="{
-                                                        'bg-blue-100 text-blue-700': doc.document_type === 'prospektus',
-                                                        'bg-emerald-100 text-emerald-700': doc.document_type === 'ffs',
-                                                        'bg-amber-100 text-amber-700': doc.document_type === 'laporan_tahunan',
-                                                    }"
-                                                    x-text="{
-                                                        'prospektus': 'Prospektus',
-                                                        'ffs': 'FFS',
-                                                        'laporan_tahunan': 'Laporan Tahunan',
-                                                    }[doc.document_type] || doc.document_type"></span>
-                                                <span class="text-sm font-medium truncate" x-text="doc.label"></span>
-                                                <span class="text-xs text-muted shrink-0 hidden sm:inline" x-text="doc.reksa_dana_kode"></span>
-                                                <span class="text-xs text-muted shrink-0" x-text="doc.uploaded_at"></span>
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center gap-2 min-w-0">
+                                                    <input type="checkbox" :value="doc.id"
+                                                        :checked="selectedDocIds.includes(doc.id)"
+                                                        @change="toggleDocSelection(doc.id)"
+                                                        class="shrink-0 rounded border-gray-300 text-primary focus:ring-primary/20">
+                                                    <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                                                        :class="{
+                                                            'bg-blue-100 text-blue-700': doc.document_type === 'prospektus',
+                                                            'bg-emerald-100 text-emerald-700': doc.document_type === 'ffs',
+                                                            'bg-amber-100 text-amber-700': doc.document_type === 'laporan_tahunan',
+                                                        }"
+                                                        x-text="{
+                                                            'prospektus': 'Prospektus',
+                                                            'ffs': 'FFS',
+                                                            'laporan_tahunan': 'Laporan Tahunan',
+                                                        }[doc.document_type] || doc.document_type"></span>
+                                                    <span class="text-sm font-medium truncate" x-text="doc.label"></span>
+                                                    <span class="text-xs text-muted shrink-0 hidden sm:inline" x-text="doc.reksa_dana_kode"></span>
+                                                    <span class="text-xs text-muted shrink-0" x-text="doc.uploaded_at"></span>
+                                                </div>
+                                                <div class="flex items-center gap-1 shrink-0" x-show="doc.url">
+                                                    <a :href="doc.url" target="_blank"
+                                                        class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition">
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                        </svg>
+                                                        Lihat
+                                                    </a>
+                                                    <a :href="doc.url" download
+                                                        class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-md hover:bg-emerald-100 transition">
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                        </svg>
+                                                        Download
+                                                    </a>
+                                                </div>
                                             </div>
-                                            <div class="flex items-center gap-1 shrink-0" x-show="doc.url">
-                                                <a :href="doc.url" target="_blank"
-                                                    class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition">
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                                    </svg>
-                                                    Lihat
-                                                </a>
-                                                <a :href="doc.url" download
-                                                    class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-md hover:bg-emerald-100 transition">
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                                    </svg>
-                                                    Download
-                                                </a>
+                                            <div x-show="doc.notes" class="mt-1.5 pl-6">
+                                                <p class="text-xs text-muted italic leading-relaxed" x-text="doc.notes"></p>
                                             </div>
                                         </div>
                                     </template>
@@ -1452,6 +1457,75 @@
                         <div x-show="existingDocsLoaded && existingDocs.length === 0" class="text-xs text-muted italic">
                             Dokumen tidak ditemukan untuk periode yang dipilih.
                         </div>
+                    </div>
+
+                    {{-- Multi-Document Upload Panel --}}
+                    <div class="border border-line rounded-lg p-4 space-y-4">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <h4 class="font-medium text-sm text-primary">Upload Multi-Dokumen</h4>
+                        </div>
+                        <p class="text-xs text-muted">Upload beberapa dokumen sekaligus untuk mengisi form secara lebih lengkap. Masing-masing dokumen akan di-parse dan hasilnya digabungkan.</p>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <template x-for="(slot, idx) in docSlots" :key="slot.type">
+                                <div class="border rounded-lg p-3 space-y-2" :class="{
+                                    'border-line bg-white': slot.success === null,
+                                    'border-green-300 bg-green-50/50': slot.success === true,
+                                    'border-red-300 bg-red-50/50': slot.success === false,
+                                }">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-semibold" :class="{
+                                            'text-primary': slot.success === null,
+                                            'text-green-700': slot.success === true,
+                                            'text-red-700': slot.success === false,
+                                        }" x-text="slot.label"></span>
+                                        <template x-if="slot.loading">
+                                            <svg class="animate-spin h-3.5 w-3.5 text-primary" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                        </template>
+                                        <template x-if="slot.success === true">
+                                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                        </template>
+                                        <template x-if="slot.success === false">
+                                            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        </template>
+                                    </div>
+
+                                    {{-- All slots: upload only --}}
+                                    <input type="file" accept=".pdf"
+                                        @change="slot.file = $event.target.files[0] || null"
+                                        class="w-full text-xs border border-gray-300 rounded-lg px-2 py-1.5 file:mr-2 file:rounded file:border-0 file:bg-primary/10 file:px-2 file:py-0.5 file:text-primary file:text-xs" />
+
+                                    <p x-show="slot.message" class="text-[11px]" :class="slot.success ? 'text-green-600' : 'text-red-600'" x-text="slot.message"></p>
+                                </div>
+                            </template>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <button type="button" @click="parseAllDocs()"
+                                :disabled="multiParseLoading || (!docSlots.some(s => s.file) && !selectedDocIds.length)"
+                                class="px-4 py-2 text-xs font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                                <span x-show="!multiParseLoading">Parse Semua Dokumen</span>
+                                <span x-show="multiParseLoading">Memproses...</span>
+                            </button>
+                            <button type="button" @click="docSlots.forEach(s => { s.file = null; s.success = null; s.message = ''; s.data = null; }); multiParseResult = ''; multiParseSuccess = false;"
+                                x-show="docSlots.some(s => s.file || s.success !== null)"
+                                class="px-3 py-2 text-xs font-medium text-muted border border-line rounded-lg hover:bg-gray-50 transition">
+                                Reset
+                            </button>
+                        </div>
+
+                        {{-- Summary --}}
+                        <div x-show="multiParseResult" class="text-sm p-3 rounded-lg border" :class="multiParseSuccess ? 'bg-green-50 border-green-200 text-green-700' : 'bg-amber-50 border-amber-200 text-amber-700'">
+                            <span x-text="multiParseResult"></span>
+                            <div x-show="multiParseSuccess" class="flex gap-2 mt-2">
+                                <button type="button" @click="mode = 'manual'" class="text-xs underline">Lihat di Input Manual</button>
+                                <button type="button" @click="mode = 'lengkap'" class="text-xs underline">Lihat di Input Lengkap</button>
+                            </div>
+                        </div>
+
                     </div>
 
                     {{-- Separator --}}
@@ -1662,6 +1736,17 @@
                     unitMilikInvestor: @json(old('unit_milik_investor')),
                     unitMilikMi: @json(old('unit_milik_mi')),
                     totalUnitBeredar: @json(old('total_unit_beredar')),
+
+                    // Multi-document parse slots
+                    docSlots: [
+                        { type: 'informasi_lainnya', label: 'Informasi Lainnya', file: null, loading: false, success: null, message: '', data: null },
+                        { type: 'portofolio_efek', label: 'Portofolio Efek', file: null, loading: false, success: null, message: '', data: null },
+                        { type: 'pengukuran_nilai_wajar', label: 'Pengukuran Nilai Wajar', file: null, loading: false, success: null, message: '', data: null },
+                        { type: 'bs_is_cf_pup', label: 'BS, IS, CF, dan PUP', file: null, loading: false, success: null, message: '', data: null },
+                    ],
+                    multiParseLoading: false,
+                    multiParseResult: '',
+                    multiParseSuccess: false,
 
                     init() {
                         if (resumeData) {
@@ -2827,6 +2912,108 @@
                                 this.pdfSuccess = false;
                                 this.pdfResult = 'Gagal: ' + err.message;
                             });
+                    },
+
+                    async parseAllDocs() {
+                        const token = this.analisaFormEl().querySelector('input[name="_token"]').value;
+                        const slotsToProcess = this.docSlots.filter(s => s.file);
+                        const libraryDocIds = [...this.selectedDocIds];
+                        if (!slotsToProcess.length && !libraryDocIds.length) return;
+
+                        this.multiParseLoading = true;
+                        this.multiParseResult = '';
+                        this.multiParseSuccess = false;
+                        this.docSlots.forEach(s => { s.success = null; s.message = ''; s.data = null; });
+
+                        // Parse 4 upload slots
+                        const promises = slotsToProcess.map(slot => {
+                            slot.loading = true;
+                            const fd = new FormData();
+                            fd.append('file_pdf', slot.file);
+                            fd.append('document_type', slot.type);
+                            fd.append('_token', token);
+                            const url = this.pdfScanMode === 'vision' && this.parsePdfVisionUrl ? this.parsePdfVisionUrl : @json($formRoutes['parse_pdf']);
+                            return fetch(url, { method: 'POST', headers: { 'Accept': 'application/json' }, body: fd })
+                                .then(r => r.json()).then(resp => ({ slot, resp })).catch(e => ({ slot, error: e.message }));
+                        });
+
+                        // Parse selected documents from "Dokumen Tersimpan"
+                        const libraryPromises = libraryDocIds.map(docId =>
+                            fetch(this.parseExistingDocUrl, {
+                                method: 'POST',
+                                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token },
+                                body: JSON.stringify({ document_id: docId }),
+                            }).then(r => r.json()).then(resp => ({ isLibrary: true, docId, resp })).catch(e => ({ isLibrary: true, docId, error: e.message }))
+                        );
+
+                        const results = await Promise.allSettled([...promises, ...libraryPromises]);
+                        let successCount = 0;
+                        let libraryData = [];
+
+                        results.forEach(r => {
+                            const val = r.value || r.reason || {};
+                            if (val.isLibrary) {
+                                if (!val.error && val.resp?.success) {
+                                    libraryData.push(this.normalizeExtractedData(val.resp.data || {}));
+                                    successCount++;
+                                }
+                            } else {
+                                const { slot, resp, error } = val;
+                                if (!slot) return;
+                                slot.loading = false;
+                                if (error || !resp?.success) {
+                                    slot.success = false;
+                                    slot.message = error || resp?.message || 'Gagal parse';
+                                } else {
+                                    slot.success = true;
+                                    slot.data = this.normalizeExtractedData(resp.data || {});
+                                    const fieldCount = Object.keys(slot.data).filter(k => {
+                                        const v = slot.data[k];
+                                        return v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0);
+                                    }).length;
+                                    slot.message = `${fieldCount} field diekstrak`;
+                                    successCount++;
+                                }
+                            }
+                        });
+
+                        // Smart merge: library docs first (base), then 4 slots override
+                        // - Scalar fields: later slot wins (more specific)
+                        // - Array fields: longest array wins (most complete)
+                        let mergedData = {};
+                        const allData = [...libraryData, ...this.docSlots.filter(s => s.success && s.data).map(s => s.data)];
+                        allData.forEach(data => {
+                            Object.keys(data).forEach(k => {
+                                const v = data[k];
+                                if (v === null || v === undefined || v === '') return;
+                                if (Array.isArray(v)) {
+                                    if (v.length === 0) return;
+                                    if (!mergedData[k] || !Array.isArray(mergedData[k]) || v.length > mergedData[k].length) {
+                                        mergedData[k] = v;
+                                    }
+                                } else {
+                                    mergedData[k] = v;
+                                }
+                            });
+                        });
+
+                        const totalFields = Object.keys(mergedData).filter(k => {
+                            const v = mergedData[k];
+                            return v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0);
+                        }).length;
+
+                        if (totalFields > 0) {
+                            this.applyExtractedData(mergedData, this.hasFullInputData(mergedData) ? 'lengkap' : 'manual');
+                        }
+
+                        this.multiParseLoading = false;
+                        const total = slotsToProcess.length + libraryDocIds.length;
+                        this.multiParseSuccess = successCount > 0;
+                        this.multiParseResult = `${successCount}/${total} dokumen berhasil. ${totalFields} field terisi.`;
+
+                        if (successCount > 0) {
+                            alert('⚠️ Data hasil ekstraksi AI bisa saja tidak akurat atau tidak lengkap. Mohon periksa dan validasi setiap field sebelum menyimpan.');
+                        }
                     },
 
                     fetchExistingDocuments() {
