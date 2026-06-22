@@ -200,7 +200,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('saham/compare-chart', [StockDetailController::class, 'fetchComparison'])->name('saham.compare-chart');
     Route::get('saham/{stock}', [StockDetailController::class, 'show'])->name('saham.show');
     Route::post('saham/{stock}/summarize-news', [StockDetailController::class, 'summarizeNews'])->name('saham.summarize-news');
-    Route::post('saham/{stock}/generate-news', [StockDetailController::class, 'generateNews'])->name('saham.generate-news');
+    Route::post('saham/{stock}/refresh-news', [StockDetailController::class, 'refreshNews'])->name('saham.refresh-news');
     Route::post('saham/{stock}/summarize-broker-research', [StockDetailController::class, 'summarizeBrokerResearch'])->name('saham.summarize-broker-research');
     Route::post('saham/{stock}/sync-yahoo-prices', [StockDetailController::class, 'syncYahooPrices'])->name('saham.sync-yahoo-prices');
     Route::get('saham/{stock}/fetch-yahoo', [StockDetailController::class, 'fetchYahoo'])->name('saham.fetch-yahoo');
@@ -438,7 +438,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/saham/compare-chart', [StockDetailController::class, 'fetchComparison'])->name('saham.compare-chart');
     Route::get('/saham/{stock}', [StockDetailController::class, 'show'])->name('saham.show');
     Route::post('/saham/{stock}/summarize-news', [StockDetailController::class, 'summarizeNews'])->name('saham.summarize-news');
-    Route::post('/saham/{stock}/generate-news', [StockDetailController::class, 'generateNews'])->name('saham.generate-news');
+    Route::post('/saham/{stock}/refresh-news', [StockDetailController::class, 'refreshNews'])->name('saham.refresh-news');
     Route::post('/saham/{stock}/summarize-broker-research', [StockDetailController::class, 'summarizeBrokerResearch'])->name('saham.summarize-broker-research');
     Route::post('/saham/{stock}/sync-yahoo-prices', [StockDetailController::class, 'syncYahooPrices'])->name('saham.sync-yahoo-prices');
     Route::get('/saham/{stock}/fetch-yahoo', [StockDetailController::class, 'fetchYahoo'])->name('saham.fetch-yahoo');

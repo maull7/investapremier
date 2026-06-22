@@ -35,6 +35,7 @@ class GroqService
                     ->post($this->openaiUrl, [
                         'model'       => $this->openaiModel,
                         'temperature' => $temperature,
+                        'max_tokens'  => 16000,
                         'messages'    => $messages,
                     ]);
 
@@ -60,6 +61,7 @@ class GroqService
             ->post($this->groqUrl, [
                 'model'       => $this->groqModel,
                 'temperature' => $temperature,
+                'max_tokens'  => 16000,
                 'messages'    => $messages,
             ]);
 
@@ -70,13 +72,32 @@ class GroqService
         return $response->json('choices.0.message.content', '');
     }
 
-    public function parseFfsPdf(string $pdfText): array
+    public function parseFfsPdf(string $pdfText, ?string $documentType = null): array
     {
         $text = mb_substr($pdfText, 0, 60000);
+
+        $systemPrompt = 'Kamu adalah parser dokumen Fund Fact Sheet (FFS) reksa dana Indonesia. Ekstrak data dari teks PDF dan kembalikan HANYA JSON valid tanpa teks lain.';
+
+        if ($documentType === 'informasi_lainnya') {
+            $systemPrompt = 'Kamu adalah parser dokumen reksa dana Indonesia. Fokus ekstrak informasi umum: nama reksa dana, jenis reksa dana, manajer investasi, bank kustodian, benchmark, tujuan investasi, kebijakan investasi, tanggal peluncuran, mata uang, management fee, custodian fee, return YTD, return 1 tahun, total AUM, NAB/UP, unit penyertaan, tanggal data, ffs_bulan, ffs_tahun. Kembalikan HANYA JSON valid tanpa teks lain.';
+        } elseif ($documentType === 'portofolio_efek') {
+            $systemPrompt = 'Kamu adalah parser dokumen portofolio efek reksa dana Indonesia. Ekstrak SEMUA holdings (jangan hanya top 10, ambil seluruh daftar): daftar efek saham (kode, nama, sektor, bobot, nilai pasar, harga perolehan, persen NAB, jumlah lembar), daftar obligasi (kode, nama, bobot, YTM, kupon, jatuh tempo, penerbit, rating, nilai nominal, nilai pasar), daftar sukuk, daftar deposito bank, kas di bank, instrumen pasar uang, piutang bunga, komposisi sektor, alokasi aset, kinerja bulanan. Kembalikan HANYA JSON valid tanpa teks lain.';
+        } elseif ($documentType === 'pengukuran_nilai_wajar') {
+            $systemPrompt = 'Kamu adalah parser dokumen Pengukuran Nilai Wajar reksa dana Indonesia. Fokus ekstrak: fair_value_level_1 (angka rupiah), fair_value_level_2 (angka rupiah), fair_value_level_3 (angka rupiah), unit_milik_investor (jumlah unit), unit_milik_mi (jumlah unit), total_unit_beredar (jumlah unit). Kembalikan HANYA JSON valid tanpa teks lain.';
+        } elseif ($documentType === 'bs_is_cf_pup') {
+            $systemPrompt = 'Kamu adalah parser Laporan Keuangan reksa dana Indonesia (Balance Sheet/Neraca, Income Statement/Laba Rugi, Cash Flow/Arus Kas, Perubahan Unit Penyertaan). Fokus ekstrak: total_aset, total_liabilitas, kas_dan_bank, piutang_bunga, piutang_dividen, piutang_lain, utang_pajak, utang_lain, pendapatan_bunga, pendapatan_dividen, gain_realized, gain_unrealized, beban_mi, beban_kustodian, beban_lain, laba_bersih, arus_kas_operasi, arus_kas_pendanaan, kas_awal_tahun, kas_akhir_tahun, total_hasil_investasi, hasil_investasi_setelah_biaya, biaya_operasi, portfolio_turnover_ratio, persentase_pph. Kembalikan HANYA JSON valid tanpa teks lain.';
+        } elseif ($documentType === 'prospektus') {
+            $systemPrompt = 'Kamu adalah parser dokumen Prospektus reksa dana Indonesia. Fokus ekstrak: tujuan investasi, kebijakan investasi, benchmark, management fee, custodian fee, tanggal peluncuran, mata uang, bank kustodian, manajer investasi. Kembalikan HANYA JSON valid tanpa teks lain.';
+        } elseif ($documentType === 'laporan_tahunan') {
+            $systemPrompt = 'Kamu adalah parser Laporan Tahunan reksa dana Indonesia. Fokus ekstrak: neraca (total aset, liabilitas, kas, piutang, utang), laba rugi (pendapatan, beban, laba bersih), arus kas, rasio keuangan (total hasil investasi, biaya operasi, portfolio turnover). Kembalikan HANYA JSON valid tanpa teks lain.';
+        } elseif ($documentType === 'laporan_keuangan') {
+            $systemPrompt = 'Kamu adalah parser Laporan Keuangan Audited reksa dana Indonesia. Fokus ekstrak: fair value level 1/2/3, unit milik investor/MI/total, neraca detail, laba rugi detail, arus kas detail, persentase PPh. Kembalikan HANYA JSON valid tanpa teks lain.';
+        }
+
         $messages = [
             [
                 'role'    => 'system',
-                'content' => 'Kamu adalah parser dokumen Fund Fact Sheet (FFS) reksa dana Indonesia. Ekstrak data dari teks PDF dan kembalikan HANYA JSON valid tanpa teks lain.',
+                'content' => $systemPrompt,
             ],
             [
                 'role'    => 'user',
@@ -206,7 +227,9 @@ Ekstrak data dari teks Fund Fact Sheet berikut. Kembalikan HANYA JSON valid deng
 ATURAN:
 - nama_reksa_dana harus nama produk reksa dana yang spesifik, bukan "Fund Fact Sheet", bukan nama manajer investasi, dan bukan nama bank kustodian.
 - kategori boleh berisi lebih dari satu nilai jika dokumen menyebut Syariah, ETF, Index/Indeks, atau Konvensional.
-- kode_efek wajib diisi untuk saham jika tersedia; gunakan ticker BEI tanpa akhiran jika dokumen hanya menampilkan nama saham.
+- kode_efek diisi ticker BEI (misal "BBCA") jika tersedia di dokumen; jika dokumen hanya menampilkan nama PT tanpa ticker, isi kode_efek kosong "" dan nama_efek = nama PT lengkap.
+- Array "efek" HANYA untuk saham/ekuitas (Efek Ekuitas/Equity/Shares). JANGAN masukkan obligasi/bonds ke array efek.
+- Array "obligasi" untuk efek utang/bonds/debt instruments (FR0072, Berkelanjutan Waskita, dll). JANGAN masukkan saham ke array obligasi.
 - sektor pada daftar efek wajib diisi jika sektor efek tersedia di dokumen atau dapat disimpulkan kuat dari tabel sektor/top holdings.
 - kontribusi_kinerja adalah kontribusi terhadap IHSG/kinerja portofolio dalam persen jika tersedia.
 - market_cap dalam Rupiah penuh jika tersedia.
@@ -218,6 +241,7 @@ ATURAN:
 - alokasi_aset adalah asset allocation/komposisi aset seperti Saham, Obligasi, Pasar Uang, Kas, Deposito. Jangan isi dari komposisi sektor kecuali tabelnya memang asset allocation.
 - ffs_bulan dan ffs_tahun mengikuti tanggal/periode data FFS jika tersedia.
 - bobot dalam persen (misal 12.5, bukan 0.125)
+- Ekstrak SEMUA efek/saham yang ada di dokumen, bukan hanya top 10. Jika ada 50 saham, masukkan semua 50. Begitu juga obligasi dan sukuk, masukkan SEMUA.
 - periode kinerja format YYYY-MM (misal "2024-03")
 - Jika data tidak ada gunakan null atau array kosong []
 - Output HANYA JSON valid, tanpa penjelasan, tanpa markdown
@@ -230,6 +254,202 @@ PROMPT,
 
         $raw = $this->callAi($messages, 180, 0.1);
         return self::parseJsonOutput($raw);
+    }
+
+    /**
+     * Slot 1: Informasi Lainnya - minimal schema (info umum RD)
+     */
+    public function parseInformasiLainnya(string $text): array
+    {
+        $text = mb_substr($text, 0, 15000);
+        $messages = [
+            ['role' => 'system', 'content' => 'Ekstrak informasi umum reksa dana dari teks. Kembalikan HANYA JSON valid.'],
+            ['role' => 'user', 'content' => <<<PROMPT
+Ekstrak data dari teks berikut. Kembalikan HANYA JSON:
+
+{
+  "nama_reksa_dana": "string atau null",
+  "jenis_reksa_dana": "Saham/Pendapatan Tetap/Campuran/Pasar Uang atau null",
+  "kategori": ["Konvensional","Syariah","index","ETF"],
+  "manajer_investasi": "string atau null",
+  "bank_kustodian": "string atau null",
+  "benchmark": "string atau null",
+  "tujuan_investasi": "string atau null",
+  "kebijakan_investasi": "string atau null",
+  "tanggal_peluncuran": "YYYY-MM-DD atau null",
+  "mata_uang": "string atau null",
+  "management_fee": angka persen atau null,
+  "custodian_fee": angka persen atau null,
+  "total_aum": angka rupiah penuh atau null,
+  "unit_penyertaan": angka atau null,
+  "nab_per_unit": angka atau null,
+  "tanggal_data": "YYYY-MM-DD atau null",
+  "ffs_bulan": angka 1-12 atau null,
+  "ffs_tahun": angka tahun atau null,
+  "return_ytd": angka persen atau null,
+  "return_1y": angka persen atau null,
+  "total_return": angka persen atau null,
+  "biaya_operasi": angka persen atau null,
+  "portfolio_turnover_ratio": angka atau null
+}
+
+ATURAN: angka rupiah dalam bentuk penuh (1.5 triliun = 1500000000000). Jika tidak ada, null.
+
+TEKS:
+{$text}
+PROMPT,
+            ],
+        ];
+        return self::parseJsonOutput($this->callAi($messages, 60, 0.1));
+    }
+
+    /**
+     * Slot 2: Portofolio Efek - minimal schema (daftar holdings)
+     */
+    public function parsePortofolioEfek(string $text): array
+    {
+        $text = mb_substr($text, 0, 60000);
+        $messages = [
+            ['role' => 'system', 'content' => 'Ekstrak portofolio efek/holdings reksa dana dari teks. Kembalikan HANYA JSON valid.'],
+            ['role' => 'user', 'content' => <<<PROMPT
+Ekstrak portofolio dari teks berikut. Kembalikan HANYA JSON:
+
+{
+  "alokasi_aset": [{"nama_aset":"string","persentase":angka}],
+  "sektor": [{"nama_sektor":"string","bobot":angka_persen}],
+  "efek": [{"kode_efek":"string atau kosong","nama_efek":"string nama lengkap PT","sektor":"string","bobot":angka_persen,"nilai_pasar":angka_atau_null,"harga_perolehan":angka_atau_null,"persen_nab":angka_atau_null,"top_10":true/false,"jumlah_lembar":angka_atau_null,"harga_perolehan_rata_rata":angka_rp_per_lembar_atau_null}],
+  "obligasi": [{"kode_obligasi":"string misal FR0072","nama_obligasi":"string nama lengkap","bobot":angka_persen,"nilai_pasar":angka_atau_null,"ytm":angka_atau_null,"kupon":angka_atau_null,"tanggal_jatuh_tempo":"YYYY-MM-DD atau null","penerbit":"string atau null","rating":"string atau null","persen_nab":angka_atau_null,"nilai_nominal":angka_atau_null,"harga_perolehan_rata_rata":angka_persen_atau_null,"suku_bunga":angka_persen_per_tahun_atau_null}],
+  "sukuk": [{"kode_sukuk":"string","nama_sukuk":"string","jenis_sukuk":"Negara/Korporasi/null","bobot":angka_persen,"yield":angka_atau_null,"jatuh_tempo":"string atau null","persen_nab":angka_atau_null,"rating":"string atau null","nilai_nominal":angka_atau_null,"harga_perolehan_rata_rata":angka_persen_atau_null,"nilai_wajar":angka_atau_null,"tingkat_bagi_hasil":angka_persen_atau_null}],
+  "bank": [{"nama_bank":"string","jenis_bank":"string atau null","bobot":angka_atau_null,"nilai_pasar":angka_atau_null,"tingkat_bunga":angka_atau_null,"jangka_waktu":angka_hari_atau_null,"persen_nab":angka_atau_null,"saldo":angka_rp_atau_null}],
+  "pasar_uang": [{"nama_instrumen":"string","jenis_instrumen":"Deposito berjangka/dll","nilai_tercatat":angka_atau_null,"suku_bunga":angka_persen_atau_null,"jatuh_tempo":"YYYY-MM-DD atau null","persen_nab":angka_atau_null}],
+  "piutang_bunga_detail": [{"jenis_instrumen":"Efek utang/Sukuk/Kas di bank/Instrumen pasar uang","jumlah":angka_rp}],
+  "kinerja": [{"periode":"YYYY-MM","return_pct":angka}]
+}
+
+ATURAN:
+- bobot/persen_nab dalam persen (12.5 bukan 0.125).
+- KLASIFIKASI SECTION DI PDF:
+  * "Efek Ekuitas" / "Equity Instruments" / "Saham" / "Shares" → masukkan ke array "efek"
+  * "Efek Utang" / "Debt Instruments" / "Obligasi" / "Bonds" → masukkan ke array "obligasi"
+  * "Sukuk" / "SBSN" → masukkan ke array "sukuk"
+  * "Instrumen Pasar Uang" / "Money Market" / "Deposito" → masukkan ke array "pasar_uang"
+  * "Kas di Bank" / "Cash in Banks" → masukkan ke array "bank"
+  * "Piutang Bunga" / "Interest Receivable" → masukkan ke array "piutang_bunga_detail"
+- EFEK (array "efek") = HANYA saham/ekuitas. nama_efek = nama PT lengkap (misal "PT Bank Central Asia Tbk"). kode_efek = ticker BEI jika diketahui (misal "BBCA"), kosong "" jika tidak ada. jumlah_lembar = number of shares. harga_perolehan_rata_rata = average cost per share (Rp). nilai_pasar = total fair market value (Rp). persen_nab = percentage to total investment portfolios.
+- OBLIGASI (array "obligasi") = efek utang/bonds/surat utang. kode_obligasi = kode seri (FR0072, FR0090, dll). nama_obligasi = nama lengkap. nilai_nominal = nominal value (Rp). harga_perolehan_rata_rata = average cost dalam % (misal 99.62, 111.20). nilai_pasar = fair value (Rp). suku_bunga = interest rate per annum %. tanggal_jatuh_tempo = maturity date. persen_nab = percentage to total.
+- SUKUK: kode_sukuk = PBS017, dll. tingkat_bagi_hasil = profit sharing ratio %.
+- "Kas di Bank": masukkan ke "bank" dengan jenis_bank="Kas" dan field saldo.
+- "Piutang Bunga": masukkan ke piutang_bunga_detail.
+- "Instrumen Pasar Uang": masukkan ke pasar_uang.
+- PENTING: Ambil hanya data tahun TERBARU jika ada 2 tahun (2025 dan 2024). Prioritaskan tahun paling baru.
+- PENTING: Ekstrak SEMUA item, bukan hanya top 10. Jika ada 50 saham, masukkan SEMUA 50. Jika ada 9 obligasi, masukkan SEMUA 9. Jangan potong atau ringkas.
+- JANGAN campur data obligasi ke dalam array efek, atau sebaliknya.
+- Jika tidak ada, null atau [].
+
+TEKS:
+{$text}
+PROMPT,
+            ],
+        ];
+        return self::parseJsonOutput($this->callAi($messages, 180, 0.1));
+    }
+
+    /**
+     * Slot 3: Pengukuran Nilai Wajar - fair value + unit penyertaan
+     */
+    public function parsePengukuranNilaiWajar(string $text): array
+    {
+        $text = mb_substr($text, 0, 15000);
+        $messages = [
+            ['role' => 'system', 'content' => 'Ekstrak data pengukuran nilai wajar dan unit penyertaan reksa dana dari laporan keuangan. Kembalikan HANYA JSON valid.'],
+            ['role' => 'user', 'content' => <<<PROMPT
+Ekstrak dari teks berikut. Kembalikan HANYA JSON:
+
+{
+  "fair_value_level_1": angka rupiah penuh atau null,
+  "fair_value_level_2": angka rupiah penuh atau null,
+  "fair_value_level_3": angka rupiah penuh atau null,
+  "unit_penyertaan": angka jumlah unit penyertaan beredar atau null,
+  "unit_milik_investor": angka unit milik pemegang unit/investor atau null,
+  "unit_milik_mi": angka unit milik manajer investasi atau null,
+  "total_unit_beredar": angka total unit penyertaan beredar atau null
+}
+
+ATURAN:
+- Angka rupiah dalam bentuk penuh (misal 500 miliar = 500000000000).
+- Unit penyertaan biasanya angka besar (jutaan-miliaran unit).
+- "Level 1" = instrumen dengan harga pasar aktif. "Level 2" = teknik valuasi. "Level 3" = input tidak dapat diobservasi.
+- Keyword yang mungkin muncul: "Pengukuran Nilai Wajar", "Fair Value Hierarchy", "Unit Penyertaan Beredar", "Pemegang Unit Penyertaan", "Manajer Investasi".
+- Jika tidak ditemukan, null.
+
+TEKS:
+{$text}
+PROMPT,
+            ],
+        ];
+        return self::parseJsonOutput($this->callAi($messages, 30, 0.1));
+    }
+
+    /**
+     * Slot 4: BS, IS, CF, dan PUP - laporan keuangan lengkap
+     */
+    public function parseBsIsCfPup(string $text): array
+    {
+        $text = mb_substr($text, 0, 30000);
+        $messages = [
+            ['role' => 'system', 'content' => 'Ekstrak laporan keuangan reksa dana Indonesia: Neraca (Balance Sheet), Laba Rugi (Income Statement), Arus Kas (Cash Flow), dan Perubahan Unit Penyertaan (PUP). Kembalikan HANYA JSON valid.'],
+            ['role' => 'user', 'content' => <<<PROMPT
+Ekstrak laporan keuangan dari teks berikut. Kembalikan HANYA JSON:
+
+{
+  "total_aset": angka rupiah penuh atau null,
+  "total_liabilitas": angka rupiah penuh atau null,
+  "kas_dan_bank": angka rupiah penuh atau null,
+  "piutang_bunga": angka rupiah penuh atau null,
+  "piutang_dividen": angka rupiah penuh atau null,
+  "piutang_lain": angka rupiah penuh atau null,
+  "utang_pajak": angka rupiah penuh atau null,
+  "utang_lain": angka rupiah penuh atau null,
+  "pendapatan_bunga": angka rupiah penuh atau null,
+  "pendapatan_dividen": angka rupiah penuh atau null,
+  "gain_realized": angka rupiah penuh atau null,
+  "gain_unrealized": angka rupiah penuh atau null,
+  "beban_mi": angka rupiah penuh atau null,
+  "beban_kustodian": angka rupiah penuh atau null,
+  "beban_lain": angka rupiah penuh atau null,
+  "laba_bersih": angka rupiah penuh atau null,
+  "arus_kas_operasi": angka rupiah penuh atau null,
+  "arus_kas_pendanaan": angka rupiah penuh atau null,
+  "kas_awal_tahun": angka rupiah penuh atau null,
+  "kas_akhir_tahun": angka rupiah penuh atau null,
+  "total_hasil_investasi": angka persen atau null,
+  "hasil_investasi_setelah_biaya": angka persen atau null,
+  "biaya_operasi": angka persen atau null,
+  "portfolio_turnover_ratio": angka rasio atau null,
+  "persentase_pph": angka persen atau null,
+  "unit_penyertaan": angka jumlah unit penyertaan beredar atau null,
+  "unit_milik_investor": angka unit milik pemegang unit atau null,
+  "unit_milik_mi": angka unit milik manajer investasi atau null,
+  "total_unit_beredar": angka total unit beredar atau null
+}
+
+ATURAN:
+- Angka rupiah dalam bentuk penuh (500 juta = 500000000, 1.5 triliun = 1500000000000).
+- Persen sebagai angka (5.2 bukan 0.052).
+- portfolio_turnover_ratio biasanya angka desimal kecil (misal 0.45 atau 1.23).
+- Keyword BS: "Jumlah Aset", "Jumlah Liabilitas", "Piutang bunga", "Piutang dividen", "Utang lain-lain".
+- Keyword IS: "Keuntungan investasi yang telah direalisasi/belum direalisasi", "Beban pengelolaan investasi", "Beban kustodian", "Kenaikan/penurunan aset bersih".
+- Keyword CF: "Arus kas dari aktivitas operasi/pendanaan", "Kas dan setara kas awal/akhir".
+- Keyword PUP: "Unit penyertaan beredar", "Pemegang unit penyertaan", "Manajer investasi".
+- Keyword Rasio: "Total Hasil Investasi", "Hasil Investasi Setelah Memperhitungkan Biaya Pemasaran", "Biaya Operasi", "Portfolio Turnover Ratio", "Persentase Penghasilan Kena Pajak".
+- Jika tidak ditemukan, null.
+
+TEKS:
+{$text}
+PROMPT,
+            ],
+        ];
+        return self::parseJsonOutput($this->callAi($messages, 90, 0.1));
     }
 
     public function parseProspektusPdf(string $pdfText): array

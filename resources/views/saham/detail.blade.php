@@ -424,8 +424,8 @@
                 <div x-show="(summary?.news ?? []).length > 0" class="space-y-4">
                     <div class="flex items-center justify-between gap-3">
                         <div>
-                            <h3 class="font-semibold text-primary">Berita Yahoo Finance</h3>
-                            <p class="text-xs text-muted mt-0.5">Berita terbaru dari sumber eksternal terverifikasi.</p>
+                            <h3 class="font-semibold text-primary">Berita Terkini</h3>
+                            <p class="text-xs text-muted mt-0.5">Berita terbaru dari berbagai sumber terverifikasi.</p>
                         </div>
                         <span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold"
                             x-text="`${(summary?.news ?? []).length} artikel`"></span>
@@ -447,9 +447,9 @@
                                                 <p class="text-[11px] text-muted" x-text="formatDate(news.publishedAt)"></p>
                                             </div>
                                         </div>
-                                        <span class="shrink-0 px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold uppercase">
-                                            Live API
-                                        </span>
+                                        <span class="shrink-0 px-2 py-1 rounded-full text-[10px] font-bold uppercase"
+                                            :class="news.sourceType === 'google' ? 'bg-orange-50 text-orange-700' : 'bg-blue-50 text-blue-700'"
+                                            x-text="news.sourceType === 'google' ? 'Google News' : 'Yahoo Finance'"></span>
                                     </div>
                                     <h3 class="mt-4 text-base leading-snug font-bold text-primary">
                                         <a x-show="news.url" :href="news.url" target="_blank" rel="noopener noreferrer"
@@ -475,12 +475,11 @@
                             <button class="px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold">Generate AI
                                 Summary</button>
                         </form>
-                        <form method="POST" action="{{ route($routePrefix . '.saham.generate-news', $stock) }}"
-                            onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Generating...'">
+                        <form method="POST" action="{{ route($routePrefix . '.saham.refresh-news', $stock) }}">
                             @csrf
                             <button
                                 class="px-4 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 transition">
-                                Generate AI Berita
+                                Refresh Berita Terkini
                             </button>
                         </form>
                     </div>
