@@ -164,17 +164,27 @@ class ReksaDana extends Model
     {
         if (empty($this->kode_reksa_dana)) return false;
 
-        $needsFill = empty($this->nama_manajer_investasi)
-            || empty($this->jenis)
-            || empty($this->kategori_produk)
-            || empty($this->kelas);
-
-        if (!$needsFill) return false;
-
         $parsed = app(KodeReksaDanaParser::class)->databaseAttributes($this->kode_reksa_dana);
         if (!$parsed) return false;
 
-        $this->update($parsed);
+        $needsFill = false;
+        $fillData = [];
+
+        foreach (['nama_manajer_investasi', 'jenis', 'kategori_produk', 'kelas', 'mata_uang'] as $field) {
+            if (empty($this->{$field}) && isset($parsed[$field]) && !empty($parsed[$field])) {
+                $fillData[$field] = $parsed[$field];
+                $needsFill = true;
+            }
+        }
+
+        if (!empty($parsed['kategori']) && (empty($this->kategori) || !is_array($this->kategori) || count($this->kategori) === 0)) {
+            $fillData['kategori'] = $parsed['kategori'];
+            $needsFill = true;
+        }
+
+        if (!$needsFill) return false;
+
+        $this->update($fillData);
 
         return true;
     }
