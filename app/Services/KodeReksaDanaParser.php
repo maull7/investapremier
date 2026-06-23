@@ -88,6 +88,10 @@ class KodeReksaDanaParser
         'campuran' => 'Konvensional',
         'pendapatan_tetap' => 'Konvensional',
         'saham' => 'Konvensional',
+        'Index' => 'Konvensional',
+        'index' => 'Konvensional',
+        'ETF' => 'Konvensional',
+        'etf' => 'Konvensional',
     ];
 
     const KELAS_MAP = [
@@ -296,21 +300,33 @@ class KodeReksaDanaParser
      */
     public static function abbreviateNama(string $namaReksaDana): string
     {
-        // Hapus bagian "Kelas ..." di akhir
         $nama = preg_replace('/\s+kelas\s+.*/i', '', trim($namaReksaDana));
 
-        // Ambil huruf pertama dari setiap kata (max 4)
         $words = preg_split('/[\s\-]+/', $nama);
         $letters = '';
+        $numericDigit = null;
+
         foreach ($words as $word) {
-            $word = preg_replace('/[^A-Za-z]/', '', $word);
-            if ($word !== '') {
-                $letters .= strtoupper($word[0]);
+            $clean = preg_replace('/[^A-Za-z]/', '', $word);
+            if ($clean !== '') {
+                $letters .= strtoupper($clean[0]);
             }
-            if (strlen($letters) >= 4) break;
+            // Track purely numeric words (fully digits)
+            if (preg_match('/^[0-9]+$/', $word)) {
+                $numericDigit = substr($word, -1);
+            }
+            if (strlen($letters) >= 4 && $numericDigit !== null) break;
         }
 
-        // Jika kurang dari 4, ulang huruf terakhir
+        // Jika ada purely numeric word, gunakan digit terakhirnya
+        if ($numericDigit !== null) {
+            if (strlen($letters) >= 4) {
+                $letters = substr($letters, 0, 3) . $numericDigit;
+            } else {
+                $letters .= $numericDigit;
+            }
+        }
+
         if (strlen($letters) < 4 && strlen($letters) > 0) {
             $letters = str_pad($letters, 4, substr($letters, -1), STR_PAD_RIGHT);
         }
@@ -331,15 +347,35 @@ class KodeReksaDanaParser
 
         $jenis = $this->normalizeJenis($record->jenis);
         $kategoriProduk = $this->normalizeKategoriProduk($record->kategori_produk);
+
         $kelas = filled($record->kelas) ? $record->kelas : 'Tidak Ada';
+        // Normalize short kelas (e.g. "A" -> "Kelas A")
+        if (!isset(self::KELAS_REVERSE[$kelas])) {
+            $try = 'Kelas ' . $kelas;
+            if (isset(self::KELAS_REVERSE[$try])) {
+                $kelas = $try;
+            } elseif ($kelas === '-') {
+                $kelas = 'Tidak Ada';
+            }
+        }
+
         $mataUang = filled($record->mata_uang) ? $record->mata_uang : 'IDR';
         $namaAbbr = self::abbreviateNama($record->nama_reksa_dana ?? '');
 
         $isIndex = false;
         $isEtf = false;
         if (is_array($record->kategori)) {
-            $isIndex = in_array('Index', $record->kategori) || in_array('index', $record->kategori);
-            $isEtf = in_array('ETF', $record->kategori) || in_array('etf', $record->kategori);
+            $isIndex = in_array('Index', $record->kategori) || in_array('index', $record->kategori)
+                    || in_array('Indeks', $record->kategori) || in_array('indeks', $record->kategori);
+            $isEtf = in_array('ETF', $record->kategori) || in_array('etf', $record->kategori)
+                  || in_array('Exchanged Traded Fund', $record->kategori);
+        }
+        // Also detect from kategori_produk
+        if (stripos($record->kategori_produk, 'index') !== false) {
+            $isIndex = true;
+        }
+        if (stripos($record->kategori_produk, 'etf') !== false) {
+            $isEtf = true;
         }
 
         return $this->generate(
