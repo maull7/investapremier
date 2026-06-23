@@ -96,6 +96,7 @@ class KodeReksaDanaParser
         'A10' => 'Kelas A1',
         'A1K' => 'Kelas A1K',
         'B00' => 'Kelas B',
+        'B10' => 'Kelas B1',
         'C00' => 'Kelas C',
     ];
 
@@ -105,6 +106,7 @@ class KodeReksaDanaParser
         'Kelas A1' => 'A10',
         'Kelas A1K' => 'A1K',
         'Kelas B' => 'B00',
+        'Kelas B1' => 'B10',
         'Kelas C' => 'C00',
     ];
 
@@ -404,6 +406,9 @@ class KodeReksaDanaParser
         $validValues = array_values($validMap);
 
         if ($parsed === self::DEFAULT_CLASS_NAME || $parsed === self::DEFAULT_CURRENCY_NAME) {
+            if ($stored !== '' && in_array($stored, $validValues, true)) {
+                return $stored;
+            }
             return $parsed;
         }
 

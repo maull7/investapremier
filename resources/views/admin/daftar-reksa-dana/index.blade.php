@@ -1188,8 +1188,14 @@
                     document.getElementById(prefix + '-harga-mi').value = data.nama_manajer_investasi || '';
                     document.getElementById(prefix + '-harga-jenis').value = data.jenis || '';
                     document.getElementById(prefix + '-harga-kp').value = data.kategori_produk || '';
-                    document.getElementById(prefix + '-harga-kelas').value = data.class_name || '';
-                    document.getElementById(prefix + '-harga-matauang').value = data.currency_name || 'IDR';
+
+                    // Hanya timpa kelas/mata_uang jika hasil parse valid (bukan default '-')
+                    if (data.class_name && data.class_name !== '-' && data.class_name !== '—') {
+                        document.getElementById(prefix + '-harga-kelas').value = data.class_name;
+                    }
+                    if (data.currency_name && data.currency_name !== '-' && data.currency_name !== '—') {
+                        document.getElementById(prefix + '-harga-matauang').value = data.currency_name;
+                    }
 
                     const kategori = Array.isArray(data.kategori) ? data.kategori : [];
                     document.getElementById(prefix + '-harga-kategori-display').textContent = kategori.length ? kategori
