@@ -540,7 +540,18 @@ class DaftarReksaDanaController extends Controller
         ]);
 
         if (!empty($validated['kode_reksa_dana'])) {
-            $validated = array_merge($validated, app(KodeReksaDanaParser::class)->databaseAttributes($validated['kode_reksa_dana']));
+            $parser = app(KodeReksaDanaParser::class);
+
+            if (!$parser->isValidKode($validated['kode_reksa_dana'])) {
+                unset($validated['kode_reksa_dana']);
+            } else {
+                $parsedFromKode = $parser->databaseAttributes($validated['kode_reksa_dana']);
+                foreach ($parsedFromKode as $key => $value) {
+                    if (empty($validated[$key])) {
+                        $validated[$key] = $value;
+                    }
+                }
+            }
         }
 
         $validated['kategori'] = $validated['kategori'] ?? [];
@@ -596,7 +607,19 @@ class DaftarReksaDanaController extends Controller
         ]);
 
         if (!empty($validated['kode_reksa_dana'])) {
-            $validated = array_merge($validated, app(KodeReksaDanaParser::class)->databaseAttributes($validated['kode_reksa_dana']));
+            $parser = app(KodeReksaDanaParser::class);
+
+            if (!$parser->isValidKode($validated['kode_reksa_dana'])) {
+                // Kode tidak valid → jangan simpan, nanti di-regenerate
+                unset($validated['kode_reksa_dana']);
+            } else {
+                $parsedFromKode = $parser->databaseAttributes($validated['kode_reksa_dana']);
+                foreach ($parsedFromKode as $key => $value) {
+                    if (empty($validated[$key])) {
+                        $validated[$key] = $value;
+                    }
+                }
+            }
         }
 
         $validated['kategori'] = $validated['kategori'] ?? [];
@@ -933,5 +956,38 @@ class DaftarReksaDanaController extends Controller
             ->paginate($request->per_page ?? 50);
 
         return response()->json($changes);
+    }
+
+    public function applySync(Request $request, SyncRun $run)
+    {
+        if ($run->applied_at) {
+            $msg = 'Sync run ini sudah pernah di-apply.';
+            return $request->wantsJson()
+                ? response()->json(['error' => $msg], 422)
+                : back()->with('error', $msg);
+        }
+
+        $pendingLogs = \App\Models\SyncChangeLog::where('sync_run_id', $run->id)
+            ->where('entity_type', 'rd')
+            ->where('change_type', 'created')
+            ->whereNotNull('pending_data')
+            ->get();
+
+        $applied = 0;
+        foreach ($pendingLogs as $log) {
+            $attrs = json_decode($log->pending_data, true);
+            if (!$attrs) continue;
+            ReksaDana::create($attrs);
+            $applied++;
+        }
+
+        $run->update(['applied_at' => now()]);
+
+        $msg = "{$applied} reksa dana baru berhasil ditambahkan.";
+        ActivityLogger::log('Apply Sync RD', $msg, 'success');
+
+        return $request->wantsJson()
+            ? response()->json(['success' => true, 'message' => $msg, 'applied' => $applied])
+            : back()->with('success', $msg);
     }
 }

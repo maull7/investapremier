@@ -153,6 +153,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::post('daftar-reksa-dana/sync-all-pasardana', [DaftarReksaDanaController::class, 'syncAllPasardana'])->name('daftar-reksa-dana.sync-all-pasardana');
     Route::get('daftar-reksa-dana/sync-all-pasardana/status/{run}', [DaftarReksaDanaController::class, 'syncStatus'])->name('daftar-reksa-dana.sync-all-pasardana.status');
     Route::get('daftar-reksa-dana/sync-pasardana/changes/{run}', [DaftarReksaDanaController::class, 'syncChanges'])->name('daftar-reksa-dana.sync-pasardana.changes');
+    Route::post('daftar-reksa-dana/sync-pasardana/apply/{run}', [DaftarReksaDanaController::class, 'applySync'])->name('daftar-reksa-dana.sync-pasardana.apply');
     Route::post('daftar-reksa-dana/replace-rewrite', [DaftarReksaDanaController::class, 'replaceRewrite'])->name('daftar-reksa-dana.replace-rewrite');
     Route::get('daftar-reksa-dana/{reksaDana}', [DaftarReksaDanaController::class, 'show'])->name('daftar-reksa-dana.show');
 

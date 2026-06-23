@@ -6,6 +6,18 @@ use App\Models\ReksaDana;
 
 class KodeGeneratorService
 {
+    /**
+     * KSEI 17-char format:
+     * Pos 1-5:  Kode MI
+     * Pos 6:    Jenis RD (A-H)
+     * Pos 7:    Kategori (0=Konvensional, S=Syariah)
+     * Pos 8:    Index (0=Non Index, I=Index)
+     * Pos 9:    ETF (0=Non ETF, E=ETF)
+     * Pos 10-13: 4 huruf singkatan nama RD
+     * Pos 14-16: Kelas 3 digit (A00/A10/A1K/B00/C00/000)
+     * Pos 17:   Mata Uang (0=IDR, 1=USD)
+     */
+
     const JENIS_MAP = [
         'Pasar Uang'          => 'A',
         'Pendapatan Tetap'    => 'B',
@@ -17,22 +29,20 @@ class KodeGeneratorService
         'DIRE-DINFRA'         => 'H',
     ];
 
-    const KATEGORI_PRODUK_MAP = [
+    const KATEGORI_MAP = [
         'Konvensional' => '0',
-        'Syariah'      => '1',
-        'Index'        => 'I',
-        'ETF'          => 'E',
+        'Syariah'      => 'S',
     ];
 
     const KELAS_MAP = [
-        null     => '00',
-        'Kelas A'  => 'A0',
-        'Kelas A1' => 'A1',
-        'Kelas B'  => 'B0',
-        'Kelas C'  => 'C0',
+        null          => '000',
+        'Tidak Ada'   => '000',
+        'Kelas A'     => 'A00',
+        'Kelas A1'    => 'A10',
+        'Kelas A1K'   => 'A1K',
+        'Kelas B'     => 'B00',
+        'Kelas C'     => 'C00',
     ];
-
-    const BASE36_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
     public function generateKodeReksaDana(
         string $kodeMi,
@@ -40,84 +50,23 @@ class KodeGeneratorService
         ?string $kategoriProduk = null,
         ?string $kelas = null,
         array $kategori = [],
-        string $mataUang = 'IDR'
+        string $mataUang = 'IDR',
+        string $namaReksaDana = ''
     ): string {
+        $kodeMi = strtoupper(str_pad(trim($kodeMi), 5, ' ', STR_PAD_RIGHT));
+        $kodeMi = substr($kodeMi, 0, 5);
+
         $jenisCode = self::JENIS_MAP[$jenis] ?? strtoupper(substr($jenis, 0, 1));
-        $kategoriCode = $kategoriProduk ? (self::KATEGORI_PRODUK_MAP[$kategoriProduk] ?? '0') : '0';
-        $prefix = strtoupper($kodeMi) . $jenisCode . $kategoriCode;
+        $kategoriCode = self::KATEGORI_MAP[$kategoriProduk ?? 'Konvensional'] ?? '0';
 
-        $newPrefix = $prefix . $this->encodeExtendedFields($kategori, $kelas, $mataUang);
+        $indexFlag = (in_array('Index', $kategori) || in_array('index', $kategori)) ? 'I' : '0';
+        $etfFlag = (in_array('ETF', $kategori) || in_array('etf', $kategori)) ? 'E' : '0';
 
-        $existing = ReksaDana::where('kode_reksa_dana', $newPrefix . '001')->exists();
+        $abbr = KodeReksaDanaParser::abbreviateNama($namaReksaDana);
 
-        if ($existing) {
-            $last = ReksaDana::where('kode_reksa_dana', 'like', $newPrefix . '%')
-                ->orderByRaw('LENGTH(kode_reksa_dana) DESC')
-                ->orderBy('kode_reksa_dana', 'desc')
-                ->value('kode_reksa_dana');
-
-            if ($last) {
-                $lastSeq = substr($last, strlen($newPrefix));
-                $nextSeq = $this->base36Increment($lastSeq);
-            } else {
-                $nextSeq = '001';
-            }
-        } else {
-            $nextSeq = '001';
-        }
-
-        return $newPrefix . $nextSeq;
-    }
-
-    public function generateKodeReksaDanaOld(
-        string $kodeMi,
-        string $jenis,
-        ?string $kategoriProduk = null
-    ): string {
-        $jenisCode = self::JENIS_MAP[$jenis] ?? strtoupper(substr($jenis, 0, 1));
-        $kategoriCode = $kategoriProduk ? (self::KATEGORI_PRODUK_MAP[$kategoriProduk] ?? '0') : '0';
-        $prefix = strtoupper($kodeMi) . $jenisCode . $kategoriCode;
-
-        $last = ReksaDana::where('kode_reksa_dana', 'like', $prefix . '%')
-            ->orderByRaw('LENGTH(kode_reksa_dana) DESC')
-            ->orderBy('kode_reksa_dana', 'desc')
-            ->value('kode_reksa_dana');
-
-        if ($last) {
-            $lastSeq = substr($last, strlen($prefix));
-            $nextSeq = $this->base36Increment($lastSeq);
-        } else {
-            $nextSeq = '001';
-        }
-
-        return $prefix . $nextSeq;
-    }
-
-    private function encodeExtendedFields(array $kategori, ?string $kelas, string $mataUang): string
-    {
-        $indexFlag = in_array('Index', $kategori) || in_array('index', $kategori) ? '1' : '0';
-        $etfFlag = in_array('ETF', $kategori) || in_array('etf', $kategori) ? '1' : '0';
-        $kelasCode = self::KELAS_MAP[$kelas] ?? '00';
+        $kelasCode = self::KELAS_MAP[$kelas] ?? '000';
         $mataUangCode = $mataUang === 'USD' ? '1' : '0';
 
-        return $indexFlag . $etfFlag . $kelasCode . $mataUangCode;
-    }
-
-    private function base36Increment(string $base36): string
-    {
-        $len = strlen($base36);
-        $num = 0;
-        for ($i = 0; $i < $len; $i++) {
-            $num = $num * 36 + strpos(self::BASE36_CHARS, $base36[$i]);
-        }
-        $num++;
-
-        $result = '';
-        for ($i = 0; $i < $len; $i++) {
-            $result = self::BASE36_CHARS[$num % 36] . $result;
-            $num = intdiv($num, 36);
-        }
-
-        return $result;
+        return $kodeMi . $jenisCode . $kategoriCode . $indexFlag . $etfFlag . $abbr . $kelasCode . $mataUangCode;
     }
 }

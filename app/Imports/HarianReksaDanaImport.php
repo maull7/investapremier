@@ -64,8 +64,11 @@ class HarianReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows
         $kode = !empty($row['kode_reksa_dana']) ? trim($row['kode_reksa_dana']) : null;
         $nama = !empty($row['nama_reksa_dana']) ? trim($row['nama_reksa_dana']) : null;
 
-        // Prioritas: kode_reksa_dana jika ada
-        if ($kode) {
+        $parser = app(KodeReksaDanaParser::class);
+        $kodeValid = $kode && $parser->isValidKode($kode);
+
+        // Prioritas: kode_reksa_dana jika ada dan valid
+        if ($kodeValid) {
             $found = ReksaDana::where('kode_reksa_dana', $kode)->first();
             if ($found) return $found;
         }
@@ -73,19 +76,31 @@ class HarianReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows
         // Fallback: cari by nama
         if ($nama) {
             $found = ReksaDana::where('nama_reksa_dana', $nama)->first();
-            if ($found) return $found;
+            if ($found) {
+                // Jika existing punya kode tidak valid, tandai untuk diperbaiki nanti
+                if (!$kode && $found->kode_reksa_dana && !$parser->isValidKode($found->kode_reksa_dana)) {
+                    // Hapus kode invalid, biarkan diisi ulang via sync/import berikutnya
+                    $found->update(['kode_reksa_dana' => null]);
+                }
+                return $found;
+            }
 
-            // Tidak ditemukan: buat baru, auto-fill dari kode jika bisa di-parse
+            // Tidak ditemukan: buat baru, auto-fill dari kode jika valid
             $data = [
                 'nama_reksa_dana'        => $nama,
-                'kode_reksa_dana'        => $kode,
+                'kode_reksa_dana'        => $kodeValid ? $kode : null,
                 'nama_manajer_investasi' => '',
                 'jenis'                  => '',
                 'kategori'               => [],
             ];
 
-            if ($kode) {
-                $data = array_merge($data, app(KodeReksaDanaParser::class)->databaseAttributes($kode));
+            if ($kodeValid) {
+                $parsedFromKode = $parser->databaseAttributes($kode);
+                foreach ($parsedFromKode as $key => $value) {
+                    if (empty($data[$key])) {
+                        $data[$key] = $value;
+                    }
+                }
             }
 
             return ReksaDana::create($data);

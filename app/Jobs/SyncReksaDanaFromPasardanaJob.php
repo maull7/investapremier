@@ -15,7 +15,7 @@ class SyncReksaDanaFromPasardanaJob implements ShouldQueue
 {
     use Queueable;
 
-    public int $timeout = 300;
+    public int $timeout = 600;
     public int $tries = 1;
 
     public function __construct(public int $syncRunId)
@@ -39,7 +39,7 @@ class SyncReksaDanaFromPasardanaJob implements ShouldQueue
         }
 
         try {
-            $created = 0;
+            $pending = 0;
             $updated = 0;
             $skipped = 0;
             $harianCreated = 0;
@@ -47,12 +47,12 @@ class SyncReksaDanaFromPasardanaJob implements ShouldQueue
             $harianSkipped = 0;
             $backendIdToLocalId = [];
 
-            // Step 1: Fetch & upsert RD
+            // Step 1: Fetch RD data
             $run->markStep('fetch_rd', 'Mengambil data RD dari backend...', 20);
 
             $rdData = $backend->fetchRdData();
 
-            $run->markStep('upsert_rd', 'Menyimpan ' . count($rdData) . ' data RD ke database...', 40);
+            $run->markStep('upsert_rd', 'Memproses ' . count($rdData) . ' data RD...', 40);
 
             foreach ($rdData as $item) {
                 $nama = $item['nama_reksa_dana'] ?? $item['name'] ?? '';
@@ -105,6 +105,7 @@ class SyncReksaDanaFromPasardanaJob implements ShouldQueue
                 if (isset($item['pasardana_id'])) $attrs['pasardana_id'] = $item['pasardana_id'];
 
                 if ($existing) {
+                    // EXISTING RD: langsung update
                     $oldAttrs = $existing->getRawOriginal();
                     $existing->update($attrs);
                     $updated++;
@@ -119,20 +120,27 @@ class SyncReksaDanaFromPasardanaJob implements ShouldQueue
                         $nama, $existing->id
                     );
                 } else {
-                    $record = ReksaDana::create($attrs);
-                    $created++;
+                    // NEW RD: JANGAN insert, simpan sebagai pending untuk review
+                    $pending++;
                     if (!empty($item['backend_id'])) {
-                        $backendIdToLocalId[$item['backend_id']] = $record->id;
+                        $backendIdToLocalId[$item['backend_id']] = null;
                     }
 
-                    SyncChangeLog::logCreated(
-                        $run->id, 'rd', $attrs,
-                        $nama, $record->id
-                    );
+                    SyncChangeLog::create([
+                        'sync_run_id' => $run->id,
+                        'entity_type' => 'rd',
+                        'entity_id' => $item['pasardana_id'] ?? 'new',
+                        'entity_label' => $nama,
+                        'field' => '*',
+                        'old_value' => null,
+                        'new_value' => $nama,
+                        'change_type' => 'created',
+                        'pending_data' => $attrs,
+                    ]);
                 }
             }
 
-            // Step 2: Fetch & upsert harga harian
+            // Step 2: Fetch & upsert harga harian (hanya untuk RD yang sudah ada)
             $run->markStep('fetch_harian', 'Mengambil data harga harian dari backend...', 60);
 
             $harianData = $backend->fetchHargaReksaDanaData();
@@ -149,6 +157,7 @@ class SyncReksaDanaFromPasardanaJob implements ShouldQueue
 
                 $reksaDanaId = $backendIdToLocalId[$backendRdId] ?? null;
                 if (!$reksaDanaId) {
+                    // RD belum ada di DB (pending) atau tidak dikenali, skip
                     $harianSkipped++;
                     continue;
                 }
@@ -200,9 +209,9 @@ class SyncReksaDanaFromPasardanaJob implements ShouldQueue
                 }
             }
 
-            $summary = "Sync RD selesai. RD: {$created} baru, {$updated} update, {$skipped} skip. Harga Harian: {$harianCreated} baru, {$harianUpdated} update, {$harianSkipped} skip.";
+            $summary = "Sync RD selesai. RD: {$pending} pending (baru), {$updated} update, {$skipped} skip. Harga Harian: {$harianCreated} baru, {$harianUpdated} update, {$harianSkipped} skip.";
             $run->markCompleted($summary, [
-                'rd_created' => $created,
+                'rd_pending' => $pending,
                 'rd_updated' => $updated,
                 'rd_skipped' => $skipped,
                 'harian_created' => $harianCreated,

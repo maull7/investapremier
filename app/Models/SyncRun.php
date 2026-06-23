@@ -26,7 +26,7 @@ class SyncRun extends Model
     protected $fillable = [
         'type', 'status', 'current_step', 'current_step_label',
         'progress_percent', 'stats', 'errors', 'message', 'user_id',
-        'started_at', 'completed_at',
+        'started_at', 'completed_at', 'applied_at',
     ];
 
     protected $casts = [
@@ -35,6 +35,7 @@ class SyncRun extends Model
         'progress_percent' => 'integer',
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
+        'applied_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

@@ -735,7 +735,7 @@
             @endif
         </div>
 
-        <div class="table-card">
+        <div class="table-card" x-data="{ syncDetailTab: 'changes' }">
             <div class="table-head">
                 <h2 class="th-title">
                     Perubahan Data
@@ -743,15 +743,104 @@
                         <span class="text-xs text-white/70 font-normal ml-2">Run #{{ $selectedRun->id }}</span>
                     @endif
                 </h2>
+                @if($selectedRun && !$selectedRun->applied_at)
+                    @php
+                        $hasPending = \App\Models\SyncChangeLog::where('sync_run_id', $selectedRun->id)
+                            ->where('entity_type', 'rd')
+                            ->where('change_type', 'created')
+                            ->whereNotNull('pending_data')
+                            ->exists();
+                    @endphp
+                    @if($hasPending)
+                        <form method="POST" action="{{ route('admin.daftar-reksa-dana.sync-pasardana.apply', $selectedRun) }}"
+                            onsubmit="return confirm('Yakin ingin menambahkan semua reksa dana baru dari sync ini ke database?')">
+                            @csrf
+                            <button type="submit" class="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                                Terapkan RD Baru
+                            </button>
+                        </form>
+                    @endif
+                @elseif($selectedRun && $selectedRun->applied_at)
+                    <span class="text-xs text-white/70 font-normal">✓ Applied {{ $selectedRun->applied_at->format('d M Y H:i') }}</span>
+                @endif
             </div>
 
             @if($selectedRun && $changesUrl)
-                <div class="p-4">
+                {{-- Sub-tabs --}}
+                @php
+                    $pendingRdList = \App\Models\SyncChangeLog::where('sync_run_id', $selectedRun->id)
+                        ->where('entity_type', 'rd')
+                        ->where('change_type', 'created')
+                        ->whereNotNull('pending_data')
+                        ->get();
+                @endphp
+
+                @if($pendingRdList->isNotEmpty())
+                <div class="flex gap-1 px-4 pt-3 border-b border-line">
+                    <button @click="syncDetailTab = 'changes'"
+                        class="px-4 py-2 text-xs font-semibold border-b-2 -mb-px transition"
+                        :class="syncDetailTab === 'changes' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-primary'">
+                        Perubahan
+                    </button>
+                    <button @click="syncDetailTab = 'pending'"
+                        class="px-4 py-2 text-xs font-semibold border-b-2 -mb-px transition"
+                        :class="syncDetailTab === 'pending' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-muted hover:text-emerald-600'">
+                        RD Baru ({{ $pendingRdList->count() }})
+                    </button>
+                </div>
+                @endif
+
+                {{-- Tab: Perubahan --}}
+                <div x-show="syncDetailTab === 'changes'" class="p-4">
                     @include('admin.components.sync-changes-list', [
                         'changesUrl' => $changesUrl,
                         'detailTypes' => $detailTypes,
                     ])
                 </div>
+
+                {{-- Tab: RD Baru --}}
+                @if($pendingRdList->isNotEmpty())
+                <div x-show="syncDetailTab === 'pending'" x-cloak class="p-4">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide">
+                                    <th class="px-4 py-3 font-semibold">#</th>
+                                    <th class="px-4 py-3 font-semibold">Nama Reksa Dana</th>
+                                    <th class="px-4 py-3 font-semibold">Jenis</th>
+                                    <th class="px-4 py-3 font-semibold">MI</th>
+                                    <th class="px-4 py-3 font-semibold">NAB/UP</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-line">
+                                @foreach($pendingRdList as $i => $prd)
+                                    @php $pData = $prd->pending_data; @endphp
+                                    <tr class="hover:bg-[#f8fafc] transition-colors">
+                                        <td class="px-4 py-2.5 text-xs text-muted">{{ $i + 1 }}</td>
+                                        <td class="px-4 py-2.5 text-xs font-medium text-primary">{{ $pData['nama_reksa_dana'] ?? '-' }}</td>
+                                        <td class="px-4 py-2.5 text-xs text-muted">{{ $pData['jenis'] ?? '-' }}</td>
+                                        <td class="px-4 py-2.5 text-xs text-muted max-w-[150px] truncate">{{ $pData['nama_manajer_investasi'] ?? '-' }}</td>
+                                        <td class="px-4 py-2.5 text-xs font-mono">{{ isset($pData['nab_per_unit']) ? number_format($pData['nab_per_unit'], 2) : '-' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    @if(!$selectedRun->applied_at)
+                        <p class="mt-3 text-xs text-amber-600">
+                            <svg class="w-3.5 h-3.5 inline -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                            Data ini belum masuk ke database. Klik "Terapkan RD Baru" untuk menambahkannya.
+                        </p>
+                    @else
+                        <p class="mt-3 text-xs text-emerald-600">✓ Semua RD baru sudah diterapkan pada {{ $selectedRun->applied_at->format('d M Y H:i') }}</p>
+                    @endif
+                </div>
+                @endif
             @else
                 <div class="py-16 text-center text-muted">
                     <p class="font-medium">Pilih run untuk melihat perubahan</p>
@@ -1071,7 +1160,7 @@
 
         function fillFromKode(kode, prefix) {
             const errorEl = document.getElementById(prefix + '-harga-kode-error');
-            if (!kode || kode.length < 3) {
+            if (!kode || kode.length < 16) {
                 errorEl.classList.add('hidden');
                 return;
             }
@@ -1082,14 +1171,16 @@
                     if (data.error) {
                         errorEl.textContent = data.error;
                         errorEl.classList.remove('hidden');
-                        // Clear generated fields so stale DB data doesn't persist
-                        document.getElementById(prefix + '-harga-mi').value = '';
-                        document.getElementById(prefix + '-harga-jenis').value = '';
-                        document.getElementById(prefix + '-harga-kp').value = '';
-                        document.getElementById(prefix + '-harga-kelas').value = '';
-                        document.getElementById(prefix + '-harga-matauang').value = '';
-                        document.getElementById(prefix + '-harga-kategori-display').textContent = '—';
-                        document.getElementById(prefix + '-harga-kategori').value = '[]';
+                        // Create: clear fields. Edit: biarkan fallback dari data
+                        if (prefix === 'create') {
+                            document.getElementById(prefix + '-harga-mi').value = '';
+                            document.getElementById(prefix + '-harga-jenis').value = '';
+                            document.getElementById(prefix + '-harga-kp').value = '';
+                            document.getElementById(prefix + '-harga-kelas').value = '';
+                            document.getElementById(prefix + '-harga-matauang').value = 'IDR';
+                            document.getElementById(prefix + '-harga-kategori-display').textContent = '—';
+                            document.getElementById(prefix + '-harga-kategori').value = '[]';
+                        }
                         return;
                     }
                     errorEl.classList.add('hidden');
@@ -1124,17 +1215,18 @@
             '—';
             document.getElementById('edit-harga-kategori').value = JSON.stringify(kategori);
 
-            // Generate MI, Jenis, Kategori Produk, Kelas, Mata Uang dari parsing kode,
-            // bukan dari database — agar data hasil parse selalu prioritas
+            // Fallback: isi dari database dulu
+            document.getElementById('edit-harga-mi').value = data.nama_manajer_investasi || '';
+            document.getElementById('edit-harga-jenis').value = data.jenis || '';
+            document.getElementById('edit-harga-kp').value = data.kategori_produk || '';
+            const displayKelas = data.display_kelas || data.kelas || '';
+            document.getElementById('edit-harga-kelas').value = displayKelas;
+            const displayMataUang = data.display_mata_uang || data.mata_uang || 'IDR';
+            document.getElementById('edit-harga-matauang').value = displayMataUang;
+
+            // Generate dari parsing kode — timpa fallback jika kode valid
             if (data.kode_reksa_dana) {
                 fillFromKode(data.kode_reksa_dana, 'edit');
-            } else {
-                // Fallback jika tidak ada kode
-                document.getElementById('edit-harga-mi').value = data.nama_manajer_investasi || '';
-                document.getElementById('edit-harga-jenis').value = data.jenis || '';
-                document.getElementById('edit-harga-kp').value = data.kategori_produk || '';
-                document.getElementById('edit-harga-kelas').value = data.display_kelas || data.kelas || '';
-                document.getElementById('edit-harga-matauang').value = data.display_mata_uang || data.mata_uang || 'IDR';
             }
 
             openModal('modal-harga-edit');
