@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\SyncChangeLog;
 use App\Models\SyncRun;
 use App\Services\BackendSyncService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -64,7 +65,7 @@ class SyncAllPasardanaJob implements ShouldQueue
 
             $rdData = $backend->fetchRdData();
 
-            $rdCreated = 0;
+            $rdPending = 0;
             $rdUpdated = 0;
             $rdSkipped = 0;
             $backendIdToLocalId = [];
@@ -85,17 +86,30 @@ class SyncAllPasardanaJob implements ShouldQueue
                 }
 
                 if ($existing) {
+                    // EXISTING: langsung update
                     $existing->update($attrs);
                     $rdUpdated++;
                     if (!empty($item['backend_id'])) {
                         $backendIdToLocalId[$item['backend_id']] = $existing->id;
                     }
                 } else {
-                    $record = \App\Models\ReksaDana::create($attrs);
-                    $rdCreated++;
+                    // NEW: simpan sebagai pending, jangan insert
+                    $rdPending++;
                     if (!empty($item['backend_id'])) {
-                        $backendIdToLocalId[$item['backend_id']] = $record->id;
+                        $backendIdToLocalId[$item['backend_id']] = null;
                     }
+
+                    SyncChangeLog::create([
+                        'sync_run_id' => $run->id,
+                        'entity_type' => 'rd',
+                        'entity_id' => $item['pasardana_id'] ?? 'new',
+                        'entity_label' => $nama,
+                        'field' => '*',
+                        'old_value' => null,
+                        'new_value' => $nama,
+                        'change_type' => 'created',
+                        'pending_data' => $attrs,
+                    ]);
                 }
             }
 
@@ -173,10 +187,10 @@ class SyncAllPasardanaJob implements ShouldQueue
                 if ($record->wasRecentlyCreated) { $harianCreated++; } else { $harianUpdated++; }
             }
 
-            $summary = "Sync All Pasardana selesai. MI: {$miCreated}/{$miUpdated}/{$miSkipped}. RD: {$rdCreated}/{$rdUpdated}/{$rdSkipped}. Relasi: {$relasiMatched}/{$relasiSkipped}. Harian: {$harianCreated}/{$harianUpdated}/{$harianSkipped}.";
+            $summary = "Sync All Pasardana selesai. MI: {$miCreated}/{$miUpdated}/{$miSkipped}. RD: {$rdPending} pending, {$rdUpdated} update, {$rdSkipped} skip. Relasi: {$relasiMatched}/{$relasiSkipped}. Harian: {$harianCreated}/{$harianUpdated}/{$harianSkipped}.";
             $run->markCompleted($summary, [
                 'mi' => ['created' => $miCreated, 'updated' => $miUpdated, 'skipped' => $miSkipped],
-                'rd' => ['created' => $rdCreated, 'updated' => $rdUpdated, 'skipped' => $rdSkipped],
+                'rd' => ['pending' => $rdPending, 'updated' => $rdUpdated, 'skipped' => $rdSkipped],
                 'relasi' => ['matched' => $relasiMatched, 'skipped' => $relasiSkipped],
                 'harian' => ['created' => $harianCreated, 'updated' => $harianUpdated, 'skipped' => $harianSkipped],
                 'source' => 'pasardana_api_get',

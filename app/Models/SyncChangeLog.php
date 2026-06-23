@@ -19,10 +19,12 @@ class SyncChangeLog extends Model
         'old_value',
         'new_value',
         'change_type',
+        'pending_data',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
+        'pending_data' => 'array',
     ];
 
     public function syncRun(): BelongsTo

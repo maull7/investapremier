@@ -43,13 +43,22 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows, W
         $nama = trim($row['nama_reksa_dana']);
         $kode = !empty($row['kode_reksa_dana']) ? trim($row['kode_reksa_dana']) : null;
 
-        // Cari existing: prioritas kode, fallback nama
+        $parser = app(KodeReksaDanaParser::class);
+
+        // Validasi kode dari Excel: jika tidak valid, jangan dipakai
+        $kodeValid = $kode && $parser->isValidKode($kode);
+
+        // Cari existing: prioritas kode (jika valid), fallback nama
         $existing = null;
-        if ($kode) {
+        if ($kodeValid) {
             $existing = ReksaDana::where('kode_reksa_dana', $kode)->first();
         }
         if (!$existing) {
             $existing = ReksaDana::where('nama_reksa_dana', $nama)->first();
+
+            // Jika existing punya kode yang tidak valid, regenerasi nanti
+            $existingKodeInvalid = $existing && $existing->kode_reksa_dana
+                && !$parser->isValidKode($existing->kode_reksa_dana);
         }
 
         $investmentManagerId = !empty($row['nama_manajer_investasi'])
@@ -67,12 +76,22 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows, W
                 'nab_per_unit'           => $row['nab_per_unit'] ?? null,
                 'tanggal_nab'            => $tanggal,
             ];
-            if ($kode) {
-                $updateData['kode_reksa_dana'] = $kode;
-            }
 
-            if ($kode) {
-                $updateData = array_merge($updateData, app(KodeReksaDanaParser::class)->databaseAttributes($kode));
+            if ($kodeValid) {
+                $updateData['kode_reksa_dana'] = $kode;
+
+                $parsedFromKode = $parser->databaseAttributes($kode);
+                foreach ($parsedFromKode as $key => $value) {
+                    if (empty($updateData[$key])) {
+                        $updateData[$key] = $value;
+                    }
+                }
+            } elseif ($existingKodeInvalid) {
+                // Existing kode tidak valid dan Excel tidak provide kode baru → regenerasi
+                $generated = $this->generateKodeReksaDana($updateData);
+                if ($generated) {
+                    $updateData['kode_reksa_dana'] = $generated;
+                }
             }
 
             $existing->update($updateData);
@@ -100,10 +119,15 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows, W
             'tanggal_nab'            => $tanggal,
         ];
 
-        if ($kode) {
+        if ($kodeValid) {
             $data['kode_reksa_dana'] = $kode;
 
-            $data = array_merge($data, app(KodeReksaDanaParser::class)->databaseAttributes($kode));
+            $parsedFromKode = $parser->databaseAttributes($kode);
+            foreach ($parsedFromKode as $key => $value) {
+                if (empty($data[$key])) {
+                    $data[$key] = $value;
+                }
+            }
         } else {
             $data['kode_reksa_dana'] = $this->generateKodeReksaDana($data);
         }
@@ -137,7 +161,8 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows, W
             $data['kategori_produk'] ?? null,
             null,
             $data['kategori'] ?? [],
-            $data['mata_uang'] ?? 'IDR'
+            $data['mata_uang'] ?? 'IDR',
+            $data['nama_reksa_dana'] ?? ''
         );
     }
 }
