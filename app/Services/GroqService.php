@@ -269,20 +269,12 @@ PROMPT,
         $text = mb_substr($text, 0, 15000);
         $messages = [
             ['role' => 'system', 'content' => 'Ekstrak informasi umum reksa dana dari teks. Kembalikan HANYA JSON valid.'],
-            ['role' => 'user', 'content' => <<<PROMPT
+            [
+                'role' => 'user',
+                'content' => <<<PROMPT
 Ekstrak data dari teks berikut. Kembalikan HANYA JSON:
 
 {
-  "nama_reksa_dana": "string atau null",
-  "jenis_reksa_dana": "Saham/Pendapatan Tetap/Campuran/Pasar Uang atau null",
-  "kategori": ["Konvensional","Syariah","index","ETF"],
-  "manajer_investasi": "string atau null",
-  "bank_kustodian": "string atau null",
-  "benchmark": "string atau null",
-  "tujuan_investasi": "string atau null",
-  "kebijakan_investasi": "string atau null",
-  "tanggal_peluncuran": "YYYY-MM-DD atau null",
-  "mata_uang": "string atau null",
   "management_fee": angka persen atau null,
   "custodian_fee": angka persen atau null,
   "total_aum": angka rupiah penuh atau null,
@@ -300,6 +292,181 @@ Ekstrak data dari teks berikut. Kembalikan HANYA JSON:
 
 ATURAN: angka rupiah dalam bentuk penuh (1.5 triliun = 1500000000000). Jika tidak ada, null.
 
+ATURAN WAJIB:
+
+1. JANGAN MENEBAK.
+   Jika informasi tidak ditemukan secara eksplisit pada teks, isi null.
+
+2. Gunakan HANYA informasi dari teks yang diberikan.
+
+3. Semua angka HARUS berupa JSON Number.
+   Jangan gunakan string untuk angka.
+
+   BENAR:
+   {
+     "total_return": 4.5
+   }
+
+   SALAH:
+   {
+     "total_return": "4.5%"
+   }
+
+4. Konversi format angka Indonesia.
+
+   Contoh:
+   1.234,56 -> 1234.56
+   4,50% -> 4.5
+   0,24 -> 0.24
+
+5. Nilai negatif dalam tanda kurung harus dikonversi menjadi negatif.
+
+   Contoh:
+   (2,98%) -> -2.98
+   (10,50) -> -10.5
+
+6. management_fee dan custodian_fee:
+
+   Cari variasi istilah berikut:
+   - Management Fee
+   - Imbal Jasa Manajer Investasi
+   - Fee Manajer Investasi
+   - Jasa Pengelolaan
+   - Custodian Fee
+   - Imbal Jasa Bank Kustodian
+   - Fee Kustodian
+
+   Simpan sebagai angka persen.
+
+7. total_aum:
+
+   Cari istilah:
+   - Total AUM
+   - Dana Kelolaan
+   - Nilai Aktiva Bersih
+   - Total NAB
+   - Asset Under Management
+
+   Konversi ke angka penuh.
+
+   Contoh:
+   Rp 1,5 Triliun -> 1500000000000
+   Rp 250 Miliar -> 250000000000
+   Rp 15 Juta -> 15000000
+
+8. unit_penyertaan:
+
+   Cari:
+   - Unit Penyertaan Beredar
+   - Jumlah Unit Penyertaan
+   - Outstanding Units
+
+   Simpan sebagai angka.
+
+9. nab_per_unit:
+
+   Cari:
+   - NAB/UP
+   - NAB per Unit
+   - Nilai Aktiva Bersih per Unit Penyertaan
+   - NAV per Unit
+
+   Simpan sebagai angka.
+
+10. tanggal_data:
+
+    Gunakan tanggal laporan yang paling relevan terhadap data yang diekstrak.
+
+    Prioritas:
+    - Tanggal Fund Fact Sheet
+    - Per tanggal ...
+    - As of ...
+    - Tanggal tabel rasio keuangan
+
+    Format:
+    YYYY-MM-DD
+
+11. ffs_bulan dan ffs_tahun:
+
+    Jika ditemukan Fund Fact Sheet:
+
+    Contoh:
+    "Fund Fact Sheet Januari 2025"
+
+    hasil:
+    {
+      "ffs_bulan": 1,
+      "ffs_tahun": 2025
+    }
+
+12. return_ytd:
+
+    Cari label:
+    - YTD
+    - Year To Date
+    - Kinerja YTD
+
+13. return_1y:
+
+    Cari label:
+    - 1 Tahun
+    - 1Y
+    - One Year
+    - Return 1 Tahun
+
+14. total_return:
+
+    Cari label:
+    - Total hasil investasi
+    - Total Return
+    - Kinerja investasi
+    - Return investasi
+
+    Jika terdapat tabel rasio keuangan:
+    "Total hasil investasi"
+    gunakan nilai tersebut.
+
+15. biaya_operasi:
+
+    Cari label:
+    - Biaya operasi
+    - Operating expenses
+    - Expense ratio
+
+16. portfolio_turnover_ratio:
+
+    Cari label:
+    - Perputaran portofolio
+    - Portfolio turnover
+    - Portfolio turnover ratio
+
+    Konversi:
+    0,24 : 1 -> 0.24
+    3,88 : 1 -> 3.88
+
+17. Jika terdapat beberapa tahun data:
+
+    Gunakan tahun TERBARU.
+
+    Contoh:
+
+    2025 = 4,50%
+    2024 = (2,98%)
+
+    hasil:
+    {
+      "total_return": 4.5,
+      "tanggal_data": "2025-12-31"
+    }
+
+18. Jika ada lebih dari satu kandidat nilai untuk suatu field,
+    pilih nilai yang paling dekat dengan tanggal_data.
+
+19. Jangan membuat field tambahan.
+
+20. Output harus berupa JSON yang valid dan dapat langsung diparsing oleh json_decode().
+
+
 TEKS:
 {$text}
 PROMPT,
@@ -316,7 +483,9 @@ PROMPT,
         $text = mb_substr($text, 0, 60000);
         $messages = [
             ['role' => 'system', 'content' => 'Ekstrak portofolio efek/holdings reksa dana dari teks. Kembalikan HANYA JSON valid.'],
-            ['role' => 'user', 'content' => <<<PROMPT
+            [
+                'role' => 'user',
+                'content' => <<<PROMPT
 Ekstrak portofolio dari teks berikut. Kembalikan HANYA JSON:
 
 {
@@ -347,7 +516,7 @@ ATURAN:
 - "Piutang Bunga": masukkan ke piutang_bunga_detail.
 - "Instrumen Pasar Uang": masukkan ke pasar_uang.
 - PENTING: Ambil hanya data tahun TERBARU jika ada 2 tahun (2025 dan 2024). Prioritaskan tahun paling baru.
-- PENTING: Ekstrak SEMUA item, bukan hanya top 10. Jika ada 50 saham, masukkan SEMUA 50. Jika ada 9 obligasi, masukkan SEMUA 9. Jangan potong atau ringkas.
+- PENTING: Ekstrak SEMUA item, bukan hanya top 10. Tapi masukkan semua total shaham. Jika ada data obligasi hanya 10 obligasi, masukkan SEMUA. Jangan ambil beberapa atau yang top saja.
 - JANGAN campur data obligasi ke dalam array efek, atau sebaliknya.
 - Jika tidak ada, null atau [].
 
@@ -367,7 +536,9 @@ PROMPT,
         $text = mb_substr($text, 0, 15000);
         $messages = [
             ['role' => 'system', 'content' => 'Ekstrak data pengukuran nilai wajar dan unit penyertaan reksa dana dari laporan keuangan. Kembalikan HANYA JSON valid.'],
-            ['role' => 'user', 'content' => <<<PROMPT
+            [
+                'role' => 'user',
+                'content' => <<<PROMPT
 Ekstrak dari teks berikut. Kembalikan HANYA JSON:
 
 {
@@ -403,7 +574,9 @@ PROMPT,
         $text = mb_substr($text, 0, 30000);
         $messages = [
             ['role' => 'system', 'content' => 'Ekstrak laporan keuangan reksa dana Indonesia: Neraca (Balance Sheet), Laba Rugi (Income Statement), Arus Kas (Cash Flow), dan Perubahan Unit Penyertaan (PUP). Kembalikan HANYA JSON valid.'],
-            ['role' => 'user', 'content' => <<<PROMPT
+            [
+                'role' => 'user',
+                'content' => <<<PROMPT
 Ekstrak laporan keuangan dari teks berikut. Kembalikan HANYA JSON:
 
 {
@@ -435,7 +608,11 @@ Ekstrak laporan keuangan dari teks berikut. Kembalikan HANYA JSON:
   "unit_penyertaan": angka jumlah unit penyertaan beredar atau null,
   "unit_milik_investor": angka unit milik pemegang unit atau null,
   "unit_milik_mi": angka unit milik manajer investasi atau null,
-  "total_unit_beredar": angka total unit beredar atau null
+  "total_unit_beredar": angka total unit beredar atau null,
+  "jumlah_pendapatan_bersih": Angka rupiah atau null,
+  "laba_sebelum_pajak": Angka rupiah atau null,
+  "nilai_aset_bersih": Angka rupiah atau null,
+  "beban_pajak": Angka rupiah atau null,
 }
 
 ATURAN:
@@ -448,6 +625,84 @@ ATURAN:
 - Keyword PUP: "Unit penyertaan beredar", "Pemegang unit penyertaan", "Manajer investasi".
 - Keyword Rasio: "Total Hasil Investasi", "Hasil Investasi Setelah Memperhitungkan Biaya Pemasaran", "Biaya Operasi", "Portfolio Turnover Ratio", "Persentase Penghasilan Kena Pajak".
 - Jika tidak ditemukan, null.
+
+PERHITUNGAN WAJIB
+
+Jika field berikut tidak ditemukan secara eksplisit pada dokumen, WAJIB dihitung dari data laporan keuangan yang tersedia.
+
+1. total_hasil_investasi
+
+Cari:
+- Jumlah Pendapatan Bersih
+- Total Pendapatan Bersih
+- Pendapatan Investasi Bersih
+- Net Investment Income
+- Jumlah Penghasilan Bersih
+
+Cari:
+- Nilai Aset Bersih
+- Aset Bersih
+- Net Assets
+
+Rumus:
+
+total_hasil_investasi =
+(jumlah_pendapatan_bersih / nilai_aset_bersih) * 100
+
+2. hasil_investasi_setelah_biaya
+
+Cari:
+- Laba Sebelum Pajak
+- Profit Before Tax
+- Income Before Tax
+
+Cari:
+- Nilai Aset Bersih
+- Net Assets
+
+Rumus:
+
+hasil_investasi_setelah_biaya =
+(laba_sebelum_pajak / nilai_aset_bersih) * 100
+
+3. persentase_pph
+
+Cari:
+- Beban Pajak
+- Tax Expense
+
+Cari:
+- Jumlah Pendapatan Bersih
+- Net Investment Income
+
+Rumus:
+
+persentase_pph =
+(beban_pajak / jumlah_pendapatan_bersih) * 100
+
+ATURAN PERHITUNGAN
+
+- Gunakan data tahun terbaru.
+- Jika seluruh angka yang diperlukan tersedia, WAJIB lakukan perhitungan.
+- Jangan mengembalikan null jika rumus dapat dihitung.
+- Bulatkan ke 2 angka desimal.
+- Hasil berupa number JSON, bukan string.
+
+CONTOH:
+
+Pendapatan Bersih = 4.500.000.000
+Nilai Aset Bersih = 70.000.000.000
+
+Maka:
+
+total_hasil_investasi = 6.43
+
+Laba Sebelum Pajak = 2.500.000.000
+Nilai Aset Bersih = 70.000.000.000
+
+Maka:
+
+hasil_investasi_setelah_biaya = 3.57
 
 TEKS:
 {$text}
@@ -1101,11 +1356,11 @@ PROMPT;
         }
 
         if (!empty($data['analisa_risiko'])) {
-            $parts[] = "**Analisa Risiko**\n".$data['analisa_risiko'];
+            $parts[] = "**Analisa Risiko**\n" . $data['analisa_risiko'];
         }
 
         if (!empty($data['rekomendasi_investor'])) {
-            $parts[] = "**Rekomendasi**\n".$data['rekomendasi_investor'];
+            $parts[] = "**Rekomendasi**\n" . $data['rekomendasi_investor'];
         }
 
         return implode("\n\n", $parts);
@@ -1155,7 +1410,7 @@ DEFAULT);
 
     private function buildPrompt(AnalisaReksaDana $analisa): string
     {
-        return $this->buildDataSection($analisa)."\n\nBerikan analisa yang mencakup:\n1. Ringkasan kinerja keseluruhan\n2. Analisa risiko (liquidity, durasi, rating, bank)\n3. Kekuatan dan kelemahan portofolio\n4. Rekomendasi singkat untuk investor";
+        return $this->buildDataSection($analisa) . "\n\nBerikan analisa yang mencakup:\n1. Ringkasan kinerja keseluruhan\n2. Analisa risiko (liquidity, durasi, rating, bank)\n3. Kekuatan dan kelemahan portofolio\n4. Rekomendasi singkat untuk investor";
     }
 
     private function buildStructuredPrompt(AnalisaReksaDana $analisa, string $productType = 'reksa_dana'): string
@@ -1193,39 +1448,39 @@ DEFAULT);
         $lines[] = "INFORMASI REKSA DANA";
         $lines[] = "Nama: {$analisa->nama_reksa_dana}";
         $lines[] = "Jenis: {$analisa->jenis_reksa_dana}";
-        $lines[] = "Benchmark: ".($analisa->benchmark ?: 'N/A');
-        $lines[] = "Manajer Investasi: ".($analisa->manajer_investasi ?: 'N/A');
-        $lines[] = "Bank Kustodian: ".($analisa->bank_kustodian ?: 'N/A');
-        $lines[] = "Tanggal Peluncuran: ".($analisa->tanggal_peluncuran?->format('d/m/Y') ?: 'N/A');
-        $lines[] = "Mata Uang: ".($analisa->mata_uang ?: 'N/A');
-        $lines[] = "Total AUM: ".($analisa->total_aum ? 'Rp '.number_format($analisa->total_aum, 0, ',', '.') : 'N/A');
+        $lines[] = "Benchmark: " . ($analisa->benchmark ?: 'N/A');
+        $lines[] = "Manajer Investasi: " . ($analisa->manajer_investasi ?: 'N/A');
+        $lines[] = "Bank Kustodian: " . ($analisa->bank_kustodian ?: 'N/A');
+        $lines[] = "Tanggal Peluncuran: " . ($analisa->tanggal_peluncuran?->format('d/m/Y') ?: 'N/A');
+        $lines[] = "Mata Uang: " . ($analisa->mata_uang ?: 'N/A');
+        $lines[] = "Total AUM: " . ($analisa->total_aum ? 'Rp ' . number_format($analisa->total_aum, 0, ',', '.') : 'N/A');
 
         if ($analisa->total_aset !== null) {
             $lines[] = "";
             $lines[] = "LAPORAN KEUANGAN";
             $lines[] = "--- Neraca ---";
-            $lines[] = "Total Aset: Rp ".number_format($analisa->total_aset, 0, ',', '.');
-            $lines[] = "Total Liabilitas: Rp ".number_format($analisa->total_liabilitas ?? 0, 0, ',', '.');
-            $lines[] = "Kas dan Bank: Rp ".number_format($analisa->kas_dan_bank ?? 0, 0, ',', '.');
-            $lines[] = "Piutang Bunga: Rp ".number_format($analisa->piutang_bunga ?? 0, 0, ',', '.');
-            $lines[] = "Piutang Dividen: Rp ".number_format($analisa->piutang_dividen ?? 0, 0, ',', '.');
-            $lines[] = "Piutang Lain-lain: Rp ".number_format($analisa->piutang_lain ?? 0, 0, ',', '.');
-            $lines[] = "Utang Pajak: Rp ".number_format($analisa->utang_pajak ?? 0, 0, ',', '.');
-            $lines[] = "Utang Lain-lain: Rp ".number_format($analisa->utang_lain ?? 0, 0, ',', '.');
+            $lines[] = "Total Aset: Rp " . number_format($analisa->total_aset, 0, ',', '.');
+            $lines[] = "Total Liabilitas: Rp " . number_format($analisa->total_liabilitas ?? 0, 0, ',', '.');
+            $lines[] = "Kas dan Bank: Rp " . number_format($analisa->kas_dan_bank ?? 0, 0, ',', '.');
+            $lines[] = "Piutang Bunga: Rp " . number_format($analisa->piutang_bunga ?? 0, 0, ',', '.');
+            $lines[] = "Piutang Dividen: Rp " . number_format($analisa->piutang_dividen ?? 0, 0, ',', '.');
+            $lines[] = "Piutang Lain-lain: Rp " . number_format($analisa->piutang_lain ?? 0, 0, ',', '.');
+            $lines[] = "Utang Pajak: Rp " . number_format($analisa->utang_pajak ?? 0, 0, ',', '.');
+            $lines[] = "Utang Lain-lain: Rp " . number_format($analisa->utang_lain ?? 0, 0, ',', '.');
             $lines[] = "--- Laba Rugi ---";
-            $lines[] = "Pendapatan Bunga: Rp ".number_format($analisa->pendapatan_bunga ?? 0, 0, ',', '.');
-            $lines[] = "Pendapatan Dividen: Rp ".number_format($analisa->pendapatan_dividen ?? 0, 0, ',', '.');
-            $lines[] = "Gain Realized: Rp ".number_format($analisa->gain_realized ?? 0, 0, ',', '.');
-            $lines[] = "Gain Unrealized: Rp ".number_format($analisa->gain_unrealized ?? 0, 0, ',', '.');
-            $lines[] = "Beban Manajer Investasi: Rp ".number_format($analisa->beban_mi ?? 0, 0, ',', '.');
-            $lines[] = "Beban Kustodian: Rp ".number_format($analisa->beban_kustodian ?? 0, 0, ',', '.');
-            $lines[] = "Beban Lain-lain: Rp ".number_format($analisa->beban_lain ?? 0, 0, ',', '.');
-            $lines[] = "Laba Bersih: Rp ".number_format($analisa->laba_bersih ?? 0, 0, ',', '.');
+            $lines[] = "Pendapatan Bunga: Rp " . number_format($analisa->pendapatan_bunga ?? 0, 0, ',', '.');
+            $lines[] = "Pendapatan Dividen: Rp " . number_format($analisa->pendapatan_dividen ?? 0, 0, ',', '.');
+            $lines[] = "Gain Realized: Rp " . number_format($analisa->gain_realized ?? 0, 0, ',', '.');
+            $lines[] = "Gain Unrealized: Rp " . number_format($analisa->gain_unrealized ?? 0, 0, ',', '.');
+            $lines[] = "Beban Manajer Investasi: Rp " . number_format($analisa->beban_mi ?? 0, 0, ',', '.');
+            $lines[] = "Beban Kustodian: Rp " . number_format($analisa->beban_kustodian ?? 0, 0, ',', '.');
+            $lines[] = "Beban Lain-lain: Rp " . number_format($analisa->beban_lain ?? 0, 0, ',', '.');
+            $lines[] = "Laba Bersih: Rp " . number_format($analisa->laba_bersih ?? 0, 0, ',', '.');
             $lines[] = "--- Arus Kas ---";
-            $lines[] = "Arus Kas Operasi: Rp ".number_format($analisa->arus_kas_operasi ?? 0, 0, ',', '.');
-            $lines[] = "Arus Kas Pendanaan: Rp ".number_format($analisa->arus_kas_pendanaan ?? 0, 0, ',', '.');
-            $lines[] = "Kas Awal Tahun: Rp ".number_format($analisa->kas_awal_tahun ?? 0, 0, ',', '.');
-            $lines[] = "Kas Akhir Tahun: Rp ".number_format($analisa->kas_akhir_tahun ?? 0, 0, ',', '.');
+            $lines[] = "Arus Kas Operasi: Rp " . number_format($analisa->arus_kas_operasi ?? 0, 0, ',', '.');
+            $lines[] = "Arus Kas Pendanaan: Rp " . number_format($analisa->arus_kas_pendanaan ?? 0, 0, ',', '.');
+            $lines[] = "Kas Awal Tahun: Rp " . number_format($analisa->kas_awal_tahun ?? 0, 0, ',', '.');
+            $lines[] = "Kas Akhir Tahun: Rp " . number_format($analisa->kas_akhir_tahun ?? 0, 0, ',', '.');
             $lines[] = "--- Rasio ---";
             if ($analisa->total_hasil_investasi !== null) $lines[] = "Total Hasil Investasi: {$analisa->total_hasil_investasi}%";
             if ($analisa->hasil_investasi_setelah_biaya !== null) $lines[] = "Hasil Investasi Setelah Biaya Pemasaran: {$analisa->hasil_investasi_setelah_biaya}%";
@@ -1233,9 +1488,9 @@ DEFAULT);
             if ($analisa->portfolio_turnover_ratio !== null) $lines[] = "Portfolio Turnover Ratio: {$analisa->portfolio_turnover_ratio}";
             if ($analisa->persentase_pph !== null) $lines[] = "Persentase Penghasilan Kena Pajak: {$analisa->persentase_pph}%";
             $lines[] = "--- Fair Value ---";
-            $lines[] = "Level 1: Rp ".number_format($analisa->fair_value_level_1 ?? 0, 0, ',', '.');
-            $lines[] = "Level 2: Rp ".number_format($analisa->fair_value_level_2 ?? 0, 0, ',', '.');
-            $lines[] = "Level 3: Rp ".number_format($analisa->fair_value_level_3 ?? 0, 0, ',', '.');
+            $lines[] = "Level 1: Rp " . number_format($analisa->fair_value_level_1 ?? 0, 0, ',', '.');
+            $lines[] = "Level 2: Rp " . number_format($analisa->fair_value_level_2 ?? 0, 0, ',', '.');
+            $lines[] = "Level 3: Rp " . number_format($analisa->fair_value_level_3 ?? 0, 0, ',', '.');
             $lines[] = "--- Unit Penyertaan ---";
             if ($analisa->unit_milik_investor !== null) $lines[] = "Unit Milik Investor: {$analisa->unit_milik_investor}";
             if ($analisa->unit_milik_mi !== null) $lines[] = "Unit Milik Manajer Investasi: {$analisa->unit_milik_mi}";
@@ -1244,10 +1499,10 @@ DEFAULT);
 
         $lines[] = "";
         $lines[] = "METRIK KINERJA";
-        $lines[] = "Sharpe Ratio: ".($analisa->sharpe_ratio ?? 'N/A');
-        $lines[] = "RAR (Risk-Adjusted Return): ".($analisa->rar ?? 'N/A');
-        $lines[] = "Liquidity Ratio (AUM/MarCap): ".($analisa->liquidity_ratio ? number_format($analisa->liquidity_ratio * 100, 2).'%' : 'N/A');
-        $lines[] = "Durasi Rata-rata Obligasi: ".($analisa->durasi_rata_rata ? $analisa->durasi_rata_rata.' tahun' : 'N/A');
+        $lines[] = "Sharpe Ratio: " . ($analisa->sharpe_ratio ?? 'N/A');
+        $lines[] = "RAR (Risk-Adjusted Return): " . ($analisa->rar ?? 'N/A');
+        $lines[] = "Liquidity Ratio (AUM/MarCap): " . ($analisa->liquidity_ratio ? number_format($analisa->liquidity_ratio * 100, 2) . '%' : 'N/A');
+        $lines[] = "Durasi Rata-rata Obligasi: " . ($analisa->durasi_rata_rata ? $analisa->durasi_rata_rata . ' tahun' : 'N/A');
 
         if ($analisa->relationLoaded('alokasiAset') && $analisa->alokasiAset->isNotEmpty()) {
             $lines[] = "";
@@ -1274,11 +1529,11 @@ DEFAULT);
             $lines[] = $top10->isNotEmpty() ? "10 EFEK TERBESAR" : "DAFTAR EFEK";
             foreach ($efekAcuan as $e) {
                 $kontribusi = $e->kontribusi_kinerja !== null
-                    ? ($e->kontribusi_kinerja >= 0 ? '+' : '').$e->kontribusi_kinerja.'%'
+                    ? ($e->kontribusi_kinerja >= 0 ? '+' : '') . $e->kontribusi_kinerja . '%'
                     : 'N/A';
-                $detail = "- {$e->kode_efek} ({$e->nama_efek}): bobot {$e->bobot}%, sektor ".($e->sektor ?: 'N/A').", kontribusi IHSG {$kontribusi}";
+                $detail = "- {$e->kode_efek} ({$e->nama_efek}): bobot {$e->bobot}%, sektor " . ($e->sektor ?: 'N/A') . ", kontribusi IHSG {$kontribusi}";
                 if ($e->nilai_pasar !== null) {
-                    $detail .= ', nilai pasar Rp '.number_format((float) $e->nilai_pasar, 0, ',', '.');
+                    $detail .= ', nilai pasar Rp ' . number_format((float) $e->nilai_pasar, 0, ',', '.');
                 }
                 $returns = [];
                 foreach (['return_1m' => '1M', 'return_3m' => '3M', 'return_6m' => '6M', 'return_1y' => '1Y'] as $key => $label) {
@@ -1287,7 +1542,7 @@ DEFAULT);
                     }
                 }
                 if ($returns !== []) {
-                    $detail .= ', return '.implode(', ', $returns);
+                    $detail .= ', return ' . implode(', ', $returns);
                 }
                 $lines[] = $detail;
             }
@@ -1507,19 +1762,21 @@ PROMPT;
         $parsed = self::parseJsonOutput($raw);
         $narasiParts = [];
 
-        foreach ([
-            'ringkasan_utama',
-            'tren_pertumbuhan_aset',
-            'tren_pertumbuhan_pendapatan',
-            'tren_laba_bersih',
-            'perubahan_struktur_modal',
-            'perubahan_leverage',
-            'perubahan_liabilitas',
-            'konsistensi_kinerja',
-            'risiko_penurunan_performa',
-            'kesehatan_keuangan_emiten',
-            'kesimpulan_outlook',
-        ] as $key) {
+        foreach (
+            [
+                'ringkasan_utama',
+                'tren_pertumbuhan_aset',
+                'tren_pertumbuhan_pendapatan',
+                'tren_laba_bersih',
+                'perubahan_struktur_modal',
+                'perubahan_leverage',
+                'perubahan_liabilitas',
+                'konsistensi_kinerja',
+                'risiko_penurunan_performa',
+                'kesehatan_keuangan_emiten',
+                'kesimpulan_outlook',
+            ] as $key
+        ) {
             if (!empty($parsed[$key])) $narasiParts[] = $parsed[$key];
         }
 
@@ -1878,20 +2135,53 @@ PROMPT;
         $allowed = [
             $isObligasi ? 'nama_obligasi' : 'nama_perusahaan',
             $isObligasi ? 'kode_obligasi' : 'kode_saham',
-            'nama_emiten', 'rating', 'kupon', 'ytm', 'sektor',
-            'periode', 'mata_uang',
-            'total_asset', 'current_asset', 'cash_equivalents', 'account_receivable',
-            'inventories', 'other_current_asset', 'fixed_asset', 'other_non_current_asset',
-            'total_liabilities', 'current_liabilities', 'account_payable', 'accruals',
-            'short_term_loans', 'current_maturities_of_long_term_loans',
-            'other_current_liabilities', 'long_term_loans', 'other_non_current_liabilities',
-            'total_non_current_liabilities', 'share_capital', 'additional_paid_in_capital',
-            'retained_earning', 'others', 'non_controlling_interest',
-            'total_equity_equity_to_parent_entity', 'equity', 'net_revenue',
-            'cost_of_good_sold', 'gross_income', 'operational_expense',
-            'laba_operasional', 'other_income_expense', 'ebit', 'ebitda', 'interest_expense',
-            'income_before_tax', 'taxes', 'net_income', 'eps',
-            'cash_flows_operating_activities', 'cash_flows_investment',
+            'nama_emiten',
+            'rating',
+            'kupon',
+            'ytm',
+            'sektor',
+            'periode',
+            'mata_uang',
+            'total_asset',
+            'current_asset',
+            'cash_equivalents',
+            'account_receivable',
+            'inventories',
+            'other_current_asset',
+            'fixed_asset',
+            'other_non_current_asset',
+            'total_liabilities',
+            'current_liabilities',
+            'account_payable',
+            'accruals',
+            'short_term_loans',
+            'current_maturities_of_long_term_loans',
+            'other_current_liabilities',
+            'long_term_loans',
+            'other_non_current_liabilities',
+            'total_non_current_liabilities',
+            'share_capital',
+            'additional_paid_in_capital',
+            'retained_earning',
+            'others',
+            'non_controlling_interest',
+            'total_equity_equity_to_parent_entity',
+            'equity',
+            'net_revenue',
+            'cost_of_good_sold',
+            'gross_income',
+            'operational_expense',
+            'laba_operasional',
+            'other_income_expense',
+            'ebit',
+            'ebitda',
+            'interest_expense',
+            'income_before_tax',
+            'taxes',
+            'net_income',
+            'eps',
+            'cash_flows_operating_activities',
+            'cash_flows_investment',
             'cash_flows_financing',
         ];
 
