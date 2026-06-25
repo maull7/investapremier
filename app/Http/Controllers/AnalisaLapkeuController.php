@@ -81,7 +81,7 @@ abstract class AnalisaLapkeuController extends Controller
             'cancelRoute'       => route($this->indexRouteName()),
             'routePrefix'       => $prefix,
             'previewAiRoute'    => route($prefix . '.preview-ai'),
-            'previewAiPlusRoute'=> $hasPlusRoute ? route($prefix . '.preview-ai-plus') : null,
+            'previewAiPlusRoute' => $hasPlusRoute ? route($prefix . '.preview-ai-plus') : null,
             'resolveAiPlusDataRoute' => \Illuminate\Support\Facades\Route::has($prefix . '.resolve-ai-plus-data') ? route($prefix . '.resolve-ai-plus-data') : null,
             'lookupKeuanganEmitenRoute' => \Illuminate\Support\Facades\Route::has($prefix . '.lookup-keuangan-emiten') ? route($prefix . '.lookup-keuangan-emiten') : null,
             'parsePdfRoute'         => route($prefix . '.parse-pdf'),
@@ -436,7 +436,7 @@ abstract class AnalisaLapkeuController extends Controller
                 $resolved = $this->resolvedFinancialData($request, $resolver);
                 $resolvedData = $resolver->toAnalysisData($resolved);
                 $data = array_merge($data, $resolvedData);
-                $analisa->update(array_filter($resolvedData, fn ($value) => $value !== null && $value !== ''));
+                $analisa->update(array_filter($resolvedData, fn($value) => $value !== null && $value !== ''));
             }
 
             $plusCheck = self::assessPlusManualData($data, $instrumen);
@@ -488,19 +488,50 @@ abstract class AnalisaLapkeuController extends Controller
     protected function extractLapkeuData(Request $request): array
     {
         $fields = [
-            'mata_uang', 'periode', 'catatan',
-            'current_asset', 'cash_equivalents', 'account_receivable', 'inventories',
-            'other_current_asset', 'fixed_asset', 'other_non_current_asset', 'total_asset',
-            'current_liabilities', 'account_payable', 'accruals', 'short_term_loans',
-            'current_maturities_of_long_term_loans', 'other_current_liabilities',
-            'long_term_loans', 'other_non_current_liabilities',
-            'total_non_current_liabilities', 'total_liabilities',
-            'share_capital', 'additional_paid_in_capital', 'retained_earning', 'others',
-            'non_controlling_interest', 'total_equity_equity_to_parent_entity', 'equity',
-            'net_revenue', 'cost_of_good_sold', 'gross_income', 'operational_expense',
-            'laba_operasional', 'other_income_expense', 'interest_expense', 'income_before_tax',
-            'taxes', 'ebit', 'ebitda', 'net_income_attributable_to_non_controlling_interest',
-            'net_income', 'eps', 'cash_flows_operating_activities', 'cash_flows_investment',
+            'mata_uang',
+            'periode',
+            'catatan',
+            'current_asset',
+            'cash_equivalents',
+            'account_receivable',
+            'inventories',
+            'other_current_asset',
+            'fixed_asset',
+            'other_non_current_asset',
+            'total_asset',
+            'current_liabilities',
+            'account_payable',
+            'accruals',
+            'short_term_loans',
+            'current_maturities_of_long_term_loans',
+            'other_current_liabilities',
+            'long_term_loans',
+            'other_non_current_liabilities',
+            'total_non_current_liabilities',
+            'total_liabilities',
+            'share_capital',
+            'additional_paid_in_capital',
+            'retained_earning',
+            'others',
+            'non_controlling_interest',
+            'total_equity_equity_to_parent_entity',
+            'equity',
+            'net_revenue',
+            'cost_of_good_sold',
+            'gross_income',
+            'operational_expense',
+            'laba_operasional',
+            'other_income_expense',
+            'interest_expense',
+            'income_before_tax',
+            'taxes',
+            'ebit',
+            'ebitda',
+            'net_income_attributable_to_non_controlling_interest',
+            'net_income',
+            'eps',
+            'cash_flows_operating_activities',
+            'cash_flows_investment',
             'cash_flows_financing',
         ];
 

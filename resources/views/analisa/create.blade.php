@@ -3,8 +3,12 @@
 @section('content')
     <div class="max-w-5xl" x-data='analisaForm(@json($resumeAnalisa), @json($resumeMode))'>
         <div class="mb-6">
-            <h1 class="page-title">{{ !empty($isEditMode) ? 'Edit Analisa ' . ($productLabel ?? 'Reksa Dana') : 'Submit Analisa ' . ($productLabel ?? 'Reksa Dana') }}</h1>
-            <p class="page-sub">{{ !empty($isEditMode) ? 'Perbarui data analisa reksa dana' : 'Isi data secara manual, upload Excel, atau ekstrak dari PDF FFS' }}</p>
+            <h1 class="page-title">
+                {{ !empty($isEditMode) ? 'Edit Analisa ' . ($productLabel ?? 'Reksa Dana') : 'Submit Analisa ' . ($productLabel ?? 'Reksa Dana') }}
+            </h1>
+            <p class="page-sub">
+                {{ !empty($isEditMode) ? 'Perbarui data analisa reksa dana' : 'Isi data secara manual, upload Excel, atau ekstrak dari PDF FFS' }}
+            </p>
         </div>
 
         @if ($errors->any())
@@ -36,11 +40,14 @@
             @endif
         @endif
 
-        <form id="analisa-form" method="POST" action="{{ !empty($isEditMode) ? $formRoutes['update'] : $formRoutes['store'] }}" enctype="multipart/form-data"
+        <form id="analisa-form" method="POST"
+            action="{{ !empty($isEditMode) ? $formRoutes['update'] : $formRoutes['store'] }}" enctype="multipart/form-data"
             class="space-y-6"
             @submit="if (mode === 'link-website') { $event.preventDefault(); webMessage = 'Selesaikan langkah di tab Link Website: unduh file lalu klik Isi Form Otomatis. Setelah itu submit dari tab Input Manual.'; webOk = false; }">
             @csrf
-            @if(!empty($isEditMode)) @method('PUT') @endif
+            @if (!empty($isEditMode))
+                @method('PUT')
+            @endif
             <input type="hidden" name="resume_id" :value="resumeId || ''">
             <input type="hidden" name="input_mode" :value="mode === 'link-website' ? 'manual' : mode">
             <input type="hidden" name="pdf_file" x-model="pdfFile">
@@ -50,120 +57,121 @@
             <input type="hidden" name="jenis_laporan" :value="jenisLaporan">
 
             {{-- Info Dasar --}}
-            @if(empty($isEditMode) || ($formRoutes['layout'] ?? '') !== 'layouts.admin')
-            <div class="bg-white rounded-xl border border-line p-6 space-y-4" x-show="mode !== 'link-website'" x-cloak>
-                <h3 class="font-semibold text-primary">Informasi Reksa Dana</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <x-input-label for="kode_reksa_dana" value="Kode Reksa Dana" />
-                        <x-text-input id="kode_reksa_dana" name="kode_reksa_dana" type="text" class="mt-1 block w-full"
-                            x-model="kodeReksaDana"
-                            @input.debounce.500ms="lookupReksaDana($event.target.value)" />
-                        <x-input-error :messages="$errors->get('kode_reksa_dana')" class="mt-1" />
-                        <p class="text-xs mt-1" :class="lookupOk ? 'text-emerald-600' : 'text-muted'"
-                            x-text="lookupMessage"></p>
-                    </div>
-                    <div>
-                        <x-input-label for="nama_reksa_dana" value="Nama Reksa Dana *" />
-                        <x-text-input id="nama_reksa_dana" name="nama_reksa_dana" type="text" class="mt-1 block w-full"
-                            value="{{ old('nama_reksa_dana') }}" x-model="namaReksaDana"
-                            x-bind:required="mode !== 'link-website'" />
-                        <x-input-error :messages="$errors->get('nama_reksa_dana')" class="mt-1" />
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <x-input-label value="Kategori" />
-                        <div class="mt-1 flex flex-wrap gap-3">
-                            @foreach (['Konvensional', 'Syariah', 'index', 'ETF'] as $k)
-                                <label class="flex items-center gap-1.5 text-sm cursor-pointer">
-                                    <input type="checkbox" name="kategori[]" value="{{ $k }}"
-                                        {{ in_array($k, old('kategori', [])) ? 'checked' : '' }}
-                                        class="rounded border-gray-300 text-primary focus:ring-primary/20">
-                                    {{ $k }}
-                                </label>
-                            @endforeach
-                        </div>
-                        <x-input-error :messages="$errors->get('kategori')" class="mt-1" />
-                    </div>
-                    <div>
-                        <x-input-label for="jenis_reksa_dana" value="Jenis Reksa Dana *" />
-                        <select id="jenis_reksa_dana" name="jenis_reksa_dana"
-                            class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm"
-                            x-model="jenisReksaDana" x-bind:required="mode !== 'link-website'">
-                            <option value="">Pilih Jenis</option>
-                            @foreach (['Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang', 'Terproteksi', 'Global', 'DIRE-DINFRA', 'Penyertaan terbatas'] as $j)
-                                <option value="{{ $j }}" {{ old('jenis_reksa_dana') === $j ? 'selected' : '' }}>
-                                    {{ $j }}</option>
-                            @endforeach
-                        </select>
-                        <x-input-error :messages="$errors->get('jenis_reksa_dana')" class="mt-1" />
-                    </div>
-                    <div>
-                        <x-input-label for="benchmark" value="Benchmark *" />
-                        <x-text-input id="benchmark" name="benchmark" type="text" class="mt-1 block w-full"
-                            value="{{ old('benchmark') }}" x-model="benchmark"
-                            x-bind:required="mode !== 'link-website'" />
-                        <x-input-error :messages="$errors->get('benchmark')" class="mt-1" />
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-1 gap-4">
-                    <div>
-                        <x-input-label for="tujuan_investasi" value="Tujuan Investasi *" />
-                        <x-text-input id="tujuan_investasi" name="tujuan_investasi" type="text" class="mt-1 block w-full"
-                            value="{{ old('tujuan_investasi') }}" x-model="tujuanInvestasi"
-                            x-bind:required="mode !== 'link-website'" />
-                        <x-input-error :messages="$errors->get('tujuan_investasi')" class="mt-1" />
-                    </div>
-                    <div>
-                        <x-input-label for="kebijakan_investasi" value="Kebijakan Investasi *" />
-                        <x-text-input id="kebijakan_investasi" name="kebijakan_investasi" type="text"
-                            class="mt-1 block w-full" value="{{ old('kebijakan_investasi') }}"
-                            x-model="kebijakanInvestasi" x-bind:required="mode !== 'link-website'" />
-                        <x-input-error :messages="$errors->get('kebijakan_investasi')" class="mt-1" />
-                    </div>
-                </div>
-
-                <div class="border-t border-line pt-4">
-                    <x-input-label value="Pilih" />
-                    <div class="mt-2 flex flex-wrap gap-4 text-sm">
-                        <label class="inline-flex items-center gap-2">
-                            <input type="radio" value="kalender_ffs" x-model="jenisLaporan"
-                                class="text-primary focus:ring-primary/20">
-                            <span>Kalender FFS</span>
-                        </label>
-                        <label class="inline-flex items-center gap-2">
-                            <input type="radio" value="laporan_tahunan" x-model="jenisLaporan"
-                                class="text-primary focus:ring-primary/20">
-                            <span>Laporan Tahunan</span>
-                        </label>
-                    </div>
-                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4" x-show="jenisLaporan === 'kalender_ffs'">
+            @if (empty($isEditMode) || ($formRoutes['layout'] ?? '') !== 'layouts.admin')
+                <div class="bg-white rounded-xl border border-line p-6 space-y-4" x-show="mode !== 'link-website'" x-cloak>
+                    <h3 class="font-semibold text-primary">Informasi Reksa Dana</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <x-input-label for="ffs_bulan_top" value="Bulan" />
-                            <select id="ffs_bulan_top" x-model="ffsBulan"
-                                class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
-                                <option value="">Pilih Bulan</option>
-                                @foreach (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $index => $bulan)
-                                    <option value="{{ $index + 1 }}">{{ $bulan }}</option>
+                            <x-input-label for="kode_reksa_dana" value="Kode Reksa Dana" />
+                            <x-text-input id="kode_reksa_dana" name="kode_reksa_dana" type="text"
+                                class="mt-1 block w-full" x-model="kodeReksaDana"
+                                @input.debounce.500ms="lookupReksaDana($event.target.value)" />
+                            <x-input-error :messages="$errors->get('kode_reksa_dana')" class="mt-1" />
+                            <p class="text-xs mt-1" :class="lookupOk ? 'text-emerald-600' : 'text-muted'"
+                                x-text="lookupMessage"></p>
+                        </div>
+                        <div>
+                            <x-input-label for="nama_reksa_dana" value="Nama Reksa Dana *" />
+                            <x-text-input id="nama_reksa_dana" name="nama_reksa_dana" type="text"
+                                class="mt-1 block w-full" value="{{ old('nama_reksa_dana') }}" x-model="namaReksaDana"
+                                x-bind:required="mode !== 'link-website'" />
+                            <x-input-error :messages="$errors->get('nama_reksa_dana')" class="mt-1" />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <x-input-label value="Kategori" />
+                            <div class="mt-1 flex flex-wrap gap-3">
+                                @foreach (['Konvensional', 'Syariah', 'index', 'ETF'] as $k)
+                                    <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+                                        <input type="checkbox" name="kategori[]" value="{{ $k }}"
+                                            {{ in_array($k, old('kategori', [])) ? 'checked' : '' }}
+                                            class="rounded border-gray-300 text-primary focus:ring-primary/20">
+                                        {{ $k }}
+                                    </label>
+                                @endforeach
+                            </div>
+                            <x-input-error :messages="$errors->get('kategori')" class="mt-1" />
+                        </div>
+                        <div>
+                            <x-input-label for="jenis_reksa_dana" value="Jenis Reksa Dana *" />
+                            <select id="jenis_reksa_dana" name="jenis_reksa_dana"
+                                class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm"
+                                x-model="jenisReksaDana" x-bind:required="mode !== 'link-website'">
+                                <option value="">Pilih Jenis</option>
+                                @foreach (['Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang', 'Terproteksi', 'Global', 'DIRE-DINFRA', 'Penyertaan terbatas'] as $j)
+                                    <option value="{{ $j }}"
+                                        {{ old('jenis_reksa_dana') === $j ? 'selected' : '' }}>
+                                        {{ $j }}</option>
                                 @endforeach
                             </select>
+                            <x-input-error :messages="$errors->get('jenis_reksa_dana')" class="mt-1" />
                         </div>
                         <div>
-                            <x-input-label for="ffs_tahun_top" value="Tahun" />
-                            <x-text-input id="ffs_tahun_top" type="number" min="2000" max="2100"
-                                placeholder="2026" class="mt-1 block w-full" x-model="ffsTahun" />
+                            <x-input-label for="benchmark" value="Benchmark *" />
+                            <x-text-input id="benchmark" name="benchmark" type="text" class="mt-1 block w-full"
+                                value="{{ old('benchmark') }}" x-model="benchmark"
+                                x-bind:required="mode !== 'link-website'" />
+                            <x-input-error :messages="$errors->get('benchmark')" class="mt-1" />
                         </div>
                     </div>
-                    <div class="mt-4 max-w-xs" x-show="jenisLaporan === 'laporan_tahunan'" x-cloak>
-                        <x-input-label for="tahun_laporan" value="Tahun" />
-                        <x-text-input id="tahun_laporan" name="tahun_laporan" type="text" maxlength="4"
-                            pattern="[0-9]{4}" placeholder="2025" class="mt-1 block w-full"
-                            x-model="tahunLaporan" />
+                    <div class="grid grid-cols-1 sm:grid-cols-1 gap-4">
+                        <div>
+                            <x-input-label for="tujuan_investasi" value="Tujuan Investasi *" />
+                            <x-text-input id="tujuan_investasi" name="tujuan_investasi" type="text"
+                                class="mt-1 block w-full" value="{{ old('tujuan_investasi') }}" x-model="tujuanInvestasi"
+                                x-bind:required="mode !== 'link-website'" />
+                            <x-input-error :messages="$errors->get('tujuan_investasi')" class="mt-1" />
+                        </div>
+                        <div>
+                            <x-input-label for="kebijakan_investasi" value="Kebijakan Investasi *" />
+                            <x-text-input id="kebijakan_investasi" name="kebijakan_investasi" type="text"
+                                class="mt-1 block w-full" value="{{ old('kebijakan_investasi') }}"
+                                x-model="kebijakanInvestasi" x-bind:required="mode !== 'link-website'" />
+                            <x-input-error :messages="$errors->get('kebijakan_investasi')" class="mt-1" />
+                        </div>
+                    </div>
+
+                    <div class="border-t border-line pt-4">
+                        <x-input-label value="Pilih" />
+                        <div class="mt-2 flex flex-wrap gap-4 text-sm">
+                            <label class="inline-flex items-center gap-2">
+                                <input type="radio" value="kalender_ffs" x-model="jenisLaporan"
+                                    class="text-primary focus:ring-primary/20">
+                                <span>Kalender FFS</span>
+                            </label>
+                            <label class="inline-flex items-center gap-2">
+                                <input type="radio" value="laporan_tahunan" x-model="jenisLaporan"
+                                    class="text-primary focus:ring-primary/20">
+                                <span>Laporan Tahunan</span>
+                            </label>
+                        </div>
+                        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4" x-show="jenisLaporan === 'kalender_ffs'">
+                            <div>
+                                <x-input-label for="ffs_bulan_top" value="Bulan" />
+                                <select id="ffs_bulan_top" x-model="ffsBulan"
+                                    class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
+                                    <option value="">Pilih Bulan</option>
+                                    @foreach (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $index => $bulan)
+                                        <option value="{{ $index + 1 }}">{{ $bulan }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <x-input-label for="ffs_tahun_top" value="Tahun" />
+                                <x-text-input id="ffs_tahun_top" type="number" min="2000" max="2100"
+                                    placeholder="2026" class="mt-1 block w-full" x-model="ffsTahun" />
+                            </div>
+                        </div>
+                        <div class="mt-4 max-w-xs" x-show="jenisLaporan === 'laporan_tahunan'" x-cloak>
+                            <x-input-label for="tahun_laporan" value="Tahun" />
+                            <x-text-input id="tahun_laporan" name="tahun_laporan" type="text" maxlength="4"
+                                pattern="[0-9]{4}" placeholder="2025" class="mt-1 block w-full"
+                                x-model="tahunLaporan" />
+                        </div>
                     </div>
                 </div>
-            </div>
             @endif
 
             {{-- Tab Pilih Mode --}}
@@ -222,7 +230,8 @@
                                 class="mt-1 block w-full" x-model="totalAum" />
                         </div>
                         <div>
-                            <x-input-label for="total_marcap_10_efek_manual" value="Total MarCap 10 Saham Terbesar (Rp)" />
+                            <x-input-label for="total_marcap_10_efek_manual"
+                                value="Total MarCap 10 Saham Terbesar (Rp)" />
                             <x-text-input id="total_marcap_10_efek_manual" name="total_marcap_10_efek" type="number"
                                 step="0.01" class="mt-1 block w-full" x-model="totalMarcap10Efek" />
                         </div>
@@ -231,8 +240,8 @@
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                             <x-input-label for="unit_penyertaan_manual" value="Jumlah Unit Penyertaan" />
-                            <x-text-input id="unit_penyertaan_manual" name="unit_penyertaan" type="number" step="0.0001"
-                                class="mt-1 block w-full" x-model="unitPenyertaan" />
+                            <x-text-input id="unit_penyertaan_manual" name="unit_penyertaan" type="number"
+                                step="0.0001" class="mt-1 block w-full" x-model="unitPenyertaan" />
                             <x-input-error :messages="$errors->get('unit_penyertaan')" class="mt-1" />
                         </div>
                         <div>
@@ -265,23 +274,28 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <x-input-label for="benchmark_manual" value="Benchmark" />
-                                <x-text-input id="benchmark_manual" name="benchmark" type="text" class="mt-1 block w-full" x-model="benchmark" />
+                                <x-text-input id="benchmark_manual" name="benchmark" type="text"
+                                    class="mt-1 block w-full" x-model="benchmark" />
                             </div>
                             <div>
                                 <x-input-label for="manajer_investasi_manual" value="Manajer Investasi" />
-                                <x-text-input id="manajer_investasi_manual" name="manajer_investasi" type="text" class="mt-1 block w-full" x-model="manajerInvestasi" />
+                                <x-text-input id="manajer_investasi_manual" name="manajer_investasi" type="text"
+                                    class="mt-1 block w-full" x-model="manajerInvestasi" />
                             </div>
                             <div>
                                 <x-input-label for="bank_kustodian_manual" value="Bank Kustodian" />
-                                <x-text-input id="bank_kustodian_manual" name="bank_kustodian" type="text" class="mt-1 block w-full" x-model="bankKustodian" />
+                                <x-text-input id="bank_kustodian_manual" name="bank_kustodian" type="text"
+                                    class="mt-1 block w-full" x-model="bankKustodian" />
                             </div>
                             <div>
                                 <x-input-label for="tanggal_peluncuran_manual" value="Tanggal Peluncuran" />
-                                <x-text-input id="tanggal_peluncuran_manual" name="tanggal_peluncuran" type="date" class="mt-1 block w-full" x-model="tanggalPeluncuran" />
+                                <x-text-input id="tanggal_peluncuran_manual" name="tanggal_peluncuran" type="date"
+                                    class="mt-1 block w-full" x-model="tanggalPeluncuran" />
                             </div>
                             <div>
                                 <x-input-label for="mata_uang_manual" value="Mata Uang" />
-                                <x-text-input id="mata_uang_manual" name="mata_uang" type="text" class="mt-1 block w-full" x-model="mataUang" />
+                                <x-text-input id="mata_uang_manual" name="mata_uang" type="text"
+                                    class="mt-1 block w-full" x-model="mataUang" />
                             </div>
                         </div>
                     </div>
@@ -292,11 +306,13 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <x-input-label for="return_ytd_manual" value="Return YTD (%)" />
-                                <x-text-input id="return_ytd_manual" name="return_ytd" type="number" step="0.01" class="mt-1 block w-full" x-model="returnYtd" />
+                                <x-text-input id="return_ytd_manual" name="return_ytd" type="number" step="0.01"
+                                    class="mt-1 block w-full" x-model="returnYtd" />
                             </div>
                             <div>
                                 <x-input-label for="return_1y_manual" value="Return 1 Tahun (%)" />
-                                <x-text-input id="return_1y_manual" name="return_1y" type="number" step="0.01" class="mt-1 block w-full" x-model="return1y" />
+                                <x-text-input id="return_1y_manual" name="return_1y" type="number" step="0.01"
+                                    class="mt-1 block w-full" x-model="return1y" />
                             </div>
                         </div>
                     </div>
@@ -307,15 +323,19 @@
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <x-input-label for="total_return_manual" value="Total Return (%)" />
-                                <x-text-input id="total_return_manual" name="total_return" type="number" step="0.01" class="mt-1 block w-full" x-model="totalReturn" />
+                                <x-text-input id="total_return_manual" name="total_return" type="number" step="0.01"
+                                    class="mt-1 block w-full" x-model="totalReturn" />
                             </div>
                             <div>
                                 <x-input-label for="biaya_operasi_manual" value="Biaya Operasi (%)" />
-                                <x-text-input id="biaya_operasi_manual" name="biaya_operasi" type="number" step="0.01" class="mt-1 block w-full" x-model="biayaOperasi" />
+                                <x-text-input id="biaya_operasi_manual" name="biaya_operasi" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="biayaOperasi" />
                             </div>
                             <div>
                                 <x-input-label for="portfolio_turnover_manual" value="Portfolio Turnover Ratio" />
-                                <x-text-input id="portfolio_turnover_manual" name="portfolio_turnover_ratio" type="number" step="0.01" class="mt-1 block w-full" x-model="portfolioTurnover" />
+                                <x-text-input id="portfolio_turnover_manual" name="portfolio_turnover_ratio"
+                                    type="number" step="0.01" class="mt-1 block w-full"
+                                    x-model="portfolioTurnover" />
                             </div>
                         </div>
                     </div>
@@ -326,11 +346,13 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <x-input-label for="management_fee_manual" value="Management Fee (%)" />
-                                <x-text-input id="management_fee_manual" name="management_fee" type="number" step="0.01" class="mt-1 block w-full" x-model="managementFee" />
+                                <x-text-input id="management_fee_manual" name="management_fee" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="managementFee" />
                             </div>
                             <div>
                                 <x-input-label for="custodian_fee_manual" value="Custodian Fee (%)" />
-                                <x-text-input id="custodian_fee_manual" name="custodian_fee" type="number" step="0.01" class="mt-1 block w-full" x-model="custodianFee" />
+                                <x-text-input id="custodian_fee_manual" name="custodian_fee" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="custodianFee" />
                             </div>
                         </div>
                     </div>
@@ -340,7 +362,8 @@
                     <div>
                         <div class="flex items-center justify-between mb-3">
                             <h4 class="font-semibold text-primary text-sm">Komposisi Sektor</h4>
-                            <button type="button" @click="addRow('sektor')" class="text-xs text-primary hover:underline">+
+                            <button type="button" @click="addRow('sektor')"
+                                class="text-xs text-primary hover:underline">+
                                 Tambah Baris</button>
                         </div>
                         <div class="space-y-2">
@@ -374,7 +397,8 @@
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Sektor</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
-                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Harga Perolehan</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Harga Perolehan
+                                        </th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">% thd NAB</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Kontribusi % IHSG
                                         </th>
@@ -399,9 +423,10 @@
                                                     class="w-40 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1">
-                                                <input type="hidden" :name="`efek[${i}][effect_type]`" x-model="row.effect_type" />
-                                                <input type="text" :name="`efek[${i}][sektor]`"
-                                                    x-model="row.sektor" placeholder="Sektor"
+                                                <input type="hidden" :name="`efek[${i}][effect_type]`"
+                                                    x-model="row.effect_type" />
+                                                <input type="text" :name="`efek[${i}][sektor]`" x-model="row.sektor"
+                                                    placeholder="Sektor"
                                                     class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`efek[${i}][bobot]`"
@@ -414,12 +439,11 @@
                                                     class="w-28 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number"
-                                                    :name="`efek[${i}][harga_perolehan]`"
-                                                    x-model="row.harga_perolehan" step="0.01"
+                                                    :name="`efek[${i}][harga_perolehan]`" x-model="row.harga_perolehan"
+                                                    step="0.01"
                                                     class="w-28 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
-                                            <td class="px-1 py-1"><input type="number"
-                                                    :name="`efek[${i}][persen_nab]`"
+                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][persen_nab]`"
                                                     x-model="row.persen_nab" step="0.01"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
@@ -467,35 +491,43 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div>
                                     <x-input-label for="total_aset" value="Total Aset (Rp)" />
-                                    <x-text-input id="total_aset" name="total_aset" type="number" step="0.01" class="mt-1 block w-full" x-model="totalAset" />
+                                    <x-text-input id="total_aset" name="total_aset" type="number" step="0.01"
+                                        class="mt-1 block w-full" x-model="totalAset" />
                                 </div>
                                 <div>
                                     <x-input-label for="total_liabilitas" value="Total Liabilitas (Rp)" />
-                                    <x-text-input id="total_liabilitas" name="total_liabilitas" type="number" step="0.01" class="mt-1 block w-full" x-model="totalLiabilitas" />
+                                    <x-text-input id="total_liabilitas" name="total_liabilitas" type="number"
+                                        step="0.01" class="mt-1 block w-full" x-model="totalLiabilitas" />
                                 </div>
                                 <div>
                                     <x-input-label for="kas_dan_bank" value="Kas dan Bank (Rp)" />
-                                    <x-text-input id="kas_dan_bank" name="kas_dan_bank" type="number" step="0.01" class="mt-1 block w-full" x-model="kasDanBank" />
+                                    <x-text-input id="kas_dan_bank" name="kas_dan_bank" type="number" step="0.01"
+                                        class="mt-1 block w-full" x-model="kasDanBank" />
                                 </div>
                                 <div>
                                     <x-input-label for="piutang_bunga" value="Piutang Bunga (Rp)" />
-                                    <x-text-input id="piutang_bunga" name="piutang_bunga" type="number" step="0.01" class="mt-1 block w-full" x-model="piutangBunga" />
+                                    <x-text-input id="piutang_bunga" name="piutang_bunga" type="number" step="0.01"
+                                        class="mt-1 block w-full" x-model="piutangBunga" />
                                 </div>
                                 <div>
                                     <x-input-label for="piutang_dividen" value="Piutang Dividen (Rp)" />
-                                    <x-text-input id="piutang_dividen" name="piutang_dividen" type="number" step="0.01" class="mt-1 block w-full" x-model="piutangDividen" />
+                                    <x-text-input id="piutang_dividen" name="piutang_dividen" type="number"
+                                        step="0.01" class="mt-1 block w-full" x-model="piutangDividen" />
                                 </div>
                                 <div>
                                     <x-input-label for="piutang_lain" value="Piutang Lain-lain (Rp)" />
-                                    <x-text-input id="piutang_lain" name="piutang_lain" type="number" step="0.01" class="mt-1 block w-full" x-model="piutangLain" />
+                                    <x-text-input id="piutang_lain" name="piutang_lain" type="number" step="0.01"
+                                        class="mt-1 block w-full" x-model="piutangLain" />
                                 </div>
                                 <div>
                                     <x-input-label for="utang_pajak" value="Utang Pajak (Rp)" />
-                                    <x-text-input id="utang_pajak" name="utang_pajak" type="number" step="0.01" class="mt-1 block w-full" x-model="utangPajak" />
+                                    <x-text-input id="utang_pajak" name="utang_pajak" type="number" step="0.01"
+                                        class="mt-1 block w-full" x-model="utangPajak" />
                                 </div>
                                 <div>
                                     <x-input-label for="utang_lain" value="Utang Lain-lain (Rp)" />
-                                    <x-text-input id="utang_lain" name="utang_lain" type="number" step="0.01" class="mt-1 block w-full" x-model="utangLain" />
+                                    <x-text-input id="utang_lain" name="utang_lain" type="number" step="0.01"
+                                        class="mt-1 block w-full" x-model="utangLain" />
                                 </div>
                             </div>
                         </div>
@@ -506,35 +538,43 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div>
                                     <x-input-label for="pendapatan_bunga" value="Pendapatan Bunga (Rp)" />
-                                    <x-text-input id="pendapatan_bunga" name="pendapatan_bunga" type="number" step="0.01" class="mt-1 block w-full" x-model="pendapatanBunga" />
+                                    <x-text-input id="pendapatan_bunga" name="pendapatan_bunga" type="number"
+                                        step="0.01" class="mt-1 block w-full" x-model="pendapatanBunga" />
                                 </div>
                                 <div>
                                     <x-input-label for="pendapatan_dividen" value="Pendapatan Dividen (Rp)" />
-                                    <x-text-input id="pendapatan_dividen" name="pendapatan_dividen" type="number" step="0.01" class="mt-1 block w-full" x-model="pendapatanDividen" />
+                                    <x-text-input id="pendapatan_dividen" name="pendapatan_dividen" type="number"
+                                        step="0.01" class="mt-1 block w-full" x-model="pendapatanDividen" />
                                 </div>
                                 <div>
                                     <x-input-label for="gain_realized" value="Gain Realized (Rp)" />
-                                    <x-text-input id="gain_realized" name="gain_realized" type="number" step="0.01" class="mt-1 block w-full" x-model="gainRealized" />
+                                    <x-text-input id="gain_realized" name="gain_realized" type="number" step="0.01"
+                                        class="mt-1 block w-full" x-model="gainRealized" />
                                 </div>
                                 <div>
                                     <x-input-label for="gain_unrealized" value="Gain Unrealized (Rp)" />
-                                    <x-text-input id="gain_unrealized" name="gain_unrealized" type="number" step="0.01" class="mt-1 block w-full" x-model="gainUnrealized" />
+                                    <x-text-input id="gain_unrealized" name="gain_unrealized" type="number"
+                                        step="0.01" class="mt-1 block w-full" x-model="gainUnrealized" />
                                 </div>
                                 <div>
                                     <x-input-label for="beban_mi" value="Beban Manajer Investasi (Rp)" />
-                                    <x-text-input id="beban_mi" name="beban_mi" type="number" step="0.01" class="mt-1 block w-full" x-model="bebanMi" />
+                                    <x-text-input id="beban_mi" name="beban_mi" type="number" step="0.01"
+                                        class="mt-1 block w-full" x-model="bebanMi" />
                                 </div>
                                 <div>
                                     <x-input-label for="beban_kustodian" value="Beban Kustodian (Rp)" />
-                                    <x-text-input id="beban_kustodian" name="beban_kustodian" type="number" step="0.01" class="mt-1 block w-full" x-model="bebanKustodian" />
+                                    <x-text-input id="beban_kustodian" name="beban_kustodian" type="number"
+                                        step="0.01" class="mt-1 block w-full" x-model="bebanKustodian" />
                                 </div>
                                 <div>
                                     <x-input-label for="beban_lain" value="Beban Lain-lain (Rp)" />
-                                    <x-text-input id="beban_lain" name="beban_lain" type="number" step="0.01" class="mt-1 block w-full" x-model="bebanLain" />
+                                    <x-text-input id="beban_lain" name="beban_lain" type="number" step="0.01"
+                                        class="mt-1 block w-full" x-model="bebanLain" />
                                 </div>
                                 <div>
                                     <x-input-label for="laba_bersih" value="Laba Bersih (Rp)" />
-                                    <x-text-input id="laba_bersih" name="laba_bersih" type="number" step="0.01" class="mt-1 block w-full" x-model="labaBersih" />
+                                    <x-text-input id="laba_bersih" name="laba_bersih" type="number" step="0.01"
+                                        class="mt-1 block w-full" x-model="labaBersih" />
                                 </div>
                             </div>
                         </div>
@@ -545,19 +585,23 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div>
                                     <x-input-label for="arus_kas_operasi" value="Arus Kas Operasi (Rp)" />
-                                    <x-text-input id="arus_kas_operasi" name="arus_kas_operasi" type="number" step="0.01" class="mt-1 block w-full" x-model="arusKasOperasi" />
+                                    <x-text-input id="arus_kas_operasi" name="arus_kas_operasi" type="number"
+                                        step="0.01" class="mt-1 block w-full" x-model="arusKasOperasi" />
                                 </div>
                                 <div>
                                     <x-input-label for="arus_kas_pendanaan" value="Arus Kas Pendanaan (Rp)" />
-                                    <x-text-input id="arus_kas_pendanaan" name="arus_kas_pendanaan" type="number" step="0.01" class="mt-1 block w-full" x-model="arusKasPendanaan" />
+                                    <x-text-input id="arus_kas_pendanaan" name="arus_kas_pendanaan" type="number"
+                                        step="0.01" class="mt-1 block w-full" x-model="arusKasPendanaan" />
                                 </div>
                                 <div>
                                     <x-input-label for="kas_awal_tahun" value="Kas Awal Tahun (Rp)" />
-                                    <x-text-input id="kas_awal_tahun" name="kas_awal_tahun" type="number" step="0.01" class="mt-1 block w-full" x-model="kasAwalTahun" />
+                                    <x-text-input id="kas_awal_tahun" name="kas_awal_tahun" type="number"
+                                        step="0.01" class="mt-1 block w-full" x-model="kasAwalTahun" />
                                 </div>
                                 <div>
                                     <x-input-label for="kas_akhir_tahun" value="Kas Akhir Tahun (Rp)" />
-                                    <x-text-input id="kas_akhir_tahun" name="kas_akhir_tahun" type="number" step="0.01" class="mt-1 block w-full" x-model="kasAkhirTahun" />
+                                    <x-text-input id="kas_akhir_tahun" name="kas_akhir_tahun" type="number"
+                                        step="0.01" class="mt-1 block w-full" x-model="kasAkhirTahun" />
                                 </div>
                             </div>
                         </div>
@@ -568,23 +612,31 @@
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div>
                                     <x-input-label for="total_hasil_investasi" value="Total Hasil Investasi (%)" />
-                                    <x-text-input id="total_hasil_investasi" name="total_hasil_investasi" type="number" step="0.01" class="mt-1 block w-full" x-model="totalHasilInvestasi" />
+                                    <x-text-input id="total_hasil_investasi" name="total_hasil_investasi" type="number"
+                                        step="0.01" class="mt-1 block w-full" x-model="totalHasilInvestasi" />
                                 </div>
                                 <div>
-                                    <x-input-label for="hasil_investasi_setelah_biaya" value="Hasil Investasi Setelah Biaya Pemasaran (%)" />
-                                    <x-text-input id="hasil_investasi_setelah_biaya" name="hasil_investasi_setelah_biaya" type="number" step="0.01" class="mt-1 block w-full" x-model="hasilInvestasiSetelahBiaya" />
+                                    <x-input-label for="hasil_investasi_setelah_biaya"
+                                        value="Hasil Investasi Setelah Biaya Pemasaran (%)" />
+                                    <x-text-input id="hasil_investasi_setelah_biaya" name="hasil_investasi_setelah_biaya"
+                                        type="number" step="0.01" class="mt-1 block w-full"
+                                        x-model="hasilInvestasiSetelahBiaya" />
                                 </div>
                                 <div>
                                     <x-input-label for="biaya_operasi_lengkap" value="Biaya Operasi (%)" />
-                                    <x-text-input id="biaya_operasi_lengkap" name="biaya_operasi" type="number" step="0.01" class="mt-1 block w-full" x-model="biayaOperasi" />
+                                    <x-text-input id="biaya_operasi_lengkap" name="biaya_operasi" type="number"
+                                        step="0.01" class="mt-1 block w-full" x-model="biayaOperasi" />
                                 </div>
                                 <div>
                                     <x-input-label for="portfolio_turnover_lengkap" value="Portfolio Turnover Ratio" />
-                                    <x-text-input id="portfolio_turnover_lengkap" name="portfolio_turnover_ratio" type="number" step="0.01" class="mt-1 block w-full" x-model="portfolioTurnover" />
+                                    <x-text-input id="portfolio_turnover_lengkap" name="portfolio_turnover_ratio"
+                                        type="number" step="0.01" class="mt-1 block w-full"
+                                        x-model="portfolioTurnover" />
                                 </div>
                                 <div>
                                     <x-input-label for="persentase_pph" value="Persentase Penghasilan Kena Pajak (%)" />
-                                    <x-text-input id="persentase_pph" name="persentase_pph" type="number" step="0.01" class="mt-1 block w-full" x-model="persentasePph" />
+                                    <x-text-input id="persentase_pph" name="persentase_pph" type="number"
+                                        step="0.01" class="mt-1 block w-full" x-model="persentasePph" />
                                 </div>
                             </div>
                         </div>
@@ -595,15 +647,18 @@
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div>
                                     <x-input-label for="fair_value_level_1" value="Level 1 (Rp)" />
-                                    <x-text-input id="fair_value_level_1" name="fair_value_level_1" type="number" step="0.01" class="mt-1 block w-full" x-model="fairValueLevel1" />
+                                    <x-text-input id="fair_value_level_1" name="fair_value_level_1" type="number"
+                                        step="0.01" class="mt-1 block w-full" x-model="fairValueLevel1" />
                                 </div>
                                 <div>
                                     <x-input-label for="fair_value_level_2" value="Level 2 (Rp)" />
-                                    <x-text-input id="fair_value_level_2" name="fair_value_level_2" type="number" step="0.01" class="mt-1 block w-full" x-model="fairValueLevel2" />
+                                    <x-text-input id="fair_value_level_2" name="fair_value_level_2" type="number"
+                                        step="0.01" class="mt-1 block w-full" x-model="fairValueLevel2" />
                                 </div>
                                 <div>
                                     <x-input-label for="fair_value_level_3" value="Level 3 (Rp)" />
-                                    <x-text-input id="fair_value_level_3" name="fair_value_level_3" type="number" step="0.01" class="mt-1 block w-full" x-model="fairValueLevel3" />
+                                    <x-text-input id="fair_value_level_3" name="fair_value_level_3" type="number"
+                                        step="0.01" class="mt-1 block w-full" x-model="fairValueLevel3" />
                                 </div>
                             </div>
                         </div>
@@ -614,15 +669,18 @@
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div>
                                     <x-input-label for="unit_milik_investor" value="Unit Milik Investor" />
-                                    <x-text-input id="unit_milik_investor" name="unit_milik_investor" type="number" step="0.0001" class="mt-1 block w-full" x-model="unitMilikInvestor" />
+                                    <x-text-input id="unit_milik_investor" name="unit_milik_investor" type="number"
+                                        step="0.0001" class="mt-1 block w-full" x-model="unitMilikInvestor" />
                                 </div>
                                 <div>
                                     <x-input-label for="unit_milik_mi" value="Unit Milik Manajer Investasi" />
-                                    <x-text-input id="unit_milik_mi" name="unit_milik_mi" type="number" step="0.0001" class="mt-1 block w-full" x-model="unitMilikMi" />
+                                    <x-text-input id="unit_milik_mi" name="unit_milik_mi" type="number" step="0.0001"
+                                        class="mt-1 block w-full" x-model="unitMilikMi" />
                                 </div>
                                 <div>
                                     <x-input-label for="total_unit_beredar" value="Total Unit Beredar" />
-                                    <x-text-input id="total_unit_beredar" name="total_unit_beredar" type="number" step="0.0001" class="mt-1 block w-full" x-model="totalUnitBeredar" />
+                                    <x-text-input id="total_unit_beredar" name="total_unit_beredar" type="number"
+                                        step="0.0001" class="mt-1 block w-full" x-model="totalUnitBeredar" />
                                 </div>
                             </div>
                         </div>
@@ -642,7 +700,8 @@
                         <div>
                             <x-input-label for="total_marcap_10_efek" value="Total MarCap 10 Saham Terbesar (Rp)" />
                             <x-text-input id="total_marcap_10_efek" name="total_marcap_10_efek" type="number"
-                                step="0.01" class="mt-1 block w-full bg-gray-50" x-model="totalMarcap10Efek" readonly />
+                                step="0.01" class="mt-1 block w-full bg-gray-50" x-model="totalMarcap10Efek"
+                                readonly />
                         </div>
                     </div>
 
@@ -681,23 +740,28 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <x-input-label for="benchmark_lengkap" value="Benchmark" />
-                                <x-text-input id="benchmark_lengkap" name="benchmark" type="text" class="mt-1 block w-full" x-model="benchmark" />
+                                <x-text-input id="benchmark_lengkap" name="benchmark" type="text"
+                                    class="mt-1 block w-full" x-model="benchmark" />
                             </div>
                             <div>
                                 <x-input-label for="manajer_investasi_lengkap" value="Manajer Investasi" />
-                                <x-text-input id="manajer_investasi_lengkap" name="manajer_investasi" type="text" class="mt-1 block w-full" x-model="manajerInvestasi" />
+                                <x-text-input id="manajer_investasi_lengkap" name="manajer_investasi" type="text"
+                                    class="mt-1 block w-full" x-model="manajerInvestasi" />
                             </div>
                             <div>
                                 <x-input-label for="bank_kustodian_lengkap" value="Bank Kustodian" />
-                                <x-text-input id="bank_kustodian_lengkap" name="bank_kustodian" type="text" class="mt-1 block w-full" x-model="bankKustodian" />
+                                <x-text-input id="bank_kustodian_lengkap" name="bank_kustodian" type="text"
+                                    class="mt-1 block w-full" x-model="bankKustodian" />
                             </div>
                             <div>
                                 <x-input-label for="tanggal_peluncuran_lengkap" value="Tanggal Peluncuran" />
-                                <x-text-input id="tanggal_peluncuran_lengkap" name="tanggal_peluncuran" type="date" class="mt-1 block w-full" x-model="tanggalPeluncuran" />
+                                <x-text-input id="tanggal_peluncuran_lengkap" name="tanggal_peluncuran" type="date"
+                                    class="mt-1 block w-full" x-model="tanggalPeluncuran" />
                             </div>
                             <div>
                                 <x-input-label for="mata_uang_lengkap" value="Mata Uang" />
-                                <x-text-input id="mata_uang_lengkap" name="mata_uang" type="text" class="mt-1 block w-full" x-model="mataUang" />
+                                <x-text-input id="mata_uang_lengkap" name="mata_uang" type="text"
+                                    class="mt-1 block w-full" x-model="mataUang" />
                             </div>
                         </div>
                     </div>
@@ -708,35 +772,43 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div>
                                 <x-input-label for="total_aset" value="Total Aset (Rp)" />
-                                <x-text-input id="total_aset" name="total_aset" type="number" step="0.01" class="mt-1 block w-full" x-model="totalAset" />
+                                <x-text-input id="total_aset" name="total_aset" type="number" step="0.01"
+                                    class="mt-1 block w-full" x-model="totalAset" />
                             </div>
                             <div>
                                 <x-input-label for="total_liabilitas" value="Total Liabilitas (Rp)" />
-                                <x-text-input id="total_liabilitas" name="total_liabilitas" type="number" step="0.01" class="mt-1 block w-full" x-model="totalLiabilitas" />
+                                <x-text-input id="total_liabilitas" name="total_liabilitas" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="totalLiabilitas" />
                             </div>
                             <div>
                                 <x-input-label for="kas_dan_bank" value="Kas dan Bank (Rp)" />
-                                <x-text-input id="kas_dan_bank" name="kas_dan_bank" type="number" step="0.01" class="mt-1 block w-full" x-model="kasDanBank" />
+                                <x-text-input id="kas_dan_bank" name="kas_dan_bank" type="number" step="0.01"
+                                    class="mt-1 block w-full" x-model="kasDanBank" />
                             </div>
                             <div>
                                 <x-input-label for="piutang_bunga" value="Piutang Bunga (Rp)" />
-                                <x-text-input id="piutang_bunga" name="piutang_bunga" type="number" step="0.01" class="mt-1 block w-full" x-model="piutangBunga" />
+                                <x-text-input id="piutang_bunga" name="piutang_bunga" type="number" step="0.01"
+                                    class="mt-1 block w-full" x-model="piutangBunga" />
                             </div>
                             <div>
                                 <x-input-label for="piutang_dividen" value="Piutang Dividen (Rp)" />
-                                <x-text-input id="piutang_dividen" name="piutang_dividen" type="number" step="0.01" class="mt-1 block w-full" x-model="piutangDividen" />
+                                <x-text-input id="piutang_dividen" name="piutang_dividen" type="number" step="0.01"
+                                    class="mt-1 block w-full" x-model="piutangDividen" />
                             </div>
                             <div>
                                 <x-input-label for="piutang_lain" value="Piutang Lain-lain (Rp)" />
-                                <x-text-input id="piutang_lain" name="piutang_lain" type="number" step="0.01" class="mt-1 block w-full" x-model="piutangLain" />
+                                <x-text-input id="piutang_lain" name="piutang_lain" type="number" step="0.01"
+                                    class="mt-1 block w-full" x-model="piutangLain" />
                             </div>
                             <div>
                                 <x-input-label for="utang_pajak" value="Utang Pajak (Rp)" />
-                                <x-text-input id="utang_pajak" name="utang_pajak" type="number" step="0.01" class="mt-1 block w-full" x-model="utangPajak" />
+                                <x-text-input id="utang_pajak" name="utang_pajak" type="number" step="0.01"
+                                    class="mt-1 block w-full" x-model="utangPajak" />
                             </div>
                             <div>
                                 <x-input-label for="utang_lain" value="Utang Lain-lain (Rp)" />
-                                <x-text-input id="utang_lain" name="utang_lain" type="number" step="0.01" class="mt-1 block w-full" x-model="utangLain" />
+                                <x-text-input id="utang_lain" name="utang_lain" type="number" step="0.01"
+                                    class="mt-1 block w-full" x-model="utangLain" />
                             </div>
                         </div>
                     </div>
@@ -747,35 +819,43 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div>
                                 <x-input-label for="pendapatan_bunga" value="Pendapatan Bunga (Rp)" />
-                                <x-text-input id="pendapatan_bunga" name="pendapatan_bunga" type="number" step="0.01" class="mt-1 block w-full" x-model="pendapatanBunga" />
+                                <x-text-input id="pendapatan_bunga" name="pendapatan_bunga" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="pendapatanBunga" />
                             </div>
                             <div>
                                 <x-input-label for="pendapatan_dividen" value="Pendapatan Dividen (Rp)" />
-                                <x-text-input id="pendapatan_dividen" name="pendapatan_dividen" type="number" step="0.01" class="mt-1 block w-full" x-model="pendapatanDividen" />
+                                <x-text-input id="pendapatan_dividen" name="pendapatan_dividen" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="pendapatanDividen" />
                             </div>
                             <div>
                                 <x-input-label for="gain_realized" value="Gain Realized (Rp)" />
-                                <x-text-input id="gain_realized" name="gain_realized" type="number" step="0.01" class="mt-1 block w-full" x-model="gainRealized" />
+                                <x-text-input id="gain_realized" name="gain_realized" type="number" step="0.01"
+                                    class="mt-1 block w-full" x-model="gainRealized" />
                             </div>
                             <div>
                                 <x-input-label for="gain_unrealized" value="Gain Unrealized (Rp)" />
-                                <x-text-input id="gain_unrealized" name="gain_unrealized" type="number" step="0.01" class="mt-1 block w-full" x-model="gainUnrealized" />
+                                <x-text-input id="gain_unrealized" name="gain_unrealized" type="number" step="0.01"
+                                    class="mt-1 block w-full" x-model="gainUnrealized" />
                             </div>
                             <div>
                                 <x-input-label for="beban_mi" value="Beban Manajer Investasi (Rp)" />
-                                <x-text-input id="beban_mi" name="beban_mi" type="number" step="0.01" class="mt-1 block w-full" x-model="bebanMi" />
+                                <x-text-input id="beban_mi" name="beban_mi" type="number" step="0.01"
+                                    class="mt-1 block w-full" x-model="bebanMi" />
                             </div>
                             <div>
                                 <x-input-label for="beban_kustodian" value="Beban Kustodian (Rp)" />
-                                <x-text-input id="beban_kustodian" name="beban_kustodian" type="number" step="0.01" class="mt-1 block w-full" x-model="bebanKustodian" />
+                                <x-text-input id="beban_kustodian" name="beban_kustodian" type="number" step="0.01"
+                                    class="mt-1 block w-full" x-model="bebanKustodian" />
                             </div>
                             <div>
                                 <x-input-label for="beban_lain" value="Beban Lain-lain (Rp)" />
-                                <x-text-input id="beban_lain" name="beban_lain" type="number" step="0.01" class="mt-1 block w-full" x-model="bebanLain" />
+                                <x-text-input id="beban_lain" name="beban_lain" type="number" step="0.01"
+                                    class="mt-1 block w-full" x-model="bebanLain" />
                             </div>
                             <div>
                                 <x-input-label for="laba_bersih" value="Laba Bersih (Rp)" />
-                                <x-text-input id="laba_bersih" name="laba_bersih" type="number" step="0.01" class="mt-1 block w-full" x-model="labaBersih" />
+                                <x-text-input id="laba_bersih" name="laba_bersih" type="number" step="0.01"
+                                    class="mt-1 block w-full" x-model="labaBersih" />
                             </div>
                         </div>
                     </div>
@@ -786,19 +866,23 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div>
                                 <x-input-label for="arus_kas_operasi" value="Arus Kas Operasi (Rp)" />
-                                <x-text-input id="arus_kas_operasi" name="arus_kas_operasi" type="number" step="0.01" class="mt-1 block w-full" x-model="arusKasOperasi" />
+                                <x-text-input id="arus_kas_operasi" name="arus_kas_operasi" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="arusKasOperasi" />
                             </div>
                             <div>
                                 <x-input-label for="arus_kas_pendanaan" value="Arus Kas Pendanaan (Rp)" />
-                                <x-text-input id="arus_kas_pendanaan" name="arus_kas_pendanaan" type="number" step="0.01" class="mt-1 block w-full" x-model="arusKasPendanaan" />
+                                <x-text-input id="arus_kas_pendanaan" name="arus_kas_pendanaan" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="arusKasPendanaan" />
                             </div>
                             <div>
                                 <x-input-label for="kas_awal_tahun" value="Kas Awal Tahun (Rp)" />
-                                <x-text-input id="kas_awal_tahun" name="kas_awal_tahun" type="number" step="0.01" class="mt-1 block w-full" x-model="kasAwalTahun" />
+                                <x-text-input id="kas_awal_tahun" name="kas_awal_tahun" type="number" step="0.01"
+                                    class="mt-1 block w-full" x-model="kasAwalTahun" />
                             </div>
                             <div>
                                 <x-input-label for="kas_akhir_tahun" value="Kas Akhir Tahun (Rp)" />
-                                <x-text-input id="kas_akhir_tahun" name="kas_akhir_tahun" type="number" step="0.01" class="mt-1 block w-full" x-model="kasAkhirTahun" />
+                                <x-text-input id="kas_akhir_tahun" name="kas_akhir_tahun" type="number" step="0.01"
+                                    class="mt-1 block w-full" x-model="kasAkhirTahun" />
                             </div>
                         </div>
                     </div>
@@ -809,23 +893,31 @@
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <x-input-label for="total_hasil_investasi" value="Total Hasil Investasi (%)" />
-                                <x-text-input id="total_hasil_investasi" name="total_hasil_investasi" type="number" step="0.01" class="mt-1 block w-full" x-model="totalHasilInvestasi" />
+                                <x-text-input id="total_hasil_investasi" name="total_hasil_investasi" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="totalHasilInvestasi" />
                             </div>
                             <div>
-                                <x-input-label for="hasil_investasi_setelah_biaya" value="Hasil Investasi Setelah Biaya Pemasaran (%)" />
-                                <x-text-input id="hasil_investasi_setelah_biaya" name="hasil_investasi_setelah_biaya" type="number" step="0.01" class="mt-1 block w-full" x-model="hasilInvestasiSetelahBiaya" />
+                                <x-input-label for="hasil_investasi_setelah_biaya"
+                                    value="Hasil Investasi Setelah Biaya Pemasaran (%)" />
+                                <x-text-input id="hasil_investasi_setelah_biaya" name="hasil_investasi_setelah_biaya"
+                                    type="number" step="0.01" class="mt-1 block w-full"
+                                    x-model="hasilInvestasiSetelahBiaya" />
                             </div>
                             <div>
                                 <x-input-label for="biaya_operasi_lengkap" value="Biaya Operasi (%)" />
-                                <x-text-input id="biaya_operasi_lengkap" name="biaya_operasi" type="number" step="0.01" class="mt-1 block w-full" x-model="biayaOperasi" />
+                                <x-text-input id="biaya_operasi_lengkap" name="biaya_operasi" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="biayaOperasi" />
                             </div>
                             <div>
                                 <x-input-label for="portfolio_turnover_lengkap" value="Portfolio Turnover Ratio" />
-                                <x-text-input id="portfolio_turnover_lengkap" name="portfolio_turnover_ratio" type="number" step="0.01" class="mt-1 block w-full" x-model="portfolioTurnover" />
+                                <x-text-input id="portfolio_turnover_lengkap" name="portfolio_turnover_ratio"
+                                    type="number" step="0.01" class="mt-1 block w-full"
+                                    x-model="portfolioTurnover" />
                             </div>
                             <div>
                                 <x-input-label for="persentase_pph" value="Persentase Penghasilan Kena Pajak (%)" />
-                                <x-text-input id="persentase_pph" name="persentase_pph" type="number" step="0.01" class="mt-1 block w-full" x-model="persentasePph" />
+                                <x-text-input id="persentase_pph" name="persentase_pph" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="persentasePph" />
                             </div>
                         </div>
                     </div>
@@ -836,15 +928,18 @@
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <x-input-label for="fair_value_level_1" value="Level 1 (Rp)" />
-                                <x-text-input id="fair_value_level_1" name="fair_value_level_1" type="number" step="0.01" class="mt-1 block w-full" x-model="fairValueLevel1" />
+                                <x-text-input id="fair_value_level_1" name="fair_value_level_1" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="fairValueLevel1" />
                             </div>
                             <div>
                                 <x-input-label for="fair_value_level_2" value="Level 2 (Rp)" />
-                                <x-text-input id="fair_value_level_2" name="fair_value_level_2" type="number" step="0.01" class="mt-1 block w-full" x-model="fairValueLevel2" />
+                                <x-text-input id="fair_value_level_2" name="fair_value_level_2" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="fairValueLevel2" />
                             </div>
                             <div>
                                 <x-input-label for="fair_value_level_3" value="Level 3 (Rp)" />
-                                <x-text-input id="fair_value_level_3" name="fair_value_level_3" type="number" step="0.01" class="mt-1 block w-full" x-model="fairValueLevel3" />
+                                <x-text-input id="fair_value_level_3" name="fair_value_level_3" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="fairValueLevel3" />
                             </div>
                         </div>
                     </div>
@@ -855,15 +950,18 @@
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <x-input-label for="unit_milik_investor" value="Unit Milik Investor" />
-                                <x-text-input id="unit_milik_investor" name="unit_milik_investor" type="number" step="0.0001" class="mt-1 block w-full" x-model="unitMilikInvestor" />
+                                <x-text-input id="unit_milik_investor" name="unit_milik_investor" type="number"
+                                    step="0.0001" class="mt-1 block w-full" x-model="unitMilikInvestor" />
                             </div>
                             <div>
                                 <x-input-label for="unit_milik_mi" value="Unit Milik Manajer Investasi" />
-                                <x-text-input id="unit_milik_mi" name="unit_milik_mi" type="number" step="0.0001" class="mt-1 block w-full" x-model="unitMilikMi" />
+                                <x-text-input id="unit_milik_mi" name="unit_milik_mi" type="number" step="0.0001"
+                                    class="mt-1 block w-full" x-model="unitMilikMi" />
                             </div>
                             <div>
                                 <x-input-label for="total_unit_beredar" value="Total Unit Beredar" />
-                                <x-text-input id="total_unit_beredar" name="total_unit_beredar" type="number" step="0.0001" class="mt-1 block w-full" x-model="totalUnitBeredar" />
+                                <x-text-input id="total_unit_beredar" name="total_unit_beredar" type="number"
+                                    step="0.0001" class="mt-1 block w-full" x-model="totalUnitBeredar" />
                             </div>
                         </div>
                     </div>
@@ -897,7 +995,8 @@
                     <div>
                         <div class="flex items-center justify-between mb-3">
                             <h4 class="font-semibold text-primary text-sm">Daftar Efek</h4>
-                            <button type="button" @click="addRow('efek')" class="text-xs text-primary hover:underline">+
+                            <button type="button" @click="addRow('efek')"
+                                class="text-xs text-primary hover:underline">+
                                 Tambah Baris</button>
                         </div>
                         <div class="overflow-x-auto">
@@ -909,7 +1008,8 @@
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Sektor</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
-                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Harga Perolehan</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Harga Perolehan
+                                        </th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">% thd NAB</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Kontribusi % IHSG
                                         </th>
@@ -934,9 +1034,10 @@
                                                     class="w-40 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1">
-                                                <input type="hidden" :name="`efek[${i}][effect_type]`" x-model="row.effect_type" />
-                                                <input type="text" :name="`efek[${i}][sektor]`"
-                                                    x-model="row.sektor" placeholder="Sektor"
+                                                <input type="hidden" :name="`efek[${i}][effect_type]`"
+                                                    x-model="row.effect_type" />
+                                                <input type="text" :name="`efek[${i}][sektor]`" x-model="row.sektor"
+                                                    placeholder="Sektor"
                                                     class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`efek[${i}][bobot]`"
@@ -944,18 +1045,19 @@
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20"
                                                     @input="hitungNilaiPasarEfek(i)" />
                                             </td>
-                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][nilai_pasar]`"
-                                                    x-model="row.nilai_pasar" step="0.01" readonly
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`efek[${i}][nilai_pasar]`" x-model="row.nilai_pasar"
+                                                    step="0.01" readonly
                                                     class="w-28 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number"
-                                                    :name="`efek[${i}][harga_perolehan]`"
-                                                    x-model="row.harga_perolehan" step="0.01"
+                                                    :name="`efek[${i}][harga_perolehan]`" x-model="row.harga_perolehan"
+                                                    step="0.01"
                                                     class="w-28 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number"
-                                                    :name="`efek[${i}][persen_nab]`"
-                                                    x-model="row.persen_nab" step="0.01"
+                                                    :name="`efek[${i}][persen_nab]`" x-model="row.persen_nab"
+                                                    step="0.01"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number"
@@ -1019,7 +1121,8 @@
                                 <thead class="bg-[#f8fafc]">
                                     <tr>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Kode</th>
-                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nama Obligasi</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nama Obligasi
+                                        </th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">YTM (%)</th>
@@ -1060,12 +1163,12 @@
                                                     step="0.01" readonly
                                                     class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
-                                            <td class="px-1 py-1"><input type="number"
-                                                    :name="`obligasi[${i}][ytm]`" x-model="row.ytm" step="0.01"
+                                            <td class="px-1 py-1"><input type="number" :name="`obligasi[${i}][ytm]`"
+                                                    x-model="row.ytm" step="0.01"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
-                                            <td class="px-1 py-1"><input type="number"
-                                                    :name="`obligasi[${i}][kupon]`" x-model="row.kupon" step="0.01"
+                                            <td class="px-1 py-1"><input type="number" :name="`obligasi[${i}][kupon]`"
+                                                    x-model="row.kupon" step="0.01"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="date"
@@ -1079,8 +1182,8 @@
                                                     class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number"
-                                                    :name="`obligasi[${i}][persen_nab]`"
-                                                    x-model="row.persen_nab" step="0.01"
+                                                    :name="`obligasi[${i}][persen_nab]`" x-model="row.persen_nab"
+                                                    step="0.01"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number"
@@ -1103,8 +1206,9 @@
                                                     step="0.0001"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
-                                            <td class="px-1 py-1"><input type="number" :name="`obligasi[${i}][durasi]`"
-                                                    x-model="row.durasi" step="0.01"
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`obligasi[${i}][durasi]`" x-model="row.durasi"
+                                                    step="0.01"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1">
@@ -1192,8 +1296,8 @@
                                                 </select>
                                             </td>
                                             <td class="px-1 py-1"><input type="number"
-                                                    :name="`sukuk[${i}][persen_nab]`"
-                                                    x-model="row.persen_nab" step="0.01"
+                                                    :name="`sukuk[${i}][persen_nab]`" x-model="row.persen_nab"
+                                                    step="0.01"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><button type="button"
@@ -1210,7 +1314,8 @@
                     <div>
                         <div class="flex items-center justify-between mb-3">
                             <h4 class="font-semibold text-primary text-sm">Bank</h4>
-                            <button type="button" @click="addRow('bank')" class="text-xs text-primary hover:underline">+
+                            <button type="button" @click="addRow('bank')"
+                                class="text-xs text-primary hover:underline">+
                                 Tambah Baris</button>
                         </div>
                         <div class="overflow-x-auto">
@@ -1221,7 +1326,8 @@
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Jenis Bank</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
-                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Tingkat Bunga</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Tingkat Bunga
+                                        </th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Jangka Waktu</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">% thd NAB</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 1M</th>
@@ -1258,23 +1364,24 @@
                                                     class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20"
                                                     @input="hitungNilaiPasarBank(i)" />
                                             </td>
-                                            <td class="px-1 py-1"><input type="number" :name="`bank[${i}][nilai_pasar]`"
-                                                    x-model="row.nilai_pasar" step="0.01" readonly
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`bank[${i}][nilai_pasar]`" x-model="row.nilai_pasar"
+                                                    step="0.01" readonly
                                                     class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number"
-                                                    :name="`bank[${i}][tingkat_bunga]`"
-                                                    x-model="row.tingkat_bunga" step="0.01"
+                                                    :name="`bank[${i}][tingkat_bunga]`" x-model="row.tingkat_bunga"
+                                                    step="0.01"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="text"
-                                                    :name="`bank[${i}][jangka_waktu]`"
-                                                    x-model="row.jangka_waktu" placeholder="1 bln"
+                                                    :name="`bank[${i}][jangka_waktu]`" x-model="row.jangka_waktu"
+                                                    placeholder="1 bln"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number"
-                                                    :name="`bank[${i}][persen_nab]`"
-                                                    x-model="row.persen_nab" step="0.01"
+                                                    :name="`bank[${i}][persen_nab]`" x-model="row.persen_nab"
+                                                    step="0.01"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`bank[${i}][return_1m]`"
@@ -1341,7 +1448,8 @@
                         <input id="file_excel" name="file_excel" type="file" accept=".xlsx,.xls"
                             class="mt-1 block w-full text-sm text-muted border border-gray-300 rounded-lg px-3 py-2 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-primary file:text-white hover:file:bg-primary/90 cursor-pointer" />
                         <x-input-error :messages="$errors->get('file_excel')" class="mt-1" />
-                        <p class="text-xs text-muted mt-1">Format: .xlsx atau .xls, maks 5MB. Sheet: Sektor, Efek, Kinerja,
+                        <p class="text-xs text-muted mt-1">Format: .xlsx atau .xls, maks 5MB. Sheet: Sektor, Efek,
+                            Kinerja,
                             Obligasi, Sukuk, Bank.</p>
                     </div>
                 </div>
@@ -1363,16 +1471,21 @@
                     {{-- Dokumen Tersimpan --}}
                     <div class="border border-line rounded-lg p-4 bg-gray-50/50 space-y-3">
                         <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                             </svg>
                             <h4 class="font-medium text-sm text-primary">Dokumen Tersimpan</h4>
                         </div>
                         <p class="text-xs text-muted">
                             Menampilkan
-                            <strong x-text="jenisLaporan === 'laporan_tahunan' ? 'Laporan Tahunan / Prospektus' : 'FFS'"></strong>
+                            <strong
+                                x-text="jenisLaporan === 'laporan_tahunan' ? 'Laporan Tahunan / Prospektus' : 'FFS'"></strong>
                             <template x-if="jenisLaporan === 'kalender_ffs' && ffsBulan && ffsTahun">
-                                <span> untuk <strong><span x-text="['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][ffsBulan-1]"></span> <span x-text="ffsTahun"></span></strong></span>
+                                <span> untuk <strong><span
+                                            x-text="['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][ffsBulan-1]"></span>
+                                        <span x-text="ffsTahun"></span></strong></span>
                             </template>
                             <template x-if="jenisLaporan === 'laporan_tahunan' && tahunLaporan">
                                 <span> untuk tahun <strong><span x-text="tahunLaporan"></span></strong></span>
@@ -1382,8 +1495,10 @@
 
                         <div x-show="existingDocsLoading" class="flex items-center gap-2 text-xs text-muted">
                             <svg class="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                <circle class="opacity-25" cx="12" cy="12" r="10"
+                                    stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                             </svg>
                             <span>Memuat dokumen...</span>
                         </div>
@@ -1391,65 +1506,83 @@
                         <template x-if="existingDocs.length > 0">
                             <div>
                                 <div class="flex items-center justify-between mb-2">
-                                    <label class="inline-flex items-center gap-1.5 text-xs text-muted cursor-pointer hover:text-foreground transition">
-                                        <input type="checkbox" @change="selectedDocIds = $event.target.checked ? existingDocs.map(d => d.id) : []"
+                                    <label
+                                        class="inline-flex items-center gap-1.5 text-xs text-muted cursor-pointer hover:text-foreground transition">
+                                        <input type="checkbox"
+                                            @change="selectedDocIds = $event.target.checked ? existingDocs.map(d => d.id) : []"
                                             :checked="selectedDocIds.length === existingDocs.length"
                                             class="rounded border-gray-300 text-primary focus:ring-primary/20">
                                         Pilih semua
                                     </label>
                                     <button type="button" @click="parseSelectedDocuments()"
-                                        x-show="selectedDocIds.length > 0"
-                                        :disabled="batchParsing"
+                                        x-show="selectedDocIds.length > 0" :disabled="batchParsing"
                                         class="px-3 py-1 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition">
-                                        <span x-show="!batchParsing" x-text="'Parse ' + selectedDocIds.length + ' dokumen'"></span>
-                                        <span x-show="batchParsing">Memproses <span x-text="batchParsedCount + '/' + selectedDocIds.length"></span>...</span>
+                                        <span x-show="!batchParsing"
+                                            x-text="'Parse ' + selectedDocIds.length + ' dokumen'"></span>
+                                        <span x-show="batchParsing">Memproses <span
+                                                x-text="batchParsedCount + '/' + selectedDocIds.length"></span>...</span>
                                     </button>
                                 </div>
                                 <div class="space-y-2 max-h-48 overflow-y-auto">
                                     <template x-for="doc in existingDocs" :key="doc.id">
                                         <div class="p-2.5 bg-white rounded-lg border border-gray-200"
-                                            :class="{'border-primary/40 bg-primary/[0.03]': selectedDocIds.includes(doc.id)}">
+                                            :class="{ 'border-primary/40 bg-primary/[0.03]': selectedDocIds.includes(doc.id) }">
                                             <div class="flex items-center justify-between">
                                                 <div class="flex items-center gap-2 min-w-0">
                                                     <input type="checkbox" :value="doc.id"
                                                         :checked="selectedDocIds.includes(doc.id)"
                                                         @change="toggleDocSelection(doc.id)"
                                                         class="shrink-0 rounded border-gray-300 text-primary focus:ring-primary/20">
-                                                    <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                                                    <span
+                                                        class="shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
                                                         :class="{
-                                                            'bg-blue-100 text-blue-700': doc.document_type === 'prospektus',
-                                                            'bg-emerald-100 text-emerald-700': doc.document_type === 'ffs',
-                                                            'bg-amber-100 text-amber-700': doc.document_type === 'laporan_tahunan',
+                                                            'bg-blue-100 text-blue-700': doc
+                                                                .document_type === 'prospektus',
+                                                            'bg-emerald-100 text-emerald-700': doc
+                                                                .document_type === 'ffs',
+                                                            'bg-amber-100 text-amber-700': doc
+                                                                .document_type === 'laporan_tahunan',
                                                         }"
                                                         x-text="{
                                                             'prospektus': 'Prospektus',
                                                             'ffs': 'FFS',
                                                             'laporan_tahunan': 'Laporan Tahunan',
                                                         }[doc.document_type] || doc.document_type"></span>
-                                                    <span class="text-sm font-medium truncate" x-text="doc.label"></span>
-                                                    <span class="text-xs text-muted shrink-0 hidden sm:inline" x-text="doc.reksa_dana_kode"></span>
-                                                    <span class="text-xs text-muted shrink-0" x-text="doc.uploaded_at"></span>
+                                                    <span class="text-sm font-medium truncate"
+                                                        x-text="doc.label"></span>
+                                                    <span class="text-xs text-muted shrink-0 hidden sm:inline"
+                                                        x-text="doc.reksa_dana_kode"></span>
+                                                    <span class="text-xs text-muted shrink-0"
+                                                        x-text="doc.uploaded_at"></span>
                                                 </div>
                                                 <div class="flex items-center gap-1 shrink-0" x-show="doc.url">
                                                     <a :href="doc.url" target="_blank"
                                                         class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition">
-                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor"
+                                                            viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                         </svg>
                                                         Lihat
                                                     </a>
                                                     <a :href="doc.url" download
                                                         class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-md hover:bg-emerald-100 transition">
-                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor"
+                                                            viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                         </svg>
                                                         Download
                                                     </a>
                                                 </div>
                                             </div>
                                             <div x-show="doc.notes" class="mt-1.5 pl-6">
-                                                <p class="text-xs text-muted italic leading-relaxed" x-text="doc.notes"></p>
+                                                <p class="text-xs text-muted italic leading-relaxed" x-text="doc.notes">
+                                                </p>
                                             </div>
                                         </div>
                                     </template>
@@ -1466,14 +1599,24 @@
                     <div class="flex border-b border-line mb-2">
                         <button type="button" @click="activeTab = 'multi'"
                             class="px-4 py-2 text-xs font-semibold transition -mb-px"
-                            :class="activeTab === 'multi' ? 'text-primary border-b-2 border-primary' : 'text-muted hover:text-primary'">
-                            <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            :class="activeTab === 'multi' ? 'text-primary border-b-2 border-primary' :
+                                'text-muted hover:text-primary'">
+                            <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
                             Upload Multi-Dokumen
                         </button>
                         <button type="button" @click="activeTab = 'partition'"
                             class="px-4 py-2 text-xs font-semibold transition -mb-px"
-                            :class="activeTab === 'partition' ? 'text-primary border-b-2 border-primary' : 'text-muted hover:text-primary'">
-                            <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+                            :class="activeTab === 'partition' ? 'text-primary border-b-2 border-primary' :
+                                'text-muted hover:text-primary'">
+                            <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 6h16M4 12h16m-7 6h7" />
+                            </svg>
                             Partisi Halaman
                         </button>
                     </div>
@@ -1481,34 +1624,54 @@
                     {{-- Tab: Multi-Document Upload Panel --}}
                     <div x-show="activeTab === 'multi'" class="border border-line rounded-lg p-4 space-y-4">
                         <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                             <h4 class="font-medium text-sm text-primary">Upload Multi-Dokumen</h4>
                         </div>
-                        <p class="text-xs text-muted">Upload beberapa dokumen sekaligus untuk mengisi form secara lebih lengkap. Masing-masing dokumen akan di-parse dan hasilnya digabungkan.</p>
+                        <p class="text-xs text-muted">Upload beberapa dokumen sekaligus untuk mengisi form secara lebih
+                            lengkap. Masing-masing dokumen akan di-parse dan hasilnya digabungkan.</p>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <template x-for="(slot, idx) in docSlots" :key="slot.type">
-                                <div class="border rounded-lg p-3 space-y-2" :class="{
-                                    'border-line bg-white': slot.success === null,
-                                    'border-green-300 bg-green-50/50': slot.success === true,
-                                    'border-red-300 bg-red-50/50': slot.success === false,
-                                }">
+                                <div class="border rounded-lg p-3 space-y-2"
+                                    :class="{
+                                        'border-line bg-white': slot.success === null,
+                                        'border-green-300 bg-green-50/50': slot.success === true,
+                                        'border-red-300 bg-red-50/50': slot.success === false,
+                                    }">
                                     <div class="flex items-center justify-between">
-                                        <span class="text-xs font-semibold" :class="{
-                                            'text-primary': slot.success === null,
-                                            'text-green-700': slot.success === true,
-                                            'text-red-700': slot.success === false,
-                                        }" x-text="slot.label"></span>
+                                        <span class="text-xs font-semibold"
+                                            :class="{
+                                                'text-primary': slot.success === null,
+                                                'text-green-700': slot.success === true,
+                                                'text-red-700': slot.success === false,
+                                            }"
+                                            x-text="slot.label"></span>
                                         <template x-if="slot.loading">
-                                            <svg class="animate-spin h-3.5 w-3.5 text-primary" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                            <svg class="animate-spin h-3.5 w-3.5 text-primary" fill="none"
+                                                viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10"
+                                                    stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor"
+                                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                            </svg>
                                         </template>
                                         <template x-if="slot.success === true">
-                                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M5 13l4 4L19 7" />
+                                            </svg>
                                         </template>
                                         <template x-if="slot.success === false">
-                                            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
                                         </template>
                                     </div>
 
@@ -1517,7 +1680,9 @@
                                         @change="slot.file = $event.target.files[0] || null"
                                         class="w-full text-xs border border-gray-300 rounded-lg px-2 py-1.5 file:mr-2 file:rounded file:border-0 file:bg-primary/10 file:px-2 file:py-0.5 file:text-primary file:text-xs" />
 
-                                    <p x-show="slot.message" class="text-[11px]" :class="slot.success ? 'text-green-600' : 'text-red-600'" x-text="slot.message"></p>
+                                    <p x-show="slot.message" class="text-[11px]"
+                                        :class="slot.success ? 'text-green-600' : 'text-red-600'" x-text="slot.message">
+                                    </p>
                                 </div>
                             </template>
                         </div>
@@ -1529,7 +1694,8 @@
                                 <span x-show="!multiParseLoading">Parse Semua Dokumen</span>
                                 <span x-show="multiParseLoading">Memproses...</span>
                             </button>
-                            <button type="button" @click="docSlots.forEach(s => { s.file = null; s.success = null; s.message = ''; s.data = null; }); multiParseResult = ''; multiParseSuccess = false;"
+                            <button type="button"
+                                @click="docSlots.forEach(s => { s.file = null; s.success = null; s.message = ''; s.data = null; }); multiParseResult = ''; multiParseSuccess = false;"
                                 x-show="docSlots.some(s => s.file || s.success !== null)"
                                 class="px-3 py-2 text-xs font-medium text-muted border border-line rounded-lg hover:bg-gray-50 transition">
                                 Reset
@@ -1537,11 +1703,15 @@
                         </div>
 
                         {{-- Summary --}}
-                        <div x-show="multiParseResult" class="text-sm p-3 rounded-lg border" :class="multiParseSuccess ? 'bg-green-50 border-green-200 text-green-700' : 'bg-amber-50 border-amber-200 text-amber-700'">
+                        <div x-show="multiParseResult" class="text-sm p-3 rounded-lg border"
+                            :class="multiParseSuccess ? 'bg-green-50 border-green-200 text-green-700' :
+                                'bg-amber-50 border-amber-200 text-amber-700'">
                             <span x-text="multiParseResult"></span>
                             <div x-show="multiParseSuccess" class="flex gap-2 mt-2">
-                                <button type="button" @click="mode = 'manual'" class="text-xs underline">Lihat di Input Manual</button>
-                                <button type="button" @click="mode = 'lengkap'" class="text-xs underline">Lihat di Input Lengkap</button>
+                                <button type="button" @click="mode = 'manual'" class="text-xs underline">Lihat di
+                                    Input Manual</button>
+                                <button type="button" @click="mode = 'lengkap'" class="text-xs underline">Lihat di
+                                    Input Lengkap</button>
                             </div>
                         </div>
                     </div>
@@ -1549,39 +1719,52 @@
                     {{-- Tab: Partisi Halaman Panel --}}
                     <div x-show="activeTab === 'partition'" class="border border-line rounded-lg p-4 space-y-4">
                         <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
+                            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 6h16M4 12h16m-7 6h7" />
                             </svg>
                             <h4 class="font-medium text-sm text-primary">Partisi Halaman Dokumen</h4>
                             <span class="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full">Baru</span>
                         </div>
-                        <p class="text-xs text-muted">Pilih dokumen dari daftar, lalu tentukan halaman mana saja yang ingin dianalisa. Setiap partisi akan diparse dengan AI prompt yang sesuai.</p>
+                        <p class="text-xs text-muted">Pilih dokumen dari daftar, lalu tentukan halaman mana saja yang
+                            ingin dianalisa. Setiap partisi akan diparse dengan AI prompt yang sesuai.</p>
 
                         {{-- Pilih Dokumen --}}
                         <div class="bg-gray-50 rounded-lg p-3 space-y-2">
                             <label class="text-xs font-medium text-muted">Pilih Dokumen</label>
-                            <div x-show="!existingDocsLoaded" class="text-xs text-muted italic">Memuat daftar dokumen...</div>
-                            <div x-show="existingDocsLoaded && existingDocs.length === 0" class="text-xs text-muted italic">Dokumen tidak ditemukan untuk periode yang dipilih.</div>
-                            <div x-show="existingDocsLoaded && existingDocs.length > 0" class="space-y-1.5 max-h-40 overflow-y-auto">
+                            <div x-show="!existingDocsLoaded" class="text-xs text-muted italic">Memuat daftar dokumen...
+                            </div>
+                            <div x-show="existingDocsLoaded && existingDocs.length === 0"
+                                class="text-xs text-muted italic">Dokumen tidak ditemukan untuk periode yang dipilih.
+                            </div>
+                            <div x-show="existingDocsLoaded && existingDocs.length > 0"
+                                class="space-y-1.5 max-h-40 overflow-y-auto">
                                 <template x-for="doc in existingDocs" :key="doc.id">
-                                    <label class="flex items-center gap-2 p-2 rounded-lg cursor-pointer text-xs transition"
-                                        :class="selectedDocId === doc.id ? 'bg-primary/10 border border-primary/30' : 'hover:bg-gray-100 border border-transparent'">
+                                    <label
+                                        class="flex items-center gap-2 p-2 rounded-lg cursor-pointer text-xs transition"
+                                        :class="selectedDocId === doc.id ? 'bg-primary/10 border border-primary/30' :
+                                            'hover:bg-gray-100 border border-transparent'">
                                         <input type="radio" name="partition_doc" :value="doc.id"
-                                            @change="selectDocumentForPartition(doc.id)"
-                                            class="accent-primary">
+                                            @change="selectDocumentForPartition(doc.id)" class="accent-primary">
                                         <div class="flex-1 min-w-0">
-                                            <span class="font-medium text-gray-800 block truncate" x-text="doc.label || doc.original_name"></span>
-                                            <span class="text-muted" x-text="doc.reksa_dana_nama ? doc.reksa_dana_nama + ' - ' + doc.reksa_dana_kode : ''"></span>
+                                            <span class="font-medium text-gray-800 block truncate"
+                                                x-text="doc.label || doc.original_name"></span>
+                                            <span class="text-muted"
+                                                x-text="doc.reksa_dana_nama ? doc.reksa_dana_nama + ' - ' + doc.reksa_dana_kode : ''"></span>
                                         </div>
-                                        <span class="text-muted text-[10px] whitespace-nowrap" x-text="doc.file_size ? (doc.file_size / 1024).toFixed(0) + ' KB' : ''"></span>
+                                        <span class="text-muted text-[10px] whitespace-nowrap"
+                                            x-text="doc.file_size ? (doc.file_size / 1024).toFixed(0) + ' KB' : ''"></span>
                                     </label>
                                 </template>
                             </div>
                         </div>
 
                         {{-- Selected Document Info --}}
-                        <div x-show="selectedDocId" class="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                            Dokumen terpilih: <span x-text="existingDocs.find(d => d.id === selectedDocId)?.label || existingDocs.find(d => d.id === selectedDocId)?.original_name || ''"></span>
+                        <div x-show="selectedDocId"
+                            class="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                            Dokumen terpilih: <span
+                                x-text="existingDocs.find(d => d.id === selectedDocId)?.label || existingDocs.find(d => d.id === selectedDocId)?.original_name || ''"></span>
                         </div>
 
                         {{-- Page Range Cards --}}
@@ -1590,37 +1773,63 @@
                                 <label class="text-xs font-medium text-muted">Partisi Halaman</label>
                                 <button type="button" @click="addPageRange()"
                                     class="text-xs text-primary font-medium hover:underline flex items-center gap-1">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 4v16m8-8H4" />
+                                    </svg>
                                     Tambah Bagian
                                 </button>
                             </div>
 
                             <template x-for="(range, idx) in pageRanges" :key="range.id">
-                                <div class="border rounded-lg p-3 space-y-2" :class="{
-                                    'border-line bg-white': range.success === null,
-                                    'border-green-300 bg-green-50/50': range.success === true,
-                                    'border-red-300 bg-red-50/50': range.success === false,
-                                }">
+                                <div class="border rounded-lg p-3 space-y-2"
+                                    :class="{
+                                        'border-line bg-white': range.success === null,
+                                        'border-green-300 bg-green-50/50': range.success === true,
+                                        'border-red-300 bg-red-50/50': range.success === false,
+                                    }">
                                     <div class="flex items-center justify-between">
-                                        <span class="text-xs font-semibold" :class="{
-                                            'text-primary': range.success === null,
-                                            'text-green-700': range.success === true,
-                                            'text-red-700': range.success === false,
-                                        }">Bagian <span x-text="idx + 1"></span></span>
+                                        <span class="text-xs font-semibold"
+                                            :class="{
+                                                'text-primary': range.success === null,
+                                                'text-green-700': range.success === true,
+                                                'text-red-700': range.success === false,
+                                            }">Bagian
+                                            <span x-text="idx + 1"></span></span>
                                         <div class="flex items-center gap-2">
                                             <template x-if="range.loading">
-                                                <svg class="animate-spin h-3.5 w-3.5 text-primary" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                                <svg class="animate-spin h-3.5 w-3.5 text-primary" fill="none"
+                                                    viewBox="0 0 24 24">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                                        stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor"
+                                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                                </svg>
                                             </template>
                                             <template x-if="range.success === true">
-                                                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                                <svg class="w-4 h-4 text-green-600" fill="none"
+                                                    stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M5 13l4 4L19 7" />
+                                                </svg>
                                             </template>
                                             <template x-if="range.success === false">
-                                                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
                                             </template>
                                             <button type="button" @click="removePageRange(idx)"
                                                 x-show="pageRanges.length > 1"
                                                 class="text-red-400 hover:text-red-600 transition">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
                                             </button>
                                         </div>
                                     </div>
@@ -1652,7 +1861,9 @@
                                         </select>
                                     </div>
 
-                                    <p x-show="range.message" class="text-[11px]" :class="range.success ? 'text-green-600' : 'text-red-600'" x-text="range.message"></p>
+                                    <p x-show="range.message" class="text-[11px]"
+                                        :class="range.success ? 'text-green-600' : 'text-red-600'"
+                                        x-text="range.message"></p>
                                 </div>
                             </template>
                         </div>
@@ -1673,19 +1884,26 @@
                         </div>
 
                         {{-- Summary --}}
-                        <div x-show="partitionResult" class="text-sm p-3 rounded-lg border" :class="partitionSuccess ? 'bg-green-50 border-green-200 text-green-700' : 'bg-amber-50 border-amber-200 text-amber-700'">
+                        <div x-show="partitionResult" class="text-sm p-3 rounded-lg border"
+                            :class="partitionSuccess ? 'bg-green-50 border-green-200 text-green-700' :
+                                'bg-amber-50 border-amber-200 text-amber-700'">
                             <span x-text="partitionResult"></span>
                             <div x-show="partitionSuccess" class="flex gap-2 mt-2">
-                                <button type="button" @click="mode = 'manual'" class="text-xs underline">Lihat di Input Manual</button>
-                                <button type="button" @click="mode = 'lengkap'" class="text-xs underline">Lihat di Input Lengkap</button>
+                                <button type="button" @click="mode = 'manual'" class="text-xs underline">Lihat di
+                                    Input Manual</button>
+                                <button type="button" @click="mode = 'lengkap'" class="text-xs underline">Lihat di
+                                    Input Lengkap</button>
                             </div>
                         </div>
                     </div>
 
                     {{-- Separator --}}
                     <div class="relative">
-                        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-line"></div></div>
-                        <div class="relative flex justify-center text-xs"><span class="bg-white px-2 text-muted">ATAU</span></div>
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-line"></div>
+                        </div>
+                        <div class="relative flex justify-center text-xs"><span
+                                class="bg-white px-2 text-muted">ATAU</span></div>
                     </div>
 
                     {{-- Upload PDF Baru --}}
@@ -1717,7 +1935,8 @@
                             viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
                                 stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z">
+                            <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z">
                             </path>
                         </svg>
                         <span>Membaca PDF... harap tunggu.</span>
@@ -1895,11 +2114,42 @@
                     totalUnitBeredar: @json(old('total_unit_beredar')),
 
                     // Multi-document parse slots
-                    docSlots: [
-                        { type: 'informasi_lainnya', label: 'Informasi Lainnya', file: null, loading: false, success: null, message: '', data: null },
-                        { type: 'portofolio_efek', label: 'Portofolio Efek', file: null, loading: false, success: null, message: '', data: null },
-                        { type: 'pengukuran_nilai_wajar', label: 'Pengukuran Nilai Wajar', file: null, loading: false, success: null, message: '', data: null },
-                        { type: 'bs_is_cf_pup', label: 'BS, IS, CF, dan PUP', file: null, loading: false, success: null, message: '', data: null },
+                    docSlots: [{
+                            type: 'informasi_lainnya',
+                            label: 'Informasi Lainnya',
+                            file: null,
+                            loading: false,
+                            success: null,
+                            message: '',
+                            data: null
+                        },
+                        {
+                            type: 'portofolio_efek',
+                            label: 'Portofolio Efek',
+                            file: null,
+                            loading: false,
+                            success: null,
+                            message: '',
+                            data: null
+                        },
+                        {
+                            type: 'pengukuran_nilai_wajar',
+                            label: 'Pengukuran Nilai Wajar',
+                            file: null,
+                            loading: false,
+                            success: null,
+                            message: '',
+                            data: null
+                        },
+                        {
+                            type: 'bs_is_cf_pup',
+                            label: 'BS, IS, CF, dan PUP',
+                            file: null,
+                            loading: false,
+                            success: null,
+                            message: '',
+                            data: null
+                        },
                     ],
                     multiParseLoading: false,
                     multiParseResult: '',
@@ -1911,9 +2161,16 @@
                     partitionLoading: false,
                     partitionSuccess: false,
                     partitionResult: '',
-                    pageRanges: [
-                        { id: 1, start_page: '', end_page: '', section_type: 'auto', loading: false, success: null, message: '', data: null }
-                    ],
+                    pageRanges: [{
+                        id: 1,
+                        start_page: '',
+                        end_page: '',
+                        section_type: 'auto',
+                        loading: false,
+                        success: null,
+                        message: '',
+                        data: null
+                    }],
 
                     init() {
                         if (resumeData) {
@@ -3107,7 +3364,11 @@
                         this.multiParseLoading = true;
                         this.multiParseResult = '';
                         this.multiParseSuccess = false;
-                        this.docSlots.forEach(s => { s.success = null; s.message = ''; s.data = null; });
+                        this.docSlots.forEach(s => {
+                            s.success = null;
+                            s.message = '';
+                            s.data = null;
+                        });
 
                         // Parse 4 upload slots
                         const promises = slotsToProcess.map(slot => {
@@ -3116,18 +3377,45 @@
                             fd.append('file_pdf', slot.file);
                             fd.append('document_type', slot.type);
                             fd.append('_token', token);
-                            const url = this.pdfScanMode === 'vision' && this.parsePdfVisionUrl ? this.parsePdfVisionUrl : @json($formRoutes['parse_pdf']);
-                            return fetch(url, { method: 'POST', headers: { 'Accept': 'application/json' }, body: fd })
-                                .then(r => r.json()).then(resp => ({ slot, resp })).catch(e => ({ slot, error: e.message }));
+                            const url = this.pdfScanMode === 'vision' && this.parsePdfVisionUrl ? this
+                                .parsePdfVisionUrl : @json($formRoutes['parse_pdf']);
+                            return fetch(url, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Accept': 'application/json'
+                                    },
+                                    body: fd
+                                })
+                                .then(r => r.json()).then(resp => ({
+                                    slot,
+                                    resp
+                                })).catch(e => ({
+                                    slot,
+                                    error: e.message
+                                }));
                         });
 
                         // Parse selected documents from "Dokumen Tersimpan"
                         const libraryPromises = libraryDocIds.map(docId =>
                             fetch(this.parseExistingDocUrl, {
                                 method: 'POST',
-                                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token },
-                                body: JSON.stringify({ document_id: docId }),
-                            }).then(r => r.json()).then(resp => ({ isLibrary: true, docId, resp })).catch(e => ({ isLibrary: true, docId, error: e.message }))
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': token
+                                },
+                                body: JSON.stringify({
+                                    document_id: docId
+                                }),
+                            }).then(r => r.json()).then(resp => ({
+                                isLibrary: true,
+                                docId,
+                                resp
+                            })).catch(e => ({
+                                isLibrary: true,
+                                docId,
+                                error: e.message
+                            }))
                         );
 
                         const results = await Promise.allSettled([...promises, ...libraryPromises]);
@@ -3142,7 +3430,11 @@
                                     successCount++;
                                 }
                             } else {
-                                const { slot, resp, error } = val;
+                                const {
+                                    slot,
+                                    resp,
+                                    error
+                                } = val;
                                 if (!slot) return;
                                 slot.loading = false;
                                 if (error || !resp?.success) {
@@ -3153,7 +3445,8 @@
                                     slot.data = this.normalizeExtractedData(resp.data || {});
                                     const fieldCount = Object.keys(slot.data).filter(k => {
                                         const v = slot.data[k];
-                                        return v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0);
+                                        return v !== null && v !== undefined && v !== '' && !(Array.isArray(
+                                            v) && v.length === 0);
                                     }).length;
                                     slot.message = `${fieldCount} field diekstrak`;
                                     successCount++;
@@ -3165,14 +3458,16 @@
                         // - Scalar fields: later slot wins (more specific)
                         // - Array fields: longest array wins (most complete)
                         let mergedData = {};
-                        const allData = [...libraryData, ...this.docSlots.filter(s => s.success && s.data).map(s => s.data)];
+                        const allData = [...libraryData, ...this.docSlots.filter(s => s.success && s.data).map(s => s
+                        .data)];
                         allData.forEach(data => {
                             Object.keys(data).forEach(k => {
                                 const v = data[k];
                                 if (v === null || v === undefined || v === '') return;
                                 if (Array.isArray(v)) {
                                     if (v.length === 0) return;
-                                    if (!mergedData[k] || !Array.isArray(mergedData[k]) || v.length > mergedData[k].length) {
+                                    if (!mergedData[k] || !Array.isArray(mergedData[k]) || v.length >
+                                        mergedData[k].length) {
                                         mergedData[k] = v;
                                     }
                                 } else {
@@ -3183,7 +3478,8 @@
 
                         const totalFields = Object.keys(mergedData).filter(k => {
                             const v = mergedData[k];
-                            return v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0);
+                            return v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length ===
+                                0);
                         }).length;
 
                         if (totalFields > 0) {
@@ -3196,7 +3492,8 @@
                         this.multiParseResult = `${successCount}/${total} dokumen berhasil. ${totalFields} field terisi.`;
 
                         if (successCount > 0) {
-                            alert('⚠️ Data hasil ekstraksi AI bisa saja tidak akurat atau tidak lengkap. Mohon periksa dan validasi setiap field sebelum menyimpan.');
+                            alert(
+                                '⚠️ Data hasil ekstraksi AI bisa saja tidak akurat atau tidak lengkap. Mohon periksa dan validasi setiap field sebelum menyimpan.');
                         }
                     },
 
@@ -3230,7 +3527,10 @@
                         }
 
                         // Only process ranges with both start and end pages
-                        const rangesWithValues = this.pageRanges.map((r, idx) => ({ ...r, idx }));
+                        const rangesWithValues = this.pageRanges.map((r, idx) => ({
+                            ...r,
+                            idx
+                        }));
                         const validRanges = rangesWithValues.filter(r => r.start_page && r.end_page);
                         if (!validRanges.length) {
                             this.partitionResult = 'Isi minimal 1 partisi halaman (Start Page & End Page).';
@@ -3241,7 +3541,11 @@
                         this.partitionLoading = true;
                         this.partitionResult = '';
                         this.partitionSuccess = false;
-                        this.pageRanges.forEach(r => { r.success = null; r.message = ''; r.data = null; });
+                        this.pageRanges.forEach(r => {
+                            r.success = null;
+                            r.message = '';
+                            r.data = null;
+                        });
 
                         // Send all valid ranges in ONE request
                         const allRanges = validRanges.map(r => ({
@@ -3250,7 +3554,9 @@
                             section_type: r.section_type
                         }));
 
-                        validRanges.forEach(r => { this.pageRanges[r.idx].loading = true; });
+                        validRanges.forEach(r => {
+                            this.pageRanges[r.idx].loading = true;
+                        });
 
                         try {
                             const response = await fetch(this.parseExistingDocUrl, {
@@ -3278,7 +3584,8 @@
                                 const data = this.normalizeExtractedData(resp.data || {});
                                 const fieldCount = Object.keys(data).filter(k => {
                                     const v = data[k];
-                                    return v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0);
+                                    return v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v
+                                        .length === 0);
                                 }).length;
 
                                 validRanges.forEach(r => {
@@ -3295,8 +3602,10 @@
                                 }
 
                                 this.partitionSuccess = true;
-                                this.partitionResult = `${validRanges.length} partisi berhasil. ${fieldCount} field terisi.`;
-                                alert('⚠️ Data hasil ekstraksi AI bisa saja tidak akurat atau tidak lengkap. Mohon periksa dan validasi setiap field sebelum menyimpan.');
+                                this.partitionResult =
+                                `${validRanges.length} partisi berhasil. ${fieldCount} field terisi.`;
+                                alert(
+                                    '⚠️ Data hasil ekstraksi AI bisa saja tidak akurat atau tidak lengkap. Mohon periksa dan validasi setiap field sebelum menyimpan.');
                             } else {
                                 const msg = resp?.message || 'Gagal parse';
                                 validRanges.forEach(r => {
@@ -3326,9 +3635,16 @@
                     },
 
                     resetPageRanges() {
-                        this.pageRanges = [
-                            { id: 1, start_page: '', end_page: '', section_type: 'auto', loading: false, success: null, message: '', data: null }
-                        ];
+                        this.pageRanges = [{
+                            id: 1,
+                            start_page: '',
+                            end_page: '',
+                            section_type: 'auto',
+                            loading: false,
+                            success: null,
+                            message: '',
+                            data: null
+                        }];
                         this.partitionResult = '';
                         this.partitionSuccess = false;
                         this.selectedDocId = null;
@@ -3337,7 +3653,11 @@
                     selectDocumentForPartition(docId) {
                         this.selectedDocId = docId;
                         // Reset hasil parsing sebelumnya saat ganti dokumen
-                        this.pageRanges.forEach(r => { r.success = null; r.message = ''; r.data = null; });
+                        this.pageRanges.forEach(r => {
+                            r.success = null;
+                            r.message = '';
+                            r.data = null;
+                        });
                         this.partitionResult = '';
                         this.partitionSuccess = false;
                     },
@@ -3363,7 +3683,9 @@
                         }
 
                         fetch(`${this.existingDocsUrl}?${params.toString()}`, {
-                                headers: { Accept: 'application/json' }
+                                headers: {
+                                    Accept: 'application/json'
+                                }
                             })
                             .then(res => res.json())
                             .then(resp => {
@@ -3392,7 +3714,9 @@
                                     'Content-Type': 'application/json',
                                     'X-CSRF-TOKEN': this.analisaFormEl().querySelector('input[name="_token"]').value,
                                 },
-                                body: JSON.stringify({ document_id: documentId }),
+                                body: JSON.stringify({
+                                    document_id: documentId
+                                }),
                             })
                             .then(res => {
                                 if (!res.ok) {
@@ -3411,9 +3735,11 @@
                                 }
                                 const extractedData = this.normalizeExtractedData(resp.data || {});
                                 this.pdfData = extractedData;
-                                this.applyExtractedData(extractedData, this.hasFullInputData(extractedData) ? 'lengkap' : 'manual');
+                                this.applyExtractedData(extractedData, this.hasFullInputData(extractedData) ? 'lengkap' :
+                                    'manual');
                                 this.pdfSuccess = true;
-                                this.pdfResult = resp.message + ' (dari: ' + (resp.document_label || 'dokumen tersimpan') + ')';
+                                this.pdfResult = resp.message + ' (dari: ' + (resp.document_label || 'dokumen tersimpan') +
+                                    ')';
                             })
                             .catch(err => {
                                 this.existingDocParsing = false;
@@ -3454,13 +3780,18 @@
                                     headers: {
                                         'Accept': 'application/json',
                                         'Content-Type': 'application/json',
-                                        'X-CSRF-TOKEN': this.analisaFormEl().querySelector('input[name="_token"]').value,
+                                        'X-CSRF-TOKEN': this.analisaFormEl().querySelector('input[name="_token"]')
+                                            .value,
                                     },
-                                    body: JSON.stringify({ document_id: docId }),
+                                    body: JSON.stringify({
+                                        document_id: docId
+                                    }),
                                 })
                                 .then(res => {
                                     if (!res.ok) {
-                                        return res.json().then(err => { throw new Error(err.message || 'Gagal parsing dokumen'); });
+                                        return res.json().then(err => {
+                                            throw new Error(err.message || 'Gagal parsing dokumen');
+                                        });
                                     }
                                     return res.json();
                                 })
@@ -3473,9 +3804,11 @@
                                     }
                                     const extractedData = this.normalizeExtractedData(resp.data || {});
                                     this.pdfData = extractedData;
-                                    this.applyExtractedData(extractedData, this.hasFullInputData(extractedData) ? 'lengkap' : 'manual');
+                                    this.applyExtractedData(extractedData, this.hasFullInputData(extractedData) ?
+                                        'lengkap' : 'manual');
                                     this.pdfSuccess = true;
-                                    this.pdfResult = 'Berhasil parse dokumen ' + this.batchParsedCount + '/' + ids.length + ' (dari: ' + (resp.document_label || 'dokumen tersimpan') + ')';
+                                    this.pdfResult = 'Berhasil parse dokumen ' + this.batchParsedCount + '/' + ids
+                                        .length + ' (dari: ' + (resp.document_label || 'dokumen tersimpan') + ')';
                                     parseNext();
                                 })
                                 .catch(err => {
