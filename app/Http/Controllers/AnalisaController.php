@@ -595,10 +595,22 @@ class AnalisaController extends Controller
         $request->validate([
             'document_id' => 'required|exists:reksa_dana_documents,id',
             'document_type' => 'nullable|string|in:ffs,prospektus,laporan_tahunan,laporan_keuangan,informasi_lainnya,portofolio_efek,pengukuran_nilai_wajar,bs_is_cf_pup',
+            'page_ranges' => 'nullable|array',
+            'page_ranges.*.start_page' => 'required_with:page_ranges|integer|min:1',
+            'page_ranges.*.end_page' => 'required_with:page_ranges|integer|min:1',
+            'page_ranges.*.section_type' => 'nullable|string|in:auto,informasi_lainnya,portofolio_efek,pengukuran_nilai_wajar,bs_is_cf_pup',
         ]);
 
         $document = ReksaDanaDocument::findOrFail($request->document_id);
         $documentType = $request->input('document_type');
+        $pageRanges = $request->input('page_ranges');
+
+        if (!empty($pageRanges)) {
+            \Log::info('[PARSE-EXISTING] Page ranges mode', [
+                'document_id' => $request->document_id,
+                'ranges' => $pageRanges,
+            ]);
+        }
 
         if (!$document->file_path || !Storage::disk('public')->exists($document->file_path)) {
             return response()->json([
@@ -612,7 +624,11 @@ class AnalisaController extends Controller
 
         try {
             set_time_limit(300);
-            $data = $ffsParser->parseWithAi($fullPath, $groq, $documentType);
+            if (!empty($pageRanges)) {
+                $data = $ffsParser->parseWithPageRanges($fullPath, $groq, $pageRanges);
+            } else {
+                $data = $ffsParser->parseWithAi($fullPath, $groq, $documentType);
+            }
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
@@ -654,11 +670,18 @@ class AnalisaController extends Controller
         if ($data['obligasi']) $extracted[] = count($data['obligasi']) . ' Obligasi';
         if ($data['bank']) $extracted[] = count($data['bank']) . ' Bank';
 
+        $success = count($extracted) > 0;
+        $message = $success
+            ? 'Berhasil mengekstrak: ' . implode(', ', $extracted) . '.'
+            : 'Tidak dapat mengekstrak data dari PDF ini.';
+
+        if (!empty($pageRanges) && $success) {
+            $message .= ' (' . count($pageRanges) . ' partisi halaman)';
+        }
+
         return response()->json([
-            'success' => count($extracted) > 0,
-            'message' => count($extracted) > 0
-                ? 'Berhasil mengekstrak: ' . implode(', ', $extracted) . '.'
-                : 'Tidak dapat mengekstrak data dari PDF ini.',
+            'success' => $success,
+            'message' => $message,
             'data' => $data,
             'document_label' => $this->getDocumentLabel($document),
         ]);
