@@ -10,12 +10,14 @@ use App\Models\InvestmentManagerPeriod;
 use App\Models\InvestmentManagerProspektus;
 use App\Models\ReksaDana;
 use App\Models\ReksaDanaDocument;
+use App\Models\DocumentPartition;
 use App\Models\SyncRun;
 use App\Exports\InvestmentManagerTemplateExport;
 use App\Imports\InvestmentManagerImport;
 use App\Services\GroqService;
 use App\Services\InvestmentPersonService;
 use App\Services\ReksaDanaChartDataService;
+use App\Services\DocumentDataExtractorService;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -104,7 +106,14 @@ class InvestmentManagerController extends Controller
 
         // Semua reksa dana yang punya prospektus (global, tidak difilter per MI)
         $fundsWithProspektus = ReksaDana::whereHas('documents', fn($q) => $q->where('document_type', 'prospektus'))
-            ->with(['documents' => fn($q) => $q->where('document_type', 'prospektus')->orderByDesc('ffs_year')])
+            ->with(['documents' => fn($q) => $q->where('document_type', 'prospektus')->with(['parsedPages', 'partitions'])->orderByDesc('ffs_year')])
+            ->orderBy('nama_reksa_dana')
+            ->get();
+
+        // Reksa dana yang dikelola MI ini dan punya prospektus
+        $managerFundsWithProspektus = ReksaDana::where('nama_manajer_investasi', $manager->name)
+            ->whereHas('documents', fn($q) => $q->where('document_type', 'prospektus'))
+            ->with(['documents' => fn($q) => $q->where('document_type', 'prospektus')->with(['parsedPages', 'partitions'])->orderByDesc('ffs_year')])
             ->orderBy('nama_reksa_dana')
             ->get();
 
@@ -115,7 +124,7 @@ class InvestmentManagerController extends Controller
             ->get();
 
         return view('admin.investment-managers.show', compact(
-            'manager', 'fundsWithProspektus', 'range', 'chartData', 'governanceSections',
+            'manager', 'fundsWithProspektus', 'managerFundsWithProspektus', 'range', 'chartData', 'governanceSections',
             'pasardanaGovernance', 'prospektusHistory',
         ));
     }
@@ -254,6 +263,161 @@ class InvestmentManagerController extends Controller
 
         return redirect()->route('admin.investment-managers.show', $investmentManager)
             ->with('success', 'Data prospektus berhasil disimpan.');
+    }
+
+    public function extractFromPartition(Request $request, InvestmentManager $investmentManager, DocumentDataExtractorService $extractor, InvestmentPersonService $personService)
+    {
+        $validated = $request->validate([
+            'document_id'  => 'required|exists:reksa_dana_documents,id',
+            'partition_id' => 'required|exists:document_partitions,id',
+            'tahun'        => 'required|integer|min:2000|max:2100',
+        ]);
+
+        $document = ReksaDanaDocument::findOrFail($validated['document_id']);
+        $partition = DocumentPartition::findOrFail($validated['partition_id']);
+
+        try {
+            $data = $extractor->extractInvestmentManagerData($document, $partition);
+
+            $update = array_filter([
+                'address'                => $data['alamat'] ?? null,
+                'phone'                  => $data['telepon'] ?? null,
+                'email'                  => $data['email'] ?? null,
+                'website'                => $data['website'] ?? null,
+                'description'            => $data['deskripsi'] ?? null,
+            ], fn($v) => $v !== null && $v !== '');
+
+            if (!empty($data['website']) && !preg_match('/^https?:\/\//i', $data['website'])) {
+                $update['website'] = 'https://' . $data['website'];
+            }
+
+            if (!empty($data['tim_pengelola']) && is_array($data['tim_pengelola'])) {
+                $teamText = collect($data['tim_pengelola'])
+                    ->map(fn($t) => trim(($t['nama'] ?? '') . ($t['jabatan'] ?? '' ? ' - ' . ($t['jabatan'] ?? '') : '')))
+                    ->filter()
+                    ->implode("\n");
+                if ($teamText) {
+                    $update['investment_management_team'] = $teamText;
+                }
+            }
+
+            $update['source'] = 'prospektus';
+            $update['last_updated_at'] = now()->toDateString();
+            if ($document->ffs_year) {
+                $update['prospektus_source_tahun'] = $document->ffs_year;
+            }
+
+            if (!empty($update)) {
+                $investmentManager->update($update);
+                $personService->syncInvestmentManager($investmentManager->refresh(), 'prospektus');
+            }
+
+            $historyData = $data;
+            if (!empty($historyData)) {
+                InvestmentManagerProspektus::create([
+                    'investment_manager_id' => $investmentManager->id,
+                    'reksa_dana_id'         => $document->reksa_dana_id,
+                    'tahun'                 => $validated['tahun'],
+                    'data'                  => $historyData,
+                ]);
+            }
+
+            ActivityLogger::log(
+                'Ekstrak dari Partisi',
+                "Data dari partisi '{$partition->nama_partisi}' dokument {$document->original_name} berhasil disimpan ke {$investmentManager->name}",
+                'success',
+                $investmentManager,
+            );
+
+            return response()->json([
+                'success'       => true,
+                'message'       => 'Data berhasil diekstrak dan disimpan.',
+                'data'          => $data,
+                'saved_fields'  => array_keys($update),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Gagal mengekstrak: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function extractProspektusData(Request $request, InvestmentManager $investmentManager, DocumentDataExtractorService $extractor, InvestmentPersonService $personService)
+    {
+        $validated = $request->validate([
+            'document_id'   => 'required|exists:reksa_dana_documents,id',
+            'partition_ids' => 'required|array|min:1',
+            'partition_ids.*' => 'integer|exists:document_partitions,id',
+            'tahun'         => 'nullable|integer|min:2000|max:2100',
+        ]);
+
+        $document = ReksaDanaDocument::findOrFail($validated['document_id']);
+        $partitions = DocumentPartition::where('reksa_dana_document_id', $document->id)
+            ->whereIn('id', $validated['partition_ids'])
+            ->orderBy('start_page')
+            ->get();
+
+        try {
+            $data = $extractor->extractInvestmentManagerDataFromPartitions($document, $partitions->all());
+
+            $update = array_filter([
+                'address'     => $data['alamat'] ?? null,
+                'phone'       => $data['telepon'] ?? null,
+                'email'       => $data['email'] ?? null,
+                'website'     => $data['website'] ?? null,
+                'description' => $data['deskripsi'] ?? null,
+            ], fn($v) => $v !== null && $v !== '');
+
+            if (!empty($data['website']) && !preg_match('/^https?:\/\//i', $data['website'])) {
+                $update['website'] = 'https://' . $data['website'];
+            }
+
+            if (!empty($data['tim_pengelola']) && is_array($data['tim_pengelola'])) {
+                $teamText = collect($data['tim_pengelola'])
+                    ->map(fn($t) => trim(($t['nama'] ?? '') . ($t['jabatan'] ?? '' ? ' - ' . ($t['jabatan'] ?? '') : '')))
+                    ->filter()
+                    ->implode("\n");
+                if ($teamText) {
+                    $update['investment_management_team'] = $teamText;
+                }
+            }
+
+            $update['source'] = 'prospektus';
+            $update['last_updated_at'] = now()->toDateString();
+            if ($document->ffs_year) {
+                $update['prospektus_source_tahun'] = $document->ffs_year;
+            }
+            $update['prospektus_source_reksa_dana_id'] = $document->reksa_dana_id;
+
+            if (!empty($update)) {
+                $investmentManager->update($update);
+                $personService->syncInvestmentManager($investmentManager->refresh(), 'prospektus');
+            }
+
+            $historyData = $data;
+            if (!empty($historyData)) {
+                InvestmentManagerProspektus::create([
+                    'investment_manager_id' => $investmentManager->id,
+                    'reksa_dana_id'         => $document->reksa_dana_id,
+                    'tahun'                 => $validated['tahun'] ?? $document->ffs_year,
+                    'data'                  => $historyData,
+                ]);
+            }
+
+            ActivityLogger::log(
+                'Parse Prospektus ke MI',
+                "Data dari {$partitions->count()} partisi dokumen {$document->original_name} berhasil disimpan ke {$investmentManager->name}",
+                'success',
+                $investmentManager,
+            );
+
+            return response()->json([
+                'success'      => true,
+                'message'      => 'Data Manajer Investasi berhasil diekstrak dan disimpan.',
+                'data'         => $data,
+                'saved_fields' => array_keys($update),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Gagal mengekstrak: ' . $e->getMessage()], 500);
+        }
     }
 
     private function parseProspektusText(string $text): array

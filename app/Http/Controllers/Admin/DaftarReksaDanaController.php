@@ -8,6 +8,9 @@ use App\Jobs\SyncAllPasardanaJob;
 use App\Jobs\SyncReksaDanaFromPasardanaJob;
 use App\Models\DataSourceLink;
 use App\Models\DataSourceSyncLog;
+use App\Models\DocumentParsedPage;
+use App\Models\DocumentPartition;
+use App\Models\FfsExtractionResult;
 use App\Models\HargaReksaDana;
 use App\Models\InvestmentManager;
 use App\Models\ReksaDana;
@@ -20,6 +23,9 @@ use App\Exports\HarianReksaDanaTemplateExport;
 use App\Services\KodeReksaDanaParser;
 use App\Services\InvestmentPersonService;
 use App\Services\ReksaDanaChartDataService;
+use App\Services\FfsExtractionService;
+use App\Services\ProspektusParserService;
+use App\Services\DocumentDataExtractorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -109,18 +115,26 @@ class DaftarReksaDanaController extends Controller
         }
 
         if ($tab === 'prospektus-ffs') {
-            $documentFundQuery = ReksaDana::with(['documents.uploader'])->latest();
+            $documentFundQuery = ReksaDana::with([
+                'documents' => fn($q) => $q->with('uploader')->withCount('parsedPages')
+            ])->orderBy('nama_reksa_dana');
+
             if ($request->search) {
                 $documentFundQuery->where(function ($query) use ($request) {
                     $query
-                    ->where('nama_reksa_dana', 'like', '%' . $request->search . '%')
-                    ->orWhere('kode_reksa_dana', 'like', '%' . $request->search . '%');
+                        ->where('nama_reksa_dana', 'like', '%' . $request->search . '%')
+                        ->orWhere('kode_reksa_dana', 'like', '%' . $request->search . '%')
+                        ->orWhere('nama_manajer_investasi', 'like', '%' . $request->search . '%');
                 });
             }
 
-            $documentFunds = $documentFundQuery->paginate(20, ['*'], 'document_page')->withQueryString();
+            if ($request->jenis) {
+                $documentFundQuery->where('jenis', $request->jenis);
+            }
 
-            $reksaDanaList = ReksaDana::with('documents')->orderBy('nama_reksa_dana')->get(['id', 'kode_reksa_dana', 'nama_reksa_dana', 'nama_manajer_investasi', 'jenis', 'description']);
+            $documentFunds = $documentFundQuery->paginate(10, ['*'], 'document_page')->withQueryString();
+
+            $reksaDanaList = ReksaDana::orderBy('nama_reksa_dana')->get(['id', 'kode_reksa_dana', 'nama_reksa_dana']);
         }
 
         $lastSyncRun = SyncRun::whereIn('type', [
@@ -284,6 +298,7 @@ class DaftarReksaDanaController extends Controller
             'assetAllocations' => fn($q) => $q->orderBy('period_date'),
             'portfolioCompositions' => fn($q) => $q->orderBy('period_date'),
             'managementTeams',
+            'documents' => fn($q) => $q->with(['parsedPages', 'partitions']),
         ])->findOrFail($id);
 
         $range = request('range', '1y');
@@ -989,5 +1004,200 @@ class DaftarReksaDanaController extends Controller
         return $request->wantsJson()
             ? response()->json(['success' => true, 'message' => $msg, 'applied' => $applied])
             : back()->with('success', $msg);
+    }
+
+    public function parseDocument(Request $request, ProspektusParserService $parserService)
+    {
+        $document = ReksaDanaDocument::findOrFail($request->input('document_id'));
+        $isFfs = $document->document_type === ReksaDanaDocument::TYPE_FFS;
+
+        $rules = [
+            'document_id' => 'required|exists:reksa_dana_documents,id',
+        ];
+
+        if (!$isFfs) {
+            $rules['toc_start_page'] = 'required|integer|min:1';
+            $rules['toc_end_page'] = 'required|integer|min:1|gte:toc_start_page';
+        }
+
+        $validated = $request->validate($rules);
+
+        $tocStart = (int) ($validated['toc_start_page'] ?? 0);
+        $tocEnd = (int) ($validated['toc_end_page'] ?? 0);
+
+        try {
+            $result = $parserService->parseDocument(
+                $document,
+                $tocStart,
+                $tocEnd,
+                $request->boolean('generate_partitions', false) && !$isFfs,
+                auth()->id(),
+            );
+
+            $partitionMsg = $result['partitions_created'] > 0
+                ? " {$result['partitions_created']} partisi dibuat dari daftar isi."
+                : '';
+
+            ActivityLogger::log(
+                'Parse Dokumen',
+                "Dokumen {$document->original_name} berhasil diparse ({$result['parsed_count']} halaman dari {$result['total_pages']} halaman). TOC: halaman {$result['toc_start']}-{$result['toc_end']}.{$partitionMsg}",
+                'success',
+                $document,
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => "Dokumen berhasil diparse. {$result['parsed_count']} halaman teks tersimpan.{$partitionMsg}",
+                'data'    => $result,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Gagal memparse dokumen: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function getDocumentParsedPages(ReksaDanaDocument $document)
+    {
+        $pages = $document->parsedPages()
+            ->orderBy('page_parse')
+            ->get(['id', 'page_pdf', 'page_parse', 'text_content']);
+
+        return response()->json(['pages' => $pages]);
+    }
+
+    public function getDocumentPartitions(ReksaDanaDocument $document)
+    {
+        $partitions = $document->partitions()
+            ->orderBy('start_page')
+            ->get(['id', 'nama_partisi', 'start_page', 'end_page', 'start_page_pdf', 'end_page_pdf', 'source']);
+
+        return response()->json(['partitions' => $partitions]);
+    }
+
+    public function storePartition(Request $request)
+    {
+        $validated = $request->validate([
+            'document_id'  => 'required|exists:reksa_dana_documents,id',
+            'nama_partisi' => 'required|string|max:255',
+            'start_page'   => 'required|integer|min:1',
+            'end_page'     => 'required|integer|min:1|gte:start_page',
+        ]);
+
+        $document = ReksaDanaDocument::findOrFail($validated['document_id']);
+        $tocEnd = $this->getTocEndPageForDocument($document);
+
+        $partition = DocumentPartition::create([
+            'reksa_dana_document_id' => $validated['document_id'],
+            'created_by'             => $request->user()->id,
+            'nama_partisi'           => $validated['nama_partisi'],
+            'start_page'             => $validated['start_page'],
+            'end_page'               => $validated['end_page'],
+            'start_page_pdf'         => $tocEnd !== null ? $validated['start_page'] + $tocEnd : null,
+            'end_page_pdf'           => $tocEnd !== null ? $validated['end_page'] + $tocEnd : null,
+            'source'                 => 'manual',
+        ]);
+
+        ActivityLogger::log(
+            'Membuat Partisi',
+            "Partisi '{$partition->nama_partisi}' (hlm parse {$partition->start_page}-{$partition->end_page}) dibuat",
+            'success',
+            $partition,
+        );
+
+        return response()->json([
+            'success'   => true,
+            'partition' => $partition,
+        ]);
+    }
+
+    public function updatePartition(Request $request, DocumentPartition $partition)
+    {
+        $validated = $request->validate([
+            'nama_partisi' => 'required|string|max:255',
+            'start_page'   => 'required|integer|min:1',
+            'end_page'     => 'required|integer|min:1|gte:start_page',
+        ]);
+
+        $tocEnd = $this->getTocEndPageForDocument($partition->document);
+        $validated['start_page_pdf'] = $tocEnd !== null ? $validated['start_page'] + $tocEnd : null;
+        $validated['end_page_pdf']   = $tocEnd !== null ? $validated['end_page'] + $tocEnd : null;
+
+        $partition->update($validated);
+
+        return response()->json([
+            'success'   => true,
+            'partition' => $partition->fresh(),
+        ]);
+    }
+
+    private function getTocEndPageForDocument(ReksaDanaDocument $document): ?int
+    {
+        $firstPage = $document->parsedPages()->orderBy('page_pdf')->first();
+        return $firstPage ? $firstPage->page_pdf - 1 : null;
+    }
+
+    public function destroyPartition(DocumentPartition $partition)
+    {
+        $partition->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    public function extractReksaDanaData(Request $request, DocumentDataExtractorService $extractor)
+    {
+        $validated = $request->validate([
+            'reksa_dana_id' => 'required|exists:reksa_dana,id',
+            'document_id'   => 'required|exists:reksa_dana_documents,id',
+            'partition_ids' => 'required|array|min:1',
+            'partition_ids.*' => 'integer|exists:document_partitions,id',
+        ]);
+
+        $reksaDana = ReksaDana::findOrFail($validated['reksa_dana_id']);
+        $document = ReksaDanaDocument::findOrFail($validated['document_id']);
+        $partitions = DocumentPartition::where('reksa_dana_document_id', $document->id)
+            ->whereIn('id', $validated['partition_ids'])
+            ->orderBy('start_page')
+            ->get();
+
+        try {
+            $result = $extractor->extractReksaDanaData($reksaDana, $document, $partitions->all());
+
+            $savedFields = implode(', ', $result['saved']);
+            ActivityLogger::log(
+                'Parse & Simpan Data Reksa Dana',
+                "Data reksa dana {$reksaDana->nama_reksa_dana} berhasil diekstrak dan disimpan. Field: {$savedFields}",
+                'success',
+                $reksaDana,
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => count($result['saved']) . ' field berhasil disimpan: ' . $savedFields,
+                'data'    => $result,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function parseFfs(Request $request, ReksaDanaDocument $document, FfsExtractionService $ffsService)
+    {
+        try {
+            $result = $ffsService->extractAndSave($document, $request->user()->id);
+
+            ActivityLogger::log(
+                'Parse FFS',
+                "FFS {$document->original_name} berhasil diparse dan disimpan. Field: " . implode(', ', $result['fields']),
+                'success',
+                $document,
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data FFS berhasil diekstrak dan disimpan. Field: ' . implode(', ', $result['fields']),
+                'data'    => $result,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Gagal parse FFS: ' . $e->getMessage()], 500);
+        }
     }
 }

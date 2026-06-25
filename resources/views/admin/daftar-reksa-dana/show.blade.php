@@ -87,6 +87,10 @@
             class="px-5 py-3 text-sm font-semibold border-b-2 transition whitespace-nowrap">Biaya</button>
     <button @click="tab = 'portofolio'" :class="tab === 'portofolio' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'"
             class="px-5 py-3 text-sm font-semibold border-b-2 transition whitespace-nowrap">Portofolio</button>
+    <button @click="tab = 'pdf-prospektus'" :class="tab === 'pdf-prospektus' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'"
+            class="px-5 py-3 text-sm font-semibold border-b-2 transition whitespace-nowrap">PDF Prospektus</button>
+    <button @click="tab = 'pdf-ffs'" :class="tab === 'pdf-ffs' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'"
+            class="px-5 py-3 text-sm font-semibold border-b-2 transition whitespace-nowrap">PDF FFS</button>
 </div>
 
 {{-- TAB: SNAPSHOT --}}
@@ -599,6 +603,16 @@
     @endif
 </div>
 
+{{-- TAB: PDF PROSPEKTUS --}}
+<div x-show="tab === 'pdf-prospektus'" x-cloak x-data="documentTabData('prospektus')">
+    @include('admin.daftar-reksa-dana.partials.tab-pdf-document', ['fund' => $fund, 'docType' => 'prospektus'])
+</div>
+
+{{-- TAB: PDF FFS --}}
+<div x-show="tab === 'pdf-ffs'" x-cloak x-data="documentTabData('ffs')">
+    @include('admin.daftar-reksa-dana.partials.tab-pdf-document', ['fund' => $fund, 'docType' => 'ffs'])
+</div>
+
 <div x-show="personModal.open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
     <div class="absolute inset-0 bg-black/40" @click="personModal.open = false"></div>
     <div class="relative bg-white rounded-2xl shadow-xl border border-line w-full max-w-3xl max-h-[85vh] overflow-y-auto">
@@ -643,4 +657,201 @@
     </div>
 </div>
 </div>
+
+<script>
+function documentTabData(defaultDocType) {
+    return {
+        docType: defaultDocType,
+        selectedPartitionIds: [],
+        selectedPageContent: null,
+        loading: false,
+        error: null,
+        success: null,
+        loadingFfs: {},
+        ffsSuccess: {},
+        ffsError: {},
+        pageContentCache: {},
+        partitionsByDoc: @json($fund->documents->mapWithKeys(fn($d) => [$d->id => $d->partitions->map(fn($p) => ['id' => $p->id, 'start_page' => $p->start_page, 'end_page' => $p->end_page])->keyBy('id')])),
+
+        partitionModal: {
+            open: false,
+            editing: null,
+            nama: '',
+            start: 1,
+            end: 10,
+            documentId: null,
+            error: null,
+            saving: false,
+        },
+
+        isPageInSelectedPartition(docId, pageParse) {
+            const partitions = this.partitionsByDoc[docId];
+            if (!partitions) return false;
+            return this.selectedPartitionIds.some(pid => {
+                const p = partitions[pid];
+                return p && pageParse >= p.start_page && pageParse <= p.end_page;
+            });
+        },
+
+        async showPageContent(docId, pageId) {
+            const cacheKey = docId + '_' + pageId;
+            if (this.pageContentCache[cacheKey]) {
+                this.selectedPageContent = this.pageContentCache[cacheKey];
+                return;
+            }
+
+            try {
+                const url = `/admin/daftar-reksa-dana/documents/${docId}/parsed-pages`;
+                const res = await fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || 'Gagal mengambil data.');
+
+                const page = json.pages.find(p => p.id === pageId);
+                if (page) {
+                    this.selectedPageContent = '<pre class="text-xs whitespace-pre-wrap">' + this.escapeHtml(page.text_content) + '</pre>';
+                    this.pageContentCache[cacheKey] = this.selectedPageContent;
+                }
+            } catch (e) {
+                this.selectedPageContent = '<span class="text-red-600">' + this.escapeHtml(e.message) + '</span>';
+            }
+        },
+
+        escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        },
+
+        openPartitionModal(docId, editingPartition = null) {
+            this.partitionModal = {
+                open: true,
+                editing: editingPartition,
+                nama: editingPartition ? editingPartition.nama_partisi : '',
+                start: editingPartition ? editingPartition.start_page : 1,
+                end: editingPartition ? editingPartition.end_page : 10,
+                documentId: docId,
+                error: null,
+                saving: false,
+            };
+        },
+
+        async savePartition() {
+            const pm = this.partitionModal;
+            if (!pm.nama || !pm.start || !pm.end) {
+                pm.error = 'Semua field harus diisi.';
+                return;
+            }
+            if (parseInt(pm.start) > parseInt(pm.end)) {
+                pm.error = 'Halaman mulai harus lebih kecil atau sama dengan halaman selesai.';
+                return;
+            }
+
+            pm.saving = true;
+            pm.error = null;
+
+            try {
+                const url = pm.editing
+                    ? `/admin/daftar-reksa-dana/partitions/${pm.editing.id}/update`
+                    : `/admin/daftar-reksa-dana/partitions`;
+                const method = pm.editing ? 'POST' : 'POST';
+
+                const body = new FormData();
+                body.append('_token', '{{ csrf_token() }}');
+                body.append('document_id', pm.documentId);
+                body.append('nama_partisi', pm.nama);
+                body.append('start_page', pm.start);
+                body.append('end_page', pm.end);
+
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                    body,
+                });
+
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || json.message || 'Gagal menyimpan partisi.');
+
+                pm.open = false;
+                window.location.reload();
+            } catch (e) {
+                pm.error = e.message;
+            } finally {
+                pm.saving = false;
+            }
+        },
+
+        async deletePartition(partitionId) {
+            if (!confirm('Hapus partisi ini?')) return;
+
+            try {
+                const res = await fetch(`/admin/daftar-reksa-dana/partitions/${partitionId}`, {
+                    method: 'DELETE',
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                });
+                if (!res.ok) throw new Error('Gagal menghapus partisi.');
+                window.location.reload();
+            } catch (e) {
+                alert(e.message);
+            }
+        },
+
+        async handleParseFfs(docId) {
+            this.loadingFfs[docId] = true;
+            this.ffsSuccess[docId] = null;
+            this.ffsError[docId] = null;
+
+            try {
+                const formData = new FormData();
+                formData.append('_token', '{{ csrf_token() }}');
+
+                const res = await fetch(`/admin/daftar-reksa-dana/documents/${docId}/parse-ffs`, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                    body: formData,
+                });
+
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || 'Gagal parse FFS.');
+
+                this.ffsSuccess[docId] = json.message;
+            } catch (e) {
+                this.ffsError[docId] = e.message;
+            } finally {
+                this.loadingFfs[docId] = false;
+            }
+        },
+
+        async handleParseSimpan(docId) {
+            if (this.selectedPartitionIds.length === 0) return;
+
+            this.loading = true;
+            this.error = null;
+            this.success = null;
+
+            try {
+                const formData = new FormData();
+                formData.append('_token', '{{ csrf_token() }}');
+                formData.append('reksa_dana_id', '{{ $fund->id }}');
+                formData.append('document_id', docId);
+                this.selectedPartitionIds.forEach(pid => formData.append('partition_ids[]', pid));
+
+                const res = await fetch('{{ route('admin.daftar-reksa-dana.extract-data') }}', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                    body: formData,
+                });
+
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || 'Gagal mengekstrak data.');
+
+                this.success = json.message;
+            } catch (e) {
+                this.error = e.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+    };
+}
+</script>
 @endsection

@@ -85,7 +85,7 @@
 <div class="table-card">
     <div class="px-6 py-4 border-b border-line flex items-center justify-between gap-3 bg-gradient-to-r from-emerald-700 to-emerald-600">
         <h2 class="font-bold text-white text-sm">Daftar Reksa Dana (Alfabetis)</h2>
-        <span class="text-xs text-white/80">{{ $reksaDanaList->count() }} reksa dana</span>
+        <span class="text-xs text-white/80">{{ $documentFunds->total() }} reksa dana</span>
     </div>
     @if ($lastSyncRun)
         <div class="px-5 py-2 bg-emerald-50 border-b border-emerald-200 flex items-center gap-2 text-xs text-emerald-800">
@@ -99,18 +99,45 @@
             @endif
         </div>
     @endif
+
+    {{-- Filter & Search --}}
+    <div class="px-5 py-4 border-b border-line bg-[#f8fafc]">
+        <form method="GET" action="{{ route('admin.daftar-reksa-dana.index') }}" class="flex flex-wrap items-end gap-3">
+            <input type="hidden" name="tab" value="prospektus-ffs">
+            <div class="flex-1 min-w-56">
+                <label class="block text-xs font-semibold text-muted mb-1">Cari Reksa Dana</label>
+                <input type="text" name="search" value="{{ request('search') }}"
+                    placeholder="Nama, kode, atau manajer investasi..."
+                    class="w-full text-sm border border-line rounded-lg px-3 py-2 focus:border-accent focus:ring focus:ring-accent/30">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-muted mb-1">Jenis</label>
+                <select name="jenis" class="w-full text-sm border border-line rounded-lg px-3 py-2 focus:border-accent focus:ring focus:ring-accent/30">
+                    <option value="">Semua Jenis</option>
+                    @foreach(['Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang', 'Terproteksi', 'Global', 'DIRE-DINFRA', 'Penyertaan terbatas'] as $j)
+                        <option value="{{ $j }}" @selected(request('jenis') == $j)>{{ $j }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition">Filter</button>
+            @if(request('search') || request('jenis'))
+                <a href="{{ route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs']) }}" class="px-4 py-2 border border-line text-muted rounded-lg text-sm font-semibold hover:text-primary transition">Reset</a>
+            @endif
+        </form>
+    </div>
+
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead>
                 <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase">
                     <th class="px-4 py-3 font-semibold">Reksa Dana</th>
-                    <th class="px-4 py-3 font-semibold">Catatan</th>
                     <th class="px-4 py-3 font-semibold">Prospektus</th>
+                    <th class="px-4 py-3 font-semibold">Catatan</th>
                     <th class="px-4 py-3 font-semibold">Fund Fact Sheet</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-line">
-                @forelse ($reksaDanaList as $rd)
+                @forelse ($documentFunds as $rd)
                     @php
                         $prospectuses = $rd->documents->where('document_type', 'prospektus');
                         $ffsDocuments = $rd->documents->where('document_type', 'ffs')->sortByDesc(fn($d) => sprintf('%04d%02d', $d->ffs_year, $d->ffs_month));
@@ -125,6 +152,16 @@
                                 <p class="text-xs text-muted">{{ $rd->nama_manajer_investasi }}</p>
                             @endif
                         </td>
+                        <td class="px-4 py-3 min-w-72">
+                            @forelse ($prospectuses as $document)
+                                @include('admin.daftar-reksa-dana.partials.document-actions', [
+                                    'document' => $document,
+                                    'label' => $document->ffs_year ?? $document->original_name,
+                                ])
+                            @empty
+                                <p class="text-xs text-muted">Prospektus belum tersedia.</p>
+                            @endforelse
+                        </td>
                         <td class="px-4 py-3 text-xs text-muted max-w-xs">
                             @php
                                 $allNotes = $rd->documents->pluck('notes')->filter()->unique();
@@ -137,34 +174,12 @@
                                 <span class="italic">Tidak ada catatan</span>
                             @endif
                         </td>
-                        <td class="px-4 py-3">
-                            @forelse ($prospectuses as $document)
-                                <div class="py-1 first:pt-0">
-                                    <p class="text-xs font-semibold text-primary">{{ $document->ffs_year ?? $document->original_name }}</p>
-                                    <div class="flex flex-wrap gap-1.5 mt-1">
-                                        <a target="_blank" href="{{ route('admin.daftar-reksa-dana.documents.view', $document) }}" class="px-2 py-0.5 border border-line rounded text-[11px] font-semibold text-muted hover:text-primary">Preview</a>
-                                        <a href="{{ route('admin.daftar-reksa-dana.documents.download', $document) }}" class="px-2 py-0.5 border border-line rounded text-[11px] font-semibold text-muted hover:text-primary">Download</a>
-                                    </div>
-                                    @if ($document->notes)
-                                        <p class="text-[11px] text-muted mt-0.5">{{ $document->notes }}</p>
-                                    @endif
-                                </div>
-                            @empty
-                                <span class="text-xs text-muted italic">Belum diupload</span>
-                            @endforelse
-                        </td>
-                        <td class="px-4 py-3">
+                        <td class="px-4 py-3 min-w-80">
                             @forelse ($ffsDocuments as $document)
-                                <div class="py-1 first:pt-0">
-                                    <p class="text-xs font-semibold text-primary">{{ $months[$document->ffs_month - 1] ?? '-' }} {{ $document->ffs_year }}</p>
-                                    <div class="flex flex-wrap gap-1.5 mt-1">
-                                        <a target="_blank" href="{{ route('admin.daftar-reksa-dana.documents.view', $document) }}" class="px-2 py-0.5 border border-line rounded text-[11px] font-semibold text-muted hover:text-primary">Preview</a>
-                                        <a href="{{ route('admin.daftar-reksa-dana.documents.download', $document) }}" class="px-2 py-0.5 border border-line rounded text-[11px] font-semibold text-muted hover:text-primary">Download</a>
-                                    </div>
-                                    @if ($document->notes)
-                                        <p class="text-[11px] text-muted mt-0.5">{{ $document->notes }}</p>
-                                    @endif
-                                </div>
+                                @include('admin.daftar-reksa-dana.partials.document-actions', [
+                                    'document' => $document,
+                                    'label' => ($months[$document->ffs_month - 1] ?? '-') . ' ' . $document->ffs_year,
+                                ])
                             @empty
                                 <span class="text-xs text-muted italic">Belum diupload</span>
                             @endforelse
@@ -173,88 +188,6 @@
                 @empty
                     <tr>
                         <td colspan="4" class="px-6 py-12 text-center text-muted">Belum ada data Reksa Dana.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="table-card">
-    <div
-        class="px-6 py-4 border-b border-line flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-emerald-700 to-emerald-600">
-        <h2 class="font-bold text-white text-sm">Daftar Reksa Dana dengan Prospektus dan FFS</h2>
-        <form method="GET" action="{{ route('admin.daftar-reksa-dana.index') }}" class="flex gap-2">
-            <input type="hidden" name="tab" value="prospektus-ffs">
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari kode / nama RD..."
-                class="w-52 text-xs border border-white/30 bg-white/10 text-white placeholder-white/60 rounded-lg px-3 py-1.5">
-            <button
-                class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold">Cari</button>
-        </form>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase">
-                    <th class="px-4 py-3 font-semibold">Reksa Dana</th>
-                    <th class="px-4 py-3 font-semibold">Prospektus</th>
-                    <th class="px-4 py-3 font-semibold">Catatan</th>
-                    <th class="px-4 py-3 font-semibold">Fund Fact Sheet (FFS)</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-line">
-                @forelse ($documentFunds as $fund)
-                    @php
-                        $prospectuses = $fund->documents->where('document_type', 'prospektus');
-                        $ffsDocuments = $fund->documents
-                            ->where('document_type', 'ffs')
-                            ->sortByDesc(
-                                fn($document) => sprintf('%04d%02d', $document->ffs_year, $document->ffs_month),
-                            );
-                    @endphp
-                    <tr class="align-top hover:bg-[#f8fafc]">
-                        <td class="px-4 py-4 min-w-56">
-                            <p class="font-semibold text-primary">{{ $fund->nama_reksa_dana }}</p>
-                            <p class="text-xs text-muted mt-1">{{ $fund->kode_reksa_dana ?: 'Tanpa kode' }}</p>
-                            <p class="text-xs text-muted">{{ $fund->nama_manajer_investasi }}</p>
-                        </td>
-                        <td class="px-4 py-4 min-w-72">
-                            @forelse ($prospectuses as $document)
-                                @include('admin.daftar-reksa-dana.partials.document-actions', [
-                                    'document' => $document,
-                                    'label' => $document->ffs_year ?? $document->original_name,
-                                ])
-                            @empty
-                                <p class="text-xs text-muted">Prospektus belum tersedia.</p>
-                            @endforelse
-                        </td>
-                        <td class="px-4 py-4 min-w-72">
-                            @php
-                                $allNotes = $fund->documents->pluck('notes')->filter()->unique();
-                            @endphp
-                            @if ($allNotes->isNotEmpty())
-                                @foreach ($allNotes as $note)
-                                    <p class="text-xs text-muted mb-1 last:mb-0">{{ $note }}</p>
-                                @endforeach
-                            @else
-                                <p class="text-xs text-muted italic">Tidak ada catatan</p>
-                            @endif
-                        </td>
-                        <td class="px-4 py-4 min-w-80">
-                            @forelse ($ffsDocuments as $document)
-                                @include('admin.daftar-reksa-dana.partials.document-actions', [
-                                    'document' => $document,
-                                    'label' =>
-                                        ($months[$document->ffs_month - 1] ?? '-') . ' ' . $document->ffs_year,
-                                ])
-                            @empty
-                                <p class="text-xs text-muted">FFS belum tersedia.</p>
-                            @endforelse
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="3" class="px-6 py-12 text-center text-muted">Belum ada data Reksa Dana.</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -336,26 +269,5 @@
         </form>
     </div>
 </div>
-
-<script>
-function openEditDocument(doc) {
-    document.getElementById('edit-doc-filename').textContent = doc.original_name;
-    document.getElementById('form-document-edit').action = '{{ route('admin.daftar-reksa-dana.documents.update', '_docid_') }}'.replace('_docid_', doc.id);
-    document.getElementById('edit-doc-notes').value = doc.notes || '';
-
-    const typeSelect = document.querySelector('#form-document-edit select[name="document_type"]');
-    typeSelect.value = doc.document_type;
-
-    if (doc.document_type === 'ffs') {
-        document.getElementById('edit-doc-ffs-month').value = doc.ffs_month || '';
-        document.getElementById('edit-doc-ffs-year').value = doc.ffs_year || '';
-        document.getElementById('edit-doc-prospektus-year').value = doc.ffs_year || '';
-    } else {
-        document.getElementById('edit-doc-prospektus-year').value = doc.ffs_year || '';
-        document.getElementById('edit-doc-ffs-month').value = '';
-        document.getElementById('edit-doc-ffs-year').value = doc.ffs_year || '';
-    }
-
-    openModal('modal-document-edit');
-}
-</script>
+</div>
+</div>

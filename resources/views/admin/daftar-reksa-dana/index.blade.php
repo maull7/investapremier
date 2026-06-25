@@ -1150,12 +1150,172 @@
 
     {{-- ===================== JAVASCRIPT ===================== --}}
     <script>
+    document.addEventListener('DOMContentLoaded', function() {
         function openModal(id) {
-            document.getElementById(id).classList.remove('hidden');
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('hidden');
         }
 
         function closeModal(id) {
-            document.getElementById(id).classList.add('hidden');
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        }
+
+        // --- Event delegation: Parse Document buttons ---
+        document.addEventListener('click', function(e) {
+            const parseBtn = e.target.closest('.btn-parse-document');
+            if (parseBtn) {
+                const docId = parseBtn.dataset.parseDoc;
+                const docName = parseBtn.dataset.parseName;
+                const docType = parseBtn.dataset.parseType;
+                const docCount = parseInt(parseBtn.dataset.parseCount) || 0;
+
+                // FFS langsung parse tanpa modal
+                if (docType === 'ffs') {
+                    parseDocumentDirect(docId, docName, docType, docCount);
+                    return;
+                }
+
+                document.getElementById('parse-doc-filename').textContent = docName;
+                document.getElementById('parse-doc-id').value = docId;
+                if (docCount > 0) {
+                    document.getElementById('parse-badge').classList.remove('hidden');
+                    document.getElementById('parse-badge-count').textContent = docCount;
+                } else {
+                    document.getElementById('parse-badge').classList.add('hidden');
+                }
+                document.getElementById('parse-result').classList.add('hidden');
+                document.getElementById('parse-error').classList.add('hidden');
+                document.getElementById('parse-success').classList.add('hidden');
+                openModal('modal-document-parse');
+                return;
+            }
+
+            const editBtn = e.target.closest('.btn-edit-document');
+            if (editBtn) {
+                const docId = editBtn.dataset.editDoc;
+                const docName = editBtn.dataset.editName;
+                const docType = editBtn.dataset.editType;
+                const docMonth = editBtn.dataset.editFfsMonth;
+                const docYear = editBtn.dataset.editFfsYear;
+                const docNotes = editBtn.dataset.editNotes;
+                document.getElementById('edit-doc-filename').textContent = docName;
+                document.getElementById('form-document-edit').action = '{{ route('admin.daftar-reksa-dana.documents.update', '_docid_') }}'.replace('_docid_', docId);
+                document.getElementById('edit-doc-notes').value = docNotes || '';
+                const typeSelect = document.querySelector('#form-document-edit select[name="document_type"]');
+                if (typeSelect) typeSelect.value = docType;
+                if (docType === 'ffs') {
+                    const ffsMonthEl = document.getElementById('edit-doc-ffs-month');
+                    const ffsYearEl = document.getElementById('edit-doc-ffs-year');
+                    const prospektusYearEl = document.getElementById('edit-doc-prospektus-year');
+                    if (ffsMonthEl) ffsMonthEl.value = docMonth || '';
+                    if (ffsYearEl) ffsYearEl.value = docYear || '';
+                    if (prospektusYearEl) prospektusYearEl.value = docYear || '';
+                } else {
+                    const ffsMonthEl = document.getElementById('edit-doc-ffs-month');
+                    const ffsYearEl = document.getElementById('edit-doc-ffs-year');
+                    const prospektusYearEl = document.getElementById('edit-doc-prospektus-year');
+                    if (ffsMonthEl) ffsMonthEl.value = '';
+                    if (ffsYearEl) ffsYearEl.value = docYear || '';
+                    if (prospektusYearEl) prospektusYearEl.value = docYear || '';
+                }
+                openModal('modal-document-edit');
+                return;
+            }
+        });
+
+        // --- Parse submit handler ---
+        document.getElementById('btn-submit-parse').addEventListener('click', async function() {
+            const btn = this;
+            const form = document.getElementById('form-document-parse');
+            const errorEl = document.getElementById('parse-error');
+            const successEl = document.getElementById('parse-success');
+            const loadingEl = document.getElementById('parse-loading-el');
+
+            btn.disabled = true;
+            btn.querySelector('span').textContent = 'Memproses...';
+            errorEl.classList.add('hidden');
+            successEl.classList.add('hidden');
+            loadingEl.classList.remove('hidden');
+
+            try {
+                const formData = new FormData(form);
+                const res = await fetch(form.action, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': formData.get('_token') },
+                    body: formData,
+                });
+                const json = await res.json();
+                loadingEl.classList.add('hidden');
+                if (!res.ok) {
+                    errorEl.textContent = json.error || 'Gagal memparse dokumen.';
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+                document.getElementById('parse-result').classList.remove('hidden');
+                document.getElementById('parse-result-count').textContent = json.data.parsed_count;
+                document.getElementById('parse-result-total').textContent = json.data.total_pages;
+
+                // Tampilkan info partisi yang dibuat
+                const partitionInfoEl = document.getElementById('parse-result-partitions');
+                if (partitionInfoEl) {
+                    if (json.data.partitions_created > 0) {
+                        partitionInfoEl.textContent = json.data.partitions_created + ' partisi dibuat dari daftar isi.';
+                        partitionInfoEl.classList.remove('hidden');
+                    } else {
+                        partitionInfoEl.classList.add('hidden');
+                    }
+                }
+
+                successEl.textContent = json.message;
+                successEl.classList.remove('hidden');
+                setTimeout(() => { window.location.reload(); }, 2000);
+            } catch (e) {
+                loadingEl.classList.add('hidden');
+                errorEl.textContent = e.message;
+                errorEl.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.querySelector('span').textContent = 'Parse';
+            }
+        });
+
+        // --- Parse langsung tanpa modal (untuk FFS) ---
+        async function parseDocumentDirect(docId, docName, docType, docCount) {
+            if (!confirm('Parse dokumen FFS "' + docName + '" sekarang?')) return;
+
+            const buttons = document.querySelectorAll('.btn-parse-document[data-parse-doc="' + docId + '"]');
+            const originalHtml = [];
+            buttons.forEach((btn, index) => {
+                originalHtml[index] = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="text-[10px]">Memproses...</span>';
+            });
+
+            try {
+                const formData = new FormData();
+                formData.append('_token', '{{ csrf_token() }}');
+                formData.append('document_id', docId);
+
+                const res = await fetch('{{ route('admin.daftar-reksa-dana.documents.parse') }}', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                    body: formData,
+                });
+
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || 'Gagal memparse dokumen.');
+
+                alert(json.message);
+                window.location.reload();
+            } catch (e) {
+                alert('Gagal parse FFS: ' + e.message);
+            } finally {
+                buttons.forEach((btn, index) => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml[index] || 'Parse';
+                });
+            }
         }
 
         function fillFromKode(kode, prefix) {
@@ -1263,6 +1423,7 @@
                 });
             }
         });
+    });
     </script>
 
     {{-- Modal Loading: Sync dari Pasardana (server-polled progress) --}}
@@ -1334,6 +1495,58 @@
                 class="mt-4 px-4 py-2 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary transition">
                 Tutup
             </button>
+        </div>
+    </div>
+</div>
+
+{{-- Modal Parse Dokumen --}}
+<div id="modal-document-parse" class="fixed inset-0 z-50 hidden bg-black/40 flex items-center justify-center p-4" onclick="if(event.target===this)closeModal('modal-document-parse')">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-line sticky top-0 bg-white z-10">
+            <div>
+                <h3 class="font-bold text-primary">Parse Dokumen</h3>
+                <p class="text-xs text-muted mt-0.5">Nama file: <span id="parse-doc-filename" class="font-semibold text-primary">—</span></p>
+            </div>
+            <button type="button" onclick="closeModal('modal-document-parse')" class="p-1 hover:bg-[#f1f5f9] rounded-lg transition">
+                <svg class="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="p-6 space-y-4">
+            <p class="text-sm text-muted">Proses ini mengekstrak teks dari setiap halaman PDF setelah daftar isi. Hasil disimpan ke database.</p>
+            <div id="parse-loading-el" class="hidden text-xs text-muted">Menghitung total halaman...</div>
+            <span id="parse-badge" class="hidden inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-semibold">Sudah diparse: <span id="parse-badge-count">0</span> halaman</span>
+            <form id="form-document-parse" action="{{ route('admin.daftar-reksa-dana.documents.parse') }}" method="POST" onsubmit="return false;">
+                @csrf
+                <input type="hidden" name="document_id" id="parse-doc-id" value="">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-primary mb-1">Halaman Daftar Isi Mulai *</label>
+                        <input type="number" name="toc_start_page" min="1" value="1" required class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-primary mb-1">Halaman Daftar Isi Selesai *</label>
+                        <input type="number" name="toc_end_page" min="1" value="4" required class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div class="flex items-start gap-2 pt-1">
+                        <input type="checkbox" name="generate_partitions" id="generate_partitions" value="1" checked class="mt-0.5 w-4 h-4 text-emerald-700 border-line rounded focus:ring-emerald-700">
+                        <label for="generate_partitions" class="text-sm text-primary cursor-pointer select-none">
+                            Otomatis buat partisi dari daftar isi (AI)
+                            <span class="block text-xs text-muted font-normal">AI akan membaca daftar isi dan membuat partisi per bab secara otomatis.</span>
+                        </label>
+                    </div>
+                </div>
+                <div id="parse-error" class="hidden mt-4 px-4 py-3 rounded-xl text-sm bg-red-50 border border-red-200 text-red-700"></div>
+                <div id="parse-success" class="hidden mt-4 px-4 py-3 rounded-xl text-sm bg-green-50 border border-green-200 text-green-700"></div>
+                <div id="parse-result" class="hidden mt-4 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                    <p class="text-sm font-semibold text-emerald-700">Parse Selesai</p>
+                    <p class="text-xs text-muted mt-1"><span id="parse-result-count">0</span> halaman teks dari <span id="parse-result-total">0</span> total halaman PDF.</p>
+                    <p id="parse-result-partitions" class="text-xs text-emerald-700 font-medium mt-1 hidden"></p>
+                </div>
+                <div class="flex justify-end gap-2 mt-6">
+                    <button type="button" onclick="closeModal('modal-document-parse')" class="px-4 py-2 text-sm text-muted border border-line rounded-lg hover:bg-[#f1f5f9] transition">Batal</button>
+                    <button type="button" id="btn-submit-parse" class="px-4 py-2 text-sm text-white bg-emerald-700 rounded-lg hover:bg-emerald-800 transition disabled:opacity-50"><span>Parse</span></button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

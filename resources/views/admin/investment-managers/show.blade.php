@@ -54,6 +54,11 @@
                 class="px-5 py-3 text-sm font-semibold border-b-2 transition">
                 Grafik
             </button>
+            <button @click="tab = 'pdf-prospektus'"
+                :class="tab === 'pdf-prospektus' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'"
+                class="px-5 py-3 text-sm font-semibold border-b-2 transition">
+                PDF Prospektus
+            </button>
         </div>
 
         {{-- Tab: Detail --}}
@@ -61,22 +66,80 @@
             reksaDanaId: '',
             tahun: '',
             useAi: true,
+            usePartition: true,
+            selectedDocumentId: '',
+            selectedPartitionId: '',
             loading: false,
             error: null,
             success: null,
             extractUrl: '{{ route('admin.investment-managers.extract-prospektus', $manager) }}',
+            extractPartitionUrl: '{{ route('admin.investment-managers.extract-from-partition', $manager) }}',
             saveUrl: '{{ route('admin.investment-managers.save-prospektus', $manager) }}',
             csrfToken: '{{ csrf_token() }}',
-            fundsData: {{ Js::from($fundsWithProspektus->map(fn($f) => ['id' => $f->id, 'nama' => $f->nama_reksa_dana, 'years' => $f->documents->pluck('ffs_year')->filter()->unique()->values()])) }},
+            fundsData: {{ Js::from($fundsWithProspektus->map(fn($f) => [
+                'id' => $f->id,
+                'nama' => $f->nama_reksa_dana,
+                'years' => $f->documents->pluck('ffs_year')->filter()->unique()->values(),
+                'documents' => $f->documents->map(fn($d) => [
+                    'id' => $d->id,
+                    'tahun' => $d->ffs_year,
+                    'nama_file' => $d->original_name,
+                    'parsed_pages_count' => $d->parsedPages->count(),
+                    'partitions' => $d->partitions->map(fn($p) => [
+                        'id' => $p->id,
+                        'nama' => $p->nama_partisi,
+                        'start' => $p->start_page,
+                        'end' => $p->end_page,
+                    ])->values()->toArray(),
+                ])->values()->toArray(),
+            ])) }},
+            get selectedFund() {
+                return this.fundsData.find(f => f.id == this.reksaDanaId);
+            },
             get filteredYears() {
-                const fund = this.fundsData.find(f => f.id == this.reksaDanaId);
+                const fund = this.selectedFund;
                 return fund ? fund.years : [];
+            },
+            get filteredDocuments() {
+                const fund = this.selectedFund;
+                if (!fund || !this.tahun) return [];
+                return fund.documents.filter(d => d.tahun == this.tahun);
+            },
+            get filteredPartitions() {
+                if (!this.selectedDocumentId) return [];
+                const docs = this.filteredDocuments;
+                const doc = docs.find(d => d.id == this.selectedDocumentId);
+                return doc ? doc.partitions : [];
+            },
+            init() {
+                this.$watch('tahun', () => { this.selectedDocumentId = ''; this.selectedPartitionId = ''; });
+                this.$watch('reksaDanaId', () => { this.tahun = ''; this.selectedDocumentId = ''; this.selectedPartitionId = ''; });
             },
             async extract() {
                 if (!this.reksaDanaId || !this.tahun) return;
                 this.loading = true;
                 this.error = null;
                 this.success = null;
+
+                if (this.usePartition && this.selectedDocumentId && this.selectedPartitionId) {
+                    try {
+                        const form = new FormData();
+                        form.append('_token', this.csrfToken);
+                        form.append('document_id', this.selectedDocumentId);
+                        form.append('partition_id', this.selectedPartitionId);
+                        form.append('tahun', this.tahun);
+                        const res = await fetch(this.extractPartitionUrl, {
+                            method: 'POST',
+                            body: form,
+                            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                        });
+                        const json = await res.json();
+                        if (!res.ok) { this.error = json.error || 'Gagal mengekstrak.'; return; }
+                        this.success = 'Data berhasil diekstrak dari partisi dan disimpan. Refresh halaman untuk melihat perubahan.';
+                        return;
+                    } catch (e) { this.error = e.message; this.loading = false; return; }
+                }
+
                 try {
                     const params = new URLSearchParams({ reksa_dana_id: this.reksaDanaId, tahun: this.tahun, use_ai: this.useAi });
                     const res = await fetch(this.extractUrl + '?' + params, {
@@ -84,14 +147,12 @@
                     });
                     const json = await res.json();
                     if (!res.ok) { this.error = json.error || 'Gagal mengekstrak.'; return; }
-                    // langsung simpan beserta sumber prospektus
                     const form = new FormData();
                     form.append('_token', this.csrfToken);
                     form.append('reksa_dana_id', this.reksaDanaId);
                     form.append('tahun', this.tahun);
                     Object.entries(json.data).forEach(([k, v]) => {
                         if (v) {
-                            // Clean website: add https:// if missing
                             let val = v;
                             if (k === 'website' && val && !/^https?:\/\//i.test(val)) {
                                 val = 'https://' + val;
@@ -121,7 +182,7 @@
                 <div class="flex flex-wrap items-end gap-3">
                     <div>
                         <label class="block text-xs text-muted mb-1">Reksa Dana</label>
-                        <select x-model="reksaDanaId" @change="tahun=''"
+                        <select x-model="reksaDanaId" @change="tahun=''; selectedDocumentId=''; selectedPartitionId=''"
                             class="px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 min-w-[280px]">
                             <option value="">-- Pilih Reksa Dana --</option>
                             @foreach ($fundsWithProspektus as $fund)
@@ -140,17 +201,51 @@
                         </select>
                     </div>
                     <div class="flex items-center gap-2">
-                        <input type="checkbox" id="useAi" x-model="useAi"
+                        <input type="checkbox" id="usePartition" x-model="usePartition"
                             class="rounded border-gray-300 text-accent focus:ring-accent/30">
-                        <label for="useAi" class="text-xs text-muted cursor-pointer">Gunakan AI <span class="text-[10px] opacity-60">(lebih akurat)</span></label>
+                        <label for="usePartition" class="text-xs text-muted cursor-pointer">Gunakan Partisi</label>
                     </div>
-                    <button @click="extract()" :disabled="!reksaDanaId || !tahun || loading"
+                    <template x-if="usePartition && tahun">
+                        <div>
+                            <label class="block text-xs text-muted mb-1">Dokumen</label>
+                            <select x-model="selectedDocumentId" @change="selectedPartitionId=''"
+                                class="px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
+                                <option value="">-- Pilih Dokumen --</option>
+                                <template x-for="doc in filteredDocuments" :key="doc.id">
+                                    <option :value="doc.id" x-text="doc.nama_file + ' (' + (doc.parsed_pages_count || 0) + ' hlm)'"></option>
+                                </template>
+                            </select>
+                        </div>
+                    </template>
+                    <template x-if="usePartition && selectedDocumentId && filteredPartitions.length > 0">
+                        <div>
+                            <label class="block text-xs text-muted mb-1">Partisi</label>
+                            <select x-model="selectedPartitionId"
+                                class="px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
+                                <option value="">-- Pilih Partisi --</option>
+                                <template x-for="p in filteredPartitions" :key="p.id">
+                                    <option :value="p.id" x-text="p.nama + ' (hlm ' + p.start + '-' + p.end + ')'"></option>
+                                </template>
+                            </select>
+                        </div>
+                    </template>
+                    <template x-if="!usePartition">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="useAi" x-model="useAi"
+                                class="rounded border-gray-300 text-accent focus:ring-accent/30">
+                            <label for="useAi" class="text-xs text-muted cursor-pointer">Gunakan AI <span class="text-[10px] opacity-60">(lebih akurat)</span></label>
+                        </div>
+                    </template>
+                    <button @click="extract()" :disabled="!reksaDanaId || !tahun || (usePartition && (!selectedDocumentId || !selectedPartitionId))" || loading
                         class="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition disabled:opacity-50 flex items-center gap-2">
                         <span x-show="loading"
                             class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                         <span x-text="loading ? 'Memproses...' : 'Ekstrak & Simpan'"></span>
                     </button>
                 </div>
+                <template x-if="usePartition && selectedDocumentId && filteredPartitions.length === 0">
+                    <p class="text-sm text-muted">Dokumen ini belum memiliki partisi. <a href="{{ route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs']) }}" class="text-accent hover:underline">Buat partisi di Daftar Reksa Dana &rarr; Detail RD</a>.</p>
+                </template>
                 @if ($fundsWithProspektus->isEmpty())
                     <p class="text-sm text-muted">Belum ada reksa dana dengan prospektus. Upload di <a
                             href="{{ route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs']) }}"
@@ -547,6 +642,342 @@
                     });
                 </script>
             @endif
+        </div>
+
+        @php
+        $partitionsByDoc = [];
+        foreach ($managerFundsWithProspektus as $fund) {
+            foreach ($fund->documents as $doc) {
+                $partitionsByDoc[$doc->id] = [];
+                foreach ($doc->partitions as $p) {
+                    $partitionsByDoc[$doc->id][$p->id] = ['start_page' => $p->start_page, 'end_page' => $p->end_page];
+                }
+            }
+        }
+        @endphp
+
+        <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('pdfProspektusTab', (partitionsByDoc, csrfToken, extractUrl) => ({
+                selectedPartitionIds: [],
+                selectedPageContent: null,
+                pageContentCache: {},
+                loading: false,
+                error: null,
+                success: null,
+                partitionsByDoc: partitionsByDoc,
+
+                partitionModal: {
+                    open: false,
+                    editing: null,
+                    documentId: null,
+                    nama: '',
+                    start: 1,
+                    end: 10,
+                    saving: false,
+                    error: null,
+                },
+
+                isPageInSelectedPartition(docId, pageParse) {
+                    const partitions = this.partitionsByDoc[docId];
+                    if (!partitions) return false;
+                    return this.selectedPartitionIds.some(pid => {
+                        const p = partitions[pid];
+                        return p && pageParse >= p.start_page && pageParse <= p.end_page;
+                    });
+                },
+
+                async showPageContent(docId, pageId) {
+                    const cacheKey = docId + '_' + pageId;
+                    if (this.pageContentCache[cacheKey]) {
+                        this.selectedPageContent = this.pageContentCache[cacheKey];
+                        return;
+                    }
+                    try {
+                        const res = await fetch(`/admin/daftar-reksa-dana/documents/${docId}/parsed-pages`, {
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                        });
+                        const json = await res.json();
+                        if (!res.ok) throw new Error(json.error || 'Gagal mengambil data.');
+                        const page = json.pages.find(p => p.id === pageId);
+                        if (page) {
+                            this.selectedPageContent = '<pre class="text-xs whitespace-pre-wrap">' + this.escapeHtml(page.text_content) + '</pre>';
+                            this.pageContentCache[cacheKey] = this.selectedPageContent;
+                        }
+                    } catch (e) {
+                        this.selectedPageContent = '<span class="text-red-600">' + this.escapeHtml(e.message) + '</span>';
+                    }
+                },
+
+                escapeHtml(text) {
+                    const div = document.createElement('div');
+                    div.textContent = text;
+                    return div.innerHTML;
+                },
+
+                openPartitionModal(docId, partition = null) {
+                    this.partitionModal = {
+                        open: true,
+                        editing: partition ? partition.id : null,
+                        documentId: docId,
+                        nama: partition ? partition.nama_partisi : '',
+                        start: partition ? partition.start_page : 1,
+                        end: partition ? partition.end_page : 10,
+                        saving: false,
+                        error: null,
+                    };
+                },
+
+                async savePartition() {
+                    const pm = this.partitionModal;
+                    if (!pm.nama || !pm.start || !pm.end) {
+                        pm.error = 'Semua field harus diisi.';
+                        return;
+                    }
+                    if (parseInt(pm.start) > parseInt(pm.end)) {
+                        pm.error = 'Halaman mulai harus lebih kecil atau sama dengan halaman selesai.';
+                        return;
+                    }
+
+                    pm.saving = true;
+                    pm.error = null;
+
+                    try {
+                        const url = pm.editing
+                            ? `/admin/daftar-reksa-dana/partitions/${pm.editing}/update`
+                            : '/admin/daftar-reksa-dana/partitions';
+
+                        const body = new FormData();
+                        body.append('_token', csrfToken);
+                        body.append('document_id', pm.documentId);
+                        body.append('nama_partisi', pm.nama);
+                        body.append('start_page', pm.start);
+                        body.append('end_page', pm.end);
+
+                        const res = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken },
+                            body,
+                        });
+
+                        const json = await res.json();
+                        if (!res.ok) throw new Error(json.error || json.message || 'Gagal menyimpan partisi.');
+
+                        pm.open = false;
+                        window.location.reload();
+                    } catch (e) {
+                        pm.error = e.message;
+                    } finally {
+                        pm.saving = false;
+                    }
+                },
+
+                async deletePartition(partitionId) {
+                    if (!confirm('Hapus partisi ini?')) return;
+                    try {
+                        const res = await fetch(`/admin/daftar-reksa-dana/partitions/${partitionId}`, {
+                            method: 'DELETE',
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken },
+                        });
+                        if (!res.ok) throw new Error('Gagal menghapus partisi.');
+                        window.location.reload();
+                    } catch (e) {
+                        alert(e.message);
+                    }
+                },
+
+                async parseToManager(docId, tahun) {
+                    if (this.selectedPartitionIds.length === 0) return;
+                    this.loading = true;
+                    this.error = null;
+                    this.success = null;
+                    try {
+                        const formData = new FormData();
+                        formData.append('_token', csrfToken);
+                        formData.append('document_id', docId);
+                        formData.append('tahun', tahun || '');
+                        this.selectedPartitionIds.forEach(pid => formData.append('partition_ids[]', pid));
+
+                        const res = await fetch(extractUrl, {
+                            method: 'POST',
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken },
+                            body: formData,
+                        });
+
+                        const json = await res.json();
+                        if (!res.ok) throw new Error(json.error || 'Gagal parse prospektus.');
+
+                        this.success = json.message;
+                    } catch (e) {
+                        this.error = e.message;
+                    } finally {
+                        this.loading = false;
+                    }
+                }
+            }));
+        });
+        </script>
+
+        {{-- Tab: PDF Prospektus --}}
+        <div x-show="tab === 'pdf-prospektus'" x-cloak x-data="pdfProspektusTab({{ Js::from($partitionsByDoc) }}, '{{ csrf_token() }}', '{{ route('admin.investment-managers.extract-prospektus-data', $manager) }}')">
+            <div class="space-y-6">
+                @forelse($managerFundsWithProspektus as $fund)
+                    @foreach($fund->documents as $doc)
+                        <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden">
+                            <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light flex items-center justify-between">
+                                <h2 class="font-bold text-white text-sm">
+                                    Prospektus {{ $doc->ffs_year }} — {{ $fund->nama_reksa_dana }}
+                                    @if($doc->parsedPages->isNotEmpty())
+                                        <span class="text-[10px] font-normal opacity-75 ml-2">({{ $doc->parsedPages->count() }} hlm diparse)</span>
+                                    @endif
+                                </h2>
+                                <div class="flex items-center gap-2">
+                                    <a target="_blank" href="{{ route('admin.daftar-reksa-dana.documents.view', $doc) }}" class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition">Preview PDF</a>
+                                    <a href="{{ route('admin.daftar-reksa-dana.documents.download', $doc) }}" class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition">Download</a>
+                                </div>
+                            </div>
+
+                            @if($doc->parsedPages->isEmpty())
+                                <div class="p-6 text-center text-muted">
+                                    <p class="text-sm">Dokumen belum diparse.</p>
+                                    <p class="text-xs mt-1">Upload dan parse dokumen ini di <a href="{{ route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs']) }}" class="text-accent hover:underline">Daftar Reksa Dana</a>.</p>
+                                </div>
+                            @else
+                                <div class="grid grid-cols-1 lg:grid-cols-4 gap-0 lg:gap-0 divide-y lg:divide-y-0 lg:divide-x divide-line">
+                                    {{-- Kolom Partisi --}}
+                                    <div class="p-4 lg:col-span-1">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <h3 class="font-bold text-primary text-xs">Partisi</h3>
+                                            <button @click="openPartitionModal({{ $doc->id }})" class="px-2 py-1 bg-primary text-white rounded text-[10px] font-semibold hover:bg-primary/90 transition">+ Partisi</button>
+                                        </div>
+                                        <div class="space-y-1.5">
+                                            @forelse($doc->partitions as $partition)
+                                                <label class="flex items-start gap-2 px-3 py-2 rounded-lg border border-line bg-[#f8fafc] hover:border-accent/30 transition cursor-pointer"
+                                                       :class="selectedPartitionIds.includes({{ $partition->id }}) ? 'border-accent bg-accent/5' : ''">
+                                                    <input type="checkbox" :value="{{ $partition->id }}" x-model="selectedPartitionIds" class="mt-0.5 rounded border-gray-300 text-accent focus:ring-accent/30 shrink-0">
+                                                    <div class="min-w-0 flex-1">
+                                                        <div class="flex items-center gap-1.5">
+                                                            <p class="text-xs font-semibold text-primary truncate">{{ $partition->nama_partisi }}</p>
+                                                            @if($partition->source === 'toc_ai')
+                                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-violet-50 text-violet-700 border border-violet-100">AI</span>
+                                                            @endif
+                                                        </div>
+                                                        <p class="text-[10px] text-muted">
+                                                            Parse {{ $partition->start_page }}-{{ $partition->end_page }}
+                                                            @if($partition->start_page_pdf && $partition->end_page_pdf)
+                                                                <span class="text-[9px] text-slate-400">(PDF {{ $partition->start_page_pdf }}-{{ $partition->end_page_pdf }})</span>
+                                                            @endif
+                                                        </p>
+                                                    </div>
+                                                    <div class="flex items-center gap-0.5 shrink-0">
+                                                        <button type="button" @click.stop.prevent="openPartitionModal({{ $doc->id }}, {id: {{ $partition->id }}, nama_partisi: '{{ addslashes($partition->nama_partisi) }}', start_page: {{ $partition->start_page }}, end_page: {{ $partition->end_page }}})" class="p-1 text-blue-400 hover:text-blue-600 rounded transition">
+                                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                                        </button>
+                                                        <button type="button" @click.stop.prevent="deletePartition({{ $partition->id }})" class="p-1 text-red-400 hover:text-red-600 rounded transition">
+                                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                        </button>
+                                                    </div>
+                                                </label>
+                                            @empty
+                                                <p class="text-xs text-muted italic">Belum ada partisi. Aktifkan "Otomatis buat partisi dari daftar isi" saat parse, atau buat manual.</p>
+                                            @endforelse
+                                        </div>
+
+                                        {{-- Parse ke Manajer Investasi --}}
+                                        <div class="mt-4 pt-4 border-t border-line">
+                                            <button @click='parseToManager({{ $doc->id }}, {{ $doc->ffs_year ?? "null" }})'
+                                                    :disabled="selectedPartitionIds.length === 0 || loading"
+                                                    class="w-full px-3 py-2 bg-emerald-700 text-white rounded-lg text-xs font-semibold hover:bg-emerald-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                                                <span x-show="loading" class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                                <span x-text="loading ? 'Memproses...' : 'Parse ke Manajer Investasi'"></span>
+                                            </button>
+                                            <p class="text-[10px] text-muted mt-1">Pilih satu atau beberapa partisi, lalu klik tombol untuk mengekstrak data Manajer Investasi.</p>
+                                        </div>
+                                    </div>
+
+                                    {{-- Kolom Daftar Halaman Parsing --}}
+                                    <div class="p-4 lg:col-span-1">
+                                        <h3 class="font-bold text-primary text-xs mb-3">Halaman Hasil Parsing</h3>
+                                        <p class="text-[10px] text-muted mb-2">Gunakan nomor <strong>Parsing</strong> saat membuat partisi.</p>
+                                        <div class="space-y-1 max-h-96 overflow-y-auto">
+                                            @foreach($doc->parsedPages as $page)
+                                                <div @click='showPageContent({{ $doc->id }}, {{ $page->id }})'
+                                                     :class="isPageInSelectedPartition({{ $doc->id }}, {{ $page->page_parse }}) ? 'bg-accent/10 border border-accent/30' : 'border border-line hover:border-accent/30 hover:bg-[#f8fafc]'"
+                                                     class="px-3 py-2 rounded-lg cursor-pointer transition text-xs flex items-center gap-2">
+                                                    <span class="text-[10px] text-muted font-mono w-10 shrink-0">PDF {{ $page->page_pdf }}</span>
+                                                    <span class="text-[10px] text-muted">→ Parsing {{ $page->page_parse }}</span>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+
+                                    {{-- Kolom Isi Teks --}}
+                                    <div class="p-4 lg:col-span-2">
+                                        <h3 class="font-bold text-primary text-xs mb-3">Isi Teks</h3>
+                                        <div x-show="!selectedPageContent" class="text-xs text-muted italic py-8 text-center">
+                                            Klik nomor halaman di sebelah kiri untuk melihat isi teks.
+                                        </div>
+                                        <div x-show="selectedPageContent" x-html="selectedPageContent"
+                                            class="text-xs whitespace-pre-wrap bg-[#f8fafc] rounded-xl p-4 border border-line max-h-96 overflow-y-auto font-mono leading-relaxed">
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+                    @endforeach
+                @empty
+                    <div class="py-12 text-center text-muted bg-white rounded-2xl border border-line">
+                        <svg class="w-10 h-10 mx-auto mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <p class="font-medium">Belum ada dokumen prospektus untuk Manajer Investasi ini.</p>
+                        <p class="text-xs mt-1">Upload di <a href="{{ route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs']) }}" class="text-accent hover:underline">Daftar Reksa Dana</a>.</p>
+                    </div>
+                @endforelse
+
+                <div x-show="error" x-text="error" class="px-4 py-3 rounded-xl text-sm bg-red-50 border border-red-200 text-red-700"></div>
+                <div x-show="success" x-text="success" class="px-4 py-3 rounded-xl text-sm bg-green-50 border border-green-200 text-green-700"></div>
+            </div>
+
+            {{-- Modal Tambah/Edit Partisi --}}
+            <div x-show="partitionModal.open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6" @click.self="partitionModal.open = false">
+                <div class="bg-white rounded-2xl shadow-xl border border-line w-full max-w-md">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-line">
+                        <h3 class="font-bold text-primary" x-text="partitionModal.editing ? 'Edit Partisi' : 'Tambah Partisi'"></h3>
+                        <button @click="partitionModal.open = false" class="p-1 hover:bg-[#f1f5f9] rounded-lg transition">
+                            <svg class="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-primary mb-1">Nama Partisi *</label>
+                            <input type="text" x-model="partitionModal.nama" required maxlength="255"
+                                class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-accent focus:ring focus:ring-accent/30"
+                                placeholder="Contoh: Bab II - Manajer Investasi">
+                        </div>
+                        <p class="text-[11px] text-muted">Isi nomor halaman berdasarkan kolom <strong>Parsing</strong> di daftar sebelah kiri, bukan nomor PDF asli.</p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-primary mb-1">Halaman Parsing Mulai *</label>
+                                <input type="number" x-model="partitionModal.start" min="1" required
+                                    class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-accent focus:ring focus:ring-accent/30">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-primary mb-1">Halaman Parsing Selesai *</label>
+                                <input type="number" x-model="partitionModal.end" min="1" required
+                                    class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-accent focus:ring focus:ring-accent/30">
+                            </div>
+                        </div>
+                        <div x-show="partitionModal.error" x-text="partitionModal.error" class="px-3 py-2 rounded-lg text-xs bg-red-50 border border-red-200 text-red-700"></div>
+                        <div class="flex justify-end gap-2 pt-2">
+                            <button @click="partitionModal.open = false" class="px-4 py-2 text-sm text-muted border border-line rounded-lg hover:bg-[#f1f5f9] transition">Batal</button>
+                            <button @click="savePartition()" :disabled="partitionModal.saving"
+                                class="px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-primary/90 transition disabled:opacity-50">
+                                <span x-show="partitionModal.saving" class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-1 align-middle"></span>
+                                <span>Simpan</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
 
