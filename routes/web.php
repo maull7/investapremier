@@ -136,6 +136,14 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('daftar-reksa-dana/documents/{document}/download', [DaftarReksaDanaController::class, 'downloadDocument'])->name('daftar-reksa-dana.documents.download');
     Route::post('daftar-reksa-dana/documents/{document}/update', [DaftarReksaDanaController::class, 'updateDocument'])->name('daftar-reksa-dana.documents.update');
     Route::delete('daftar-reksa-dana/documents/{document}', [DaftarReksaDanaController::class, 'destroyDocument'])->name('daftar-reksa-dana.documents.destroy');
+    Route::post('daftar-reksa-dana/documents/parse', [DaftarReksaDanaController::class, 'parseDocument'])->name('daftar-reksa-dana.documents.parse');
+    Route::get('daftar-reksa-dana/documents/{document}/parsed-pages', [DaftarReksaDanaController::class, 'getDocumentParsedPages'])->name('daftar-reksa-dana.documents.parsed-pages');
+    Route::get('daftar-reksa-dana/documents/{document}/partitions', [DaftarReksaDanaController::class, 'getDocumentPartitions'])->name('daftar-reksa-dana.documents.partitions');
+    Route::post('daftar-reksa-dana/partitions', [DaftarReksaDanaController::class, 'storePartition'])->name('daftar-reksa-dana.partitions.store');
+    Route::post('daftar-reksa-dana/partitions/{partition}/update', [DaftarReksaDanaController::class, 'updatePartition'])->name('daftar-reksa-dana.partitions.update');
+    Route::delete('daftar-reksa-dana/partitions/{partition}', [DaftarReksaDanaController::class, 'destroyPartition'])->name('daftar-reksa-dana.partitions.destroy');
+    Route::post('daftar-reksa-dana/extract-data', [DaftarReksaDanaController::class, 'extractReksaDanaData'])->name('daftar-reksa-dana.extract-data');
+    Route::post('daftar-reksa-dana/documents/{document}/parse-ffs', [DaftarReksaDanaController::class, 'parseFfs'])->name('daftar-reksa-dana.documents.parse-ffs');
     Route::post('daftar-reksa-dana/upload-harga', [DaftarReksaDanaController::class, 'uploadHarga'])->name('daftar-reksa-dana.upload-harga');
     Route::post('daftar-reksa-dana/upload-harian', [DaftarReksaDanaController::class, 'uploadHarian'])->name('daftar-reksa-dana.upload-harian');
     Route::get('daftar-reksa-dana/template-harga', [DaftarReksaDanaController::class, 'downloadTemplateHarga'])->name('daftar-reksa-dana.template-harga');
@@ -316,6 +324,8 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('investment-managers/{investmentManager}', [AdminInvestmentManagerController::class, 'show'])->name('investment-managers.show');
     Route::get('investment-managers/{investmentManager}/extract-prospektus', [AdminInvestmentManagerController::class, 'extractProspektus'])->name('investment-managers.extract-prospektus');
     Route::post('investment-managers/{investmentManager}/save-prospektus', [AdminInvestmentManagerController::class, 'saveProspektus'])->name('investment-managers.save-prospektus');
+    Route::post('investment-managers/{investmentManager}/extract-from-partition', [AdminInvestmentManagerController::class, 'extractFromPartition'])->name('investment-managers.extract-from-partition');
+    Route::post('investment-managers/{investmentManager}/extract-prospektus-data', [AdminInvestmentManagerController::class, 'extractProspektusData'])->name('investment-managers.extract-prospektus-data');
     Route::get('investment-managers-template', [AdminInvestmentManagerController::class, 'downloadTemplate'])->name('investment-managers.template');
     Route::post('investment-managers-import', [AdminInvestmentManagerController::class, 'import'])->name('investment-managers.import');
     Route::delete('investment-managers-period/{investmentManagerPeriod}', [AdminInvestmentManagerController::class, 'destroyPeriod'])->name('investment-managers.period-destroy');

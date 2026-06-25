@@ -6,8 +6,25 @@
             class="px-2 py-1 border border-line rounded text-[11px] font-semibold text-muted hover:text-primary">Preview</a>
         <a href="{{ route('admin.daftar-reksa-dana.documents.download', $document) }}"
             class="px-2 py-1 border border-line rounded text-[11px] font-semibold text-muted hover:text-primary">Download</a>
-        <button type="button" onclick='openEditDocument(@json($document))'
-            class="px-2 py-1 border border-blue-200 text-blue-600 rounded text-[11px] font-semibold hover:bg-blue-50">Edit</button>
+        <button type="button"
+            data-parse-doc="{{ $document->id }}"
+            data-parse-name="{{ $document->original_name }}"
+            data-parse-type="{{ $document->document_type }}"
+            data-parse-count="{{ $document->parsed_pages_count ?? 0 }}"
+            class="btn-parse-document px-2 py-1 border border-emerald-200 text-emerald-600 rounded text-[11px] font-semibold hover:bg-emerald-50">
+            Parse Dokumen
+            @if(($document->parsed_pages_count ?? 0) > 0)
+                <span class="text-[10px] text-muted ml-0.5">({{ $document->parsed_pages_count }} hlm)</span>
+            @endif
+        </button>
+        <button type="button"
+            data-edit-doc="{{ $document->id }}"
+            data-edit-name="{{ $document->original_name }}"
+            data-edit-type="{{ $document->document_type }}"
+            data-edit-ffs-month="{{ $document->ffs_month }}"
+            data-edit-ffs-year="{{ $document->ffs_year }}"
+            data-edit-notes="{{ $document->notes }}"
+            class="btn-edit-document px-2 py-1 border border-blue-200 text-blue-600 rounded text-[11px] font-semibold hover:bg-blue-50">Edit</button>
         <form method="POST" action="{{ route('admin.daftar-reksa-dana.documents.destroy', $document) }}"
             onsubmit="return confirm('Hapus dokumen ini?')">
             @csrf @method('DELETE')
