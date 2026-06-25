@@ -71,7 +71,7 @@ class FfsParserService
             'unit_milik_investor' => $lk['unit_milik_investor'] ?? null,
             'unit_milik_mi' => $lk['unit_milik_mi'] ?? null,
             'total_unit_beredar' => $lk['total_unit_beredar'] ?? null,
-            'alokasi_aset' => [],
+            'alokasi_aset' => $this->safeExtract('extractAlokasiAset', [$lines, $fullText]),
             'sektor' => $this->safeExtract('extractSektor', [$lines, $fullText]),
             'efek' => $this->safeExtract('extractEfek', [$lines, $fullText]),
             'kinerja' => $this->safeExtract('extractKinerja', [$lines, $fullText]),
@@ -167,7 +167,7 @@ class FfsParserService
             'unit_milik_investor' => $lk['unit_milik_investor'] ?? null,
             'unit_milik_mi' => $lk['unit_milik_mi'] ?? null,
             'total_unit_beredar' => $lk['total_unit_beredar'] ?? null,
-            'alokasi_aset' => [],
+            'alokasi_aset' => $this->safeExtract('extractAlokasiAset', [$lines, $fullText]),
             'sektor' => $this->safeExtract('extractSektor', [$lines, $fullText]),
             'efek' => $this->safeExtract('extractEfek', [$lines, $fullText]),
             'kinerja' => $this->safeExtract('extractKinerja', [$lines, $fullText]),
@@ -322,8 +322,13 @@ class FfsParserService
         // Vision fallback jika field financial masih kosong (tabel rusak di text extraction)
         $essentialLkFields = ['total_aset', 'total_liabilitas', 'laba_bersih', 'arus_kas_operasi', 'kas_dan_bank'];
         $filled = array_filter($essentialLkFields, fn($f) => !empty($merged[$f]));
-        if (count($filled) < 2) {
-            \Log::info('[PARSE] Financial fields minimal (' . count($filled) . '/5), jalankan vision fallback');
+        $ratioUnitFields = ['total_hasil_investasi', 'hasil_investasi_setelah_biaya', 'persentase_pph',
+                            'biaya_operasi', 'portfolio_turnover_ratio', 'unit_milik_investor',
+                            'unit_milik_mi', 'total_unit_beredar'];
+        $filledRatio = array_filter($ratioUnitFields, fn($f) => !empty($merged[$f]));
+        if (count($filled) < 2 || count($filledRatio) < 3) {
+            \Log::info('[PARSE] Financial fields minimal (' . count($filled) . '/5 essential, '
+                . count($filledRatio) . '/8 ratio+unit), jalankan vision fallback');
             try {
                 $vision = $groq->parseProspektusFinancialVision($pdfPath);
                 $visionFields = array_keys(array_filter($vision, fn($v) => $v !== null && $v !== '' && $v !== []));
@@ -370,8 +375,16 @@ class FfsParserService
                     $regex[$key] = $aiValue;
                 }
             } elseif (in_array($key, $aiPreferredScalarFields)) {
-                if ($aiValue !== null && $aiValue !== '' && $aiValue !== 0) {
-                    $regex[$key] = $aiValue;
+                if ($aiValue !== null && $aiValue !== '') {
+                    // Terima nilai AI 0 secara eksplisit (mis. persentase_pph = 0 sah) hanya
+                    // ketika regex tidak punya nilai yang lebih kuat. Normalkan format.
+                    $isZeroAi = $aiValue === 0 || $aiValue === 0.0
+                        || (is_string($aiValue) && preg_match('/^[.,]+$/', $aiValue) === 0 && preg_match('/^0*[.,]?0+$/', $aiValue));
+                    if ($isZeroAi && !empty($value) && $value !== 0 && $value !== 0.0 && $value !== '0') {
+                        // Jangan overwrite nilai regex non-zero dengan AI 0 (kemungkinan default AI)
+                    } else {
+                        $regex[$key] = $aiValue;
+                    }
                 }
             } else {
                 if ($key === 'nama_reksa_dana' && $this->looksLikeFundName($aiValue)) {
@@ -404,10 +417,15 @@ class FfsParserService
                 if ($ai) {
                     $row['sektor']             = $row['sektor']             ?? ($ai['sektor'] ?? '');
                     $row['kontribusi_kinerja'] = $row['kontribusi_kinerja'] ?? ($ai['kontribusi_kinerja'] ?? null);
+                    $row['ihsg_contribution']  = $row['ihsg_contribution']  ?? ($ai['ihsg_contribution'] ?? null);
                     $row['market_cap']         = $row['market_cap']         ?? ($ai['market_cap'] ?? null);
                     $row['nilai_pasar']        = $row['nilai_pasar']        ?? ($ai['nilai_pasar'] ?? null);
                     $row['harga_perolehan']    = $row['harga_perolehan']    ?? ($ai['harga_perolehan'] ?? null);
                     $row['persen_nab']         = $row['persen_nab']         ?? ($ai['persen_nab'] ?? null);
+                    $row['return_1m']          = $row['return_1m']          ?? ($ai['return_1m'] ?? null);
+                    $row['return_3m']          = $row['return_3m']          ?? ($ai['return_3m'] ?? null);
+                    $row['return_6m']          = $row['return_6m']          ?? ($ai['return_6m'] ?? null);
+                    $row['return_1y']          = $row['return_1y']          ?? ($ai['return_1y'] ?? null);
                     $row['top_10']             = $row['top_10']             ?? ($ai['top_10'] ?? false);
                 }
                 return $row;
@@ -833,6 +851,104 @@ class FfsParserService
         return $sektorData;
     }
 
+    private function extractAlokasiAset(array $lines, string $fullText): array
+    {
+        $rows = [];
+        $started = false;
+
+        $startKeywords = [
+            'alokasi aset', 'asset allocation', 'komposisi aset', 'alokasi portofolio',
+            'komposisi portofolio', 'alokasi investasi', 'alokasi kelas aset', 'asset class',
+        ];
+        $stopKeywords = ['sektor', 'komposisi sektor', 'daftar efek', 'portofolio efek',
+            'ten largest', '10 efek', 'top 10', 'laporan', 'catatan', 'neraca',
+            'estimated', 'kinerja', 'imbal hasil', 'pengukuran', 'perubahan unit',
+            'neraca komparatif', 'laporan arus kas', 'detail', 'informasi'];
+
+        $knownAssets = [
+            'saham' => ['saham', 'equity', 'saham? (idx)'],
+            'obligasi' => ['obligasi', 'bond', 'efek utang', 'fixed income'],
+            'sukuk' => ['sukuk', 'sbsn'],
+            'pasar uang' => ['pasar uang', 'money market', 'instrumen pasar uang'],
+            'kas' => ['kas', 'cash', 'kas dan setara', 'kas & bank', 'kas di bank'],
+            'deposito' => ['deposito', 'deposito berjangka', 'time deposit'],
+            'lainnya' => ['lainnya', 'others', 'lain-lain'],
+        ];
+
+        $normalizeName = function (string $name) use ($knownAssets): string {
+            $name = strtolower(trim($name));
+            foreach ($knownAssets as $canonical => $aliases) {
+                foreach ($aliases as $alias) {
+                    if ($name === $alias || str_contains($name, $alias)) {
+                        return ucfirst($canonical);
+                    }
+                }
+            }
+            return trim($name);
+        };
+
+        foreach ($lines as $line) {
+            $lower = strtolower($line);
+
+            if (!$started) {
+                foreach ($startKeywords as $kw) {
+                    if (str_contains($lower, $kw) && strlen($lower) < 80) {
+                        $started = true;
+                        continue 2;
+                    }
+                }
+                continue;
+            }
+
+            if (count($rows) > 0) {
+                foreach ($stopKeywords as $end) {
+                    if (str_contains($lower, $end) && strlen($lower) < 80) {
+                        $started = false;
+                        continue 2;
+                    }
+                }
+            }
+
+            // Format: "Saham 65.2%" atau "Saham 65.2 1500000000000"
+            if (preg_match('/^([A-Za-z][A-Za-z\s&\/]+?)\s+([\d.,]+)\s*%?\s*([\d.,]*)\s*$/', $line, $m)) {
+                $nama = trim($m[1]);
+                $persen = (float) str_replace(',', '.', $m[2]);
+                if ($persen > 0 && $persen <= 100 && strlen($nama) >= 3) {
+                    $canonical = $normalizeName($nama);
+                    if ($canonical !== '') {
+                        $rows[] = ['nama_aset' => $canonical, 'persentase' => $persen];
+                    }
+                }
+                continue;
+            }
+
+            // Format: "Saham 65,2 25%"
+            if (preg_match('/^([A-Za-z][A-Za-z\s&\/]+?)\s+([\d.,]+)\s+([\d.,]+)\s*%?\s*$/', $line, $m)) {
+                $nama = trim($m[1]);
+                $persen = (float) str_replace(',', '.', $m[3]);
+                if ($persen > 0 && $persen <= 100 && strlen($nama) >= 3) {
+                    $canonical = $normalizeName($nama);
+                    if ($canonical !== '') {
+                        $rows[] = ['nama_aset' => $canonical, 'persentase' => $persen];
+                    }
+                }
+                continue;
+            }
+        }
+
+        // Dedup by canonical name — sum persentase untuk nama yg sama
+        $aggregated = [];
+        foreach ($rows as $r) {
+            $key = strtolower($r['nama_aset']);
+            if (!isset($aggregated[$key])) {
+                $aggregated[$key] = ['nama_aset' => $r['nama_aset'], 'persentase' => 0.0];
+            }
+            $aggregated[$key]['persentase'] += $r['persentase'];
+        }
+
+        return array_values($aggregated);
+    }
+
     private function extractEfek(array $lines, string $fullText): array
     {
         $efekData = [];
@@ -888,12 +1004,34 @@ class FfsParserService
                 if (preg_match_all('/([\d][\d.,]*)/', $rest, $extra)) {
                     $extraNumbers = $extra[1];
                 }
-                return [
+                $row = [
                     'kode_efek' => $m[1],
                     'nama_efek' => trim($m[2]),
                     'bobot' => $bobot,
                     'harga' => !empty($extraNumbers[0]) ? (float) str_replace(',', '.', $extraNumbers[0]) : null,
+                    'sektor' => '',
+                    'kontribusi_kinerja' => null,
+                    'market_cap' => null,
+                    'nilai_pasar' => null,
+                    'harga_perolehan' => null,
+                    'persen_nab' => null,
+                    'top_10' => false,
                 ];
+                // Heuristik konservatif: jika setelah bobot ada angka tambahan,
+                // anggap angka pertama = harga_perolehan (atau nilai_pasar) dan
+                // angka terakhir yang diikuti tanda % = persen_nab.
+                if (!empty($extraNumbers) && preg_match('/([\d.,]+)\s*%\s*$/', $rest, $pnab)) {
+                    $row['persen_nab'] = (float) str_replace(',', '.', $pnab[1]);
+                }
+                if (!empty($extraNumbers[0])) {
+                    if ($row['persen_nab'] !== null && (float) str_replace(',', '.', $extraNumbers[0]) !== $row['persen_nab']) {
+                        $row['harga_perolehan'] = (float) str_replace(',', '.', $extraNumbers[0]);
+                    } elseif ($row['persen_nab'] === null) {
+                        // Tidak ada % → anggap angka pertama = harga_perolehan
+                        $row['harga_perolehan'] = (float) str_replace(',', '.', $extraNumbers[0]);
+                    }
+                }
+                return $row;
             }
         }
 
@@ -905,6 +1043,13 @@ class FfsParserService
                     'nama_efek' => trim($m[2]),
                     'bobot' => $bobot,
                     'harga' => null,
+                    'sektor' => '',
+                    'kontribusi_kinerja' => null,
+                    'market_cap' => null,
+                    'nilai_pasar' => null,
+                    'harga_perolehan' => null,
+                    'persen_nab' => null,
+                    'top_10' => false,
                 ];
             }
         }
@@ -917,6 +1062,13 @@ class FfsParserService
                     'nama_efek' => trim($m[1]),
                     'bobot' => $bobot,
                     'harga' => null,
+                    'sektor' => '',
+                    'kontribusi_kinerja' => null,
+                    'market_cap' => null,
+                    'nilai_pasar' => null,
+                    'harga_perolehan' => null,
+                    'persen_nab' => null,
+                    'top_10' => false,
                 ];
             }
         }
@@ -929,6 +1081,13 @@ class FfsParserService
                     'nama_efek' => trim($m[2]),
                     'bobot' => $bobot,
                     'harga' => null,
+                    'sektor' => '',
+                    'kontribusi_kinerja' => null,
+                    'market_cap' => null,
+                    'nilai_pasar' => null,
+                    'harga_perolehan' => null,
+                    'persen_nab' => null,
+                    'top_10' => false,
                 ];
             }
         }
@@ -1540,25 +1699,290 @@ class FfsParserService
         ];
 
         foreach ($fieldMap as $field => $labels) {
+            $found = null;
             foreach ($lines as $line) {
                 $val = $this->extractLabelValue($line, $labels);
                 if ($val !== null && $val != 0) {
-                    $result[$field] = $val;
+                    $found = $val;
                     break;
                 }
+            }
+            if ($found === null) {
+                $found = $this->extractLabelAcrossLines($fullText, $labels, false);
+            }
+            if ($found !== null) {
+                $result[$field] = $found;
             }
         }
 
         foreach ($percentMap as $field => $labels) {
+            $found = null;
             foreach ($lines as $line) {
                 $val = $this->extractLabelPercent($line, $labels);
                 if ($val !== null) {
-                    $result[$field] = $val;
+                    $found = $val;
                     break;
                 }
+            }
+            if ($found === null) {
+                $found = $this->extractLabelAcrossLines($fullText, $labels, true);
+            }
+            if ($found !== null) {
+                $result[$field] = $found;
             }
         }
 
         return $result;
+    }
+
+    /**
+     * Multi-line fallback untuk field LK yang label dan angkanya berada di baris
+     * berbeda akibat PDF text extraction yang ter-wrap. Mencari label di fullText
+     * lalu ambil angka rupiah/persen pertama dalam jendela ~400 karakter setelahnya.
+     */
+    private function extractLabelAcrossLines(string $fullText, array $labels, bool $isPercent): ?float
+    {
+        $lower = strtolower($fullText);
+        foreach ($labels as $label) {
+            $labelLower = strtolower($label);
+            $pos = strpos($lower, $labelLower);
+            if ($pos === false) {
+                continue;
+            }
+            // Ambil konteks 400 char setelah label
+            $context = substr($fullText, $pos + strlen($label), 400);
+            if ($isPercent) {
+                // Cari angka persen pertama (dengan atau tanpa tanda %)
+                if (preg_match('/([\-+]?[\d][\d.,]*\d?)\s*%/', $context, $m)) {
+                    $val = (float) str_replace(',', '.', $m[1]);
+                    if (abs($val) < 1000) {
+                        return $val;
+                    }
+                }
+                if (preg_match('/[\s:]+([\-+]?[\d][\d.,]{0,12})/', $context, $m)) {
+                    $val = (float) str_replace(',', '.', $m[1]);
+                    if (abs($val) < 1000) {
+                        return $val;
+                    }
+                }
+            } else {
+                // Cari angka rupiah pertama, support suffix miliar/triliun/juta
+                if (preg_match('/([\d][\d.,]*(?:[.,]\d+)?)\s*(miliar|milyar|triliun|juta)?/i', $context, $m)) {
+                    $raw = $m[1];
+                    $value = str_replace(['.', ','], ['', '.'], $raw);
+                    $val = (float) $value;
+                    if ($val <= 0) {
+                        continue;
+                    }
+                    $suffix = strtolower($m[0]);
+                    if (str_contains($suffix, 'triliun')) return $val * 1000000000000;
+                    if (str_contains($suffix, 'miliar') || str_contains($suffix, 'milyar')) return $val * 1000000000;
+                    if (str_contains($suffix, 'juta')) return $val * 1000000;
+                    return $val;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Detect section type from text content using keyword analysis.
+     */
+    public function detectSectionType(string $text): string
+    {
+        $lower = strtolower($text);
+
+        $score = [
+            'pengukuran_nilai_wajar' => 0,
+            'bs_is_cf_pup' => 0,
+            'portofolio_efek' => 0,
+            'informasi_lainnya' => 0,
+        ];
+
+        // Keywords for fair value / unit info
+        if (preg_match('/fair\s*value|nilai\s*wajar|level\s*[123]|tingkat\s*[123]/i', $lower)) {
+            $score['pengukuran_nilai_wajar'] += 3;
+        }
+        if (preg_match('/unit\s*(penyertaan|milik|beredar)|pemegang\s*unit|total\s*unit/i', $lower)) {
+            $score['pengukuran_nilai_wajar'] += 2;
+        }
+
+        // Keywords for financial statements (BS, IS, CF)
+        if (preg_match('/total\s*aset|total\s*liabilitas|neraca|balance\s*sheet/i', $lower)) {
+            $score['bs_is_cf_pup'] += 3;
+        }
+        if (preg_match('/laba\s*bersih|net\s*income|laporan\s*lab[ea] rugi|income\s*statement|pendapatan\s*bunga|beban\s*mi|beban\s*kustodian|gain\s*realized|gain\s*unrealized/i', $lower)) {
+            $score['bs_is_cf_pup'] += 3;
+        }
+        if (preg_match('/arus\s*kas|cash\s*flow|kas\s*(awal|akhir)|aktivitas\s*operasi/i', $lower)) {
+            $score['bs_is_cf_pup'] += 3;
+        }
+        if (preg_match('/total\s*hasil\s*investasi|hasil\s*investasi\s*setelah|biaya\s*operasi|portfolio\s*turnover|penghasilan\s*kena\s*pajak/i', $lower)) {
+            $score['bs_is_cf_pup'] += 2;
+        }
+
+        // Keywords for portfolio / holdings
+        if (preg_match('/portofolio|efek|saham|equity\s*instr|obligasi|bond|sukuk|sektor|alokasi\s*aset/i', $lower)) {
+            $score['portofolio_efek'] += 3;
+        }
+        if (preg_match('/bobot|nilai\s*pasar|harga\s*perolehan|persen\s*nab|yield|kupon|rating|jatuh\s*tempo/i', $lower)) {
+            $score['portofolio_efek'] += 2;
+        }
+        if (preg_match('/bank|kas\s*di\s*bank|pasar\s*uang|deposito|piutang\s*bunga/i', $lower)) {
+            $score['portofolio_efek'] += 1;
+        }
+
+        // Keywords for general fund info
+        if (preg_match('/reksa\s*dana|manajer\s*investasi|bank\s*kustodian|tujuan\s*investasi|kebijakan\s*investasi|benchmark/i', $lower)) {
+            $score['informasi_lainnya'] += 2;
+        }
+        if (preg_match('/return|imbal\s*hasil|aum|nab|unit\s*penyertaan|tanggal\s*peluncuran/i', $lower)) {
+            $score['informasi_lainnya'] += 1;
+        }
+
+        // Default fallback
+        if (array_sum($score) === 0) {
+            return 'informasi_lainnya';
+        }
+
+        arsort($score);
+        return key($score);
+    }
+
+    /**
+     * Smart merge multiple parse results into one.
+     * - Scalar fields: last non-empty value wins
+     * - Array fields: longest array wins
+     */
+    public function smartMergeResults(array $results): array
+    {
+        $merged = [];
+        $arrayFields = ['alokasi_aset', 'sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'pasar_uang', 'piutang_bunga_detail', 'kategori'];
+
+        foreach ($results as $data) {
+            if (!is_array($data)) continue;
+            foreach ($data as $key => $value) {
+                if ($value === null || $value === '' || (is_array($value) && empty($value))) {
+                    continue;
+                }
+                if (in_array($key, $arrayFields)) {
+                    if (!isset($merged[$key]) || !is_array($merged[$key]) || count($value) > count($merged[$key])) {
+                        $merged[$key] = $value;
+                    }
+                } else {
+                    $merged[$key] = $value;
+                }
+            }
+        }
+
+        return $merged;
+    }
+
+    /**
+     * Parse PDF with multiple page ranges. Each range is sent to AI with the appropriate prompt.
+     */
+    public function parseWithPageRanges(string $pdfPath, GroqService $groq, array $pageRanges): array
+    {
+        set_time_limit(300);
+        $parser = new Parser;
+        $pdf = $parser->parseFile($pdfPath);
+
+        // Get full document text first (fallback for page-level extraction failures)
+        $fullText = $pdf->getText();
+        $fullText = implode("\n", array_filter(array_map('trim', explode("\n", $fullText))));
+
+        // Vision fallback jika scanned PDF
+        if (mb_strlen($fullText) < 500) {
+            \Log::info('[PARSE-PAGE-RANGE] Scanned PDF detected, using vision fallback');
+            try {
+                $vision = $groq->parseFfsPdfVision($pdfPath, basename($pdfPath));
+                return $this->normalizeAiData($vision);
+            } catch (\Throwable $e) {
+                \Log::warning('[PARSE-PAGE-RANGE] Vision fallback failed: ' . $e->getMessage());
+                return $this->normalizeAiData([]);
+            }
+        }
+
+        // Try page-level extraction
+        $pageTexts = [];
+        try {
+            foreach ($pdf->getPages() as $page) {
+                $pageTexts[] = $page->getText();
+            }
+        } catch (\Throwable) {
+            $pageTexts = [];
+        }
+
+        $totalPages = count($pageTexts);
+        $results = [];
+
+        foreach ($pageRanges as $idx => $range) {
+            $start = max(1, (int) ($range['start_page'] ?? 1));
+            $end = min($totalPages, (int) ($range['end_page'] ?? $totalPages));
+
+            // If no pages extracted, use full text for all ranges
+            if ($totalPages === 0) {
+                $text = mb_substr($fullText, 0, 60000);
+            } else {
+                if ($start > $end || $start > $totalPages) {
+                    \Log::warning("[PARSE-PAGE-RANGE] Range #{$idx} invalid: start={$start}, end={$end}, totalPages={$totalPages}");
+                    continue;
+                }
+
+                $text = '';
+                for ($i = $start - 1; $i < $end; $i++) {
+                    if (isset($pageTexts[$i])) {
+                        $text .= $pageTexts[$i] . "\n\n";
+                    }
+                }
+
+                if (mb_strlen(trim($text)) < 50) {
+                    \Log::warning("[PARSE-PAGE-RANGE] Range #{$idx} (pages {$start}-{$end}) too little text, using full text fallback");
+                    $text = mb_substr($fullText, 0, 60000);
+                }
+            }
+
+            $sectionType = $range['section_type'] ?? 'auto';
+
+            \Log::info("[PARSE-PAGE-RANGE] Range #{$idx}: pages {$start}-{$end}, type={$sectionType}, text=" . mb_strlen($text) . " chars");
+
+            try {
+                if ($sectionType === 'auto') {
+                    $aiResult = $groq->parseFfsPdf($text, null);
+                } else {
+                    $aiResult = match ($sectionType) {
+                        'informasi_lainnya' => $groq->parseInformasiLainnya($text),
+                        'portofolio_efek' => $groq->parsePortofolioEfek($text),
+                        'pengukuran_nilai_wajar' => $groq->parsePengukuranNilaiWajar($text),
+                        'bs_is_cf_pup' => $groq->parseBsIsCfPup($text),
+                        default => $groq->parseFfsPdf($text, $sectionType),
+                    };
+                }
+
+                $normalized = $this->normalizeAiData($aiResult);
+                $results[] = $normalized;
+
+                \Log::info("[PARSE-PAGE-RANGE] Range #{$idx} success: " . count(array_filter($normalized, fn($v) => !empty($v))) . " fields");
+            } catch (\Throwable $e) {
+                \Log::warning("[PARSE-PAGE-RANGE] Range #{$idx} AI error: " . $e->getMessage());
+            }
+        }
+
+        if (empty($results)) {
+            \Log::warning('[PARSE-PAGE-RANGE] No results from any range, falling back to full document parse');
+            // Final fallback: parse full document
+            try {
+                $aiResult = $groq->parseFfsPdf($fullText, null);
+                return $this->normalizeAiData($aiResult);
+            } catch (\Throwable $e) {
+                \Log::warning('[PARSE-PAGE-RANGE] Final fallback failed: ' . $e->getMessage());
+                return $this->normalizeAiData([]);
+            }
+        }
+
+        $merged = $this->smartMergeResults($results);
+        \Log::info('[PARSE-PAGE-RANGE] Merged: ' . count(array_filter($merged, fn($v) => !empty($v))) . ' fields from ' . count($results) . ' ranges');
+
+        return $this->normalizeAiData($merged);
     }
 }

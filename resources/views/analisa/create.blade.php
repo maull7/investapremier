@@ -57,7 +57,7 @@
                     <div>
                         <x-input-label for="kode_reksa_dana" value="Kode Reksa Dana" />
                         <x-text-input id="kode_reksa_dana" name="kode_reksa_dana" type="text" class="mt-1 block w-full"
-                            value="{{ old('kode_reksa_dana') }}"
+                            x-model="kodeReksaDana"
                             @input.debounce.500ms="lookupReksaDana($event.target.value)" />
                         <x-input-error :messages="$errors->get('kode_reksa_dana')" class="mt-1" />
                         <p class="text-xs mt-1" :class="lookupOk ? 'text-emerald-600' : 'text-muted'"
@@ -66,7 +66,8 @@
                     <div>
                         <x-input-label for="nama_reksa_dana" value="Nama Reksa Dana *" />
                         <x-text-input id="nama_reksa_dana" name="nama_reksa_dana" type="text" class="mt-1 block w-full"
-                            value="{{ old('nama_reksa_dana') }}" x-bind:required="mode !== 'link-website'" />
+                            value="{{ old('nama_reksa_dana') }}" x-model="namaReksaDana"
+                            x-bind:required="mode !== 'link-website'" />
                         <x-input-error :messages="$errors->get('nama_reksa_dana')" class="mt-1" />
                     </div>
                 </div>
@@ -90,7 +91,7 @@
                         <x-input-label for="jenis_reksa_dana" value="Jenis Reksa Dana *" />
                         <select id="jenis_reksa_dana" name="jenis_reksa_dana"
                             class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm"
-                            x-bind:required="mode !== 'link-website'">
+                            x-model="jenisReksaDana" x-bind:required="mode !== 'link-website'">
                             <option value="">Pilih Jenis</option>
                             @foreach (['Saham', 'Pendapatan Tetap', 'Campuran', 'Pasar Uang', 'Terproteksi', 'Global', 'DIRE-DINFRA', 'Penyertaan terbatas'] as $j)
                                 <option value="{{ $j }}" {{ old('jenis_reksa_dana') === $j ? 'selected' : '' }}>
@@ -102,7 +103,8 @@
                     <div>
                         <x-input-label for="benchmark" value="Benchmark *" />
                         <x-text-input id="benchmark" name="benchmark" type="text" class="mt-1 block w-full"
-                            value="{{ old('benchmark') }}" x-bind:required="mode !== 'link-website'" />
+                            value="{{ old('benchmark') }}" x-model="benchmark"
+                            x-bind:required="mode !== 'link-website'" />
                         <x-input-error :messages="$errors->get('benchmark')" class="mt-1" />
                     </div>
                 </div>
@@ -110,14 +112,15 @@
                     <div>
                         <x-input-label for="tujuan_investasi" value="Tujuan Investasi *" />
                         <x-text-input id="tujuan_investasi" name="tujuan_investasi" type="text" class="mt-1 block w-full"
-                            value="{{ old('tujuan_investasi') }}" x-bind:required="mode !== 'link-website'" />
+                            value="{{ old('tujuan_investasi') }}" x-model="tujuanInvestasi"
+                            x-bind:required="mode !== 'link-website'" />
                         <x-input-error :messages="$errors->get('tujuan_investasi')" class="mt-1" />
                     </div>
                     <div>
                         <x-input-label for="kebijakan_investasi" value="Kebijakan Investasi *" />
                         <x-text-input id="kebijakan_investasi" name="kebijakan_investasi" type="text"
                             class="mt-1 block w-full" value="{{ old('kebijakan_investasi') }}"
-                            x-bind:required="mode !== 'link-website'" />
+                            x-model="kebijakanInvestasi" x-bind:required="mode !== 'link-website'" />
                         <x-input-error :messages="$errors->get('kebijakan_investasi')" class="mt-1" />
                     </div>
                 </div>
@@ -427,19 +430,19 @@
                                                     @change="hitungTotalMarcap10" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_1m]`"
-                                                    x-model="row.return_1m" step="0.0001" readonly
+                                                    x-model="row.return_1m" step="0.0001"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_3m]`"
-                                                    x-model="row.return_3m" step="0.0001" readonly
+                                                    x-model="row.return_3m" step="0.0001"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_6m]`"
-                                                    x-model="row.return_6m" step="0.0001" readonly
+                                                    x-model="row.return_6m" step="0.0001"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_1y]`"
-                                                    x-model="row.return_1y" step="0.0001" readonly
+                                                    x-model="row.return_1y" step="0.0001"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1 text-center"><input type="checkbox"
@@ -962,19 +965,19 @@
                                                     @change="hitungTotalMarcap10" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_1m]`"
-                                                    x-model="row.return_1m" step="0.0001" readonly
+                                                    x-model="row.return_1m" step="0.0001"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_3m]`"
-                                                    x-model="row.return_3m" step="0.0001" readonly
+                                                    x-model="row.return_3m" step="0.0001"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_6m]`"
-                                                    x-model="row.return_6m" step="0.0001" readonly
+                                                    x-model="row.return_6m" step="0.0001"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_1y]`"
-                                                    x-model="row.return_1y" step="0.0001" readonly
+                                                    x-model="row.return_1y" step="0.0001"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1 text-center"><input type="checkbox"
@@ -1082,22 +1085,22 @@
                                             </td>
                                             <td class="px-1 py-1"><input type="number"
                                                     :name="`obligasi[${i}][return_1m]`" x-model="row.return_1m"
-                                                    step="0.0001" readonly
+                                                    step="0.0001"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number"
                                                     :name="`obligasi[${i}][return_3m]`" x-model="row.return_3m"
-                                                    step="0.0001" readonly
+                                                    step="0.0001"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number"
                                                     :name="`obligasi[${i}][return_6m]`" x-model="row.return_6m"
-                                                    step="0.0001" readonly
+                                                    step="0.0001"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number"
                                                     :name="`obligasi[${i}][return_1y]`" x-model="row.return_1y"
-                                                    step="0.0001" readonly
+                                                    step="0.0001"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`obligasi[${i}][durasi]`"
@@ -1275,19 +1278,19 @@
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`bank[${i}][return_1m]`"
-                                                    x-model="row.return_1m" step="0.0001" readonly
+                                                    x-model="row.return_1m" step="0.0001"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`bank[${i}][return_3m]`"
-                                                    x-model="row.return_3m" step="0.0001" readonly
+                                                    x-model="row.return_3m" step="0.0001"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`bank[${i}][return_6m]`"
-                                                    x-model="row.return_6m" step="0.0001" readonly
+                                                    x-model="row.return_6m" step="0.0001"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`bank[${i}][return_1y]`"
-                                                    x-model="row.return_1y" step="0.0001" readonly
+                                                    x-model="row.return_1y" step="0.0001"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`bank[${i}][car]`"
@@ -1459,8 +1462,24 @@
                         </div>
                     </div>
 
-                    {{-- Multi-Document Upload Panel --}}
-                    <div class="border border-line rounded-lg p-4 space-y-4">
+                    {{-- Tab Navigation: Multi-Dokumen vs Partisi Halaman --}}
+                    <div class="flex border-b border-line mb-2">
+                        <button type="button" @click="activeTab = 'multi'"
+                            class="px-4 py-2 text-xs font-semibold transition -mb-px"
+                            :class="activeTab === 'multi' ? 'text-primary border-b-2 border-primary' : 'text-muted hover:text-primary'">
+                            <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            Upload Multi-Dokumen
+                        </button>
+                        <button type="button" @click="activeTab = 'partition'"
+                            class="px-4 py-2 text-xs font-semibold transition -mb-px"
+                            :class="activeTab === 'partition' ? 'text-primary border-b-2 border-primary' : 'text-muted hover:text-primary'">
+                            <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+                            Partisi Halaman
+                        </button>
+                    </div>
+
+                    {{-- Tab: Multi-Document Upload Panel --}}
+                    <div x-show="activeTab === 'multi'" class="border border-line rounded-lg p-4 space-y-4">
                         <div class="flex items-center gap-2">
                             <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -1525,7 +1544,142 @@
                                 <button type="button" @click="mode = 'lengkap'" class="text-xs underline">Lihat di Input Lengkap</button>
                             </div>
                         </div>
+                    </div>
 
+                    {{-- Tab: Partisi Halaman Panel --}}
+                    <div x-show="activeTab === 'partition'" class="border border-line rounded-lg p-4 space-y-4">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
+                            </svg>
+                            <h4 class="font-medium text-sm text-primary">Partisi Halaman Dokumen</h4>
+                            <span class="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full">Baru</span>
+                        </div>
+                        <p class="text-xs text-muted">Pilih dokumen dari daftar, lalu tentukan halaman mana saja yang ingin dianalisa. Setiap partisi akan diparse dengan AI prompt yang sesuai.</p>
+
+                        {{-- Pilih Dokumen --}}
+                        <div class="bg-gray-50 rounded-lg p-3 space-y-2">
+                            <label class="text-xs font-medium text-muted">Pilih Dokumen</label>
+                            <div x-show="!existingDocsLoaded" class="text-xs text-muted italic">Memuat daftar dokumen...</div>
+                            <div x-show="existingDocsLoaded && existingDocs.length === 0" class="text-xs text-muted italic">Dokumen tidak ditemukan untuk periode yang dipilih.</div>
+                            <div x-show="existingDocsLoaded && existingDocs.length > 0" class="space-y-1.5 max-h-40 overflow-y-auto">
+                                <template x-for="doc in existingDocs" :key="doc.id">
+                                    <label class="flex items-center gap-2 p-2 rounded-lg cursor-pointer text-xs transition"
+                                        :class="selectedDocId === doc.id ? 'bg-primary/10 border border-primary/30' : 'hover:bg-gray-100 border border-transparent'">
+                                        <input type="radio" name="partition_doc" :value="doc.id"
+                                            @change="selectDocumentForPartition(doc.id)"
+                                            class="accent-primary">
+                                        <div class="flex-1 min-w-0">
+                                            <span class="font-medium text-gray-800 block truncate" x-text="doc.label || doc.original_name"></span>
+                                            <span class="text-muted" x-text="doc.reksa_dana_nama ? doc.reksa_dana_nama + ' - ' + doc.reksa_dana_kode : ''"></span>
+                                        </div>
+                                        <span class="text-muted text-[10px] whitespace-nowrap" x-text="doc.file_size ? (doc.file_size / 1024).toFixed(0) + ' KB' : ''"></span>
+                                    </label>
+                                </template>
+                            </div>
+                        </div>
+
+                        {{-- Selected Document Info --}}
+                        <div x-show="selectedDocId" class="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                            Dokumen terpilih: <span x-text="existingDocs.find(d => d.id === selectedDocId)?.label || existingDocs.find(d => d.id === selectedDocId)?.original_name || ''"></span>
+                        </div>
+
+                        {{-- Page Range Cards --}}
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="text-xs font-medium text-muted">Partisi Halaman</label>
+                                <button type="button" @click="addPageRange()"
+                                    class="text-xs text-primary font-medium hover:underline flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                    Tambah Bagian
+                                </button>
+                            </div>
+
+                            <template x-for="(range, idx) in pageRanges" :key="range.id">
+                                <div class="border rounded-lg p-3 space-y-2" :class="{
+                                    'border-line bg-white': range.success === null,
+                                    'border-green-300 bg-green-50/50': range.success === true,
+                                    'border-red-300 bg-red-50/50': range.success === false,
+                                }">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-semibold" :class="{
+                                            'text-primary': range.success === null,
+                                            'text-green-700': range.success === true,
+                                            'text-red-700': range.success === false,
+                                        }">Bagian <span x-text="idx + 1"></span></span>
+                                        <div class="flex items-center gap-2">
+                                            <template x-if="range.loading">
+                                                <svg class="animate-spin h-3.5 w-3.5 text-primary" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                            </template>
+                                            <template x-if="range.success === true">
+                                                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                            </template>
+                                            <template x-if="range.success === false">
+                                                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            </template>
+                                            <button type="button" @click="removePageRange(idx)"
+                                                x-show="pageRanges.length > 1"
+                                                class="text-red-400 hover:text-red-600 transition">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="text-[10px] text-muted block mb-0.5">Start Page</label>
+                                            <input type="number" min="1" x-model="range.start_page"
+                                                class="w-full text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-primary focus:border-primary"
+                                                placeholder="Halaman awal">
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] text-muted block mb-0.5">End Page</label>
+                                            <input type="number" min="1" x-model="range.end_page"
+                                                class="w-full text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-primary focus:border-primary"
+                                                placeholder="Halaman akhir">
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="text-[10px] text-muted block mb-0.5">Tipe Konten</label>
+                                        <select x-model="range.section_type"
+                                            class="w-full text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-primary focus:border-primary">
+                                            <option value="auto">Auto-detect</option>
+                                            <option value="informasi_lainnya">Informasi Lainnya</option>
+                                            <option value="portofolio_efek">Portofolio Efek</option>
+                                            <option value="pengukuran_nilai_wajar">Pengukuran Nilai Wajar</option>
+                                            <option value="bs_is_cf_pup">BS, IS, CF, dan PUP</option>
+                                        </select>
+                                    </div>
+
+                                    <p x-show="range.message" class="text-[11px]" :class="range.success ? 'text-green-600' : 'text-red-600'" x-text="range.message"></p>
+                                </div>
+                            </template>
+                        </div>
+
+                        {{-- Actions --}}
+                        <div class="flex items-center gap-3">
+                            <button type="button" @click="parseAllPageRanges()"
+                                :disabled="partitionLoading || !selectedDocId || !pageRanges.some(r => r.start_page && r.end_page)"
+                                class="px-4 py-2 text-xs font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                                <span x-show="!partitionLoading">Parse Semua Partisi</span>
+                                <span x-show="partitionLoading">Memproses...</span>
+                            </button>
+                            <button type="button" @click="resetPageRanges()"
+                                x-show="pageRanges.some(r => r.start_page || r.end_page || r.success !== null)"
+                                class="px-3 py-2 text-xs font-medium text-muted border border-line rounded-lg hover:bg-gray-50 transition">
+                                Reset
+                            </button>
+                        </div>
+
+                        {{-- Summary --}}
+                        <div x-show="partitionResult" class="text-sm p-3 rounded-lg border" :class="partitionSuccess ? 'bg-green-50 border-green-200 text-green-700' : 'bg-amber-50 border-amber-200 text-amber-700'">
+                            <span x-text="partitionResult"></span>
+                            <div x-show="partitionSuccess" class="flex gap-2 mt-2">
+                                <button type="button" @click="mode = 'manual'" class="text-xs underline">Lihat di Input Manual</button>
+                                <button type="button" @click="mode = 'lengkap'" class="text-xs underline">Lihat di Input Lengkap</button>
+                            </div>
+                        </div>
                     </div>
 
                     {{-- Separator --}}
@@ -1693,6 +1847,9 @@
                     bank: @json($oldBank),
                     alokasi_aset: @json($oldAlokasiAset),
 
+                    kodeReksaDana: @json(old('kode_reksa_dana')),
+                    namaReksaDana: @json(old('nama_reksa_dana')),
+                    jenisReksaDana: @json(old('jenis_reksa_dana')),
                     manajerInvestasi: @json(old('manajer_investasi')),
                     bankKustodian: @json(old('bank_kustodian')),
                     tanggalPeluncuran: @json(old('tanggal_peluncuran')),
@@ -1747,6 +1904,16 @@
                     multiParseLoading: false,
                     multiParseResult: '',
                     multiParseSuccess: false,
+
+                    // Page range partition mode
+                    activeTab: 'multi',
+                    selectedDocId: null,
+                    partitionLoading: false,
+                    partitionSuccess: false,
+                    partitionResult: '',
+                    pageRanges: [
+                        { id: 1, start_page: '', end_page: '', section_type: 'auto', loading: false, success: null, message: '', data: null }
+                    ],
 
                     init() {
                         if (resumeData) {
@@ -2162,6 +2329,13 @@
                         this.setFieldValue('benchmark', data.benchmark);
                         this.setFieldValue('tujuan_investasi', data.tujuan_investasi);
                         this.setFieldValue('kebijakan_investasi', data.kebijakan_investasi);
+                        this.kodeReksaDana = data.kode_reksa_dana ?? this.kodeReksaDana;
+                        this.namaReksaDana = data.nama_reksa_dana ?? this.namaReksaDana;
+                        this.jenisReksaDana = data.jenis_reksa_dana ?? this.jenisReksaDana;
+                        this.benchmark = data.benchmark ?? this.benchmark;
+                        this.tujuanInvestasi = data.tujuan_investasi ?? this.tujuanInvestasi;
+                        this.kebijakanInvestasi = data.kebijakan_investasi ?? this.kebijakanInvestasi;
+                        this.portfolioTurnover = data.portfolio_turnover_ratio ?? this.portfolioTurnover;
                         this.manajerInvestasi = data.manajer_investasi ?? this.manajerInvestasi;
                         this.bankKustodian = data.bank_kustodian ?? this.bankKustodian;
                         if (data.tanggal_peluncuran) this.tanggalPeluncuran = data.tanggal_peluncuran;
@@ -2584,6 +2758,16 @@
                         for (const [key, id] of Object.entries(fields)) {
                             this.setFieldValue(id, data[key]);
                         }
+                        this.kodeReksaDana = data.kode_reksa_dana ?? this.kodeReksaDana;
+                        this.namaReksaDana = data.nama_reksa_dana ?? this.namaReksaDana;
+                        this.jenisReksaDana = data.jenis_reksa_dana ?? this.jenisReksaDana;
+                        this.manajerInvestasi = data.manajer_investasi ?? this.manajerInvestasi;
+                        this.bankKustodian = data.bank_kustodian ?? this.bankKustodian;
+                        if (data.tanggal_peluncuran) this.tanggalPeluncuran = data.tanggal_peluncuran;
+                        this.mataUang = data.mata_uang ?? this.mataUang;
+                        this.benchmark = data.benchmark ?? this.benchmark;
+                        this.tujuanInvestasi = data.tujuan_investasi ?? this.tujuanInvestasi;
+                        this.kebijakanInvestasi = data.kebijakan_investasi ?? this.kebijakanInvestasi;
                         this.totalAum = data.total_aum ?? this.totalAum;
                         this.totalMarcap10Efek = data.total_marcap_10_efek ?? this.totalMarcap10Efek;
                         this.tanggalData = data.tanggal_data ?? this.tanggalData;
@@ -2593,7 +2777,7 @@
                         this.return1y = data.return_1y ?? this.return1y;
                         this.totalReturn = data.total_return ?? this.totalReturn;
                         this.biayaOperasi = data.biaya_operasi ?? this.biayaOperasi;
-                        this.portfolioTurnoverRatio = data.portfolio_turnover_ratio ?? this.portfolioTurnoverRatio;
+                        this.portfolioTurnover = data.portfolio_turnover_ratio ?? this.portfolioTurnover;
                         this.managementFee = data.management_fee ?? this.managementFee;
                         this.custodianFee = data.custodian_fee ?? this.custodianFee;
                         if (data.ffs_bulan) this.ffsBulan = data.ffs_bulan;
@@ -3014,6 +3198,148 @@
                         if (successCount > 0) {
                             alert('⚠️ Data hasil ekstraksi AI bisa saja tidak akurat atau tidak lengkap. Mohon periksa dan validasi setiap field sebelum menyimpan.');
                         }
+                    },
+
+                    addPageRange() {
+                        const lastId = this.pageRanges.length > 0 ? Math.max(...this.pageRanges.map(r => r.id)) : 0;
+                        this.pageRanges.push({
+                            id: lastId + 1,
+                            start_page: '',
+                            end_page: '',
+                            section_type: 'auto',
+                            loading: false,
+                            success: null,
+                            message: '',
+                            data: null
+                        });
+                    },
+
+                    removePageRange(idx) {
+                        if (this.pageRanges.length > 1) {
+                            this.pageRanges.splice(idx, 1);
+                        }
+                    },
+
+                    async parseAllPageRanges() {
+                        const token = this.analisaFormEl().querySelector('input[name="_token"]').value;
+
+                        if (!this.selectedDocId) {
+                            this.partitionResult = 'Pilih dokumen terlebih dahulu.';
+                            this.partitionSuccess = false;
+                            return;
+                        }
+
+                        // Only process ranges with both start and end pages
+                        const rangesWithValues = this.pageRanges.map((r, idx) => ({ ...r, idx }));
+                        const validRanges = rangesWithValues.filter(r => r.start_page && r.end_page);
+                        if (!validRanges.length) {
+                            this.partitionResult = 'Isi minimal 1 partisi halaman (Start Page & End Page).';
+                            this.partitionSuccess = false;
+                            return;
+                        }
+
+                        this.partitionLoading = true;
+                        this.partitionResult = '';
+                        this.partitionSuccess = false;
+                        this.pageRanges.forEach(r => { r.success = null; r.message = ''; r.data = null; });
+
+                        // Send all valid ranges in ONE request
+                        const allRanges = validRanges.map(r => ({
+                            start_page: parseInt(r.start_page),
+                            end_page: parseInt(r.end_page),
+                            section_type: r.section_type
+                        }));
+
+                        validRanges.forEach(r => { this.pageRanges[r.idx].loading = true; });
+
+                        try {
+                            const response = await fetch(this.parseExistingDocUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': token
+                                },
+                                body: JSON.stringify({
+                                    document_id: this.selectedDocId,
+                                    page_ranges: allRanges
+                                })
+                            });
+
+                            const resp = await response.json();
+
+                            validRanges.forEach(r => {
+                                const range = this.pageRanges[r.idx];
+                                if (!range) return;
+                                range.loading = false;
+                            });
+
+                            if (resp?.success) {
+                                const data = this.normalizeExtractedData(resp.data || {});
+                                const fieldCount = Object.keys(data).filter(k => {
+                                    const v = data[k];
+                                    return v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0);
+                                }).length;
+
+                                validRanges.forEach(r => {
+                                    const range = this.pageRanges[r.idx];
+                                    if (range) {
+                                        range.success = true;
+                                        range.data = data;
+                                        range.message = `${fieldCount} field diekstrak`;
+                                    }
+                                });
+
+                                if (fieldCount > 0) {
+                                    this.applyExtractedData(data, this.hasFullInputData(data) ? 'lengkap' : 'manual');
+                                }
+
+                                this.partitionSuccess = true;
+                                this.partitionResult = `${validRanges.length} partisi berhasil. ${fieldCount} field terisi.`;
+                                alert('⚠️ Data hasil ekstraksi AI bisa saja tidak akurat atau tidak lengkap. Mohon periksa dan validasi setiap field sebelum menyimpan.');
+                            } else {
+                                const msg = resp?.message || 'Gagal parse';
+                                validRanges.forEach(r => {
+                                    const range = this.pageRanges[r.idx];
+                                    if (range) {
+                                        range.success = false;
+                                        range.message = msg;
+                                    }
+                                });
+                                this.partitionSuccess = false;
+                                this.partitionResult = msg;
+                            }
+                        } catch (e) {
+                            validRanges.forEach(r => {
+                                const range = this.pageRanges[r.idx];
+                                if (range) {
+                                    range.loading = false;
+                                    range.success = false;
+                                    range.message = 'Gagal: ' + e.message;
+                                }
+                            });
+                            this.partitionSuccess = false;
+                            this.partitionResult = 'Gagal: ' + e.message;
+                        }
+
+                        this.partitionLoading = false;
+                    },
+
+                    resetPageRanges() {
+                        this.pageRanges = [
+                            { id: 1, start_page: '', end_page: '', section_type: 'auto', loading: false, success: null, message: '', data: null }
+                        ];
+                        this.partitionResult = '';
+                        this.partitionSuccess = false;
+                        this.selectedDocId = null;
+                    },
+
+                    selectDocumentForPartition(docId) {
+                        this.selectedDocId = docId;
+                        // Reset hasil parsing sebelumnya saat ganti dokumen
+                        this.pageRanges.forEach(r => { r.success = null; r.message = ''; r.data = null; });
+                        this.partitionResult = '';
+                        this.partitionSuccess = false;
                     },
 
                     fetchExistingDocuments() {
