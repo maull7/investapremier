@@ -18,8 +18,14 @@ class HarianReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows
 {
     use ExcelDateHelper;
 
-    public int $imported = 0;
-    public int $skipped = 0;
+    public int $imported = 0;     // record unik yang berhasil diproses (created + updated)
+    public int $created = 0;      // record harga baru yang dibuat
+    public int $updated = 0;      // record harga existing yang diupdate
+    public int $duplicates = 0;   // baris duplikat di Excel (kombinasi RD+tanggal sama)
+    public int $skipped = 0;      // baris kosong/tidak valid
+
+    /** Kombinasi reksa_dana_id|tanggal yang sudah pernah diproses dalam import ini. */
+    private array $processedKeys = [];
 
     public function model(array $row): ?HargaReksaDana
     {
@@ -50,12 +56,27 @@ class HarianReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows
         $aum = is_numeric($row['total_dana_kelolaan'] ?? null) ? $row['total_dana_kelolaan'] : null;
         $up  = is_numeric($row['unit_penyertaan'] ?? null)     ? $row['unit_penyertaan']     : null;
 
+        $key = $reksaDana->id . '|' . $tanggal;
+        if (in_array($key, $this->processedKeys, true)) {
+            $this->duplicates++;
+        } else {
+            $this->processedKeys[] = $key;
+            $exists = HargaReksaDana::where('reksa_dana_id', $reksaDana->id)
+                ->where('tanggal', $tanggal)
+                ->exists();
+            $this->imported++;
+            if ($exists) {
+                $this->updated++;
+            } else {
+                $this->created++;
+            }
+        }
+
         HargaReksaDana::updateOrCreate(
             ['reksa_dana_id' => $reksaDana->id, 'tanggal' => $tanggal],
             ['nab_per_unit' => $row['nab_per_unit'], 'aum' => $aum, 'unit_participation' => $up]
         );
 
-        $this->imported++;
         return null;
     }
 

@@ -463,6 +463,8 @@ class DaftarReksaDanaController extends Controller
             $msg = 'Tidak ada data yang berhasil diimport. ';
             if ($import->skipped > 0) {
                 $msg .= $import->skipped . ' baris dilewati (nama_reksa_dana tidak boleh kosong).';
+            } elseif ($import->duplicates > 0) {
+                $msg .= $import->duplicates . ' baris duplikat dilewati.';
             } else {
                 $msg .= 'Periksa kembali format file excel anda.';
             }
@@ -470,10 +472,7 @@ class DaftarReksaDanaController extends Controller
                 ->with('error', $msg);
         }
 
-        $msg = $import->imported . ' data berhasil diupload.';
-        if ($import->skipped > 0) {
-            $msg .= ' (' . $import->skipped . ' baris dilewati)';
-        }
+        $msg = $this->buildImportMessage('data reksa dana', $import);
         ActivityLogger::log(
             'Upload Harga Reksa Dana',
             $msg,
@@ -495,6 +494,8 @@ class DaftarReksaDanaController extends Controller
             $msg = 'Tidak ada data yang berhasil diimport. ';
             if ($import->skipped > 0) {
                 $msg .= $import->skipped . ' baris dilewati. Pastikan nama_reksa_dana, tanggal, dan nab_per_unit terisi dengan benar.';
+            } elseif ($import->duplicates > 0) {
+                $msg .= $import->duplicates . ' baris duplikat dilewati.';
             } else {
                 $msg .= 'Periksa kembali format file excel anda.';
             }
@@ -502,10 +503,7 @@ class DaftarReksaDanaController extends Controller
                 ->with('error', $msg);
         }
 
-        $msg = $import->imported . ' data berhasil diupload.';
-        if ($import->skipped > 0) {
-            $msg .= ' (' . $import->skipped . ' baris dilewati)';
-        }
+        $msg = $this->buildImportMessage('data harian', $import);
         ActivityLogger::log(
             'Upload Data Harian Reksa Dana',
             $msg,
@@ -757,6 +755,31 @@ class DaftarReksaDanaController extends Controller
 
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harian'])
             ->with('success', 'Data harian berhasil dihapus.');
+    }
+
+    private function buildImportMessage(string $label, object $import): string
+    {
+        $msg = $import->imported . ' ' . $label . ' berhasil diupload.';
+
+        $details = [];
+        if ($import->created > 0) {
+            $details[] = $import->created . ' baru';
+        }
+        if ($import->updated > 0) {
+            $details[] = $import->updated . ' diperbarui';
+        }
+        if ($import->duplicates > 0) {
+            $details[] = $import->duplicates . ' duplikat dilewati';
+        }
+        if ($import->skipped > 0) {
+            $details[] = $import->skipped . ' baris kosong dilewati';
+        }
+
+        if (!empty($details)) {
+            $msg .= ' (' . implode(', ', $details) . ')';
+        }
+
+        return $msg;
     }
 
     private function mergePeopleText(?string $old, string $new, InvestmentPersonService $personService): string

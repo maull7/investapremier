@@ -21,8 +21,14 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows, W
 {
     use ExcelDateHelper;
 
-    public int $imported = 0;
-    public int $skipped = 0;
+    public int $imported = 0;     // record unik yang berhasil diproses (created + updated)
+    public int $created = 0;      // record baru yang dibuat
+    public int $updated = 0;      // record existing yang diupdate
+    public int $duplicates = 0;   // baris duplikat di Excel (record sama muncul >1 kali)
+    public int $skipped = 0;      // baris kosong/tidak valid
+
+    /** ID reksa dana yang sudah pernah diproses dalam import ini. */
+    private array $processedIds = [];
 
     private function resolveInvestmentManagerId(string $nama): ?int
     {
@@ -50,6 +56,7 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows, W
 
         // Cari existing: prioritas kode (jika valid), fallback nama
         $existing = null;
+        $existingKodeInvalid = false;
         if ($kodeValid) {
             $existing = ReksaDana::where('kode_reksa_dana', $kode)->first();
         }
@@ -65,13 +72,19 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows, W
             ? $this->resolveInvestmentManagerId(trim($row['nama_manajer_investasi']))
             : null;
 
+        $kelas = KodeReksaDanaParser::extractKelasFromNama($nama);
+
         if ($existing) {
+            $this->trackReksaDana($existing->id, false);
+
             $updateData = [
                 'nama_reksa_dana'        => $nama,
                 'nama_manajer_investasi' => trim($row['nama_manajer_investasi'] ?? ''),
                 'investment_manager_id'  => $investmentManagerId,
                 'jenis'                  => trim($row['jenis'] ?? ''),
                 'kategori'               => array_filter($kategori),
+                'kategori_produk'        => trim($row['kategori_produk'] ?? '') ?: null,
+                'kelas'                  => $kelas,
                 'mata_uang'              => strtoupper(trim($row['mata_uang'] ?? 'IDR')),
                 'nab_per_unit'           => $row['nab_per_unit'] ?? null,
                 'tanggal_nab'            => $tanggal,
@@ -80,15 +93,14 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows, W
             if ($kodeValid) {
                 $updateData['kode_reksa_dana'] = $kode;
 
+                // Kode KSEI adalah sumber kebenaran: override field yang dapat diparse.
                 $parsedFromKode = $parser->databaseAttributes($kode);
                 foreach ($parsedFromKode as $key => $value) {
-                    if (empty($updateData[$key])) {
-                        $updateData[$key] = $value;
-                    }
+                    $updateData[$key] = $value;
                 }
             } elseif ($existingKodeInvalid) {
                 // Existing kode tidak valid dan Excel tidak provide kode baru → regenerasi
-                $generated = $this->generateKodeReksaDana($updateData);
+                $generated = $this->generateKodeReksaDana($updateData, $nama);
                 if ($generated) {
                     $updateData['kode_reksa_dana'] = $generated;
                 }
@@ -103,17 +115,18 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows, W
                 );
             }
 
-            $this->imported++;
             return $existing;
         }
 
         $kategoriProduk = trim($row['kategori_produk'] ?? '');
+
         $data = [
             'nama_manajer_investasi' => trim($row['nama_manajer_investasi'] ?? ''),
             'investment_manager_id'  => $investmentManagerId,
             'jenis'                  => trim($row['jenis'] ?? ''),
             'kategori'               => array_filter($kategori),
             'kategori_produk'        => $kategoriProduk ?: null,
+            'kelas'                  => $kelas,
             'mata_uang'              => strtoupper(trim($row['mata_uang'] ?? 'IDR')),
             'nab_per_unit'           => $row['nab_per_unit'] ?? null,
             'tanggal_nab'            => $tanggal,
@@ -122,17 +135,19 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows, W
         if ($kodeValid) {
             $data['kode_reksa_dana'] = $kode;
 
+            // Kode KSEI adalah sumber kebenaran: isi/override field-field
+            // yang dapat diparse dari kode (kecuali nama reksa dana).
             $parsedFromKode = $parser->databaseAttributes($kode);
             foreach ($parsedFromKode as $key => $value) {
-                if (empty($data[$key])) {
-                    $data[$key] = $value;
-                }
+                $data[$key] = $value;
             }
         } else {
-            $data['kode_reksa_dana'] = $this->generateKodeReksaDana($data);
+            $data['kode_reksa_dana'] = $this->generateKodeReksaDana($data, $nama);
         }
 
         $reksaDana = ReksaDana::create(array_merge(['nama_reksa_dana' => $nama], $data));
+
+        $this->trackReksaDana($reksaDana->id, true);
 
         if ($tanggal && !empty($row['nab_per_unit'])) {
             HargaReksaDana::updateOrCreate(
@@ -141,11 +156,27 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows, W
             );
         }
 
-        $this->imported++;
         return $reksaDana;
     }
 
-    private function generateKodeReksaDana(array $data): ?string
+    private function trackReksaDana(int $id, bool $wasCreated): void
+    {
+        if (in_array($id, $this->processedIds, true)) {
+            $this->duplicates++;
+            return;
+        }
+
+        $this->processedIds[] = $id;
+        $this->imported++;
+
+        if ($wasCreated) {
+            $this->created++;
+        } else {
+            $this->updated++;
+        }
+    }
+
+    private function generateKodeReksaDana(array $data, string $namaReksaDana): ?string
     {
         if (empty($data['nama_manajer_investasi']) || empty($data['jenis'])) return null;
 
@@ -159,10 +190,10 @@ class HargaReksaDanaImport implements ToModel, WithHeadingRow, SkipsEmptyRows, W
             $manager->kode_mi,
             $data['jenis'],
             $data['kategori_produk'] ?? null,
-            null,
+            $data['kelas'] ?? null,
             $data['kategori'] ?? [],
             $data['mata_uang'] ?? 'IDR',
-            $data['nama_reksa_dana'] ?? ''
+            $namaReksaDana
         );
     }
 }

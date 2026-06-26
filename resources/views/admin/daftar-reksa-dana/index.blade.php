@@ -534,6 +534,7 @@
                         @endif
                     </form>
                 </div>
+            </div>
             @if ($lastSyncRun)
                 <div class="px-5 py-2 bg-orange-50 border-b border-orange-200 flex items-center gap-2 text-xs text-orange-800">
                     <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\SyncChangeLog;
 use App\Models\SyncRun;
 use App\Services\BackendSyncService;
+use App\Services\KodeReksaDanaParser;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -69,6 +70,7 @@ class SyncAllPasardanaJob implements ShouldQueue
             $rdUpdated = 0;
             $rdSkipped = 0;
             $backendIdToLocalId = [];
+            $parser = app(KodeReksaDanaParser::class);
 
             foreach ($rdData as $item) {
                 $nama = $item['nama_reksa_dana'] ?? $item['name'] ?? '';
@@ -83,6 +85,11 @@ class SyncAllPasardanaJob implements ShouldQueue
                 $attrs = [];
                 foreach (['nama_reksa_dana','kode_reksa_dana','jenis','jenis_reksa_dana','kategori','mata_uang','nama_manajer_investasi','nab_per_unit','tanggal_nab','aum','total_unit','return_1d','return_1m','return_1y','return_3y','return_5y','sharpe_ratio_1y','sharpe_ratio_3y','sharpe_ratio_5y','stdev_1y','stdev_3y','stdev_5y','beta_1y','beta_3y','beta_5y','max_drawdown_1y','max_drawdown_3y','max_drawdown_5y','pasardana_id'] as $f) {
                     if (isset($item[$f])) $attrs[$f] = $item[$f];
+                }
+
+                // Lengkapi kelas/jenis/kategori dari kode valid atau nama
+                foreach ($parser->attributesFromKodeOrNama($attrs['kode_reksa_dana'] ?? null, $nama) as $key => $value) {
+                    $attrs[$key] = $value;
                 }
 
                 if ($existing) {

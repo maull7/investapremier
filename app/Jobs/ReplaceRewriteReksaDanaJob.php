@@ -44,6 +44,8 @@ class ReplaceRewriteReksaDanaJob implements ShouldQueue
                 'duplicates_removed' => 0,
                 'kategori_produk_filled' => 0,
                 'kategori_produk_skipped' => 0,
+                'kelas_filled' => 0,
+                'kelas_skipped' => 0,
             ];
 
             // ──────────────────────────────────────────────
@@ -143,9 +145,49 @@ class ReplaceRewriteReksaDanaJob implements ShouldQueue
             $stats['kategori_produk_skipped'] = $skipped;
 
             // ──────────────────────────────────────────────
+            // Step 4: Fix Kelas
+            // ──────────────────────────────────────────────
+            $run->markStep('fixing_kelas', 'Memperbaiki Kelas...', 90);
+
+            $nullKelas = ReksaDana::whereNull('kelas')->orWhere('kelas', '')->get();
+            $kelasFilled = 0;
+            $kelasSkipped = 0;
+
+            foreach ($nullKelas as $rd) {
+                $updated = false;
+
+                // Priority 1: Parse dari kode_reksa_dana
+                if (!empty($rd->kode_reksa_dana)) {
+                    $attrs = $parser->databaseAttributes($rd->kode_reksa_dana);
+                    if (!empty($attrs['kelas'])) {
+                        $rd->update(['kelas' => $attrs['kelas']]);
+                        $kelasFilled++;
+                        $updated = true;
+                    }
+                }
+
+                // Priority 2: Extract dari nama reksa dana
+                if (!$updated) {
+                    $kelas = KodeReksaDanaParser::extractKelasFromNama($rd->nama_reksa_dana);
+                    if ($kelas) {
+                        $rd->update(['kelas' => $kelas]);
+                        $kelasFilled++;
+                        $updated = true;
+                    }
+                }
+
+                if (!$updated) {
+                    $kelasSkipped++;
+                }
+            }
+
+            $stats['kelas_filled'] = $kelasFilled;
+            $stats['kelas_skipped'] = $kelasSkipped;
+
+            // ──────────────────────────────────────────────
             // Complete
             // ──────────────────────────────────────────────
-            $message = "Selesai! {$stats['duplicate_groups']} grup duplikat ditemukan, {$stats['duplicates_removed']} record dihapus. Kategori Produk: {$filled} diperbaiki, {$skipped} tidak bisa diisi (data tidak mencukupi).";
+            $message = "Selesai! {$stats['duplicate_groups']} grup duplikat ditemukan, {$stats['duplicates_removed']} record dihapus. Kategori Produk: {$filled} diperbaiki, {$skipped} tidak bisa diisi. Kelas: {$kelasFilled} diperbaiki, {$kelasSkipped} tidak bisa diisi.";
             $run->markCompleted($message, $stats);
 
             $this->logActivity($run, 'Bersihkan & Perbaiki Data', $message, 'success');

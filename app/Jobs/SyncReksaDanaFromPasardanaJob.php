@@ -7,6 +7,7 @@ use App\Models\ReksaDana;
 use App\Models\SyncChangeLog;
 use App\Models\SyncRun;
 use App\Services\BackendSyncService;
+use App\Services\KodeReksaDanaParser;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -39,13 +40,14 @@ class SyncReksaDanaFromPasardanaJob implements ShouldQueue
         }
 
         try {
-            $pending = 0;
+                $pending = 0;
             $updated = 0;
             $skipped = 0;
             $harianCreated = 0;
             $harianUpdated = 0;
             $harianSkipped = 0;
             $backendIdToLocalId = [];
+            $parser = app(KodeReksaDanaParser::class);
 
             // Step 1: Fetch RD data
             $run->markStep('fetch_rd', 'Mengambil data RD dari backend...', 20);
@@ -103,6 +105,11 @@ class SyncReksaDanaFromPasardanaJob implements ShouldQueue
                 if (isset($item['max_drawdown_3y'])) $attrs['max_drawdown_3y'] = $item['max_drawdown_3y'];
                 if (isset($item['max_drawdown_5y'])) $attrs['max_drawdown_5y'] = $item['max_drawdown_5y'];
                 if (isset($item['pasardana_id'])) $attrs['pasardana_id'] = $item['pasardana_id'];
+
+                // Lengkapi kelas/jenis/kategori dari kode valid atau nama
+                foreach ($parser->attributesFromKodeOrNama($attrs['kode_reksa_dana'] ?? null, $nama) as $key => $value) {
+                    $attrs[$key] = $value;
+                }
 
                 if ($existing) {
                     // EXISTING RD: langsung update

@@ -100,7 +100,6 @@ class KodeReksaDanaParser
         'A10' => 'Kelas A1',
         'A1K' => 'Kelas A1K',
         'B00' => 'Kelas B',
-        'B10' => 'Kelas B1',
         'C00' => 'Kelas C',
     ];
 
@@ -110,7 +109,6 @@ class KodeReksaDanaParser
         'Kelas A1' => 'A10',
         'Kelas A1K' => 'A1K',
         'Kelas B' => 'B00',
-        'Kelas B1' => 'B10',
         'Kelas C' => 'C00',
     ];
 
@@ -334,6 +332,55 @@ class KodeReksaDanaParser
         return substr($letters, 0, 4);
     }
 
+    /**
+     * Ekstrak kelas dari nama reksa dana (contoh: "... Kelas A" -> "Kelas A").
+     * Mengembalikan null jika tidak ditemukan.
+     */
+    public static function extractKelasFromNama(string $namaReksaDana): ?string
+    {
+        if (!preg_match('/\s+kelas\s+(.+)$/i', trim($namaReksaDana), $m)) {
+            return null;
+        }
+
+        $kelasRaw = trim($m[1]);
+
+        // Normalisasi ke format lengkap "Kelas X"
+        $try = 'Kelas ' . $kelasRaw;
+        if (isset(self::KELAS_REVERSE[$try])) {
+            return $try;
+        }
+
+        // Jika sudah dalam format lengkap atau singkatan yang dikenal
+        if (isset(self::KELAS_REVERSE[$kelasRaw])) {
+            return $kelasRaw;
+        }
+
+        return null;
+    }
+
+    /**
+     * Melengkapi atribut reksa dana dari kode (jika valid) atau dari nama
+     * (ekstrak kelas jika ada). Berguna untuk import dan sync.
+     */
+    public function attributesFromKodeOrNama(?string $kode, string $namaReksaDana): array
+    {
+        $attributes = [];
+
+        if ($kode && $this->isValidKode($kode)) {
+            $attributes = $this->databaseAttributes($kode);
+        }
+
+        // Kelas dari nama jika belum didapat dari kode
+        if (empty($attributes['kelas'])) {
+            $kelas = self::extractKelasFromNama($namaReksaDana);
+            if ($kelas) {
+                $attributes['kelas'] = $kelas;
+            }
+        }
+
+        return $attributes;
+    }
+
     public function generateFromRecord(\App\Models\ReksaDana $record): ?string
     {
         $manager = $record->investmentManager;
@@ -366,9 +413,9 @@ class KodeReksaDanaParser
         $isEtf = false;
         if (is_array($record->kategori)) {
             $isIndex = in_array('Index', $record->kategori) || in_array('index', $record->kategori)
-                    || in_array('Indeks', $record->kategori) || in_array('indeks', $record->kategori);
+                || in_array('Indeks', $record->kategori) || in_array('indeks', $record->kategori);
             $isEtf = in_array('ETF', $record->kategori) || in_array('etf', $record->kategori)
-                  || in_array('Exchanged Traded Fund', $record->kategori);
+                || in_array('Exchanged Traded Fund', $record->kategori);
         }
         // Also detect from kategori_produk
         if (stripos($record->kategori_produk, 'index') !== false) {
