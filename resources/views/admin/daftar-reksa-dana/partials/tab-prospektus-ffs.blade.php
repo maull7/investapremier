@@ -23,16 +23,57 @@
         class="p-5 space-y-4" x-data="{ type: @js(old('document_type', 'prospektus')) }">
         @csrf
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
+            <div class="relative" x-data="{
+                    rdOptions: @js($reksaDanaOptions->map(fn($rd) => ['id' => $rd->id, 'label' => ($rd->kode_reksa_dana ? $rd->kode_reksa_dana . ' - ' : '') . $rd->nama_reksa_dana])->values()),
+                    rdSearch: '',
+                    rdOpen: false,
+                    rdSelected: @js(old('reksa_dana_id') ? (int) old('reksa_dana_id') : null),
+                    get rdFiltered() {
+                        const term = this.rdSearch.toLowerCase();
+                        return term === ''
+                            ? this.rdOptions.slice(0, 50)
+                            : this.rdOptions.filter(o => o.label.toLowerCase().includes(term)).slice(0, 50);
+                    },
+                    get rdSelectedLabel() {
+                        const found = this.rdOptions.find(o => o.id === this.rdSelected);
+                        return found ? found.label : '';
+                    },
+                    rdSelect(id, label) {
+                        this.rdSelected = id;
+                        this.rdSearch = label;
+                        this.rdOpen = false;
+                    },
+                    rdClear() {
+                        this.rdSelected = null;
+                        this.rdSearch = '';
+                        this.rdOpen = true;
+                    },
+                    rdInit() {
+                        if (this.rdSelected) {
+                            const found = this.rdOptions.find(o => o.id === this.rdSelected);
+                            this.rdSearch = found ? found.label : '';
+                        }
+                    }
+                }" x-init="rdInit()" @click.away="rdOpen = false">
                 <label class="block text-xs font-semibold text-muted mb-1">Reksa Dana *</label>
-                <select name="reksa_dana_id" required class="w-full text-sm border border-line rounded-lg px-3 py-2">
-                    <option value="">Pilih Reksa Dana</option>
-                    @foreach ($reksaDanaOptions as $rd)
-                        <option value="{{ $rd->id }}" @selected(old('reksa_dana_id') == $rd->id)>
-                            {{ $rd->kode_reksa_dana ? $rd->kode_reksa_dana . ' - ' : '' }}{{ $rd->nama_reksa_dana }}
-                        </option>
-                    @endforeach
-                </select>
+                <input type="hidden" name="reksa_dana_id" :value="rdSelected" required>
+                <div class="relative">
+                    <input type="text" x-model="rdSearch" @focus="rdOpen = true" @input="rdOpen = true"
+                        placeholder="Ketik kode atau nama reksa dana..." autocomplete="off"
+                        class="w-full text-sm border border-line rounded-lg px-3 py-2 pr-8 focus:border-accent focus:ring focus:ring-accent/30">
+                    <button type="button" @click="rdClear()" x-show="rdSelected || rdSearch"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-red-500 text-xs">✕</button>
+                </div>
+                <div x-show="rdOpen" x-cloak
+                    class="absolute z-20 mt-1 left-0 right-0 max-h-60 overflow-y-auto bg-white border border-line rounded-lg shadow-lg">
+                    <template x-for="option in rdFiltered" :key="option.id">
+                        <div @click="rdSelect(option.id, option.label)"
+                            class="px-3 py-2 text-sm hover:bg-emerald-50 cursor-pointer border-b border-line last:border-b-0"
+                            :class="{ 'bg-emerald-50': rdSelected === option.id }"
+                            x-text="option.label"></div>
+                    </template>
+                    <div x-show="rdFiltered.length === 0" class="px-3 py-2 text-sm text-muted">Tidak ditemukan</div>
+                </div>
             </div>
             <div>
                 <label class="block text-xs font-semibold text-muted mb-1">Jenis Dokumen *</label>
