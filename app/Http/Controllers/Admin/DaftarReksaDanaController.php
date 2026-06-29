@@ -298,6 +298,7 @@ class DaftarReksaDanaController extends Controller
             'assetAllocations' => fn($q) => $q->orderBy('period_date'),
             'portfolioCompositions' => fn($q) => $q->orderBy('period_date'),
             'managementTeams',
+            'investmentManager',
             'documents' => fn($q) => $q->with(['parsedPages', 'partitions']),
         ])->findOrFail($id);
 

@@ -1151,16 +1151,17 @@
 
     {{-- ===================== JAVASCRIPT ===================== --}}
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        function openModal(id) {
-            const el = document.getElementById(id);
-            if (el) el.classList.remove('hidden');
-        }
+    function openModal(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('hidden');
+    }
 
-        function closeModal(id) {
-            const el = document.getElementById(id);
-            if (el) el.classList.add('hidden');
-        }
+    function closeModal(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
 
         // --- Event delegation: Parse Document buttons ---
         document.addEventListener('click', function(e) {

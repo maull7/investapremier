@@ -119,16 +119,16 @@
                     <div class="grid grid-cols-1 sm:grid-cols-1 gap-4">
                         <div>
                             <x-input-label for="tujuan_investasi" value="Tujuan Investasi *" />
-                            <x-text-input id="tujuan_investasi" name="tujuan_investasi" type="text"
-                                class="mt-1 block w-full" value="{{ old('tujuan_investasi') }}" x-model="tujuanInvestasi"
-                                x-bind:required="mode !== 'link-website'" />
+                            <textarea id="tujuan_investasi" name="tujuan_investasi" rows="3"
+                                class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm"
+                                x-model="tujuanInvestasi" x-bind:required="mode !== 'link-website'">{{ old('tujuan_investasi') }}</textarea>
                             <x-input-error :messages="$errors->get('tujuan_investasi')" class="mt-1" />
                         </div>
                         <div>
                             <x-input-label for="kebijakan_investasi" value="Kebijakan Investasi *" />
-                            <x-text-input id="kebijakan_investasi" name="kebijakan_investasi" type="text"
-                                class="mt-1 block w-full" value="{{ old('kebijakan_investasi') }}"
-                                x-model="kebijakanInvestasi" x-bind:required="mode !== 'link-website'" />
+                            <textarea id="kebijakan_investasi" name="kebijakan_investasi" rows="3"
+                                class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm"
+                                x-model="kebijakanInvestasi" x-bind:required="mode !== 'link-website'">{{ old('kebijakan_investasi') }}</textarea>
                             <x-input-error :messages="$errors->get('kebijakan_investasi')" class="mt-1" />
                         </div>
                     </div>
