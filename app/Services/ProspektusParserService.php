@@ -227,13 +227,19 @@ PROMPT;
                 'nama_bab'    => $this->normalizeChapterName(trim($c['nama_bab'])),
                 'halaman_pdf' => is_numeric($c['halaman_pdf'] ?? null) ? (int) $c['halaman_pdf'] : null,
             ])
-            ->filter(fn($c) => $c['halaman_pdf'] === null || $c['halaman_pdf'] > $tocEndPage)
             ->sortBy('halaman_pdf')
             ->values();
 
         if ($validChapters->isEmpty()) {
             return 0;
         }
+
+        // Potong halaman PDF pertama yang valid agar menjadi acuan offset
+        $firstPdf = $validChapters->first()['halaman_pdf'];
+        $firstContentPage = $tocEndPage + 1;
+        $offset = ($firstPdf !== null && $firstPdf >= $firstContentPage)
+            ? $firstPdf - $firstContentPage
+            : 0;
 
         // Hapus partisi auto-generated sebelumnya agar tidak duplikat
         DocumentPartition::where('reksa_dana_document_id', $document->id)
@@ -245,14 +251,23 @@ PROMPT;
 
         foreach ($validChapters as $index => $chapter) {
             $startPagePdf = $chapter['halaman_pdf'];
-            $startPageParse = max(1, $startPagePdf - $tocEndPage);
+
+            // Gunakan offset yang sudah dihitung atau clamp ke halaman konten pertama
+            if ($startPagePdf === null) {
+                $startPagePdf = $firstContentPage;
+            } elseif ($startPagePdf < $firstContentPage) {
+                $startPagePdf = $firstContentPage;
+            }
+
+            $startPageParse = $startPagePdf - $tocEndPage;
 
             // Tentukan halaman akhir partisi
             $endPageParse = $totalParsePages;
             $endPagePdf = $totalPages;
             $nextChapter = $validChapters->get($index + 1);
             if ($nextChapter && is_numeric($nextChapter['halaman_pdf'])) {
-                $endPagePdf = $nextChapter['halaman_pdf'] - 1;
+                $nextStart = max($nextChapter['halaman_pdf'], $firstContentPage);
+                $endPagePdf = $nextStart - 1;
                 $endPageParse = max(1, $endPagePdf - $tocEndPage);
             }
 

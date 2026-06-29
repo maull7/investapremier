@@ -19,6 +19,7 @@ class InvestmentPersonService
         'shareholder' => 'Pemegang Saham',
         'investment_committee' => 'Komite Investasi',
         'investment_management_team' => 'Tim Pengelola Investasi',
+        'dewan_pengawas_syariah' => 'Dewan Pengawas Syariah',
     ];
 
     public function sectionsForManager(InvestmentManager $manager): array
@@ -49,6 +50,10 @@ class InvestmentPersonService
             'investment_management_team' => [
                 'label' => 'Tim Pengelola Investasi',
                 'items' => $this->parsePeople($manager->investment_management_team, 'Tim Pengelola Investasi'),
+            ],
+            'dewan_pengawas_syariah' => [
+                'label' => 'Dewan Pengawas Syariah',
+                'items' => $this->parsePeople($manager->dewan_pengawas_syariah, 'Dewan Pengawas Syariah'),
             ],
         ];
     }

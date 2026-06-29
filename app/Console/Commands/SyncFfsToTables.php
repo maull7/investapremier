@@ -1,71 +1,94 @@
 <?php
 
-namespace App\Services;
+namespace App\Console\Commands;
 
 use App\Models\FfsExtractionResult;
+use App\Models\ReksaDana;
 use App\Models\HargaReksaDana;
 use App\Models\MutualFundAssetAllocation;
 use App\Models\MutualFundPortfolioComposition;
-use App\Models\ReksaDana;
-use App\Models\ReksaDanaDocument;
+use Illuminate\Console\Command;
 
-class FfsExtractionService
+class SyncFfsToTables extends Command
 {
-    public function __construct(
-        private GroqService $groqService,
-        private ProspektusParserService $parserService,
-    ) {
-    }
+    protected $signature = 'ffs:sync
+        {--id= : Sync specific FFS extraction result ID}
+        {--fund-id= : Sync all FFS for a specific fund ID}
+        {--dry-run : Preview only, no changes}';
 
-    public function extractAndSave(ReksaDanaDocument $document, ?int $userId = null): array
+    protected $description = 'Sync existing FFS extraction results to related tables';
+
+    public function handle(): int
     {
-        if ($document->document_type !== ReksaDanaDocument::TYPE_FFS) {
-            throw new \RuntimeException('Dokumen bukan tipe FFS.');
+        $query = FfsExtractionResult::with('document');
+
+        if ($id = $this->option('id')) {
+            $query->where('id', $id);
+        }
+        if ($fundId = $this->option('fund-id')) {
+            $query->where('reksa_dana_id', $fundId);
         }
 
-        if ($document->parsedPages->isEmpty()) {
-            throw new \RuntimeException('Dokumen FFS belum diparse. Lakukan parse dokumen terlebih dahulu.');
+        $results = $query->get();
+
+        if ($results->isEmpty()) {
+            $this->warn('No FFS extraction results found.');
+            return 0;
         }
 
-        $fullText = $this->parserService->getAllText($document);
+        $this->info("Found {$results->count()} FFS extraction(s).");
+        $synced = 0;
+        $errors = 0;
 
-        if (empty(trim($fullText))) {
-            throw new \RuntimeException('Teks dokumen FFS kosong.');
+        foreach ($results as $extraction) {
+            $data = $extraction->extracted_data;
+            if (!is_array($data) || empty($data)) {
+                $this->warn("  [{$extraction->id}] extracted_data is empty, skipping.");
+                continue;
+            }
+
+            if (!$extraction->document) {
+                $this->warn("  [{$extraction->id}] document not found, skipping.");
+                continue;
+            }
+
+            $fund = ReksaDana::find($extraction->reksa_dana_id);
+            if (!$fund) {
+                $this->warn("  [{$extraction->id}] fund not found, skipping.");
+                continue;
+            }
+
+            if ($this->option('dry-run')) {
+                $this->line("  [{$extraction->id}] Would sync fund #{$fund->id} {$fund->nama_reksa_dana}");
+                $synced++;
+                continue;
+            }
+
+            try {
+                $this->syncOne($fund, $extraction, $data);
+                $this->info("  [{$extraction->id}] Synced: {$fund->nama_reksa_dana}");
+                $synced++;
+            } catch (\Throwable $e) {
+                $this->error("  [{$extraction->id}] Error: {$e->getMessage()}");
+                $errors++;
+            }
         }
 
-        $aiResult = $this->groqService->parseFfsPdf($fullText, null);
-
-        $result = FfsExtractionResult::updateOrCreate(
+        $this->newLine();
+        $this->table(
+            ['Status', 'Count'],
             [
-                'reksa_dana_document_id' => $document->id,
-            ],
-            [
-                'reksa_dana_id' => $document->reksa_dana_id,
-                'created_by'    => $userId,
-                'ffs_month'     => $aiResult['ffs_bulan'] ?? $document->ffs_month,
-                'ffs_year'      => $aiResult['ffs_tahun'] ?? $document->ffs_year,
-                'tanggal_data'  => $this->normalizeDate($aiResult['tanggal_data'] ?? null),
-                'extracted_data' => $aiResult,
+                ['Synced', $synced],
+                ['Errors', $errors],
             ]
         );
 
-        $this->syncToTables($document, $aiResult);
-
-        return [
-            'saved'    => true,
-            'result'   => $result,
-            'fields'   => array_keys($aiResult),
-            'ai_data'  => $aiResult,
-        ];
+        return $errors > 0 ? 1 : 0;
     }
 
-    private function syncToTables(ReksaDanaDocument $document, array $data): void
+    private function syncOne(ReksaDana $fund, FfsExtractionResult $extraction, array $data): void
     {
-        $fund = ReksaDana::find($document->reksa_dana_id);
-        if (!$fund) return;
-
         $tanggalData = $this->normalizeDate($data['tanggal_data'] ?? null) ?? now()->toDateString();
-
         $updates = [];
 
         if (isset($data['total_aum'])) $updates['aum'] = $data['total_aum'];
@@ -85,7 +108,6 @@ class FfsExtractionService
         if (isset($data['bank_kustodian'])) $updates['custodian_bank'] = $data['bank_kustodian'];
         if (isset($data['tanggal_peluncuran'])) $updates['launch_date'] = $data['tanggal_peluncuran'];
         if (isset($data['mata_uang'])) $updates['mata_uang'] = $data['mata_uang'];
-
         $updates['last_fund_factsheet'] = $tanggalData;
         $updates['last_updated_portfolio'] = $tanggalData;
 
@@ -107,18 +129,13 @@ class FfsExtractionService
 
         if (!empty($data['alokasi_aset']) && is_array($data['alokasi_aset'])) {
             $aa = MutualFundAssetAllocation::updateOrCreate(
-                [
-                    'reksa_dana_id' => $fund->id,
-                    'period_date' => $tanggalData,
-                ],
+                ['reksa_dana_id' => $fund->id, 'period_date' => $tanggalData],
                 []
             );
-
             foreach ($data['alokasi_aset'] as $item) {
                 $nama = strtolower($item['nama_aset'] ?? '');
                 $persen = $item['persentase'] ?? null;
                 if ($persen === null) continue;
-
                 if (str_contains($nama, 'saham') || str_contains($nama, 'ekuitas') || str_contains($nama, 'equity')) {
                     $aa->equity_percent = $persen;
                 } elseif (str_contains($nama, 'obligasi') || str_contains($nama, 'pendapatan tetap') || str_contains($nama, 'fixed income') || str_contains($nama, 'efek utang') || str_contains($nama, 'bond')) {
@@ -129,36 +146,21 @@ class FfsExtractionService
                     $aa->cash_percent = $persen;
                 }
             }
-
             $aa->save();
         }
 
         $holdings = [];
-        if (!empty($data['efek']) && is_array($data['efek'])) {
-            foreach ($data['efek'] as $item) {
-                $holdings[] = [
-                    'security_name' => $item['kode_efek'] ?: $item['nama_efek'],
-                    'security_type' => 'Saham',
-                    'weight_percent' => $item['bobot'] ?? null,
-                ];
-            }
-        }
-        if (!empty($data['obligasi']) && is_array($data['obligasi'])) {
-            foreach ($data['obligasi'] as $item) {
-                $holdings[] = [
-                    'security_name' => $item['kode_obligasi'] ?: $item['nama_obligasi'],
-                    'security_type' => 'Obligasi',
-                    'weight_percent' => $item['bobot'] ?? null,
-                ];
-            }
-        }
-        if (!empty($data['sukuk']) && is_array($data['sukuk'])) {
-            foreach ($data['sukuk'] as $item) {
-                $holdings[] = [
-                    'security_name' => $item['kode_sukuk'] ?: $item['nama_sukuk'],
-                    'security_type' => 'Sukuk',
-                    'weight_percent' => $item['bobot'] ?? null,
-                ];
+        foreach (['efek' => 'Saham', 'obligasi' => 'Obligasi', 'sukuk' => 'Sukuk'] as $key => $type) {
+            if (!empty($data[$key]) && is_array($data[$key])) {
+                foreach ($data[$key] as $item) {
+                    $codeField = $key === 'efek' ? 'kode_efek' : ($key === 'obligasi' ? 'kode_obligasi' : 'kode_sukuk');
+                    $nameField = $key === 'efek' ? 'nama_efek' : ($key === 'obligasi' ? 'nama_obligasi' : 'nama_sukuk');
+                    $holdings[] = [
+                        'security_name' => $item[$codeField] ?: $item[$nameField],
+                        'security_type' => $type,
+                        'weight_percent' => $item['bobot'] ?? null,
+                    ];
+                }
             }
         }
         if (!empty($data['bank']) && is_array($data['bank'])) {
@@ -175,7 +177,6 @@ class FfsExtractionService
             MutualFundPortfolioComposition::where('reksa_dana_id', $fund->id)
                 ->where('period_date', $tanggalData)
                 ->delete();
-
             foreach ($holdings as $h) {
                 MutualFundPortfolioComposition::create([
                     'reksa_dana_id' => $fund->id,
@@ -188,41 +189,24 @@ class FfsExtractionService
         }
     }
 
+    private function normalizeDate(?string $date): ?string
+    {
+        if (empty($date)) return null;
+        $date = trim($date);
+        $parsed = \DateTime::createFromFormat('Y-m-d', $date);
+        if ($parsed && $parsed->format('Y-m-d') === $date) return $date;
+        $parsed = \DateTime::createFromFormat('d/m/Y', $date);
+        if ($parsed) return $parsed->format('Y-m-d');
+        $parsed = \DateTime::createFromFormat('d-m-Y', $date);
+        if ($parsed) return $parsed->format('Y-m-d');
+        $timestamp = strtotime($date);
+        if ($timestamp !== false) return date('Y-m-d', $timestamp);
+        return null;
+    }
+
     private function toDecimal(mixed $value): ?float
     {
         if ($value === null || $value === '' || $value === false) return null;
-        // AI returns raw percentage (5.5 = 5.5%), DB stores Pasardana format (0.055)
         return (float) $value / 100;
-    }
-
-    private function normalizeDate(?string $date): ?string
-    {
-        if (empty($date)) {
-            return null;
-        }
-
-        // Tangani format umum: YYYY-MM-DD, DD/MM/YYYY, dsb.
-        $date = trim($date);
-        $parsed = \DateTime::createFromFormat('Y-m-d', $date);
-        if ($parsed && $parsed->format('Y-m-d') === $date) {
-            return $date;
-        }
-
-        $parsed = \DateTime::createFromFormat('d/m/Y', $date);
-        if ($parsed) {
-            return $parsed->format('Y-m-d');
-        }
-
-        $parsed = \DateTime::createFromFormat('d-m-Y', $date);
-        if ($parsed) {
-            return $parsed->format('Y-m-d');
-        }
-
-        $timestamp = strtotime($date);
-        if ($timestamp !== false) {
-            return date('Y-m-d', $timestamp);
-        }
-
-        return null;
     }
 }
