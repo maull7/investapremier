@@ -298,6 +298,7 @@ class DaftarReksaDanaController extends Controller
             'assetAllocations' => fn($q) => $q->orderBy('period_date'),
             'portfolioCompositions' => fn($q) => $q->orderBy('period_date'),
             'managementTeams',
+            'investmentManager',
             'documents' => fn($q) => $q->with(['parsedPages', 'partitions']),
         ])->findOrFail($id);
 
@@ -347,8 +348,8 @@ class DaftarReksaDanaController extends Controller
         $returnMonthly = null;
         $returnYearly = null;
 
-        // — NAV-based returns (when history is available) —
-        if ($latestNav && $firstNav && $firstNav->nab_per_unit > 0) {
+        // — NAV-based returns (when history has at least 2 points) —
+        if ($latestNav && $firstNav && $firstNav->nab_per_unit > 0 && $navHistory->count() > 1) {
             $returnYearly = (($latestNav->nab_per_unit - $firstNav->nab_per_unit) / $firstNav->nab_per_unit) * 100;
         }
 
@@ -365,7 +366,7 @@ class DaftarReksaDanaController extends Controller
             $returnMonthly = (($latestNav->nab_per_unit - $prevMonthNav->nab_per_unit) / $prevMonthNav->nab_per_unit) * 100;
         }
 
-        // — Fallback to Pasardana return fields when NAV history is empty —
+        // — Fallback to Pasardana/FFS return fields when NAV history can't compute —
         if ($returnDaily === null && $fund->return_1d !== null) {
             $returnDaily = (float) $fund->return_1d * 100;
         }
@@ -375,6 +376,8 @@ class DaftarReksaDanaController extends Controller
         if ($returnYearly === null && $fund->return_1y !== null) {
             $returnYearly = (float) $fund->return_1y * 100;
         }
+
+
 
         // — Pasardana risk metrics —
         $riskMetrics = [

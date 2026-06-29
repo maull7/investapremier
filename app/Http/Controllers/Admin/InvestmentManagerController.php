@@ -208,6 +208,7 @@ class InvestmentManagerController extends Controller
             'shareholders'           => 'nullable|string',
             'investment_committee'    => 'nullable|string',
             'investment_management_team' => 'nullable|string',
+            'dewan_pengawas_syariah' => 'nullable|string',
             'description'            => 'nullable|string',
             'reksa_dana_id'          => 'nullable|integer|exists:reksa_dana,id',
             'tahun'                  => 'nullable|integer',
@@ -217,6 +218,7 @@ class InvestmentManagerController extends Controller
         foreach ([
             'commissioners',
             'directors',
+            'dewan_pengawas_syariah',
             'shareholders',
             'investment_committee',
             'investment_management_team',

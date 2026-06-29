@@ -110,6 +110,9 @@
                 @if($fund->investmentManager || $fund->nama_manajer_investasi)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Manajer Investasi</span><span class="text-sm">@if($fund->investmentManager)<a href="{{ route('admin.investment-managers.show', $fund->investmentManager) }}" class="text-accent hover:underline">{{ $fund->nama_manajer_investasi }}</a>@else{{ $fund->nama_manajer_investasi }}@endif</span></div>@endif
                 @if($fund->custodian_bank)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Bank Kustodian</span><span class="text-sm">{{ $fund->custodian_bank }}</span></div>@endif
                 @if($fund->launch_date)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Tanggal Peluncuran</span><span class="text-sm">{{ $fund->launch_date->format('d M Y') }}</span></div>@endif
+                @if($fund->tujuan_investasi)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Tujuan Investasi</span><span class="text-sm">{{ $fund->tujuan_investasi }}</span></div>@endif
+                @if($fund->kebijakan_investasi)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Kebijakan Investasi</span><span class="text-sm">{{ $fund->kebijakan_investasi }}</span></div>@endif
+                @if($fund->benchmark)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Tolak Ukur / Benchmark</span><span class="text-sm">{{ $fund->benchmark }}</span></div>@endif
                 @if($fund->display_mata_uang)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Mata Uang</span><span class="text-sm">{{ $fund->display_mata_uang }}</span></div>@endif
                 @if($fund->jenis)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Kategori</span><span class="text-sm">{{ $fund->kategori_label ?: $fund->jenis }}</span></div>@endif
                 @if($fund->jenis)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Jenis Reksa Dana</span><span class="text-sm">{{ $fund->jenis }}</span></div>@endif
@@ -152,13 +155,20 @@
     </div>
     @endif
 
-    {{-- Management Team --}}
-    @php $committees = $fund->managementTeams->where('type', 'committee'); @endphp
-    @php $investmentManagers = $fund->managementTeams->where('type', 'investment_manager'); @endphp
-    @if($committees->isNotEmpty())
+    {{-- Komite Investasi & Tim Pengelola --}}
+    @php
+        $committees = $fund->managementTeams->where('type', 'committee');
+        $investmentManagers = $fund->managementTeams->where('type', 'investment_manager');
+        $mi = $fund->investmentManager;
+    @endphp
+    @if($committees->isNotEmpty() || $investmentManagers->isNotEmpty() || $mi)
     <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mt-6">
         <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
-            <h2 class="font-bold text-white text-sm">Komite Investasi</h2>
+            <h2 class="font-bold text-white text-sm">Komite Investasi & Tim Pengelola</h2>
+        </div>
+        @if($committees->isNotEmpty())
+        <div class="px-6 py-3 border-b border-line bg-[#f8fafc]">
+            <h3 class="font-semibold text-primary text-xs">Komite Investasi</h3>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -170,12 +180,30 @@
                 </tbody>
             </table>
         </div>
-    </div>
-    @endif
-    @if($investmentManagers->isNotEmpty())
-    <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mt-6">
-        <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
-            <h2 class="font-bold text-white text-sm">Tim Pengelola Investasi</h2>
+        @elseif($mi && $mi->investment_committee)
+        @php $icLines = preg_split('/\n+/', trim($mi->investment_committee)); @endphp
+        <div class="px-6 py-3 border-b border-line bg-[#f8fafc]">
+            <h3 class="font-semibold text-primary text-xs">Komite Investasi (dari Manajer Investasi)</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead><tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide"><th class="px-4 py-3 font-semibold">Nama</th><th class="px-4 py-3 font-semibold">Jabatan</th></tr></thead>
+                <tbody class="divide-y divide-line">
+                    @foreach($icLines as $line)
+                    @php
+                        $line = trim($line); if(!$line) continue;
+                        $parts = preg_split('/\s*(?:-|:|–)\s*/', $line, 2);
+                        $name = trim($parts[0]); $pos = trim($parts[1] ?? '');
+                    @endphp
+                    <tr class="hover:bg-[#f8fafc]"><td class="px-4 py-3 text-xs"><button type="button" @click="openPerson({{ Js::from($name) }})" class="text-accent hover:underline text-left font-semibold">{{ $name }}</button></td><td class="px-4 py-3 text-xs text-muted">{{ $pos ?: '—' }}</td></tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
+        @if($investmentManagers->isNotEmpty())
+        <div class="px-6 py-3 border-b border-line bg-[#f8fafc]">
+            <h3 class="font-semibold text-primary text-xs">Tim Pengelola Investasi</h3>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -187,9 +215,30 @@
                 </tbody>
             </table>
         </div>
+        @elseif($mi && $mi->investment_management_team)
+        @php $tmlLines = preg_split('/\n+/', trim($mi->investment_management_team)); @endphp
+        <div class="px-6 py-3 border-b border-line bg-[#f8fafc]">
+            <h3 class="font-semibold text-primary text-xs">Tim Pengelola Investasi (dari Manajer Investasi)</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead><tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide"><th class="px-4 py-3 font-semibold">Nama</th><th class="px-4 py-3 font-semibold">Jabatan</th></tr></thead>
+                <tbody class="divide-y divide-line">
+                    @foreach($tmlLines as $line)
+                    @php
+                        $line = trim($line); if(!$line) continue;
+                        $parts = preg_split('/\s*(?:-|:|–)\s*/', $line, 2);
+                        $name = trim($parts[0]); $pos = trim($parts[1] ?? '');
+                    @endphp
+                    <tr class="hover:bg-[#f8fafc]"><td class="px-4 py-3 text-xs"><button type="button" @click="openPerson({{ Js::from($name) }})" class="text-accent hover:underline text-left font-semibold">{{ $name }}</button></td><td class="px-4 py-3 text-xs text-muted">{{ $pos ?: '—' }}</td></tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
     </div>
     @endif
-    @if($fund->managementTeams->isEmpty() && !$fund->description)
+    @if($committees->isEmpty() && $investmentManagers->isEmpty() && !$mi && !$fund->description)
     <div class="py-12 text-center text-muted bg-white rounded-2xl border border-line mt-6">
         <svg class="w-10 h-10 mx-auto mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         <p class="text-sm">Informasi reksa dana belum tersedia.</p>

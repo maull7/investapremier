@@ -737,13 +737,15 @@ Ekstrak data Manajer Investasi dari teks Prospektus Reksa Dana berikut. Kembalik
   "shareholders": "daftar pemegang saham/newline. Format: Nama - Persentase. Atau null jika tidak ada.",
   "investment_committee": "daftar komite investasi/newline. Format: Nama - Jabatan. Atau null jika tidak ada.",
   "investment_management_team": "daftar tim pengelola investasi/newline. Format: Nama - Jabatan. Atau null jika tidak ada.",
+  "dewan_pengawas_syariah": "daftar Dewan Pengawas Syariah/newline. Format: Nama - Jabatan. Atau null jika tidak ada.",
+  "dewan_pengawas_syariah": "daftar Dewan Pengawas Syariah/newline. Format: Nama - Jabatan. Atau null jika tidak ada.",
   "description": "deskripsi singkat manajer investasi (1-2 kalimat pertama) atau null"
 }
 
 ATURAN:
 - Hanya ekstrak data yang terkait Manajer Investasi (penerbit reksa dana), BUKAN data produk reksa dana-nya.
 - address: ambil alamat lengkap MI (biasanya setelah "Alamat" atau "Berkedudukan").
-- Untuk commissioners, directors, shareholders, investment_committee, investment_management_team: tulis setiap orang dalam format "Nama - Jabatan" per baris.
+- Untuk commissioners, directors, shareholders, investment_committee, investment_management_team, dewan_pengawas_syariah: tulis setiap orang dalam format "Nama - Jabatan" per baris.
 - Jika suatu data tidak tersedia di teks, gunakan null (jangan string kosong).
 - Output HANYA JSON valid, tanpa markdown, tanpa penjelasan.
 

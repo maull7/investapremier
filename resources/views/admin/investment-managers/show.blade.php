@@ -312,7 +312,7 @@
             </div>
 
             @foreach($governanceSections as $section)
-                @if(!empty($section['items']))
+                @if(!empty($section['items']) && $section['label'] !== 'Dewan Pengawas Syariah')
                     <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mt-6">
                         <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
                             <h2 class="font-bold text-white text-sm">{{ $section['label'] }}
@@ -349,6 +349,41 @@
                 @endif
             @endforeach
 
+            {{-- DPS card always visible --}}
+            @php $dpsItems = collect($governanceSections)->firstWhere('label', 'Dewan Pengawas Syariah')['items'] ?? []; @endphp
+            <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mt-6">
+                <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
+                    <h2 class="font-bold text-white text-sm">Dewan Pengawas Syariah
+                        @if($manager->source === 'prospektus' && $manager->prospektus_source_tahun)
+                            <span class="text-[10px] font-normal opacity-75 ml-2">(Prospektus {{ $manager->prospektus_source_tahun }})</span>
+                        @endif
+                    </h2>
+                </div>
+                @if(!empty($dpsItems))
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide">
+                                    <th class="px-4 py-3 font-semibold">Nama / Pihak</th>
+                                    <th class="px-4 py-3 font-semibold">Jabatan / Peran</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-line">
+                                @foreach($dpsItems as $item)
+                                    <tr class="hover:bg-[#f8fafc] transition-colors">
+                                        <td class="px-4 py-3 text-xs font-semibold">
+                                            <button type="button" @click="openPerson({{ Js::from($item['name']) }})" class="text-accent hover:underline text-left">{{ $item['name'] }}</button>
+                                        </td>
+                                        <td class="px-4 py-3 text-xs text-muted">{{ $item['position'] ?: '-' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <div class="px-6 py-8 text-center text-muted text-sm">Data belum tersedia.</div>
+                @endif
+            </div>
 
         </div>
 
@@ -442,6 +477,7 @@
                         'address' => 'Alamat', 'phone' => 'Telepon', 'email' => 'Email', 'website' => 'Website',
                         'commissioner_president' => 'Komisaris Utama', 'commissioners' => 'Komisaris',
                         'director_president' => 'Direktur Utama', 'directors' => 'Direktur',
+                        'dewan_pengawas_syariah' => 'Dewan Pengawas Syariah',
                         'shareholders' => 'Pemegang Saham',
                         'investment_committee' => 'Komite Investasi',
                         'investment_management_team' => 'Tim Pengelola Investasi',

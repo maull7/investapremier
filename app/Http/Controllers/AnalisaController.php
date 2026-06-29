@@ -460,6 +460,9 @@ class AnalisaController extends Controller
         if (!empty($data['tanggal_data'])) $extracted[] = 'Tanggal Data';
         if (!empty($data['total_aset'])) $extracted[] = 'Neraca';
         if (!empty($data['laba_bersih'])) $extracted[] = 'Laba Bersih';
+        if (!empty($data['total_beban'])) $extracted[] = 'Total Beban';
+        if (!empty($data['laba_sebelum_pajak'])) $extracted[] = 'Laba Sblm Pajak';
+        if (!empty($data['laba_bersih_tahun_berjalan'])) $extracted[] = 'Laba Bersih Thn Brjln';
         if (!empty($data['arus_kas_operasi'])) $extracted[] = 'Arus Kas';
         if (!empty($data['total_hasil_investasi'])) $extracted[] = 'Rasio';
         if (!empty($data['fair_value_level_1'])) $extracted[] = 'Fair Value';
@@ -669,6 +672,16 @@ class AnalisaController extends Controller
         if ($data['kinerja']) $extracted[] = count($data['kinerja']) . ' Bulan Kinerja';
         if ($data['obligasi']) $extracted[] = count($data['obligasi']) . ' Obligasi';
         if ($data['bank']) $extracted[] = count($data['bank']) . ' Bank';
+        // Keuangan
+        if ($data['total_aset']) $extracted[] = 'Total Aset';
+        if ($data['total_liabilitas']) $extracted[] = 'Total Liabilitas';
+        if ($data['laba_bersih']) $extracted[] = 'Laba Bersih';
+        if ($data['total_beban']) $extracted[] = 'Total Beban';
+        if ($data['laba_sebelum_pajak']) $extracted[] = 'Laba Sblm Pajak';
+        if ($data['laba_bersih_tahun_berjalan']) $extracted[] = 'Laba Bersih Thn Brjln';
+        if ($data['arus_kas_operasi']) $extracted[] = 'Arus Kas Operasi';
+        if ($data['total_hasil_investasi']) $extracted[] = 'Total Hasil Investasi';
+        if ($data['fair_value_level_1'] || $data['fair_value_level_2'] || $data['fair_value_level_3']) $extracted[] = 'Fair Value';
 
         $success = count($extracted) > 0;
         $message = $success
