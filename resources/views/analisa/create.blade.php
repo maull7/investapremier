@@ -115,6 +115,24 @@
                                 x-bind:required="mode !== 'link-website'" />
                             <x-input-error :messages="$errors->get('benchmark')" class="mt-1" />
                         </div>
+                        <div>
+                            <x-input-label for="bank_kustodian_top" value="Bank Kustodian" />
+                            <x-text-input id="bank_kustodian_top" name="bank_kustodian" type="text"
+                                class="mt-1 block w-full" value="{{ old('bank_kustodian') }}" x-model="bankKustodian" />
+                            <x-input-error :messages="$errors->get('bank_kustodian')" class="mt-1" />
+                        </div>
+                        <div>
+                            <x-input-label for="management_fee_top" value="Management Fee (%)" />
+                            <x-text-input id="management_fee_top" name="management_fee" type="number" step="0.01"
+                                class="mt-1 block w-full" value="{{ old('management_fee') }}" x-model="managementFee" />
+                            <x-input-error :messages="$errors->get('management_fee')" class="mt-1" />
+                        </div>
+                        <div>
+                            <x-input-label for="custodian_fee_top" value="Custodian Fee (%)" />
+                            <x-text-input id="custodian_fee_top" name="custodian_fee" type="number" step="0.01"
+                                class="mt-1 block w-full" value="{{ old('custodian_fee') }}" x-model="custodianFee" />
+                            <x-input-error :messages="$errors->get('custodian_fee')" class="mt-1" />
+                        </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-1 gap-4">
                         <div>
