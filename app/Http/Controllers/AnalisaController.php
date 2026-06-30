@@ -454,10 +454,10 @@ class AnalisaController extends Controller
         }
 
         $extracted = [];
-        if ($data['nama_reksa_dana']) $extracted[] = 'Nama RD';
-        if ($data['jenis_reksa_dana']) $extracted[] = 'Jenis RD';
-        if ($data['manajer_investasi']) $extracted[] = 'MI';
-        if ($data['total_aum']) $extracted[] = 'Total AUM';
+        if (!empty($data['nama_reksa_dana'])) $extracted[] = 'Nama RD';
+        if (!empty($data['jenis_reksa_dana'])) $extracted[] = 'Jenis RD';
+        if (!empty($data['manajer_investasi'])) $extracted[] = 'MI';
+        if (!empty($data['total_aum'])) $extracted[] = 'Total AUM';
         if (!empty($data['unit_penyertaan'])) $extracted[] = 'Unit Penyertaan';
         if (!empty($data['nab_per_unit'])) $extracted[] = 'NAB/UP';
         if (!empty($data['return_ytd'])) $extracted[] = 'Return YTD';
@@ -472,13 +472,12 @@ class AnalisaController extends Controller
         if (!empty($data['fair_value_level_1'])) $extracted[] = 'Fair Value';
         if (!empty($data['unit_milik_investor'])) $extracted[] = 'Unit MI';
         if (!empty($data['alokasi_aset'])) $extracted[] = count($data['alokasi_aset']) . ' Alokasi Aset';
-        if ($data['sektor']) $extracted[] = count($data['sektor']) . ' Sektor';
-        if ($data['efek']) $extracted[] = count($data['efek']) . ' Efek';
-        if ($data['kinerja']) $extracted[] = count($data['kinerja']) . ' Bulan Kinerja';
-        if ($data['obligasi']) $extracted[] = count($data['obligasi']) . ' Obligasi';
-        if ($data['sukuk']) $extracted[] = count($data['sukuk']) . ' Sukuk';
-        if ($data['bank']) $extracted[] = count($data['bank']) . ' Bank';
-
+        if (!empty($data['sektor'])) $extracted[] = count($data['sektor']) . ' Sektor';
+        if (!empty($data['efek'])) $extracted[] = count($data['efek']) . ' Efek';
+        if (!empty($data['kinerja'])) $extracted[] = count($data['kinerja']) . ' Bulan Kinerja';
+        if (!empty($data['obligasi'])) $extracted[] = count($data['obligasi']) . ' Obligasi';
+        if (!empty($data['sukuk'])) $extracted[] = count($data['sukuk']) . ' Sukuk';
+        if (!empty($data['bank'])) $extracted[] = count($data['bank']) . ' Bank';
         if (!empty($data['pasar_uang'])) $extracted[] = count($data['pasar_uang']) . ' Pasar Uang';
         if (!empty($data['piutang_bunga_detail'])) $extracted[] = count($data['piutang_bunga_detail']) . ' Piutang Bunga';
         $success = count($extracted) > 0;
@@ -684,29 +683,29 @@ class AnalisaController extends Controller
         }
 
         $extracted = [];
-        if ($data['nama_reksa_dana']) $extracted[] = 'Nama RD';
-        if ($data['jenis_reksa_dana']) $extracted[] = 'Jenis RD';
-        if ($data['manajer_investasi']) $extracted[] = 'MI';
-        if ($data['total_aum']) $extracted[] = 'Total AUM';
+        if (!empty($data['nama_reksa_dana'])) $extracted[] = 'Nama RD';
+        if (!empty($data['jenis_reksa_dana'])) $extracted[] = 'Jenis RD';
+        if (!empty($data['manajer_investasi'])) $extracted[] = 'MI';
+        if (!empty($data['total_aum'])) $extracted[] = 'Total AUM';
         if (!empty($data['unit_penyertaan'])) $extracted[] = 'Unit Penyertaan';
         if (!empty($data['nab_per_unit'])) $extracted[] = 'NAB/UP';
         if (!empty($data['tanggal_data'])) $extracted[] = 'Tanggal Data';
         if (!empty($data['alokasi_aset'])) $extracted[] = count($data['alokasi_aset']) . ' Alokasi Aset';
-        if ($data['sektor']) $extracted[] = count($data['sektor']) . ' Sektor';
-        if ($data['efek']) $extracted[] = count($data['efek']) . ' Efek';
-        if ($data['kinerja']) $extracted[] = count($data['kinerja']) . ' Bulan Kinerja';
-        if ($data['obligasi']) $extracted[] = count($data['obligasi']) . ' Obligasi';
-        if ($data['bank']) $extracted[] = count($data['bank']) . ' Bank';
+        if (!empty($data['sektor'])) $extracted[] = count($data['sektor']) . ' Sektor';
+        if (!empty($data['efek'])) $extracted[] = count($data['efek']) . ' Efek';
+        if (!empty($data['kinerja'])) $extracted[] = count($data['kinerja']) . ' Bulan Kinerja';
+        if (!empty($data['obligasi'])) $extracted[] = count($data['obligasi']) . ' Obligasi';
+        if (!empty($data['bank'])) $extracted[] = count($data['bank']) . ' Bank';
         // Keuangan
-        if ($data['total_aset']) $extracted[] = 'Total Aset';
-        if ($data['total_liabilitas']) $extracted[] = 'Total Liabilitas';
-        if ($data['laba_bersih']) $extracted[] = 'Laba Bersih';
-        if ($data['total_beban']) $extracted[] = 'Total Beban';
-        if ($data['laba_sebelum_pajak']) $extracted[] = 'Laba Sblm Pajak';
-        if ($data['laba_bersih_tahun_berjalan']) $extracted[] = 'Laba Bersih Thn Brjln';
-        if ($data['arus_kas_operasi']) $extracted[] = 'Arus Kas Operasi';
-        if ($data['total_hasil_investasi']) $extracted[] = 'Total Hasil Investasi';
-        if ($data['fair_value_level_1'] || $data['fair_value_level_2'] || $data['fair_value_level_3']) $extracted[] = 'Fair Value';
+        if (!empty($data['total_aset'])) $extracted[] = 'Total Aset';
+        if (!empty($data['total_liabilitas'])) $extracted[] = 'Total Liabilitas';
+        if (!empty($data['laba_bersih'])) $extracted[] = 'Laba Bersih';
+        if (!empty($data['total_beban'])) $extracted[] = 'Total Beban';
+        if (!empty($data['laba_sebelum_pajak'])) $extracted[] = 'Laba Sblm Pajak';
+        if (!empty($data['laba_bersih_tahun_berjalan'])) $extracted[] = 'Laba Bersih Thn Brjln';
+        if (!empty($data['arus_kas_operasi'])) $extracted[] = 'Arus Kas Operasi';
+        if (!empty($data['total_hasil_investasi'])) $extracted[] = 'Total Hasil Investasi';
+        if (!empty($data['fair_value_level_1']) || !empty($data['fair_value_level_2']) || !empty($data['fair_value_level_3'])) $extracted[] = 'Fair Value';
 
         $success = count($extracted) > 0;
         $message = $success
@@ -846,20 +845,20 @@ class AnalisaController extends Controller
         $validation = $result['validation'];
 
         $extracted = [];
-        if ($data['nama_reksa_dana']) $extracted[] = 'Nama RD';
-        if ($data['jenis_reksa_dana']) $extracted[] = 'Jenis RD';
-        if ($data['manajer_investasi']) $extracted[] = 'MI';
-        if ($data['total_aum']) $extracted[] = 'Total AUM';
+        if (!empty($data['nama_reksa_dana'])) $extracted[] = 'Nama RD';
+        if (!empty($data['jenis_reksa_dana'])) $extracted[] = 'Jenis RD';
+        if (!empty($data['manajer_investasi'])) $extracted[] = 'MI';
+        if (!empty($data['total_aum'])) $extracted[] = 'Total AUM';
         if (!empty($data['unit_penyertaan'])) $extracted[] = 'Unit Penyertaan';
         if (!empty($data['nab_per_unit'])) $extracted[] = 'NAB/UP';
         if (!empty($data['tanggal_data'])) $extracted[] = 'Tanggal Data';
         if (!empty($data['total_aset'])) $extracted[] = 'Neraca';
         if (!empty($data['alokasi_aset'])) $extracted[] = count($data['alokasi_aset']) . ' Alokasi Aset';
-        if ($data['sektor']) $extracted[] = count($data['sektor']) . ' Sektor';
-        if ($data['efek']) $extracted[] = count($data['efek']) . ' Efek';
-        if ($data['kinerja']) $extracted[] = count($data['kinerja']) . ' Bulan Kinerja';
-        if ($data['obligasi']) $extracted[] = count($data['obligasi']) . ' Obligasi';
-        if ($data['bank']) $extracted[] = count($data['bank']) . ' Bank';
+        if (!empty($data['sektor'])) $extracted[] = count($data['sektor']) . ' Sektor';
+        if (!empty($data['efek'])) $extracted[] = count($data['efek']) . ' Efek';
+        if (!empty($data['kinerja'])) $extracted[] = count($data['kinerja']) . ' Bulan Kinerja';
+        if (!empty($data['obligasi'])) $extracted[] = count($data['obligasi']) . ' Obligasi';
+        if (!empty($data['bank'])) $extracted[] = count($data['bank']) . ' Bank';
 
         $success = count($extracted) > 0;
 
@@ -941,10 +940,10 @@ class AnalisaController extends Controller
     protected function webFileParseResponse(array $data): array
     {
         $extracted = [];
-        if ($data['nama_reksa_dana']) {
+        if (!empty($data['nama_reksa_dana'])) {
             $extracted[] = 'Nama RD';
         }
-        if ($data['total_aum']) {
+        if (!empty($data['total_aum'])) {
             $extracted[] = 'Total AUM';
         }
         if (!empty($data['unit_penyertaan'])) {
@@ -959,22 +958,22 @@ class AnalisaController extends Controller
         if (!empty($data['alokasi_aset'])) {
             $extracted[] = count($data['alokasi_aset']) . ' Alokasi Aset';
         }
-        if ($data['sektor']) {
+        if (!empty($data['sektor'])) {
             $extracted[] = count($data['sektor']) . ' Sektor';
         }
-        if ($data['efek']) {
+        if (!empty($data['efek'])) {
             $extracted[] = count($data['efek']) . ' Efek';
         }
-        if ($data['kinerja']) {
+        if (!empty($data['kinerja'])) {
             $extracted[] = count($data['kinerja']) . ' Kinerja';
         }
-        if ($data['obligasi']) {
+        if (!empty($data['obligasi'])) {
             $extracted[] = count($data['obligasi']) . ' Obligasi';
         }
-        if ($data['sukuk']) {
+        if (!empty($data['sukuk'])) {
             $extracted[] = count($data['sukuk']) . ' Sukuk';
         }
-        if ($data['bank']) {
+        if (!empty($data['bank'])) {
             $extracted[] = count($data['bank']) . ' Bank';
         }
 

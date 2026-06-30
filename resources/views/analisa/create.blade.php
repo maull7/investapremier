@@ -1113,6 +1113,13 @@
                             dari semua Reksa Dana.
                         </p>
 
+                        {{-- Upload PDF Baru (khusus kalender_ffs) --}}
+                        <div x-show="jenisLaporan === 'kalender_ffs'" class="flex items-center gap-3">
+                            <input type="file" accept=".pdf" @change="parsePdf($event)"
+                                class="w-full text-xs border border-gray-300 rounded-lg px-2 py-1.5 file:mr-2 file:rounded file:border-0 file:bg-primary/10 file:px-2 file:py-0.5 file:text-primary file:text-xs" />
+                            <span x-show="pdfLoading" class="text-xs text-muted">Parsing...</span>
+                        </div>
+
                         <div x-show="existingDocsLoading" class="flex items-center gap-2 text-xs text-muted">
                             <svg class="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10"
@@ -1143,80 +1150,145 @@
                                                 x-text="batchParsedCount + '/' + selectedDocIds.length"></span>...</span>
                                     </button>
                                 </div>
-                                <div class="space-y-2 max-h-48 overflow-y-auto">
-                                    <template x-for="doc in existingDocs" :key="doc.id">
-                                        <div class="p-2.5 bg-white rounded-lg border border-gray-200"
-                                            :class="{ 'border-primary/40 bg-primary/[0.03]': selectedDocIds.includes(doc.id) }">
-                                            <div class="flex items-center justify-between">
-                                                <div class="flex items-center gap-2 min-w-0">
-                                                    <input type="checkbox" :value="doc.id"
-                                                        :checked="selectedDocIds.includes(doc.id)"
-                                                        @change="toggleDocSelection(doc.id)"
-                                                        class="shrink-0 rounded border-gray-300 text-primary focus:ring-primary/20">
-                                                    <span
-                                                        class="shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                                                        :class="{
-                                                            'bg-blue-100 text-blue-700': doc
-                                                                .document_type === 'prospektus',
-                                                            'bg-emerald-100 text-emerald-700': doc
-                                                                .document_type === 'ffs',
-                                                            'bg-amber-100 text-amber-700': doc
-                                                                .document_type === 'laporan_tahunan',
-                                                        }"
-                                                        x-text="{
-                                                            'prospektus': 'Prospektus',
-                                                            'ffs': 'FFS',
-                                                            'laporan_tahunan': 'Laporan Tahunan',
-                                                        }[doc.document_type] || doc.document_type"></span>
-                                                    <span class="text-sm font-medium truncate"
-                                                        x-text="doc.label"></span>
-                                                    <span class="text-xs text-muted shrink-0 hidden sm:inline"
-                                                        x-text="doc.reksa_dana_kode"></span>
-                                                    <span class="text-xs text-muted shrink-0"
-                                                        x-text="doc.uploaded_at"></span>
+
+                                {{-- Layout: compact list untuk laporan_tahunan, cards untuk kalender_ffs --}}
+                                <template x-if="jenisLaporan === 'laporan_tahunan'">
+                                    <div class="space-y-2 max-h-48 overflow-y-auto">
+                                        <template x-for="doc in existingDocs" :key="doc.id">
+                                            <div class="p-2.5 bg-white rounded-lg border border-gray-200"
+                                                :class="{ 'border-primary/40 bg-primary/[0.03]': selectedDocIds.includes(doc.id) }">
+                                                <div class="flex items-center justify-between">
+                                                    <div class="flex items-center gap-2 min-w-0">
+                                                        <input type="checkbox" :value="doc.id"
+                                                            :checked="selectedDocIds.includes(doc.id)"
+                                                            @change="toggleDocSelection(doc.id)"
+                                                            class="shrink-0 rounded border-gray-300 text-primary focus:ring-primary/20">
+                                                        <span
+                                                            class="shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                                                            :class="{
+                                                                'bg-blue-100 text-blue-700': doc
+                                                                    .document_type === 'prospektus',
+                                                                'bg-emerald-100 text-emerald-700': doc
+                                                                    .document_type === 'ffs',
+                                                                'bg-amber-100 text-amber-700': doc
+                                                                    .document_type === 'laporan_tahunan',
+                                                            }"
+                                                            x-text="{
+                                                                'prospektus': 'Prospektus',
+                                                                'ffs': 'FFS',
+                                                                'laporan_tahunan': 'Laporan Tahunan',
+                                                            }[doc.document_type] || doc.document_type"></span>
+                                                        <span class="text-sm font-medium truncate"
+                                                            x-text="doc.label"></span>
+                                                        <span class="text-xs text-muted shrink-0 hidden sm:inline"
+                                                            x-text="doc.reksa_dana_kode"></span>
+                                                        <span class="text-xs text-muted shrink-0"
+                                                            x-text="doc.uploaded_at"></span>
+                                                    </div>
+                                                    <div class="flex items-center gap-1 shrink-0" x-show="doc.url">
+                                                        <a :href="doc.url" target="_blank"
+                                                            class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition">
+                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor"
+                                                                viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    stroke-width="2"
+                                                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                            </svg>
+                                                            Lihat
+                                                        </a>
+                                                        <a :href="doc.url" download
+                                                            class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-md hover:bg-emerald-100 transition">
+                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor"
+                                                                viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    stroke-width="2"
+                                                                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                            </svg>
+                                                            Download
+                                                        </a>
+                                                    </div>
                                                 </div>
-                                                <div class="flex items-center gap-1 shrink-0" x-show="doc.url">
-                                                    <a :href="doc.url" target="_blank"
-                                                        class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition">
-                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor"
-                                                            viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2"
-                                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                        </svg>
-                                                        Lihat
-                                                    </a>
-                                                    <a :href="doc.url" download
-                                                        class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-md hover:bg-emerald-100 transition">
-                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor"
-                                                            viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2"
-                                                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                        </svg>
-                                                        Download
-                                                    </a>
+                                                <div x-show="doc.notes" class="mt-1.5 pl-6">
+                                                    <p class="text-xs text-muted italic leading-relaxed" x-text="doc.notes">
+                                                    </p>
                                                 </div>
                                             </div>
-                                            <div x-show="doc.notes" class="mt-1.5 pl-6">
-                                                <p class="text-xs text-muted italic leading-relaxed" x-text="doc.notes">
-                                                </p>
+                                        </template>
+                                    </div>
+                                </template>
+
+                                {{-- Card layout untuk kalender_ffs --}}
+                                <template x-if="jenisLaporan === 'kalender_ffs'">
+                                    <div class="space-y-2 max-h-80 overflow-y-auto">
+                                        <template x-for="doc in existingDocs" :key="doc.id">
+                                            <div class="p-3 bg-white rounded-lg border border-gray-200"
+                                                :class="{ 'border-primary/40 bg-primary/[0.03]': selectedDocIds.includes(doc.id) }">
+                                                <div class="flex items-start justify-between gap-2">
+                                                    <div class="flex items-start gap-2 min-w-0 flex-1">
+                                                        <input type="checkbox" :value="doc.id"
+                                                            :checked="selectedDocIds.includes(doc.id)"
+                                                            @change="toggleDocSelection(doc.id)"
+                                                            class="mt-0.5 shrink-0 rounded border-gray-300 text-primary focus:ring-primary/20">
+                                                        <div class="min-w-0">
+                                                            <div class="flex items-center gap-1.5 flex-wrap">
+                                                                <span
+                                                                    class="shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-700">FFS</span>
+                                                                <span class="text-sm font-semibold truncate"
+                                                                    x-text="doc.label"></span>
+                                                            </div>
+                                                            <div class="flex items-center gap-2 mt-0.5 text-xs text-muted">
+                                                                <span x-text="doc.reksa_dana_kode"></span>
+                                                                <span class="text-[10px]">•</span>
+                                                                <span x-text="doc.uploaded_at"></span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex items-center gap-1 shrink-0">
+                                                        <template x-if="doc.url">
+                                                            <a :href="doc.url" target="_blank"
+                                                                class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition"
+                                                                title="Lihat">
+                                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                                </svg>
+                                                            </a>
+                                                        </template>
+                                                        <button type="button" @click="parseSingleDocument(doc.id)"
+                                                            :disabled="existingDocParsing"
+                                                            class="px-2.5 py-1 text-xs font-semibold text-white bg-emerald-600 rounded-md hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                                                            Parse
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div x-show="doc.notes" class="mt-1.5 pl-6">
+                                                    <p class="text-xs text-muted italic" x-text="doc.notes"></p>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </template>
-                                </div>
+                                        </template>
+                                    </div>
+                                </template>
                             </div>
                         </template>
 
                         <div x-show="existingDocsLoaded && existingDocs.length === 0" class="text-xs text-muted italic">
                             Dokumen tidak ditemukan untuk periode yang dipilih.
                         </div>
+
+                        {{-- Hasil parse (khusus kalender_ffs) --}}
+                        <div x-show="jenisLaporan === 'kalender_ffs' && pdfResult" class="text-xs space-y-1">
+                            <div class="px-3 py-2 rounded-lg"
+                                :class="pdfSuccess ? 'bg-green-50 border border-green-200 text-green-700' :
+                                    'bg-red-50 border border-red-200 text-red-700'">
+                                <span x-text="pdfResult"></span>
+                            </div>
+                        </div>
                     </div>
 
                     {{-- Tab Navigation: Multi-Dokumen vs Partisi Halaman --}}
-                    <div class="flex border-b border-line mb-2">
+                    <div x-show="jenisLaporan !== 'kalender_ffs'" class="flex border-b border-line mb-2">
                         <button type="button" @click="activeTab = 'multi'"
                             class="px-4 py-2 text-xs font-semibold transition -mb-px"
                             :class="activeTab === 'multi' ? 'text-primary border-b-2 border-primary' :
@@ -1242,7 +1314,7 @@
                     </div>
 
                     {{-- Tab: Multi-Document Upload Panel --}}
-                    <div x-show="activeTab === 'multi'" class="border border-line rounded-lg p-4 space-y-4">
+                    <div x-show="activeTab === 'multi' && jenisLaporan !== 'kalender_ffs'" class="border border-line rounded-lg p-4 space-y-4">
                         <div class="flex items-center gap-2">
                             <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
@@ -1337,7 +1409,7 @@
                     </div>
 
                     {{-- Tab: Partisi Halaman Panel --}}
-                    <div x-show="activeTab === 'partition'" class="border border-line rounded-lg p-4 space-y-4">
+                    <div x-show="activeTab === 'partition' && jenisLaporan !== 'kalender_ffs'" class="border border-line rounded-lg p-4 space-y-4">
                         <div class="flex items-center gap-2">
                             <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
@@ -1518,7 +1590,7 @@
                     </div>
 
                     {{-- Separator --}}
-                    <div class="relative">
+                    <div x-show="jenisLaporan !== 'kalender_ffs'" class="relative">
                         <div class="absolute inset-0 flex items-center">
                             <div class="w-full border-t border-line"></div>
                         </div>
@@ -1526,8 +1598,8 @@
                                 class="bg-white px-2 text-muted">ATAU</span></div>
                     </div>
 
-                    {{-- Upload PDF Baru --}}
-                    <div>
+                    {{-- Upload PDF Baru (non-kalender) --}}
+                    <div x-show="jenisLaporan !== 'kalender_ffs'">
                         <x-input-label for="file_pdf" value="Upload File PDF Baru" />
                         <div class="mt-1 flex items-center gap-3">
                             <input id="file_pdf" type="file" accept=".pdf" @change="parsePdf($event)"
@@ -1537,7 +1609,7 @@
                             Sheet.</p>
                     </div>
 
-                    <div class="flex flex-wrap gap-3 text-sm">
+                    <div x-show="jenisLaporan !== 'kalender_ffs'" class="flex flex-wrap gap-3 text-sm">
                         <label class="inline-flex items-center gap-2">
                             <input type="radio" value="text" x-model="pdfScanMode"
                                 class="text-primary focus:ring-primary/20">
@@ -1550,7 +1622,7 @@
                         </label>
                     </div>
 
-                    <div x-show="pdfLoading" class="flex items-center gap-2 text-sm text-muted">
+                    <div x-show="jenisLaporan !== 'kalender_ffs' && pdfLoading" class="flex items-center gap-2 text-sm text-muted">
                         <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none"
                             viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
@@ -1562,7 +1634,7 @@
                         <span>Membaca PDF... harap tunggu.</span>
                     </div>
 
-                    <div x-show="pdfResult" class="text-sm space-y-2">
+                    <div x-show="jenisLaporan !== 'kalender_ffs' && pdfResult" class="text-sm space-y-2">
                         <div
                             :class="pdfSuccess ? 'p-3 bg-green-50 border border-green-200 rounded-lg text-green-700' :
                                 'p-3 bg-red-50 border border-red-200 rounded-lg text-red-700'">
@@ -3314,8 +3386,10 @@
 
                         const params = new URLSearchParams();
 
-                        const kode = (document.getElementById('kode_reksa_dana')?.value || '').trim();
-                        if (kode) params.append('kode_reksa_dana', kode);
+                        if (this.jenisLaporan !== 'kalender_ffs') {
+                            const kode = (document.getElementById('kode_reksa_dana')?.value || '').trim();
+                            if (kode) params.append('kode_reksa_dana', kode);
+                        }
 
                         params.append('jenis_laporan', this.jenisLaporan);
                         if (this.jenisLaporan === 'kalender_ffs') {
@@ -3461,6 +3535,10 @@
                                 });
                         };
                         parseNext();
+                    },
+
+                    parseSingleDocument(docId) {
+                        this.parseExistingDocument(docId);
                     },
                 addTahun() {
                     const t = prompt('Masukkan tahun (contoh: 2025):');
