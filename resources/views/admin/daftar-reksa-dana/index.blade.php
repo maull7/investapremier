@@ -1269,6 +1269,15 @@
                     }
                 }
 
+                // Tampilkan warnings jika ada
+                const warningsEl = document.getElementById('parse-result-warnings');
+                if (warningsEl && json.data.warnings && json.data.warnings.length > 0) {
+                    warningsEl.textContent = '⚠️ ' + json.data.warnings.join('; ');
+                    warningsEl.classList.remove('hidden');
+                } else if (warningsEl) {
+                    warningsEl.classList.add('hidden');
+                }
+
                 successEl.textContent = json.message;
                 successEl.classList.remove('hidden');
                 setTimeout(() => { window.location.reload(); }, 2000);
@@ -1543,6 +1552,7 @@
                     <p class="text-sm font-semibold text-emerald-700">Parse Selesai</p>
                     <p class="text-xs text-muted mt-1"><span id="parse-result-count">0</span> halaman teks dari <span id="parse-result-total">0</span> total halaman PDF.</p>
                     <p id="parse-result-partitions" class="text-xs text-emerald-700 font-medium mt-1 hidden"></p>
+                    <div id="parse-result-warnings" class="hidden mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2"></div>
                 </div>
                 <div class="flex justify-end gap-2 mt-6">
                     <button type="button" onclick="closeModal('modal-document-parse')" class="px-4 py-2 text-sm text-muted border border-line rounded-lg hover:bg-[#f1f5f9] transition">Batal</button>

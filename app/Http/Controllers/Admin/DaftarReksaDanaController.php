@@ -1064,6 +1064,11 @@ class DaftarReksaDanaController extends Controller
                 ? " {$result['partitions_created']} partisi dibuat dari daftar isi."
                 : '';
 
+            $warnings = $result['warnings'] ?? [];
+            $warningMsg = !empty($warnings)
+                ? ' Peringatan: ' . implode('; ', array_slice($warnings, 0, 3)) . (count($warnings) > 3 ? ' (+' . (count($warnings) - 3) . ' lainnya)' : '')
+                : '';
+
             ActivityLogger::log(
                 'Parse Dokumen',
                 "Dokumen {$document->original_name} berhasil diparse ({$result['parsed_count']} halaman dari {$result['total_pages']} halaman). TOC: halaman {$result['toc_start']}-{$result['toc_end']}.{$partitionMsg}",
@@ -1073,7 +1078,7 @@ class DaftarReksaDanaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => "Dokumen berhasil diparse. {$result['parsed_count']} halaman teks tersimpan.{$partitionMsg}",
+                'message' => "Dokumen berhasil diparse. {$result['parsed_count']} halaman teks tersimpan.{$partitionMsg}{$warningMsg}",
                 'data'    => $result,
             ]);
         } catch (\Throwable $e) {

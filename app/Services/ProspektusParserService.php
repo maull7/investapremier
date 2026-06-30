@@ -30,19 +30,12 @@ class ProspektusParserService
         $pages = $pdf->getPages();
 
         $totalPages = count($pages);
-        $parsedCount = 0;
-        $partitionsCreated = 0;
 
         DocumentParsedPage::where('reksa_dana_document_id', $document->id)->delete();
 
-        // Ekstrak teks daftar isi dan generate partisi otomatis via AI
-        if ($generatePartitions && $tocEndPage > 0 && $tocStartPage <= $tocEndPage && $tocStartPage <= $totalPages) {
-            $tocText = $this->extractTocText($pages, $tocStartPage, $tocEndPage);
-            $chapters = $this->extractChaptersFromToc($tocText);
-            $partitionsCreated = $this->createPartitionsFromChapters($document, $chapters, $tocEndPage, $totalPages, $userId);
-        }
-
+        // Parse semua halaman dulu (sekali ekstrak, simpan ke DB)
         $parseNumber = 0;
+        $parsedCount = 0;
 
         for ($i = 0; $i < $totalPages; $i++) {
             $pdfPageNumber = $i + 1;
@@ -68,12 +61,25 @@ class ProspektusParserService
             $parsedCount++;
         }
 
+        // Bikin partisi dari teks yang sudah tersimpan di DB (tanpa ekstrak ulang dari PDF)
+        $warnings = [];
+        $partitionsCreated = 0;
+        if ($generatePartitions && $tocEndPage > 0 && $tocStartPage <= $tocEndPage && $tocStartPage <= $totalPages) {
+            $tocText = $this->extractTocText($pages, $tocStartPage, $tocEndPage);
+            $chapters = $this->extractChaptersFromToc($tocText);
+            $headingsMap = $this->scanHeadingsFromDatabase($document, $tocEndPage);
+            $partitionResult = $this->createPartitionsFromChapters($document, $chapters, $tocEndPage, $totalPages, $userId, $headingsMap);
+            $partitionsCreated = $partitionResult['created'];
+            $warnings = $partitionResult['warnings'];
+        }
+
         return [
             'total_pages'        => $totalPages,
             'parsed_count'       => $parsedCount,
             'toc_start'          => $tocStartPage,
             'toc_end'            => $tocEndPage,
             'partitions_created' => $partitionsCreated,
+            'warnings'           => $warnings,
         ];
     }
 
@@ -97,7 +103,7 @@ class ProspektusParserService
 Kamu adalah parser DAFTAR ISI prospektus reksa dana Indonesia.
 
 TUGAS:
-Ekstrak semua BAB/section utama dari daftar isi dan tentukan nomor halaman PDF fisik yang sebenarnya.
+Ekstrak semua BAB/section utama dari daftar isi beserta nomor halaman isi yang tercetak di daftar isi.
 
 ATURAN PENTING:
 1. Kembalikan HANYA JSON array valid.
@@ -106,51 +112,45 @@ ATURAN PENTING:
 
 {
   "nama_bab": "BAB I - Definisi",
-  "halaman_pdf": 12
+  "halaman_isi": 1
 }
 
-4. "halaman_pdf" HARUS berupa nomor halaman fisik PDF sebenarnya (index halaman dokumen), BUKAN nomor halaman yang tercetak pada isi dokumen.
+4. "halaman_isi" adalah nomor halaman yang TERCETAK di daftar isi (biasanya angka kecil seperti 1, 5, 12), BUKAN nomor halaman fisik PDF.
 
-5. Jika daftar isi menampilkan:
+5. Contoh: jika daftar isi menampilkan:
    - BAB I ........ 1
    - BAB II ....... 5
    - BAB III ...... 12
 
-   dan halaman pertama isi dokumen dimulai pada halaman PDF ke-10,
    maka hasilnya:
 
    [
-     {"nama_bab":"BAB I - Definisi","halaman_pdf":10},
-     {"nama_bab":"BAB II - Tujuan dan Kebijakan Investasi","halaman_pdf":14},
-     {"nama_bab":"BAB III - Manajer Investasi","halaman_pdf":21}
+     {"nama_bab":"BAB I - Definisi","halaman_isi":1},
+     {"nama_bab":"BAB II - Tujuan dan Kebijakan Investasi","halaman_isi":5},
+     {"nama_bab":"BAB III - Manajer Investasi","halaman_isi":12}
    ]
 
-6. Tentukan offset halaman dengan membandingkan:
-   - nomor halaman pada daftar isi
-   - posisi daftar isi di PDF
-   - halaman pertama isi dokumen setelah daftar isi
+6. Pastikan urutan halaman_isi selalu meningkat sesuai urutan kemunculan BAB.
 
-7. Pastikan urutan halaman_pdf selalu meningkat sesuai urutan kemunculan BAB.
+7. Jangan menghasilkan dua BAB dengan halaman_isi yang sama kecuali memang tercantum demikian di dokumen.
 
-8. Jangan menghasilkan dua BAB dengan halaman_pdf yang sama kecuali memang tercantum demikian di dokumen.
+8. Jangan mengarang BAB yang tidak ada.
 
-9. Jangan mengarang BAB yang tidak ada.
-
-10. Jika halaman tidak dapat dipastikan, gunakan:
+9. Jika halaman tidak tercantum di daftar isi, gunakan:
 
 {
   "nama_bab": "...",
-  "halaman_pdf": null
+  "halaman_isi": null
 }
 
-11. Untuk nama bab:
+10. Untuk nama bab:
     - Pertahankan nomor BAB yang ada.
     - Gunakan format:
       "BAB I - Judul"
       "BAB II - Judul"
       "BAB III - Judul"
 
-12. Abaikan:
+11. Abaikan:
     - Sampul
     - Halaman kosong
     - Daftar Isi
@@ -182,17 +182,25 @@ PROMPT;
 
         $decoded = json_decode($cleaned, true);
         if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-            return $decoded;
+            return $this->normalizeChapterKeys($decoded);
         }
 
         if (preg_match('/\[[\s\S]*\]/', $cleaned, $matches)) {
             $decoded = json_decode($matches[0], true);
             if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                return $decoded;
+                return $this->normalizeChapterKeys($decoded);
             }
         }
 
         return [];
+    }
+
+    private function normalizeChapterKeys(array $chapters): array
+    {
+        return array_map(fn($c) => [
+            'nama_bab'    => $c['nama_bab'] ?? '',
+            'halaman_pdf' => $c['halaman_pdf'] ?? $c['halaman_isi'] ?? null,
+        ], $chapters);
     }
 
     private function normalizeChapterName(string $name): string
@@ -214,32 +222,61 @@ PROMPT;
         return $name;
     }
 
+    private function extractBabNumber(string $nama_bab): ?string
+    {
+        if (preg_match('/\bBAB\s+([IVXLCDM]+)\b/iu', $nama_bab, $m)) {
+            return strtoupper($m[1]);
+        }
+        return null;
+    }
+
+    private function scanHeadingsFromDatabase(ReksaDanaDocument $document, int $tocEndPage): array
+    {
+        $headings = [];
+        $pages = DocumentParsedPage::where('reksa_dana_document_id', $document->id)
+            ->orderBy('page_pdf')
+            ->get(['page_pdf', 'text_content']);
+
+        foreach ($pages as $page) {
+            $lines = explode("\n", $page->text_content);
+            foreach ($lines as $line) {
+                $trimmed = trim($line);
+                if (preg_match('/^BAB\s+([IVXLCDM]+)/iu', $trimmed, $m)) {
+                    $numeral = strtoupper($m[1]);
+                    if (!isset($headings[$numeral])) {
+                        $headings[$numeral] = $page->page_pdf;
+                    }
+                    break;
+                }
+            }
+        }
+
+        return $headings;
+    }
+
     private function createPartitionsFromChapters(
         ReksaDanaDocument $document,
         array $chapters,
         int $tocEndPage,
         int $totalPages,
-        ?int $userId
-    ): int {
+        ?int $userId,
+        array $headingsMap = [],
+    ): array {
         $validChapters = collect($chapters)
             ->filter(fn($c) => !empty($c['nama_bab']))
             ->map(fn($c) => [
                 'nama_bab'    => $this->normalizeChapterName(trim($c['nama_bab'])),
                 'halaman_pdf' => is_numeric($c['halaman_pdf'] ?? null) ? (int) $c['halaman_pdf'] : null,
             ])
-            ->sortBy('halaman_pdf')
             ->values();
 
         if ($validChapters->isEmpty()) {
-            return 0;
+            return ['created' => 0, 'warnings' => []];
         }
 
-        // Potong halaman PDF pertama yang valid agar menjadi acuan offset
-        $firstPdf = $validChapters->first()['halaman_pdf'];
         $firstContentPage = $tocEndPage + 1;
-        $offset = ($firstPdf !== null && $firstPdf >= $firstContentPage)
-            ? $firstPdf - $firstContentPage
-            : 0;
+
+        $warnings = [];
 
         // Hapus partisi auto-generated sebelumnya agar tidak duplikat
         DocumentPartition::where('reksa_dana_document_id', $document->id)
@@ -248,15 +285,31 @@ PROMPT;
 
         $created = 0;
         $totalParsePages = $totalPages - $tocEndPage;
+        $previousPdfPage = null;
 
         foreach ($validChapters as $index => $chapter) {
             $startPagePdf = $chapter['halaman_pdf'];
 
-            // Gunakan offset yang sudah dihitung atau clamp ke halaman konten pertama
-            if ($startPagePdf === null) {
+            // Content-based matching: cari "BAB X" di halaman aktual
+            $babNum = $this->extractBabNumber($chapter['nama_bab']);
+            $contentPage = $babNum && isset($headingsMap[$babNum]) ? $headingsMap[$babNum] : null;
+
+            if ($contentPage !== null) {
+                if ($startPagePdf !== null && $contentPage !== $startPagePdf) {
+                    $warnings[] = "{$chapter['nama_bab']}: estimasi AI halaman {$startPagePdf}, content-scan menemukan di halaman {$contentPage}";
+                }
+                $startPagePdf = $contentPage;
+            } elseif ($startPagePdf === null) {
                 $startPagePdf = $firstContentPage;
+                $warnings[] = "{$chapter['nama_bab']}: halaman tidak ditemukan, fallback ke halaman {$firstContentPage}";
             } elseif ($startPagePdf < $firstContentPage) {
                 $startPagePdf = $firstContentPage;
+            }
+
+            // Pastikan urutan tidak tumpang tindih
+            if ($previousPdfPage !== null && $startPagePdf <= $previousPdfPage) {
+                $startPagePdf = $previousPdfPage + 1;
+                $warnings[] = "{$chapter['nama_bab']}: halaman disesuaikan ke {$startPagePdf} untuk menghindari tumpang tindih";
             }
 
             $startPageParse = $startPagePdf - $tocEndPage;
@@ -265,10 +318,22 @@ PROMPT;
             $endPageParse = $totalParsePages;
             $endPagePdf = $totalPages;
             $nextChapter = $validChapters->get($index + 1);
-            if ($nextChapter && is_numeric($nextChapter['halaman_pdf'])) {
-                $nextStart = max($nextChapter['halaman_pdf'], $firstContentPage);
-                $endPagePdf = $nextStart - 1;
-                $endPageParse = max(1, $endPagePdf - $tocEndPage);
+
+            if ($nextChapter) {
+                $nextStart = null;
+                $nextBabNum = $this->extractBabNumber($nextChapter['nama_bab']);
+                $nextContentPage = $nextBabNum && isset($headingsMap[$nextBabNum]) ? $headingsMap[$nextBabNum] : null;
+
+                if ($nextContentPage !== null) {
+                    $nextStart = $nextContentPage;
+                } elseif (is_numeric($nextChapter['halaman_pdf'] ?? null)) {
+                    $nextStart = max((int) $nextChapter['halaman_pdf'], $firstContentPage);
+                }
+
+                if ($nextStart !== null) {
+                    $endPagePdf = $nextStart - 1;
+                    $endPageParse = max(1, $endPagePdf - $tocEndPage);
+                }
             }
 
             if ($startPageParse > $endPageParse) {
@@ -286,10 +351,18 @@ PROMPT;
                 'source'                 => 'toc_ai',
             ]);
 
+            $previousPdfPage = $startPagePdf;
             $created++;
         }
 
-        return $created;
+        foreach ($warnings as $warning) {
+            \Log::warning("[TOC Partisi] {$warning}");
+        }
+
+        return [
+            'created'  => $created,
+            'warnings' => $warnings,
+        ];
     }
 
     public function getTextForPages(ReksaDanaDocument $document, int $startPage, int $endPage): string
