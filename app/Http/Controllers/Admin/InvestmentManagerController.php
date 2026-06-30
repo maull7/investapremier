@@ -81,6 +81,40 @@ class InvestmentManagerController extends Controller
     {
         $manager = InvestmentManager::with('periods')->findOrFail($id);
         $manager->load('funds');
+
+        // Per-tahun data governance dari InvestmentManagerProspektus
+        $availableYears = InvestmentManagerProspektus::where('investment_manager_id', $manager->id)
+            ->select('tahun')->distinct()->orderBy('tahun', 'desc')->pluck('tahun');
+
+        $selectedYear = request('tahun', $availableYears->first() ?: $manager->prospektus_source_tahun);
+        $selectedProspektus = InvestmentManagerProspektus::where('investment_manager_id', $manager->id)
+            ->where('tahun', $selectedYear)->first();
+
+        if ($selectedProspektus) {
+            $keyMap = [
+                'alamat' => 'address',
+                'telepon' => 'phone',
+                'email' => 'email',
+                'website' => 'website',
+                'deskripsi' => 'description',
+                'komisaris_utama' => 'commissioner_president',
+                'komisaris' => 'commissioners',
+                'direktur_utama' => 'director_president',
+                'direktur' => 'directors',
+                'pemegang_saham' => 'shareholders',
+                'komite_investasi' => 'investment_committee',
+                'tim_pengelola_investasi' => 'investment_management_team',
+                'dewan_pengawas_syariah' => 'dewan_pengawas_syariah',
+                'pihak_terafiliasi' => 'pihak_terafiliasi',
+            ];
+            $data = $selectedProspektus->data;
+            foreach ($keyMap as $dataKey => $fillableKey) {
+                if (isset($data[$dataKey]) && is_string($data[$dataKey]) && filled($data[$dataKey])) {
+                    $manager->$fillableKey = $data[$dataKey];
+                }
+            }
+        }
+
         $governanceSections = $personService->sectionsForManager($manager);
 
         // Pasardana governance data (stored as JSON in text columns)
@@ -125,7 +159,7 @@ class InvestmentManagerController extends Controller
 
         return view('admin.investment-managers.show', compact(
             'manager', 'fundsWithProspektus', 'managerFundsWithProspektus', 'range', 'chartData', 'governanceSections',
-            'pasardanaGovernance', 'prospektusHistory',
+            'pasardanaGovernance', 'prospektusHistory', 'availableYears', 'selectedYear',
         ));
     }
 
@@ -473,6 +507,175 @@ class InvestmentManagerController extends Controller
         } catch (\Throwable $e) {
             return response()->json(['error' => 'Gagal mengekstrak: ' . $e->getMessage()], 500);
         }
+    }
+
+    public function processPartition(Request $request, InvestmentManager $investmentManager, DocumentDataExtractorService $extractor)
+    {
+        $validated = $request->validate([
+            'document_id'  => 'required|exists:reksa_dana_documents,id',
+            'partition_id' => 'required|exists:document_partitions,id',
+        ]);
+
+        $document = ReksaDanaDocument::findOrFail($validated['document_id']);
+        $partition = DocumentPartition::findOrFail($validated['partition_id']);
+
+        ignore_user_abort(true);
+        set_time_limit(120);
+
+        try {
+            $data = $extractor->extractInvestmentManagerData($document, $partition);
+            return response()->json(['success' => true, 'data' => $data]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Gagal memproses partisi: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function finalizeParse(Request $request, InvestmentManager $investmentManager, InvestmentPersonService $personService)
+    {
+        $validated = $request->validate([
+            'document_id'      => 'required|exists:reksa_dana_documents,id',
+            'partition_results' => 'required|string',
+        ]);
+
+        $document = ReksaDanaDocument::findOrFail($validated['document_id']);
+        $partitionResults = json_decode($validated['partition_results'], true);
+        if (!is_array($partitionResults) || empty($partitionResults)) {
+            return response()->json(['error' => 'Data partisi tidak valid.'], 422);
+        }
+
+        try {
+            $data = $this->mergePartitionResults($partitionResults);
+
+            $update = array_filter([
+                'address'                => $data['alamat'] ?? null,
+                'phone'                  => $data['telepon'] ?? null,
+                'email'                  => $data['email'] ?? null,
+                'website'               => $data['website'] ?? null,
+                'description'            => $data['deskripsi'] ?? null,
+                'commissioner_president' => $data['komisaris_utama'] ?? null,
+                'commissioners'          => $data['komisaris'] ?? null,
+                'director_president'     => $data['direktur_utama'] ?? null,
+                'directors'              => $data['direktur'] ?? null,
+                'shareholders'           => $data['pemegang_saham'] ?? null,
+                'investment_committee'   => $data['komite_investasi'] ?? null,
+                'investment_management_team' => $data['tim_pengelola_investasi'] ?? null,
+                'dewan_pengawas_syariah' => $data['dewan_pengawas_syariah'] ?? null,
+                'pihak_terafiliasi'      => $data['pihak_terafiliasi'] ?? null,
+            ], fn($v) => $v !== null && $v !== '');
+
+            if (!empty($data['website']) && !preg_match('/^https?:\/\//i', $data['website'])) {
+                $update['website'] = 'https://' . $data['website'];
+            }
+
+            if (!empty($data['tim_pengelola']) && is_array($data['tim_pengelola'])) {
+                $teamText = collect($data['tim_pengelola'])
+                    ->map(fn($t) => trim(($t['nama'] ?? '') . ($t['jabatan'] ?? '' ? ' - ' . ($t['jabatan'] ?? '') : '')))
+                    ->filter()
+                    ->implode("\n");
+                if ($teamText) {
+                    $update['investment_management_team'] = $teamText;
+                }
+            }
+
+            $tahun = $document->ffs_year;
+
+            if (!empty($data)) {
+                InvestmentManagerProspektus::updateOrCreate(
+                    [
+                        'investment_manager_id' => $investmentManager->id,
+                        'reksa_dana_id'         => $document->reksa_dana_id,
+                        'tahun'                 => $tahun,
+                    ],
+                    ['data' => $data]
+                );
+            }
+
+            $update['source'] = 'prospektus';
+            $update['last_updated_at'] = now()->toDateString();
+            if ($tahun) {
+                $update['prospektus_source_tahun'] = $tahun;
+            }
+            $update['prospektus_source_reksa_dana_id'] = $document->reksa_dana_id;
+
+            foreach ([
+                'commissioners',
+                'directors',
+                'dewan_pengawas_syariah',
+                'pihak_terafiliasi',
+                'shareholders',
+                'investment_committee',
+                'investment_management_team',
+            ] as $field) {
+                if (array_key_exists($field, $update)) {
+                    $update[$field] = $this->mergePeopleText($investmentManager->{$field}, $update[$field], $personService);
+                }
+            }
+
+            if (!empty($update)) {
+                $investmentManager->update($update);
+                $personService->syncInvestmentManager($investmentManager->refresh(), 'prospektus');
+            }
+
+            ActivityLogger::log(
+                'Parse Prospektus ke MI',
+                "Data dari " . count($partitionResults) . " partisi dokumen {$document->original_name} berhasil disimpan ke {$investmentManager->name} (tahun {$tahun})",
+                'success',
+                $investmentManager,
+            );
+
+            return response()->json([
+                'success'      => true,
+                'message'      => "Data Manajer Investasi berhasil disimpan untuk tahun {$tahun}.",
+                'data'         => $data,
+                'saved_fields' => array_keys($update),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Gagal menyimpan: ' . $e->getMessage()], 500);
+        }
+    }
+
+    private function mergePartitionResults(array $results): array
+    {
+        $simpleKeys = ['alamat', 'telepon', 'email', 'website', 'deskripsi', 'komisaris_utama', 'direktur_utama', 'nama', 'sejarah', 'visi_misi'];
+        $peopleKeys = ['komisaris', 'direktur', 'dewan_pengawas_syariah', 'pihak_terafiliasi', 'pemegang_saham', 'komite_investasi', 'tim_pengelola_investasi'];
+
+        $merged = [];
+
+        foreach ($simpleKeys as $key) {
+            foreach ($results as $result) {
+                if (!empty($result[$key]) && is_string($result[$key]) && trim($result[$key]) !== '') {
+                    $merged[$key] = trim($result[$key]);
+                    break;
+                }
+            }
+        }
+
+        foreach ($peopleKeys as $key) {
+            $lines = [];
+            foreach ($results as $result) {
+                if (!empty($result[$key]) && is_string($result[$key])) {
+                    foreach (explode("\n", $result[$key]) as $line) {
+                        $line = trim($line);
+                        if ($line !== '') $lines[] = $line;
+                    }
+                }
+            }
+            if (!empty($lines)) {
+                $merged[$key] = implode("\n", array_unique($lines));
+            }
+        }
+
+        $allTeam = [];
+        foreach ($results as $result) {
+            if (!empty($result['tim_pengelola']) && is_array($result['tim_pengelola'])) {
+                $allTeam = array_merge($allTeam, $result['tim_pengelola']);
+            }
+        }
+        if (!empty($allTeam)) {
+            $merged['tim_pengelola'] = $allTeam;
+        }
+
+        return $merged;
     }
 
     private function parseProspektusText(string $text): array
