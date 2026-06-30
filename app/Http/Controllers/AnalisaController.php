@@ -407,7 +407,8 @@ class AnalisaController extends Controller
 
     public function parsePdf(Request $request, FfsParserService $ffsParser, GroqService $groq)
     {
-        set_time_limit(300);
+        ignore_user_abort(true);
+        set_time_limit(600);
 
         $request->validate([
             'file_pdf' => 'required|file|max:10240',
@@ -421,6 +422,9 @@ class AnalisaController extends Controller
         try {
             $data = $ffsParser->parseWithAi($path, $groq, $documentType);
         } catch (\Throwable $e) {
+            if (connection_aborted()) {
+                \Log::warning('[PARSE-PDF] Koneksi terputus oleh klien/proxy sebelum ekstraksi selesai. Data mungkin tidak lengkap.');
+            }
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal membaca PDF: ' . $e->getMessage(),
@@ -588,6 +592,9 @@ class AnalisaController extends Controller
 
     public function parseExistingDocument(Request $request, FfsParserService $ffsParser, GroqService $groq)
     {
+        ignore_user_abort(true);
+        set_time_limit(600);
+
         $request->merge([
             'jenis_laporan' => 'laporan_tahunan',
             'ffs_bulan' => null,
@@ -626,13 +633,31 @@ class AnalisaController extends Controller
         $fullPath = Storage::disk('public')->path($document->file_path);
 
         try {
-            set_time_limit(300);
             if (!empty($pageRanges)) {
                 $data = $ffsParser->parseWithPageRanges($fullPath, $groq, $pageRanges);
             } else {
                 $data = $ffsParser->parseWithAi($fullPath, $groq, $documentType);
             }
+
+            // Simpan hasil ekstraksi agar tidak hilang jika koneksi terputus
+            try {
+                FfsExtractionResult::updateOrCreate(
+                    [
+                        'reksa_dana_document_id' => $document->id,
+                        'created_by' => auth()->id(),
+                    ],
+                    [
+                        'reksa_dana_id' => $document->reksa_dana_id,
+                        'extracted_data' => $data,
+                    ]
+                );
+            } catch (\Throwable $e) {
+                \Log::warning('[PARSE-EXISTING] Gagal menyimpan hasil ekstraksi: ' . $e->getMessage());
+            }
         } catch (\Throwable $e) {
+            if (connection_aborted()) {
+                \Log::warning('[PARSE-EXISTING] Koneksi terputus oleh klien/proxy sebelum ekstraksi selesai.');
+            }
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal membaca PDF: ' . $e->getMessage(),
@@ -702,6 +727,7 @@ class AnalisaController extends Controller
 
     public function parseProspektusPdf(Request $request, ProspektusPipelineService $pipeline)
     {
+        ignore_user_abort(true);
         set_time_limit(600);
 
         $request->validate([
@@ -714,6 +740,9 @@ class AnalisaController extends Controller
         try {
             $result = $pipeline->process($path, 'prospektus');
         } catch (\Throwable $e) {
+            if (connection_aborted()) {
+                \Log::warning('[PROSPEKTUS] Koneksi terputus oleh klien/proxy sebelum pipeline selesai.');
+            }
             \Log::error('[PROSPEKTUS] Pipeline error: ' . $e->getMessage(), [
                 'file' => $file->getClientOriginalName(),
                 'trace' => $e->getTraceAsString(),
@@ -774,6 +803,9 @@ class AnalisaController extends Controller
 
     public function parseExistingProspektus(Request $request, ProspektusPipelineService $pipeline)
     {
+        ignore_user_abort(true);
+        set_time_limit(600);
+
         $request->merge([
             'jenis_laporan' => 'laporan_tahunan',
             'ffs_bulan' => null,
@@ -798,9 +830,11 @@ class AnalisaController extends Controller
         $fullPath = Storage::disk('public')->path($document->file_path);
 
         try {
-            set_time_limit(600);
             $result = $pipeline->process($fullPath, 'prospektus');
         } catch (\Throwable $e) {
+            if (connection_aborted()) {
+                \Log::warning('[PROSPEKTUS-EXISTING] Koneksi terputus oleh klien/proxy sebelum pipeline selesai.');
+            }
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal membaca Prospektus PDF: ' . $e->getMessage(),
@@ -1131,7 +1165,7 @@ class AnalisaController extends Controller
                 'tanggal_data'         => $request->tanggal_data,
                 'ffs_bulan'            => $request->ffs_bulan,
                 'ffs_tahun'            => $request->ffs_tahun,
-                'jenis_laporan'        => 'laporan_tahunan',
+                'jenis_laporan'        => $request->jenis_laporan ?: 'laporan_tahunan',
                 'periode_awal'         => $request->periode_awal,
                 'periode_akhir'        => $request->periode_akhir,
                 'tahun_laporan'        => $request->tahun_laporan,
@@ -1142,6 +1176,7 @@ class AnalisaController extends Controller
                 'portfolio_turnover_ratio' => $request->portfolio_turnover_ratio,
                 'management_fee'       => $request->management_fee,
                 'custodian_fee'        => $request->custodian_fee,
+                'investment_manager_fee' => $request->investment_manager_fee,
                 'total_aset'           => $request->total_aset,
                 'total_liabilitas'     => $request->total_liabilitas,
                 'kas_dan_bank'         => $request->kas_dan_bank,
@@ -1257,7 +1292,7 @@ class AnalisaController extends Controller
                 'tanggal_data'         => $request->tanggal_data,
                 'ffs_bulan'            => $request->ffs_bulan,
                 'ffs_tahun'            => $request->ffs_tahun,
-                'jenis_laporan'        => 'laporan_tahunan',
+                'jenis_laporan'        => $request->jenis_laporan ?: 'laporan_tahunan',
                 'periode_awal'         => $request->periode_awal,
                 'periode_akhir'        => $request->periode_akhir,
                 'tahun_laporan'        => $request->tahun_laporan,
@@ -1268,6 +1303,7 @@ class AnalisaController extends Controller
                 'portfolio_turnover_ratio' => $request->portfolio_turnover_ratio,
                 'management_fee'       => $request->management_fee,
                 'custodian_fee'        => $request->custodian_fee,
+                'investment_manager_fee' => $request->investment_manager_fee,
                 'total_aset'           => $request->total_aset,
                 'total_liabilitas'     => $request->total_liabilitas,
                 'kas_dan_bank'         => $request->kas_dan_bank,

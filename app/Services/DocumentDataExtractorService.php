@@ -135,6 +135,17 @@ Profil:
 - sejarah (sejarah perusahaan)
 - visi_misi (visi dan misi)
 
+Organ/Struktur (string, format "Nama - Jabatan" per baris, pisahkan dengan newline):
+- komisaris_utama
+- komisaris
+- direktur_utama
+- direktur
+- pemegang_saham
+- komite_investasi
+- tim_pengelola_investasi
+- dewan_pengawas_syariah
+- pihak_terafiliasi
+
 Tim Pengelola (array of objects):
 - tim_pengelola: [{nama, jabatan, pengalaman, sertifikasi}] — sertifikasi seperti WMI, WPPE, WPEE, CFA, dll.
 
@@ -144,7 +155,7 @@ ATURAN:
 3. Kembalikan HANYA JSON valid tanpa teks lain, tanpa markdown code block.
 
 Contoh output:
-{"nama":"PT Manajer Investasi Tbk","alamat":"Jl. Sudirman Kav 52-53","website":"https://www.example.com","email":"info@example.com","telepon":"021-1234567","deskripsi":"...","sejarah":"...","visi_misi":"...","tim_pengelola":[{"nama":"John Doe","jabatan":"Direktur Utama","pengalaman":"20 tahun di pasar modal","sertifikasi":"WMI, WPPE"}]}
+{"nama":"PT Manajer Investasi Tbk","alamat":"Jl. Sudirman Kav 52-53","website":"https://www.example.com","email":"info@example.com","telepon":"021-1234567","deskripsi":"...","sejarah":"...","visi_misi":"...","komisaris_utama":"John Doe - Komisaris Utama","komisaris":"Jane Doe - Komisaris Independen","direktur_utama":"Bob Smith - Direktur Utama","direktur":"Alice Smith - Direktur","pemegang_saham":"PT Induk - 99%","komite_investasi":"Charlie - Ketua","tim_pengelola_investasi":"David - Manajer Investasi","dewan_pengawas_syariah":"Ustadz Ahmad - Ketua DPS","pihak_terafiliasi":"PT Terafiliasi - Hubungan","tim_pengelola":[{"nama":"John Doe","jabatan":"Direktur Utama","pengalaman":"20 tahun di pasar modal","sertifikasi":"WMI, WPPE"}]}
 PROMPT;
 
         $userMessage = "Berikut adalah teks dokumen prospektus reksa dana:\n\n" . $truncatedText;

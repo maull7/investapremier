@@ -49,6 +49,7 @@ class AnalisaReksaDana extends Model
         'portfolio_turnover_ratio',
         'management_fee',
         'custodian_fee',
+        'investment_manager_fee',
         'total_aset',
         'total_liabilitas',
         'kas_dan_bank',

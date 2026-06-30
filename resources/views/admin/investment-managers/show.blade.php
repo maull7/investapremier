@@ -76,7 +76,8 @@
             extractPartitionUrl: '{{ route('admin.investment-managers.extract-from-partition', $manager) }}',
             saveUrl: '{{ route('admin.investment-managers.save-prospektus', $manager) }}',
             csrfToken: '{{ csrf_token() }}',
-            fundsData: {{ Js::from($fundsWithProspektus->map(fn($f) => [
+            miTahun: {{ Js::from($manager->prospektus_source_tahun) }},
+            fundsData: {{ Js::from($managerFundsWithProspektus->map(fn($f) => [
                 'id' => $f->id,
                 'nama' => $f->nama_reksa_dana,
                 'years' => $f->documents->pluck('ffs_year')->filter()->unique()->values(),
@@ -112,6 +113,11 @@
                 return doc ? doc.partitions : [];
             },
             init() {
+                if (this.miTahun) {
+                    const fund = this.fundsData.find(f => f.years.includes(this.miTahun));
+                    if (fund) this.reksaDanaId = fund.id;
+                    this.$nextTick(() => { this.tahun = this.miTahun; });
+                }
                 this.$watch('tahun', () => { this.selectedDocumentId = ''; this.selectedPartitionId = ''; });
                 this.$watch('reksaDanaId', () => { this.tahun = ''; this.selectedDocumentId = ''; this.selectedPartitionId = ''; });
             },
@@ -134,8 +140,10 @@
                             headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
                         });
                         const json = await res.json();
-                        if (!res.ok) { this.error = json.error || 'Gagal mengekstrak.'; return; }
-                        this.success = 'Data berhasil diekstrak dari partisi dan disimpan. Refresh halaman untuk melihat perubahan.';
+                        if (!res.ok) { this.error = json.error || 'Gagal mengekstrak.'; this.loading = false; return; }
+                        this.success = 'Data berhasil diekstrak dari partisi dan disimpan.';
+                        this.loading = false;
+                        setTimeout(() => window.location.reload(), 1500);
                         return;
                     } catch (e) { this.error = e.message; this.loading = false; return; }
                 }
@@ -171,7 +179,8 @@
                         return;
                     }
                     const mode = json.ai_used ? 'AI' : 'RegEx';
-                    this.success = 'Data berhasil diekstrak (' + mode + ') dan disimpan. Refresh halaman untuk melihat perubahan.';
+                    this.success = 'Data berhasil diekstrak (' + mode + ') dan disimpan.';
+                    setTimeout(() => window.location.reload(), 1500);
                 } catch (e) { this.error = e.message; } finally { this.loading = false; }
             }
         }">
@@ -185,7 +194,7 @@
                         <select x-model="reksaDanaId" @change="tahun=''; selectedDocumentId=''; selectedPartitionId=''"
                             class="px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 min-w-[280px]">
                             <option value="">-- Pilih Reksa Dana --</option>
-                            @foreach ($fundsWithProspektus as $fund)
+                            @foreach ($managerFundsWithProspektus as $fund)
                                 <option value="{{ $fund->id }}">{{ $fund->nama_reksa_dana }}</option>
                             @endforeach
                         </select>
@@ -236,7 +245,7 @@
                             <label for="useAi" class="text-xs text-muted cursor-pointer">Gunakan AI <span class="text-[10px] opacity-60">(lebih akurat)</span></label>
                         </div>
                     </template>
-                    <button @click="extract()" :disabled="!reksaDanaId || !tahun || (usePartition && (!selectedDocumentId || !selectedPartitionId))" || loading
+                    <button @click="extract()" :disabled="!reksaDanaId || !tahun || (usePartition && (!selectedDocumentId || !selectedPartitionId)) || loading"
                         class="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition disabled:opacity-50 flex items-center gap-2">
                         <span x-show="loading"
                             class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -246,7 +255,7 @@
                 <template x-if="usePartition && selectedDocumentId && filteredPartitions.length === 0">
                     <p class="text-sm text-muted">Dokumen ini belum memiliki partisi. <a href="{{ route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs']) }}" class="text-accent hover:underline">Buat partisi di Daftar Reksa Dana &rarr; Detail RD</a>.</p>
                 </template>
-                @if ($fundsWithProspektus->isEmpty())
+                @if ($managerFundsWithProspektus->isEmpty())
                     <p class="text-sm text-muted">Belum ada reksa dana dengan prospektus. Upload di <a
                             href="{{ route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs']) }}"
                             class="text-accent hover:underline">Daftar Reksa Dana</a>.</p>
@@ -349,8 +358,9 @@
                 @endif
             @endforeach
 
-            {{-- DPS card always visible --}}
+            {{-- DPS card always visible — also shows Pihak Terafiliasi --}}
             @php $dpsItems = collect($governanceSections)->firstWhere('label', 'Dewan Pengawas Syariah')['items'] ?? []; @endphp
+            @php $pihakTerafiliasiItems = $manager->pihak_terafiliasi ? explode("\n", $manager->pihak_terafiliasi) : []; @endphp
             <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mt-6">
                 <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
                     <h2 class="font-bold text-white text-sm">Dewan Pengawas Syariah
@@ -381,7 +391,29 @@
                         </table>
                     </div>
                 @else
-                    <div class="px-6 py-8 text-center text-muted text-sm">Data belum tersedia.</div>
+                    <div class="px-6 py-4 text-center text-muted text-sm">Data belum tersedia.</div>
+                @endif
+
+                @if(!empty($pihakTerafiliasiItems))
+                    <div class="border-t border-line">
+                        <div class="px-6 py-3 bg-gradient-to-r from-amber-50 to-amber-50/50">
+                            <h3 class="font-bold text-amber-800 text-xs">Pihak Terafiliasi</h3>
+                        </div>
+                        <div class="divide-y divide-line text-xs">
+                            @foreach($pihakTerafiliasiItems as $line)
+                                @php $line = trim($line); @endphp
+                                @if(!empty($line))
+                                    @php $parts = explode(' - ', $line, 2); @endphp
+                                    <div class="px-6 py-2.5 flex items-start gap-4">
+                                        <span class="font-semibold text-muted w-36 shrink-0">{{ $parts[0] ?? $line }}</span>
+                                        @isset($parts[1])
+                                            <span class="text-muted">{{ $parts[1] }}</span>
+                                        @endisset
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
                 @endif
             </div>
 
@@ -844,6 +876,7 @@
                         if (!res.ok) throw new Error(json.error || 'Gagal parse prospektus.');
 
                         this.success = json.message;
+                        setTimeout(() => window.location.reload(), 1500);
                     } catch (e) {
                         this.error = e.message;
                     } finally {

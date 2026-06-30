@@ -7,7 +7,38 @@
         <div class="py-12 text-center text-muted bg-white rounded-2xl border border-line">
             <svg class="w-10 h-10 mx-auto mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             <p class="font-medium">Dokumen {{ $docType === 'prospektus' ? 'Prospektus' : 'FFS' }} belum tersedia.</p>
-            <p class="text-xs mt-1">Upload di <a href="{{ route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs']) }}" class="text-accent hover:underline">Daftar Reksa Dana</a>.</p>
+            @if($docType === 'ffs')
+                <div class="mt-4 max-w-sm mx-auto">
+                    <div class="bg-[#f8fafc] border border-line rounded-xl p-4 text-left space-y-3">
+                        <p class="text-xs font-semibold text-primary">Upload FFS Baru</p>
+                        <input type="file" accept="application/pdf"
+                            @change="uploadFfsFile = $event.target.files[0]"
+                            class="w-full text-xs border border-line rounded-lg px-3 py-2 file:mr-2 file:rounded file:border-0 file:bg-emerald-50 file:px-2 file:py-1 file:text-emerald-700">
+                        <div class="grid grid-cols-2 gap-2">
+                            <select x-model="uploadFfsMonth"
+                                class="w-full text-xs border border-line rounded-lg px-3 py-2">
+                                <option value="">Bulan</option>
+                                @foreach(['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'] as $i => $m)
+                                    <option value="{{ $i + 1 }}">{{ $m }}</option>
+                                @endforeach
+                            </select>
+                            <input type="number" x-model="uploadFfsYear" placeholder="Tahun" min="2000" max="2100"
+                                class="w-full text-xs border border-line rounded-lg px-3 py-2">
+                        </div>
+                        <button @click="uploadFfs()" :disabled="uploadFfsLoading || !uploadFfsFile || !uploadFfsMonth || !uploadFfsYear"
+                            class="w-full px-3 py-2 bg-emerald-700 text-white rounded-lg text-xs font-semibold hover:bg-emerald-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                            <span x-show="uploadFfsLoading" class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            <span x-text="uploadFfsLoading ? 'Mengupload...' : 'Upload FFS'"></span>
+                        </button>
+                        <div x-show="uploadFfsError" x-text="uploadFfsError"
+                            class="px-3 py-2 rounded-lg text-xs bg-red-50 border border-red-200 text-red-700"></div>
+                        <div x-show="uploadFfsSuccess" x-text="uploadFfsSuccess"
+                            class="px-3 py-2 rounded-lg text-xs bg-green-50 border border-green-200 text-green-700"></div>
+                    </div>
+                </div>
+            @else
+                <p class="text-xs mt-1">Upload di <a href="{{ route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs']) }}" class="text-accent hover:underline">Daftar Reksa Dana</a>.</p>
+            @endif
         </div>
     @endif
 
@@ -43,6 +74,39 @@
                 @if($docType === 'ffs')
                     {{-- FFS: langsung parse tanpa partisi --}}
                     <div class="space-y-3">
+                        <button @click="uploadFfsOpen = !uploadFfsOpen"
+                            class="w-full px-3 py-2 border-2 border-dashed border-emerald-300 text-emerald-700 rounded-lg text-xs font-semibold hover:bg-emerald-50 transition flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            <span x-text="uploadFfsOpen ? 'Tutup' : 'Upload FFS Baru'"></span>
+                        </button>
+
+                        <div x-show="uploadFfsOpen" class="bg-[#f8fafc] border border-line rounded-xl p-4 space-y-3">
+                            <p class="text-xs font-semibold text-primary">Upload FFS Baru</p>
+                            <input type="file" accept="application/pdf"
+                                @change="uploadFfsFile = $event.target.files[0]"
+                                class="w-full text-xs border border-line rounded-lg px-3 py-2 file:mr-2 file:rounded file:border-0 file:bg-emerald-50 file:px-2 file:py-1 file:text-emerald-700">
+                            <div class="grid grid-cols-2 gap-2">
+                                <select x-model="uploadFfsMonth"
+                                    class="w-full text-xs border border-line rounded-lg px-3 py-2">
+                                    <option value="">Bulan</option>
+                                    @foreach(['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'] as $i => $m)
+                                        <option value="{{ $i + 1 }}">{{ $m }}</option>
+                                    @endforeach
+                                </select>
+                                <input type="number" x-model="uploadFfsYear" placeholder="Tahun" min="2000" max="2100"
+                                    class="w-full text-xs border border-line rounded-lg px-3 py-2">
+                            </div>
+                            <button @click="uploadFfs()" :disabled="uploadFfsLoading || !uploadFfsFile || !uploadFfsMonth || !uploadFfsYear"
+                                class="w-full px-3 py-2 bg-emerald-700 text-white rounded-lg text-xs font-semibold hover:bg-emerald-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                                <span x-show="uploadFfsLoading" class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                <span x-text="uploadFfsLoading ? 'Mengupload...' : 'Upload'"></span>
+                            </button>
+                            <div x-show="uploadFfsError" x-text="uploadFfsError"
+                                class="px-3 py-2 rounded-lg text-xs bg-red-50 border border-red-200 text-red-700"></div>
+                            <div x-show="uploadFfsSuccess" x-text="uploadFfsSuccess"
+                                class="px-3 py-2 rounded-lg text-xs bg-green-50 border border-green-200 text-green-700"></div>
+                        </div>
+
                         <div>
                             <h3 class="font-bold text-primary text-xs mb-1">Ekstrak Data FFS</h3>
                             <p class="text-[10px] text-muted">Untuk dokumen FFS, data langsung diparse dari seluruh halaman tanpa perlu partisi.</p>

@@ -140,6 +140,7 @@ class InvestmentManagerController extends Controller
 
     public function extractProspektus(Request $request, InvestmentManager $investmentManager, GroqService $groq)
     {
+        set_time_limit(120);
         $request->validate([
             'reksa_dana_id' => 'required|integer|exists:reksa_dana,id',
             'tahun'         => 'required|integer',
@@ -209,6 +210,7 @@ class InvestmentManagerController extends Controller
             'investment_committee'    => 'nullable|string',
             'investment_management_team' => 'nullable|string',
             'dewan_pengawas_syariah' => 'nullable|string',
+            'pihak_terafiliasi'      => 'nullable|string',
             'description'            => 'nullable|string',
             'reksa_dana_id'          => 'nullable|integer|exists:reksa_dana,id',
             'tahun'                  => 'nullable|integer',
@@ -219,6 +221,7 @@ class InvestmentManagerController extends Controller
             'commissioners',
             'directors',
             'dewan_pengawas_syariah',
+            'pihak_terafiliasi',
             'shareholders',
             'investment_committee',
             'investment_management_team',
@@ -269,6 +272,7 @@ class InvestmentManagerController extends Controller
 
     public function extractFromPartition(Request $request, InvestmentManager $investmentManager, DocumentDataExtractorService $extractor, InvestmentPersonService $personService)
     {
+        set_time_limit(120);
         $validated = $request->validate([
             'document_id'  => 'required|exists:reksa_dana_documents,id',
             'partition_id' => 'required|exists:document_partitions,id',
@@ -285,8 +289,17 @@ class InvestmentManagerController extends Controller
                 'address'                => $data['alamat'] ?? null,
                 'phone'                  => $data['telepon'] ?? null,
                 'email'                  => $data['email'] ?? null,
-                'website'                => $data['website'] ?? null,
+                'website'               => $data['website'] ?? null,
                 'description'            => $data['deskripsi'] ?? null,
+                'commissioner_president' => $data['komisaris_utama'] ?? null,
+                'commissioners'          => $data['komisaris'] ?? null,
+                'director_president'     => $data['direktur_utama'] ?? null,
+                'directors'              => $data['direktur'] ?? null,
+                'shareholders'           => $data['pemegang_saham'] ?? null,
+                'investment_committee'   => $data['komite_investasi'] ?? null,
+                'investment_management_team' => $data['tim_pengelola_investasi'] ?? null,
+                'dewan_pengawas_syariah' => $data['dewan_pengawas_syariah'] ?? null,
+                'pihak_terafiliasi'      => $data['pihak_terafiliasi'] ?? null,
             ], fn($v) => $v !== null && $v !== '');
 
             if (!empty($data['website']) && !preg_match('/^https?:\/\//i', $data['website'])) {
@@ -307,6 +320,21 @@ class InvestmentManagerController extends Controller
             $update['last_updated_at'] = now()->toDateString();
             if ($document->ffs_year) {
                 $update['prospektus_source_tahun'] = $document->ffs_year;
+            }
+
+            // Merge governance fields with existing data instead of overwriting
+            foreach ([
+                'commissioners',
+                'directors',
+                'dewan_pengawas_syariah',
+                'pihak_terafiliasi',
+                'shareholders',
+                'investment_committee',
+                'investment_management_team',
+            ] as $field) {
+                if (array_key_exists($field, $update)) {
+                    $update[$field] = $this->mergePeopleText($investmentManager->{$field}, $update[$field], $personService);
+                }
             }
 
             if (!empty($update)) {
@@ -344,6 +372,7 @@ class InvestmentManagerController extends Controller
 
     public function extractProspektusData(Request $request, InvestmentManager $investmentManager, DocumentDataExtractorService $extractor, InvestmentPersonService $personService)
     {
+        set_time_limit(120);
         $validated = $request->validate([
             'document_id'   => 'required|exists:reksa_dana_documents,id',
             'partition_ids' => 'required|array|min:1',
@@ -361,11 +390,20 @@ class InvestmentManagerController extends Controller
             $data = $extractor->extractInvestmentManagerDataFromPartitions($document, $partitions->all());
 
             $update = array_filter([
-                'address'     => $data['alamat'] ?? null,
-                'phone'       => $data['telepon'] ?? null,
-                'email'       => $data['email'] ?? null,
-                'website'     => $data['website'] ?? null,
-                'description' => $data['deskripsi'] ?? null,
+                'address'                => $data['alamat'] ?? null,
+                'phone'                  => $data['telepon'] ?? null,
+                'email'                  => $data['email'] ?? null,
+                'website'                => $data['website'] ?? null,
+                'description'            => $data['deskripsi'] ?? null,
+                'commissioner_president' => $data['komisaris_utama'] ?? null,
+                'commissioners'          => $data['komisaris'] ?? null,
+                'director_president'     => $data['direktur_utama'] ?? null,
+                'directors'              => $data['direktur'] ?? null,
+                'shareholders'           => $data['pemegang_saham'] ?? null,
+                'investment_committee'   => $data['komite_investasi'] ?? null,
+                'investment_management_team' => $data['tim_pengelola_investasi'] ?? null,
+                'dewan_pengawas_syariah' => $data['dewan_pengawas_syariah'] ?? null,
+                'pihak_terafiliasi'      => $data['pihak_terafiliasi'] ?? null,
             ], fn($v) => $v !== null && $v !== '');
 
             if (!empty($data['website']) && !preg_match('/^https?:\/\//i', $data['website'])) {
@@ -388,6 +426,21 @@ class InvestmentManagerController extends Controller
                 $update['prospektus_source_tahun'] = $document->ffs_year;
             }
             $update['prospektus_source_reksa_dana_id'] = $document->reksa_dana_id;
+
+            // Merge governance fields with existing data instead of overwriting
+            foreach ([
+                'commissioners',
+                'directors',
+                'dewan_pengawas_syariah',
+                'pihak_terafiliasi',
+                'shareholders',
+                'investment_committee',
+                'investment_management_team',
+            ] as $field) {
+                if (array_key_exists($field, $update)) {
+                    $update[$field] = $this->mergePeopleText($investmentManager->{$field}, $update[$field], $personService);
+                }
+            }
 
             if (!empty($update)) {
                 $investmentManager->update($update);
