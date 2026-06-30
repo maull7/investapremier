@@ -117,7 +117,7 @@ PROMPT;
             throw new \RuntimeException('Tidak ada teks yang tersedia untuk partisi terpilih. Lakukan parse dokumen terlebih dahulu.');
         }
 
-        $truncatedText = mb_substr($combinedText, 0, 60000);
+        $truncatedText = mb_substr($combinedText, 0, 15000);
 
         $systemPrompt = <<<PROMPT
 Kamu adalah parser dokumen prospektus reksa dana Indonesia. Ekstrak data Manajer Investasi dari teks dokumen.
@@ -135,6 +135,17 @@ Profil:
 - sejarah (sejarah perusahaan)
 - visi_misi (visi dan misi)
 
+Organ/Struktur (string, format "Nama - Jabatan" per baris, pisahkan dengan newline):
+- komisaris_utama
+- komisaris
+- direktur_utama
+- direktur
+- pemegang_saham
+- komite_investasi
+- tim_pengelola_investasi
+- dewan_pengawas_syariah
+- pihak_terafiliasi
+
 Tim Pengelola (array of objects):
 - tim_pengelola: [{nama, jabatan, pengalaman, sertifikasi}] — sertifikasi seperti WMI, WPPE, WPEE, CFA, dll.
 
@@ -142,9 +153,11 @@ ATURAN:
 1. Hanya ekstrak data yang benar-benar ada di dokumen. Jika tidak ditemukan, beri nilai null.
 2. JANGAN membuat data.
 3. Kembalikan HANYA JSON valid tanpa teks lain, tanpa markdown code block.
+4. Pastikan string JSON menggunakan tanda kutip ganda ("), bukan kutip tunggal.
+5. Tidak ada trailing comma setelah item terakhir.
 
 Contoh output:
-{"nama":"PT Manajer Investasi Tbk","alamat":"Jl. Sudirman Kav 52-53","website":"https://www.example.com","email":"info@example.com","telepon":"021-1234567","deskripsi":"...","sejarah":"...","visi_misi":"...","tim_pengelola":[{"nama":"John Doe","jabatan":"Direktur Utama","pengalaman":"20 tahun di pasar modal","sertifikasi":"WMI, WPPE"}]}
+{"nama":"PT Manajer Investasi Tbk","alamat":"Jl. Sudirman Kav 52-53","website":"https://www.example.com","email":"info@example.com","telepon":"021-1234567","deskripsi":"...","sejarah":"...","visi_misi":"...","komisaris_utama":"John Doe - Komisaris Utama","komisaris":"Jane Doe - Komisaris Independen","direktur_utama":"Bob Smith - Direktur Utama","direktur":"Alice Smith - Direktur","pemegang_saham":"PT Induk - 99%","komite_investasi":"Charlie - Ketua","tim_pengelola_investasi":"David - Manajer Investasi","dewan_pengawas_syariah":"Ustadz Ahmad - Ketua DPS","pihak_terafiliasi":"PT Terafiliasi - Hubungan","tim_pengelola":[{"nama":"John Doe","jabatan":"Direktur Utama","pengalaman":"20 tahun di pasar modal","sertifikasi":"WMI, WPPE"}]}
 PROMPT;
 
         $userMessage = "Berikut adalah teks dokumen prospektus reksa dana:\n\n" . $truncatedText;
@@ -154,9 +167,23 @@ PROMPT;
             ['role' => 'user', 'content' => $userMessage],
         ];
 
-        $rawResponse = $this->groqService->callAi($messages, 120, 0.2);
+        $attempts = 0;
+        $lastError = '';
+        $rawResponse = '';
+        while ($attempts < 2) {
+            $attempts++;
+            try {
+                $rawResponse = $this->groqService->callAi($messages, 120, 0.2);
+                return $this->parseJsonResponse($rawResponse);
+            } catch (\RuntimeException $e) {
+                $lastError = $e->getMessage();
+                if ($attempts >= 2) throw $e;
+                $messages[] = ['role' => 'assistant', 'content' => $rawResponse];
+                $messages[] = ['role' => 'user', 'content' => 'Respons sebelumnya tidak valid JSON. Tolong koreksi dan kembalikan HANYA JSON valid tanpa teks lain. Pastikan semua string menggunakan kutip ganda dan tidak ada trailing comma.'];
+            }
+        }
 
-        return $this->parseJsonResponse($rawResponse);
+        throw new \RuntimeException($lastError);
     }
 
     public function extractInvestmentManagerData(
@@ -274,6 +301,25 @@ PROMPT;
             }
         }
 
+        // Try to fix common JSON issues
+        $fixed = $this->fixCommonJsonIssues($cleaned);
+        $decoded = json_decode($fixed, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return $decoded;
+        }
+
         throw new \RuntimeException('Gagal mem-parse respons AI. Respons tidak valid JSON.');
+    }
+
+    private function fixCommonJsonIssues(string $json): string
+    {
+        // Single quotes to double quotes
+        $json = preg_replace("/(\w+)':/", '$1":', $json);
+        $json = preg_replace("/:'\s*([^']*?)'/", ':"$1"', $json);
+        // Remove trailing commas before } and ]
+        $json = preg_replace('/,\s*([}\]])/', '$1', $json);
+        // Replace Python None/True/False with JSON null/true/false
+        $json = str_replace([': None', ': True', ': False', ', None', ', True', ', False'], [': null', ': true', ': false', ', null', ', true', ', false'], $json);
+        return $json;
     }
 }

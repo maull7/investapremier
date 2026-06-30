@@ -900,6 +900,50 @@ function documentTabData(defaultDocType) {
                 this.loading = false;
             }
         },
+
+        uploadFfsOpen: false,
+        uploadFfsFile: null,
+        uploadFfsMonth: '',
+        uploadFfsYear: '',
+        uploadFfsLoading: false,
+        uploadFfsError: null,
+        uploadFfsSuccess: null,
+
+        async uploadFfs() {
+            if (!this.uploadFfsFile || !this.uploadFfsMonth || !this.uploadFfsYear) return;
+            this.uploadFfsLoading = true;
+            this.uploadFfsError = null;
+            this.uploadFfsSuccess = null;
+            try {
+                const formData = new FormData();
+                formData.append('_token', '{{ csrf_token() }}');
+                formData.append('reksa_dana_id', '{{ $fund->id }}');
+                formData.append('document_type', 'ffs');
+                formData.append('file', this.uploadFfsFile);
+                formData.append('ffs_month', this.uploadFfsMonth);
+                formData.append('ffs_year', this.uploadFfsYear);
+
+                const res = await fetch('{{ route('admin.daftar-reksa-dana.documents.store') }}', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                    body: formData,
+                });
+
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || json.errors?.[Object.keys(json.errors || {})[0]]?.[0] || 'Gagal upload.');
+
+                this.uploadFfsSuccess = json.message;
+                this.uploadFfsFile = null;
+                this.uploadFfsMonth = '';
+                this.uploadFfsYear = '';
+                this.uploadFfsOpen = false;
+                setTimeout(() => window.location.reload(), 1500);
+            } catch (e) {
+                this.uploadFfsError = e.message;
+            } finally {
+                this.uploadFfsLoading = false;
+            }
+        },
     };
 }
 </script>

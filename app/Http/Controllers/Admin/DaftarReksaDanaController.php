@@ -207,6 +207,10 @@ class DaftarReksaDanaController extends Controller
             'success',
         );
 
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Dokumen berhasil diupload.']);
+        }
+
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs'])
             ->with('success', 'Dokumen berhasil diupload.');
     }

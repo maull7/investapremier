@@ -9,7 +9,7 @@ class InvestmentManager extends Model
     protected $fillable = [
         'name', 'kode_mi', 'kode_ojk', 'address', 'phone', 'email', 'website',
         'commissioner_president', 'commissioners', 'director_president',
-        'directors', 'dewan_pengawas_syariah', 'shareholders', 'investment_committee',
+        'directors', 'dewan_pengawas_syariah', 'pihak_terafiliasi', 'shareholders', 'investment_committee',
         'investment_management_team', 'last_updated_at', 'description',
         // pasardana fields
         'pasardana_id', 'fax', 'modal_dasar', 'modal_disetor',

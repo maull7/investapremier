@@ -315,6 +315,16 @@
                                 <x-text-input id="mata_uang_manual" name="mata_uang" type="text"
                                     class="mt-1 block w-full" x-model="mataUang" />
                             </div>
+                            <div x-show="jenisLaporan === 'kalender_ffs'">
+                                <x-input-label for="mi_fee_manual" value="MI Fee (%)" />
+                                <x-text-input id="mi_fee_manual" name="investment_manager_fee" type="number" step="0.01"
+                                    class="mt-1 block w-full" x-model="investmentManagerFee" />
+                            </div>
+                            <div x-show="jenisLaporan === 'kalender_ffs'">
+                                <x-input-label for="bk_fee_manual" value="BK Fee (%)" />
+                                <x-text-input id="bk_fee_manual" name="custodian_fee" type="number" step="0.01"
+                                    class="mt-1 block w-full" x-model="custodianFee" />
+                            </div>
                         </div>
                     </div>
 
@@ -371,11 +381,14 @@
                                 <x-input-label for="custodian_fee_manual" value="Custodian Fee (%)" />
                                 <x-text-input id="custodian_fee_manual" name="custodian_fee" type="number"
                                     step="0.01" class="mt-1 block w-full" x-model="custodianFee" />
+                                {{-- ponytail: duplicated as BK Fee in Informasi Reksa Dana (shown for kalender_ffs). remove from here if BK Fee covers it. --}}
                             </div>
                         </div>
                     </div>
 
-                    @include('analisa.partials.form-alokasi-aset')
+                    <div x-show="jenisLaporan === 'kalender_ffs'">
+                        @include('analisa.partials.form-alokasi-aset')
+                    </div>
 
                     <div>
                         <div class="flex items-center justify-between mb-3">
@@ -400,7 +413,7 @@
                         </div>
                     </div>
 
-                    <div>
+                    <div x-show="jenisLaporan === 'kalender_ffs'">
                         <div class="flex items-center justify-between mb-3">
                             <h4 class="font-semibold text-primary text-sm">Daftar Efek</h4>
                             <button type="button" @click="addRow('efek')" class="text-xs text-primary hover:underline">+
@@ -501,7 +514,7 @@
                     </div>
 
                     {{-- Laporan Keuangan --}}
-                    <div x-cloak class="space-y-8">
+                    <div x-show="jenisLaporan === 'laporan_tahunan'" x-cloak class="space-y-8">
 
                         <div class="border rounded-lg p-4 bg-white shadow-sm">
                             <h4 class="font-semibold text-primary text-sm mb-3">Laporan Posisi Keuangan</h4>
@@ -694,7 +707,7 @@
                 <div x-show="mode==='lengkap'" class="p-6 space-y-6">
 
                     {{-- Read-only Financial Statement Cards (Lengkap tab) --}}
-                    <div class="border rounded-lg p-4 bg-white shadow-sm">
+                    <div x-show="jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
                         <h4 class="font-semibold text-primary text-sm mb-3">Laporan Posisi Keuangan</h4>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
@@ -726,7 +739,7 @@
                         </div>
                     </div>
 
-                    <div class="border rounded-lg p-4 bg-white shadow-sm">
+                    <div x-show="jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
                         <h4 class="font-semibold text-primary text-sm mb-3">Laporan Laba Rugi / Penghasilan Komprehensif</h4>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
@@ -762,7 +775,7 @@
                         </div>
                     </div>
 
-                    <div class="border rounded-lg p-4 bg-white shadow-sm">
+                    <div x-show="jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
                         <h4 class="font-semibold text-primary text-sm mb-3">Laporan Arus Kas</h4>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
@@ -786,7 +799,7 @@
                         </div>
                     </div>
 
-                    <div>
+                    <div x-show="jenisLaporan === 'kalender_ffs'">
                         <div class="flex items-center mb-3">
                             <h4 class="font-semibold text-primary text-sm">Alokasi Aset / % Portfolio</h4>
                         </div>
@@ -843,7 +856,7 @@
                     {{-- Efek --}}
                     <div>
                         <div class="flex items-center mb-3">
-                            <h4 class="font-semibold text-primary text-sm">Daftar Efek</h4>
+                            <h4 class="font-semibold text-primary text-sm" x-text="jenisLaporan === 'laporan_tahunan' ? 'Portofolio Efek' : 'Daftar Efek'"></h4>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
@@ -991,7 +1004,7 @@
                     </div>
 
                     {{-- Bank --}}
-                    <div>
+                    <div x-show="jenisLaporan === 'kalender_ffs'">
                         <div class="flex items-center mb-3">
                             <h4 class="font-semibold text-primary text-sm">Bank</h4>
                         </div>
@@ -1690,6 +1703,7 @@
                     portfolioTurnover: @json(old('portfolio_turnover_ratio')),
                     managementFee: @json(old('management_fee')),
                     custodianFee: @json(old('custodian_fee')),
+                    investmentManagerFee: @json(old('investment_manager_fee')),
                     totalAset: @json(old('total_aset')),
                     totalLiabilitas: @json(old('total_liabilitas')),
                     kasDanBank: @json(old('kas_dan_bank')),

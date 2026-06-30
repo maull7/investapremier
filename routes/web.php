@@ -326,6 +326,8 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::post('investment-managers/{investmentManager}/save-prospektus', [AdminInvestmentManagerController::class, 'saveProspektus'])->name('investment-managers.save-prospektus');
     Route::post('investment-managers/{investmentManager}/extract-from-partition', [AdminInvestmentManagerController::class, 'extractFromPartition'])->name('investment-managers.extract-from-partition');
     Route::post('investment-managers/{investmentManager}/extract-prospektus-data', [AdminInvestmentManagerController::class, 'extractProspektusData'])->name('investment-managers.extract-prospektus-data');
+    Route::post('investment-managers/{investmentManager}/process-partition', [AdminInvestmentManagerController::class, 'processPartition'])->name('investment-managers.process-partition');
+    Route::post('investment-managers/{investmentManager}/finalize-parse', [AdminInvestmentManagerController::class, 'finalizeParse'])->name('investment-managers.finalize-parse');
     Route::get('investment-managers-template', [AdminInvestmentManagerController::class, 'downloadTemplate'])->name('investment-managers.template');
     Route::post('investment-managers-import', [AdminInvestmentManagerController::class, 'import'])->name('investment-managers.import');
     Route::delete('investment-managers-period/{investmentManagerPeriod}', [AdminInvestmentManagerController::class, 'destroyPeriod'])->name('investment-managers.period-destroy');

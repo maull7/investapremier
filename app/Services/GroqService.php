@@ -27,9 +27,44 @@ class GroqService
 
     public function callAi(array $messages, int $timeout = 90, float $temperature = 0.3): string
     {
-        if ($this->openaiKey) {
+        // Try Groq first (cheaper/faster)
+        if ($this->groqKey) {
             try {
-                \Log::info('[AI] Menggunakan OpenAI: ' . $this->openaiModel);
+                \Log::info('[AI] Mencoba Groq: ' . $this->groqModel);
+                $response = \Illuminate\Support\Facades\Http::withToken($this->groqKey)
+                    ->timeout($timeout + 30)
+                    ->post($this->groqUrl, [
+                        'model'       => $this->groqModel,
+                        'temperature' => $temperature,
+                        'max_tokens'  => 16000,
+                        'messages'    => $messages,
+                    ]);
+
+                if ($response->successful()) {
+                    return $response->json('choices.0.message.content', '');
+                }
+
+                $body = $response->body();
+                if ($response->status() === 429 || str_contains($body, 'rate_limit_exceeded') || str_contains($body, 'Request too large')) {
+                    \Log::warning('[AI] Groq rate/token limit, fallback ke OpenAI.');
+                    throw new \RuntimeException('rate_limit_exceeded');
+                }
+
+                throw new \RuntimeException('AI API error: ' . $body);
+            } catch (\RuntimeException $e) {
+                if ($e->getMessage() !== 'rate_limit_exceeded') {
+                    throw $e;
+                }
+                // rate limit — fall through to OpenAI
+            } catch (\Throwable $e) {
+                \Log::warning('[AI] Groq exception: ' . $e->getMessage() . ', fallback ke OpenAI.');
+            }
+        }
+
+        // Fallback to OpenAI (with retry on rate limit)
+        if ($this->openaiKey) {
+            for ($attempt = 1; $attempt <= 2; $attempt++) {
+                \Log::info("[AI] Menggunakan OpenAI (fallback, attempt {$attempt}): " . $this->openaiModel);
                 $response = \Illuminate\Support\Facades\Http::withToken($this->openaiKey)
                     ->timeout($timeout)
                     ->post($this->openaiUrl, [
@@ -45,31 +80,18 @@ class GroqService
                         return $content;
                     }
                 }
-                \Log::warning('[AI] OpenAI gagal (status: ' . $response->status() . '), fallback ke Groq.');
-            } catch (\Throwable $e) {
-                \Log::warning('[AI] OpenAI exception: ' . $e->getMessage() . ', fallback ke Groq.');
+
+                if ($attempt === 1 && ($response->status() === 429 || str_contains($response->body(), 'rate_limit_exceeded'))) {
+                    \Log::warning('[AI] OpenAI rate limit, retry dalam 3 detik...');
+                    sleep(3);
+                    continue;
+                }
+
+                throw new \RuntimeException('AI API error: ' . $response->body());
             }
         }
 
-        if (!$this->groqKey) {
-            throw new \RuntimeException('AI API error: Tidak ada API key yang tersedia. OpenAI dan Groq gagal.');
-        }
-
-        \Log::info('[AI] Menggunakan Groq (fallback): ' . $this->groqModel);
-        $response = \Illuminate\Support\Facades\Http::withToken($this->groqKey)
-            ->timeout($timeout + 30)
-            ->post($this->groqUrl, [
-                'model'       => $this->groqModel,
-                'temperature' => $temperature,
-                'max_tokens'  => 16000,
-                'messages'    => $messages,
-            ]);
-
-        if ($response->failed()) {
-            throw new \RuntimeException('AI API error: ' . $response->body());
-        }
-
-        return $response->json('choices.0.message.content', '');
+        throw new \RuntimeException('AI API error: Tidak ada API key yang tersedia.');
     }
 
     public function parseFfsPdf(string $pdfText, ?string $documentType = null): array

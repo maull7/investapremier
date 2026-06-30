@@ -65,18 +65,15 @@
         <div x-show="tab === 'detail'" x-cloak x-data="{
             reksaDanaId: '',
             tahun: '',
-            useAi: true,
-            usePartition: true,
             selectedDocumentId: '',
-            selectedPartitionId: '',
             loading: false,
             error: null,
             success: null,
-            extractUrl: '{{ route('admin.investment-managers.extract-prospektus', $manager) }}',
-            extractPartitionUrl: '{{ route('admin.investment-managers.extract-from-partition', $manager) }}',
-            saveUrl: '{{ route('admin.investment-managers.save-prospektus', $manager) }}',
             csrfToken: '{{ csrf_token() }}',
-            fundsData: {{ Js::from($fundsWithProspektus->map(fn($f) => [
+            processPartitionUrl: '{{ route('admin.investment-managers.process-partition', $manager) }}',
+            finalizeUrl: '{{ route('admin.investment-managers.finalize-parse', $manager) }}',
+            miTahun: {{ Js::from($manager->prospektus_source_tahun) }},
+            fundsData: {{ Js::from($managerFundsWithProspektus->map(fn($f) => [
                 'id' => $f->id,
                 'nama' => $f->nama_reksa_dana,
                 'years' => $f->documents->pluck('ffs_year')->filter()->unique()->values(),
@@ -84,12 +81,8 @@
                     'id' => $d->id,
                     'tahun' => $d->ffs_year,
                     'nama_file' => $d->original_name,
-                    'parsed_pages_count' => $d->parsedPages->count(),
                     'partitions' => $d->partitions->map(fn($p) => [
                         'id' => $p->id,
-                        'nama' => $p->nama_partisi,
-                        'start' => $p->start_page,
-                        'end' => $p->end_page,
                     ])->values()->toArray(),
                 ])->values()->toArray(),
             ])) }},
@@ -105,87 +98,118 @@
                 if (!fund || !this.tahun) return [];
                 return fund.documents.filter(d => d.tahun == this.tahun);
             },
-            get filteredPartitions() {
-                if (!this.selectedDocumentId) return [];
-                const docs = this.filteredDocuments;
-                const doc = docs.find(d => d.id == this.selectedDocumentId);
-                return doc ? doc.partitions : [];
-            },
             init() {
-                this.$watch('tahun', () => { this.selectedDocumentId = ''; this.selectedPartitionId = ''; });
-                this.$watch('reksaDanaId', () => { this.tahun = ''; this.selectedDocumentId = ''; this.selectedPartitionId = ''; });
+                if (this.miTahun) {
+                    const fund = this.fundsData.find(f => f.years.includes(this.miTahun));
+                    if (fund) this.reksaDanaId = fund.id;
+                    this.$nextTick(() => { this.tahun = this.miTahun; });
+                }
+                this.$watch('reksaDanaId', () => { this.tahun = ''; this.selectedDocumentId = ''; });
+                this.$watch('tahun', () => { this.selectedDocumentId = ''; });
             },
-            async extract() {
-                if (!this.reksaDanaId || !this.tahun) return;
+            async parseSelected() {
+                const doc = this.filteredDocuments.find(d => d.id == this.selectedDocumentId);
+                if (!doc) return;
+                const partitionIds = doc.partitions.map(p => p.id);
+                if (partitionIds.length === 0) {
+                    this.error = 'Dokumen belum memiliki partisi. Buat partisi terlebih dahulu.';
+                    return;
+                }
                 this.loading = true;
                 this.error = null;
                 this.success = null;
-
-                if (this.usePartition && this.selectedDocumentId && this.selectedPartitionId) {
-                    try {
-                        const form = new FormData();
-                        form.append('_token', this.csrfToken);
-                        form.append('document_id', this.selectedDocumentId);
-                        form.append('partition_id', this.selectedPartitionId);
-                        form.append('tahun', this.tahun);
-                        const res = await fetch(this.extractPartitionUrl, {
+                const partitionResults = [];
+                try {
+                    for (let i = 0; i < partitionIds.length; i++) {
+                        if (i > 0) await new Promise(r => setTimeout(r, 3000));
+                        const formData = new FormData();
+                        formData.append('_token', this.csrfToken);
+                        formData.append('document_id', doc.id);
+                        formData.append('partition_id', partitionIds[i]);
+                        const res = await fetch(this.processPartitionUrl, {
                             method: 'POST',
-                            body: form,
-                            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': this.csrfToken },
+                            body: formData,
                         });
                         const json = await res.json();
-                        if (!res.ok) { this.error = json.error || 'Gagal mengekstrak.'; return; }
-                        this.success = 'Data berhasil diekstrak dari partisi dan disimpan. Refresh halaman untuk melihat perubahan.';
-                        return;
-                    } catch (e) { this.error = e.message; this.loading = false; return; }
-                }
-
-                try {
-                    const params = new URLSearchParams({ reksa_dana_id: this.reksaDanaId, tahun: this.tahun, use_ai: this.useAi });
-                    const res = await fetch(this.extractUrl + '?' + params, {
-                        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
-                    });
-                    const json = await res.json();
-                    if (!res.ok) { this.error = json.error || 'Gagal mengekstrak.'; return; }
-                    const form = new FormData();
-                    form.append('_token', this.csrfToken);
-                    form.append('reksa_dana_id', this.reksaDanaId);
-                    form.append('tahun', this.tahun);
-                    Object.entries(json.data).forEach(([k, v]) => {
-                        if (v) {
-                            let val = v;
-                            if (k === 'website' && val && !/^https?:\/\//i.test(val)) {
-                                val = 'https://' + val;
-                            }
-                            form.append(k, val);
-                        }
-                    });
-                    const saveRes = await fetch(this.saveUrl, { method: 'POST', body: form, headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
-                    if (!saveRes.ok) {
-                        try {
-                            const errJson = await saveRes.json();
-                            this.error = errJson.errors ? Object.values(errJson.errors).flat().join(', ') : (errJson.error || 'Ekstrak berhasil tapi gagal menyimpan.');
-                        } catch(e2) {
-                            this.error = 'Ekstrak berhasil tapi gagal menyimpan (HTTP ' + saveRes.status + ').';
-                        }
-                        return;
+                        if (!res.ok) throw new Error(`Gagal memproses partisi ${i + 1}: ${json.error}`);
+                        partitionResults.push(json.data);
                     }
-                    const mode = json.ai_used ? 'AI' : 'RegEx';
-                    this.success = 'Data berhasil diekstrak (' + mode + ') dan disimpan. Refresh halaman untuk melihat perubahan.';
-                } catch (e) { this.error = e.message; } finally { this.loading = false; }
+                    const finalFormData = new FormData();
+                    finalFormData.append('_token', this.csrfToken);
+                    finalFormData.append('document_id', doc.id);
+                    finalFormData.append('partition_results', JSON.stringify(partitionResults));
+                    const finalRes = await fetch(this.finalizeUrl, {
+                        method: 'POST',
+                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': this.csrfToken },
+                        body: finalFormData,
+                    });
+                    const finalJson = await finalRes.json();
+                    if (!finalRes.ok) throw new Error(finalJson.error || 'Gagal menyimpan hasil parsing.');
+                    this.success = finalJson.message;
+                    setTimeout(() => window.location.reload(), 1500);
+                } catch (e) {
+                    this.error = e.message;
+                } finally {
+                    this.loading = false;
+                }
+            },
+            async parseDocument(docId, partitionIds) {
+                if (!partitionIds || partitionIds.length === 0) {
+                    this.error = 'Dokumen belum memiliki partisi. Buat partisi terlebih dahulu.';
+                    return;
+                }
+                this.loading = true;
+                this.error = null;
+                this.success = null;
+                const partitionResults = [];
+                try {
+                    for (let i = 0; i < partitionIds.length; i++) {
+                        if (i > 0) await new Promise(r => setTimeout(r, 3000));
+                        const formData = new FormData();
+                        formData.append('_token', this.csrfToken);
+                        formData.append('document_id', docId);
+                        formData.append('partition_id', partitionIds[i]);
+                        const res = await fetch(this.processPartitionUrl, {
+                            method: 'POST',
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': this.csrfToken },
+                            body: formData,
+                        });
+                        const json = await res.json();
+                        if (!res.ok) throw new Error(`Gagal memproses partisi ${i + 1}: ${json.error}`);
+                        partitionResults.push(json.data);
+                    }
+                    const finalFormData = new FormData();
+                    finalFormData.append('_token', this.csrfToken);
+                    finalFormData.append('document_id', docId);
+                    finalFormData.append('partition_results', JSON.stringify(partitionResults));
+                    const finalRes = await fetch(this.finalizeUrl, {
+                        method: 'POST',
+                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': this.csrfToken },
+                        body: finalFormData,
+                    });
+                    const finalJson = await finalRes.json();
+                    if (!finalRes.ok) throw new Error(finalJson.error || 'Gagal menyimpan hasil parsing.');
+                    this.success = finalJson.message;
+                    setTimeout(() => window.location.reload(), 1500);
+                } catch (e) {
+                    this.error = e.message;
+                } finally {
+                    this.loading = false;
+                }
             }
         }">
 
-            {{-- Ekstrak dari Prospektus --}}
+            {{-- Parse Prospektus --}}
             <div class="bg-white rounded-2xl border border-line shadow-sm p-6 mb-6 space-y-4">
-                <h2 class="font-bold text-primary text-sm">Ekstrak & Simpan Data dari Prospektus</h2>
+                <h2 class="font-bold text-primary text-sm">Parse Data dari Prospektus</h2>
                 <div class="flex flex-wrap items-end gap-3">
                     <div>
                         <label class="block text-xs text-muted mb-1">Reksa Dana</label>
-                        <select x-model="reksaDanaId" @change="tahun=''; selectedDocumentId=''; selectedPartitionId=''"
+                        <select x-model="reksaDanaId"
                             class="px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 min-w-[280px]">
                             <option value="">-- Pilih Reksa Dana --</option>
-                            @foreach ($fundsWithProspektus as $fund)
+                            @foreach ($managerFundsWithProspektus as $fund)
                                 <option value="{{ $fund->id }}">{{ $fund->nama_reksa_dana }}</option>
                             @endforeach
                         </select>
@@ -200,53 +224,24 @@
                             </template>
                         </select>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <input type="checkbox" id="usePartition" x-model="usePartition"
-                            class="rounded border-gray-300 text-accent focus:ring-accent/30">
-                        <label for="usePartition" class="text-xs text-muted cursor-pointer">Gunakan Partisi</label>
+                    <div>
+                        <label class="block text-xs text-muted mb-1">Dokumen</label>
+                        <select x-model="selectedDocumentId" :disabled="!tahun"
+                            class="px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 disabled:opacity-50">
+                            <option value="">-- Pilih Dokumen --</option>
+                            <template x-for="doc in filteredDocuments" :key="doc.id">
+                                <option :value="doc.id" x-text="doc.nama_file"></option>
+                            </template>
+                        </select>
                     </div>
-                    <template x-if="usePartition && tahun">
-                        <div>
-                            <label class="block text-xs text-muted mb-1">Dokumen</label>
-                            <select x-model="selectedDocumentId" @change="selectedPartitionId=''"
-                                class="px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
-                                <option value="">-- Pilih Dokumen --</option>
-                                <template x-for="doc in filteredDocuments" :key="doc.id">
-                                    <option :value="doc.id" x-text="doc.nama_file + ' (' + (doc.parsed_pages_count || 0) + ' hlm)'"></option>
-                                </template>
-                            </select>
-                        </div>
-                    </template>
-                    <template x-if="usePartition && selectedDocumentId && filteredPartitions.length > 0">
-                        <div>
-                            <label class="block text-xs text-muted mb-1">Partisi</label>
-                            <select x-model="selectedPartitionId"
-                                class="px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
-                                <option value="">-- Pilih Partisi --</option>
-                                <template x-for="p in filteredPartitions" :key="p.id">
-                                    <option :value="p.id" x-text="p.nama + ' (hlm ' + p.start + '-' + p.end + ')'"></option>
-                                </template>
-                            </select>
-                        </div>
-                    </template>
-                    <template x-if="!usePartition">
-                        <div class="flex items-center gap-2">
-                            <input type="checkbox" id="useAi" x-model="useAi"
-                                class="rounded border-gray-300 text-accent focus:ring-accent/30">
-                            <label for="useAi" class="text-xs text-muted cursor-pointer">Gunakan AI <span class="text-[10px] opacity-60">(lebih akurat)</span></label>
-                        </div>
-                    </template>
-                    <button @click="extract()" :disabled="!reksaDanaId || !tahun || (usePartition && (!selectedDocumentId || !selectedPartitionId))" || loading
+                    <button @click="parseSelected()" :disabled="!selectedDocumentId || loading"
                         class="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition disabled:opacity-50 flex items-center gap-2">
                         <span x-show="loading"
                             class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                        <span x-text="loading ? 'Memproses...' : 'Ekstrak & Simpan'"></span>
+                        <span x-text="loading ? 'Memproses...' : 'Parse & Simpan'"></span>
                     </button>
                 </div>
-                <template x-if="usePartition && selectedDocumentId && filteredPartitions.length === 0">
-                    <p class="text-sm text-muted">Dokumen ini belum memiliki partisi. <a href="{{ route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs']) }}" class="text-accent hover:underline">Buat partisi di Daftar Reksa Dana &rarr; Detail RD</a>.</p>
-                </template>
-                @if ($fundsWithProspektus->isEmpty())
+                @if ($managerFundsWithProspektus->isEmpty())
                     <p class="text-sm text-muted">Belum ada reksa dana dengan prospektus. Upload di <a
                             href="{{ route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs']) }}"
                             class="text-accent hover:underline">Daftar Reksa Dana</a>.</p>
@@ -256,20 +251,31 @@
                 <div x-show="success" x-text="success"
                     class="px-4 py-3 rounded-xl text-sm bg-green-50 border border-green-200 text-green-700"></div>
             </div>
+
             {{-- Informasi MI --}}
-            <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden">
-                <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light flex items-center justify-between">
-                    <h2 class="font-bold text-white text-sm">Informasi Manajer Investasi</h2>
-                    @if($manager->source)
-                        <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full
-                            @if($manager->source === 'prospektus') bg-yellow-300 text-yellow-900
-                            @elseif($manager->source === 'pasardana') bg-blue-300 text-blue-900
-                            @else bg-gray-300 text-gray-800 @endif">
-                            Sumber: {{ ucfirst($manager->source) }}
-                            @if($manager->source === 'prospektus' && $manager->prospektusSourceReksaDana)
-                                &middot; {{ $manager->prospektus_source_tahun }}
-                            @endif
-                        </span>
+            <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mt-6">
+                <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
+                    <div class="flex items-center justify-between">
+                        <h2 class="font-bold text-white text-sm">Informasi Manajer Investasi</h2>
+                        @if($manager->source)
+                            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full
+                                @if($manager->source === 'prospektus') bg-yellow-300 text-yellow-900
+                                @elseif($manager->source === 'pasardana') bg-blue-300 text-blue-900
+                                @else bg-gray-300 text-gray-800 @endif">
+                                Sumber: {{ ucfirst($manager->source) }}
+                            </span>
+                        @endif
+                    </div>
+                    @if($availableYears->isNotEmpty())
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="text-[10px] text-white/70">Data tahun:</span>
+                            <select onchange="window.location = '?tahun=' + this.value + '&tab=detail'"
+                                class="text-xs px-2 py-1 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none">
+                                @foreach($availableYears as $y)
+                                    <option value="{{ $y }}" {{ $y == $selectedYear ? 'selected' : '' }} class="text-gray-800">{{ $y }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                     @endif
                 </div>
                 <div class="divide-y divide-line">
@@ -311,13 +317,26 @@
                 </div>
             </div>
 
+            {{-- Year Selector (Periode Prospektus) --}}
+            @if($availableYears->isNotEmpty())
+                <div class="mt-6 flex items-center gap-3">
+                    <label class="text-xs font-semibold text-muted">Periode Prospektus:</label>
+                    <select onchange="window.location = '?tahun=' + this.value + '&tab=detail'"
+                        class="px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
+                        @foreach($availableYears as $y)
+                            <option value="{{ $y }}" {{ $y == $selectedYear ? 'selected' : '' }}>{{ $y }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
+
             @foreach($governanceSections as $section)
                 @if(!empty($section['items']) && $section['label'] !== 'Dewan Pengawas Syariah')
                     <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mt-6">
                         <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
                             <h2 class="font-bold text-white text-sm">{{ $section['label'] }}
-                                @if($manager->source === 'prospektus' && $manager->prospektus_source_tahun)
-                                    <span class="text-[10px] font-normal opacity-75 ml-2">(Prospektus {{ $manager->prospektus_source_tahun }})</span>
+                                @if($selectedYear)
+                                    <span class="text-[10px] font-normal opacity-75 ml-2">(Prospektus {{ $selectedYear }})</span>
                                 @endif
                             </h2>
                         </div>
@@ -349,13 +368,14 @@
                 @endif
             @endforeach
 
-            {{-- DPS card always visible --}}
+            {{-- DPS card always visible — also shows Pihak Terafiliasi --}}
             @php $dpsItems = collect($governanceSections)->firstWhere('label', 'Dewan Pengawas Syariah')['items'] ?? []; @endphp
+            @php $pihakTerafiliasiItems = $manager->pihak_terafiliasi ? explode("\n", $manager->pihak_terafiliasi) : []; @endphp
             <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mt-6">
                 <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
                     <h2 class="font-bold text-white text-sm">Dewan Pengawas Syariah
-                        @if($manager->source === 'prospektus' && $manager->prospektus_source_tahun)
-                            <span class="text-[10px] font-normal opacity-75 ml-2">(Prospektus {{ $manager->prospektus_source_tahun }})</span>
+                        @if($selectedYear)
+                            <span class="text-[10px] font-normal opacity-75 ml-2">(Prospektus {{ $selectedYear }})</span>
                         @endif
                     </h2>
                 </div>
@@ -381,7 +401,29 @@
                         </table>
                     </div>
                 @else
-                    <div class="px-6 py-8 text-center text-muted text-sm">Data belum tersedia.</div>
+                    <div class="px-6 py-4 text-center text-muted text-sm">Data belum tersedia.</div>
+                @endif
+
+                @if(!empty($pihakTerafiliasiItems))
+                    <div class="border-t border-line">
+                        <div class="px-6 py-3 bg-gradient-to-r from-amber-50 to-amber-50/50">
+                            <h3 class="font-bold text-amber-800 text-xs">Pihak Terafiliasi</h3>
+                        </div>
+                        <div class="divide-y divide-line text-xs">
+                            @foreach($pihakTerafiliasiItems as $line)
+                                @php $line = trim($line); @endphp
+                                @if(!empty($line))
+                                    @php $parts = explode(' - ', $line, 2); @endphp
+                                    <div class="px-6 py-2.5 flex items-start gap-4">
+                                        <span class="font-semibold text-muted w-36 shrink-0">{{ $parts[0] ?? $line }}</span>
+                                        @isset($parts[1])
+                                            <span class="text-muted">{{ $parts[1] }}</span>
+                                        @endisset
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
                 @endif
             </div>
 
@@ -844,6 +886,7 @@
                         if (!res.ok) throw new Error(json.error || 'Gagal parse prospektus.');
 
                         this.success = json.message;
+                        setTimeout(() => window.location.reload(), 1500);
                     } catch (e) {
                         this.error = e.message;
                     } finally {

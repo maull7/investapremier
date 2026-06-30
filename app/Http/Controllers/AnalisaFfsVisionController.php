@@ -12,7 +12,8 @@ class AnalisaFfsVisionController extends Controller
 {
     public function parsePdf(Request $request, GroqService $groq, FfsParserService $parser)
     {
-        set_time_limit(240);
+        ignore_user_abort(true);
+        set_time_limit(600);
 
         $request->validate([
             'file_pdf' => 'required|file|mimes:pdf|max:20480',
