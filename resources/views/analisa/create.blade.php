@@ -317,8 +317,8 @@
                             </div>
                             <div x-show="jenisLaporan === 'kalender_ffs'">
                                 <x-input-label for="mi_fee_manual" value="MI Fee (%)" />
-                                <x-text-input id="mi_fee_manual" name="investment_manager_fee" type="number" step="0.01"
-                                    class="mt-1 block w-full" x-model="investmentManagerFee" />
+                                <x-text-input id="mi_fee_manual" name="investment_manager_fee" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="investmentManagerFee" />
                             </div>
                             <div x-show="jenisLaporan === 'kalender_ffs'">
                                 <x-input-label for="bk_fee_manual" value="BK Fee (%)" />
@@ -522,50 +522,213 @@
                                 <table class="w-full text-sm">
                                     <thead class="bg-[#f8fafc]">
                                         <tr>
-                                            <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item</th>
-                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun Berjalan</span></th>
+                                            <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item
+                                            </th>
+                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span
+                                                    x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun
+                                                    Berjalan</span></th>
                                             <template x-for="(t, i) in tahunTambahan" :key="i">
                                                 <th class="text-right px-2 py-2 text-xs font-semibold text-muted">
                                                     <div class="flex items-center gap-1 justify-end">
                                                         <span x-text="t"></span>
-                                                        <button @click="removeTahun(i)" class="text-red-400 text-xs hover:text-red-600 leading-none">&times;</button>
+                                                        <button @click="removeTahun(i)"
+                                                            class="text-red-400 text-xs hover:text-red-600 leading-none">&times;</button>
                                                     </div>
                                                 </th>
                                             </template>
-                                            <th class="text-right px-2 py-2"><button @click="addTahun()" class="text-xs text-primary hover:underline whitespace-nowrap">+ Tahun Sebelumnya</button></th>
+                                            <th class="text-right px-2 py-2"><button @click="addTahun()"
+                                                    class="text-xs text-primary hover:underline whitespace-nowrap">+ Tahun
+                                                    Sebelumnya</button></th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-line">
-                                        <tr><td class="px-3 py-2 text-gray-700">Total Aset</td><td class="px-3 py-2"><input type="number" step="0.01" name="total_aset" x-model="totalAset" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'totalAset')" @input="setTahunData(t, 'totalAset', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Total Liabilitas</td><td class="px-3 py-2"><input type="number" step="0.01" name="total_liabilitas" x-model="totalLiabilitas" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'totalLiabilitas')" @input="setTahunData(t, 'totalLiabilitas', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Kas dan Bank</td><td class="px-3 py-2"><input type="number" step="0.01" name="kas_dan_bank" x-model="kasDanBank" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'kasDanBank')" @input="setTahunData(t, 'kasDanBank', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Piutang Bunga</td><td class="px-3 py-2"><input type="number" step="0.01" name="piutang_bunga" x-model="piutangBunga" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'piutangBunga')" @input="setTahunData(t, 'piutangBunga', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Piutang Dividen</td><td class="px-3 py-2"><input type="number" step="0.01" name="piutang_dividen" x-model="piutangDividen" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'piutangDividen')" @input="setTahunData(t, 'piutangDividen', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Piutang Lain-lain</td><td class="px-3 py-2"><input type="number" step="0.01" name="piutang_lain" x-model="piutangLain" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'piutangLain')" @input="setTahunData(t, 'piutangLain', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Total Piutang</td><td class="px-3 py-2 text-right font-mono text-gray-700" x-text="formatNumber(getTotalPiutang())">0</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTotalPiutangTahun(t))">0</td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Utang Pajak</td><td class="px-3 py-2"><input type="number" step="0.01" name="utang_pajak" x-model="utangPajak" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'utangPajak')" @input="setTahunData(t, 'utangPajak', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Utang Lain-lain</td><td class="px-3 py-2"><input type="number" step="0.01" name="utang_lain" x-model="utangLain" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'utangLain')" @input="setTahunData(t, 'utangLain', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr class="font-semibold bg-gray-50"><td class="px-3 py-2 text-gray-800">Nilai Aset Bersih (NAB)</td><td class="px-3 py-2"><input type="number" step="0.01" name="total_aum" x-model="totalAum" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'totalAum')" @input="setTahunData(t, 'totalAum', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Total Unit Penyertaan</td><td class="px-3 py-2"><input type="number" step="0.0001" name="unit_penyertaan" x-model="unitPenyertaan" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.0001" :value="getTahunData(t, 'unitPenyertaan')" @input="setTahunData(t, 'unitPenyertaan', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">NAB per Unit</td><td class="px-3 py-2"><input type="number" step="0.000001" name="nab_per_unit" x-model="nabPerUnit" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.000001" :value="getTahunData(t, 'nabPerUnit')" @input="setTahunData(t, 'nabPerUnit', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Total Aset</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01" name="total_aset"
+                                                    x-model="totalAset"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'totalAset')"
+                                                        @input="setTahunData(t, 'totalAset', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Total Liabilitas</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="total_liabilitas" x-model="totalLiabilitas"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'totalLiabilitas')"
+                                                        @input="setTahunData(t, 'totalLiabilitas', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Kas dan Bank</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="kas_dan_bank" x-model="kasDanBank"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'kasDanBank')"
+                                                        @input="setTahunData(t, 'kasDanBank', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Piutang Bunga</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="piutang_bunga" x-model="piutangBunga"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'piutangBunga')"
+                                                        @input="setTahunData(t, 'piutangBunga', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Piutang Dividen</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="piutang_dividen" x-model="piutangDividen"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'piutangDividen')"
+                                                        @input="setTahunData(t, 'piutangDividen', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Piutang Lain-lain</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="piutang_lain" x-model="piutangLain"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'piutangLain')"
+                                                        @input="setTahunData(t, 'piutangLain', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Total Piutang</td>
+                                            <td class="px-3 py-2 text-right font-mono text-gray-700"
+                                                x-text="formatNumber(getTotalPiutang())">0</td><template
+                                                x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2 text-right font-mono"
+                                                    x-text="formatNumber(getTotalPiutangTahun(t))">0</td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Utang Pajak</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="utang_pajak" x-model="utangPajak"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'utangPajak')"
+                                                        @input="setTahunData(t, 'utangPajak', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Utang Lain-lain</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01" name="utang_lain"
+                                                    x-model="utangLain"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'utangLain')"
+                                                        @input="setTahunData(t, 'utangLain', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr class="font-semibold bg-gray-50">
+                                            <td class="px-3 py-2 text-gray-800">Nilai Aset Bersih (NAB)</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01" name="total_aum"
+                                                    x-model="totalAum"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'totalAum')"
+                                                        @input="setTahunData(t, 'totalAum', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Total Unit Penyertaan</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.0001"
+                                                    name="unit_penyertaan" x-model="unitPenyertaan"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.0001"
+                                                        :value="getTahunData(t, 'unitPenyertaan')"
+                                                        @input="setTahunData(t, 'unitPenyertaan', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">NAB per Unit</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.000001"
+                                                    name="nab_per_unit" x-model="nabPerUnit"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.000001"
+                                                        :value="getTahunData(t, 'nabPerUnit')"
+                                                        @input="setTahunData(t, 'nabPerUnit', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
 
                         <div class="border rounded-lg p-4 bg-white shadow-sm">
-                            <h4 class="font-semibold text-primary text-sm mb-3">Laporan Laba Rugi / Penghasilan Komprehensif</h4>
+                            <h4 class="font-semibold text-primary text-sm mb-3">Laporan Laba Rugi / Penghasilan
+                                Komprehensif</h4>
                             <div class="overflow-x-auto">
                                 <table class="w-full text-sm">
                                     <thead class="bg-[#f8fafc]">
                                         <tr>
-                                            <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item</th>
-                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun Berjalan</span></th>
+                                            <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item
+                                            </th>
+                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span
+                                                    x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun
+                                                    Berjalan</span></th>
                                             <template x-for="(t, i) in tahunTambahan" :key="i">
                                                 <th class="text-right px-2 py-2 text-xs font-semibold text-muted">
                                                     <div class="flex items-center gap-1 justify-end">
                                                         <span x-text="t"></span>
-                                                        <button @click="removeTahun(i)" class="text-red-400 text-xs hover:text-red-600 leading-none">&times;</button>
+                                                        <button @click="removeTahun(i)"
+                                                            class="text-red-400 text-xs hover:text-red-600 leading-none">&times;</button>
                                                     </div>
                                                 </th>
                                             </template>
@@ -573,21 +736,222 @@
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-line">
-                                        <tr><td class="px-3 py-2 text-gray-700">Pendapatan Bunga</td><td class="px-3 py-2"><input type="number" step="0.01" name="pendapatan_bunga" x-model="pendapatanBunga" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'pendapatanBunga')" @input="setTahunData(t, 'pendapatanBunga', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Pendapatan Dividen</td><td class="px-3 py-2"><input type="number" step="0.01" name="pendapatan_dividen" x-model="pendapatanDividen" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'pendapatanDividen')" @input="setTahunData(t, 'pendapatanDividen', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Keuntungan Terealisasi (Gain Realized)</td><td class="px-3 py-2"><input type="number" step="0.01" name="gain_realized" x-model="gainRealized" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'gainRealized')" @input="setTahunData(t, 'gainRealized', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Keuntungan Belum Terealisasi (Gain Unrealized)</td><td class="px-3 py-2"><input type="number" step="0.01" name="gain_unrealized" x-model="gainUnrealized" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'gainUnrealized')" @input="setTahunData(t, 'gainUnrealized', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Beban Manajer Investasi</td><td class="px-3 py-2"><input type="number" step="0.01" name="beban_mi" x-model="bebanMi" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'bebanMi')" @input="setTahunData(t, 'bebanMi', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Beban Kustodian</td><td class="px-3 py-2"><input type="number" step="0.01" name="beban_kustodian" x-model="bebanKustodian" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'bebanKustodian')" @input="setTahunData(t, 'bebanKustodian', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Beban Lain-lain</td><td class="px-3 py-2"><input type="number" step="0.01" name="beban_lain" x-model="bebanLain" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'bebanLain')" @input="setTahunData(t, 'bebanLain', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr class="font-semibold bg-gray-50"><td class="px-3 py-2 text-gray-800">Laba Bersih</td><td class="px-3 py-2"><input type="number" step="0.01" name="laba_bersih" x-model="labaBersih" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'labaBersih')" @input="setTahunData(t, 'labaBersih', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Total Beban</td><td class="px-3 py-2"><input type="number" step="0.01" name="total_beban" x-model="totalBeban" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'totalBeban')" @input="setTahunData(t, 'totalBeban', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Laba Sebelum Pajak</td><td class="px-3 py-2"><input type="number" step="0.01" name="laba_sebelum_pajak" x-model="labaSebelumPajak" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'labaSebelumPajak')" @input="setTahunData(t, 'labaSebelumPajak', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Beban Pajak Penghasilan - Bersih</td><td class="px-3 py-2"><input type="number" step="0.01" name="beban_pajak_penghasilan" x-model="bebanPajakPenghasilan" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'bebanPajakPenghasilan')" @input="setTahunData(t, 'bebanPajakPenghasilan', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr class="font-semibold bg-gray-50"><td class="px-3 py-2 text-gray-800">Laba Bersih Tahun Berjalan</td><td class="px-3 py-2"><input type="number" step="0.01" name="laba_bersih_tahun_berjalan" x-model="labaBersihTahunBerjalan" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'labaBersihTahunBerjalan')" @input="setTahunData(t, 'labaBersihTahunBerjalan', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Penghasilan Komprehensif Lain</td><td class="px-3 py-2"><input type="number" step="0.01" name="penghasilan_komprehensif_lain" x-model="penghasilanKomprehensifLain" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'penghasilanKomprehensifLain')" @input="setTahunData(t, 'penghasilanKomprehensifLain', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Penghasilan Komprehensif Lain Tahun Berjalan Setelah Pajak</td><td class="px-3 py-2"><input type="number" step="0.01" name="penghasilan_komprehensif_lain_setelah_pajak" x-model="penghasilanKomprehensifLainSetelahPajak" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'penghasilanKomprehensifLainSetelahPajak')" @input="setTahunData(t, 'penghasilanKomprehensifLainSetelahPajak', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr class="font-semibold bg-blue-50/50"><td class="px-3 py-2 text-gray-800">Penghasilan Komprehensif Tahun Berjalan</td><td class="px-3 py-2"><input type="number" step="0.01" name="penghasilan_komprehensif_tahun_berjalan" x-model="penghasilanKomprehensifTahunBerjalan" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'penghasilanKomprehensifTahunBerjalan')" @input="setTahunData(t, 'penghasilanKomprehensifTahunBerjalan', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Pendapatan Bunga</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="pendapatan_bunga" x-model="pendapatanBunga"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'pendapatanBunga')"
+                                                        @input="setTahunData(t, 'pendapatanBunga', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Pendapatan Dividen</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="pendapatan_dividen" x-model="pendapatanDividen"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'pendapatanDividen')"
+                                                        @input="setTahunData(t, 'pendapatanDividen', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Keuntungan Terealisasi (Gain Realized)</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="gain_realized" x-model="gainRealized"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'gainRealized')"
+                                                        @input="setTahunData(t, 'gainRealized', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Keuntungan Belum Terealisasi (Gain
+                                                Unrealized)</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="gain_unrealized" x-model="gainUnrealized"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'gainUnrealized')"
+                                                        @input="setTahunData(t, 'gainUnrealized', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Beban Manajer Investasi</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01" name="beban_mi"
+                                                    x-model="bebanMi"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'bebanMi')"
+                                                        @input="setTahunData(t, 'bebanMi', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Beban Kustodian</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="beban_kustodian" x-model="bebanKustodian"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'bebanKustodian')"
+                                                        @input="setTahunData(t, 'bebanKustodian', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Beban Lain-lain</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01" name="beban_lain"
+                                                    x-model="bebanLain"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'bebanLain')"
+                                                        @input="setTahunData(t, 'bebanLain', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr class="font-semibold bg-gray-50">
+                                            <td class="px-3 py-2 text-gray-800">Laba Bersih</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="laba_bersih" x-model="labaBersih"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'labaBersih')"
+                                                        @input="setTahunData(t, 'labaBersih', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Total Beban</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="total_beban" x-model="totalBeban"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'totalBeban')"
+                                                        @input="setTahunData(t, 'totalBeban', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Laba Sebelum Pajak</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="laba_sebelum_pajak" x-model="labaSebelumPajak"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'labaSebelumPajak')"
+                                                        @input="setTahunData(t, 'labaSebelumPajak', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Beban Pajak Penghasilan - Bersih</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="beban_pajak_penghasilan" x-model="bebanPajakPenghasilan"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'bebanPajakPenghasilan')"
+                                                        @input="setTahunData(t, 'bebanPajakPenghasilan', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr class="font-semibold bg-gray-50">
+                                            <td class="px-3 py-2 text-gray-800">Laba Bersih Tahun Berjalan</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="laba_bersih_tahun_berjalan" x-model="labaBersihTahunBerjalan"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'labaBersihTahunBerjalan')"
+                                                        @input="setTahunData(t, 'labaBersihTahunBerjalan', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Penghasilan Komprehensif Lain</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="penghasilan_komprehensif_lain"
+                                                    x-model="penghasilanKomprehensifLain"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'penghasilanKomprehensifLain')"
+                                                        @input="setTahunData(t, 'penghasilanKomprehensifLain', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Penghasilan Komprehensif Lain Tahun
+                                                Berjalan Setelah Pajak</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="penghasilan_komprehensif_lain_setelah_pajak"
+                                                    x-model="penghasilanKomprehensifLainSetelahPajak"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'penghasilanKomprehensifLainSetelahPajak')"
+                                                        @input="setTahunData(t, 'penghasilanKomprehensifLainSetelahPajak', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr class="font-semibold bg-blue-50/50">
+                                            <td class="px-3 py-2 text-gray-800">Penghasilan Komprehensif Tahun Berjalan
+                                            </td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="penghasilan_komprehensif_tahun_berjalan"
+                                                    x-model="penghasilanKomprehensifTahunBerjalan"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'penghasilanKomprehensifTahunBerjalan')"
+                                                        @input="setTahunData(t, 'penghasilanKomprehensifTahunBerjalan', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -599,13 +963,17 @@
                                 <table class="w-full text-sm">
                                     <thead class="bg-[#f8fafc]">
                                         <tr>
-                                            <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item</th>
-                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun Berjalan</span></th>
+                                            <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item
+                                            </th>
+                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span
+                                                    x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun
+                                                    Berjalan</span></th>
                                             <template x-for="(t, i) in tahunTambahan" :key="i">
                                                 <th class="text-right px-2 py-2 text-xs font-semibold text-muted">
                                                     <div class="flex items-center gap-1 justify-end">
                                                         <span x-text="t"></span>
-                                                        <button @click="removeTahun(i)" class="text-red-400 text-xs hover:text-red-600 leading-none">&times;</button>
+                                                        <button @click="removeTahun(i)"
+                                                            class="text-red-400 text-xs hover:text-red-600 leading-none">&times;</button>
                                                     </div>
                                                 </th>
                                             </template>
@@ -613,10 +981,62 @@
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-line">
-                                        <tr><td class="px-3 py-2 text-gray-700">Arus Kas Operasi</td><td class="px-3 py-2"><input type="number" step="0.01" name="arus_kas_operasi" x-model="arusKasOperasi" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'arusKasOperasi')" @input="setTahunData(t, 'arusKasOperasi', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Arus Kas Pendanaan</td><td class="px-3 py-2"><input type="number" step="0.01" name="arus_kas_pendanaan" x-model="arusKasPendanaan" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'arusKasPendanaan')" @input="setTahunData(t, 'arusKasPendanaan', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr><td class="px-3 py-2 text-gray-700">Kas Awal Tahun</td><td class="px-3 py-2"><input type="number" step="0.01" name="kas_awal_tahun" x-model="kasAwalTahun" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'kasAwalTahun')" @input="setTahunData(t, 'kasAwalTahun', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
-                                        <tr class="font-semibold bg-gray-50"><td class="px-3 py-2 text-gray-800">Kas Akhir Tahun</td><td class="px-3 py-2"><input type="number" step="0.01" name="kas_akhir_tahun" x-model="kasAkhirTahun" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2"><input type="number" step="0.01" :value="getTahunData(t, 'kasAkhirTahun')" @input="setTahunData(t, 'kasAkhirTahun', $event.target.value)" class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" /></td></template><td class="px-2 py-2"></td></tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Arus Kas Operasi</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="arus_kas_operasi" x-model="arusKasOperasi"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'arusKasOperasi')"
+                                                        @input="setTahunData(t, 'arusKasOperasi', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Arus Kas Pendanaan</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="arus_kas_pendanaan" x-model="arusKasPendanaan"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'arusKasPendanaan')"
+                                                        @input="setTahunData(t, 'arusKasPendanaan', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-700">Kas Awal Tahun</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="kas_awal_tahun" x-model="kasAwalTahun"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'kasAwalTahun')"
+                                                        @input="setTahunData(t, 'kasAwalTahun', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
+                                        <tr class="font-semibold bg-gray-50">
+                                            <td class="px-3 py-2 text-gray-800">Kas Akhir Tahun</td>
+                                            <td class="px-3 py-2"><input type="number" step="0.01"
+                                                    name="kas_akhir_tahun" x-model="kasAkhirTahun"
+                                                    class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                            </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                                <td class="px-3 py-2"><input type="number" step="0.01"
+                                                        :value="getTahunData(t, 'kasAkhirTahun')"
+                                                        @input="setTahunData(t, 'kasAkhirTahun', $event.target.value)"
+                                                        class="w-full text-right border-gray-300 rounded text-sm px-2 py-1 focus:border-primary focus:ring focus:ring-primary/20 font-mono" />
+                                                </td>
+                                            </template>
+                                            <td class="px-2 py-2"></td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -690,8 +1110,8 @@
                                 </div>
                                 <div>
                                     <x-input-label for="unit_milik_mi" value="Unit Milik Manajer Investasi" />
-                                    <x-text-input id="unit_milik_mi" name="unit_milik_mi" type="number" step="0.0001"
-                                        class="mt-1 block w-full" x-model="unitMilikMi" />
+                                    <x-text-input id="unit_milik_mi" name="unit_milik_mi" type="number"
+                                        step="0.0001" class="mt-1 block w-full" x-model="unitMilikMi" />
                                 </div>
                                 <div>
                                     <x-input-label for="total_unit_beredar" value="Total Unit Beredar" />
@@ -714,62 +1134,302 @@
                                 <thead class="bg-[#f8fafc]">
                                     <tr>
                                         <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item</th>
-                                        <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun Berjalan</span></th>
+                                        <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span
+                                                x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun
+                                                Berjalan</span></th>
                                         <template x-for="(t, i) in tahunTambahan" :key="i">
-                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted"><span x-text="t"></span></th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted"><span
+                                                    x-text="t"></span></th>
                                         </template>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-line">
-                                    <tr><td class="px-3 py-2 text-gray-700">Total Aset</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(totalAset)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'totalAset'))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">Total Liabilitas</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(totalLiabilitas)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'totalLiabilitas'))">-</td></template></tr>
-                                    <tr class="font-semibold bg-blue-50/50"><td class="px-3 py-2 text-gray-800">Ekuitas (Aset - Liabilitas)</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getEkuitas())">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getEkuitasTahun(t))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">Kas dan Bank</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(kasDanBank)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'kasDanBank'))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">Piutang Bunga</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(piutangBunga)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'piutangBunga'))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">Piutang Dividen</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(piutangDividen)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'piutangDividen'))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">Piutang Lain-lain</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(piutangLain)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'piutangLain'))">-</td></template></tr>
-                                    <tr class="bg-gray-50/50"><td class="px-3 py-2 text-gray-700">Total Piutang</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTotalPiutang())">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTotalPiutangTahun(t))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">Utang Pajak</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(utangPajak)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'utangPajak'))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">Utang Lain-lain</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(utangLain)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'utangLain'))">-</td></template></tr>
-                                    <tr class="font-semibold bg-gray-50"><td class="px-3 py-2 text-gray-800">Nilai Aset Bersih (NAB)</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(totalAum)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'totalAum'))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">Total Unit Penyertaan</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(unitPenyertaan)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'unitPenyertaan'))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">NAB per Unit</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(nabPerUnit)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'nabPerUnit'))">-</td></template></tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Total Aset</td>
+                                        <td class="px-3 py-2 text-right font-mono" x-text="formatNumber(totalAset)">-
+                                        </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'totalAset'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Total Liabilitas</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(totalLiabilitas)">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'totalLiabilitas'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr class="font-semibold bg-blue-50/50">
+                                        <td class="px-3 py-2 text-gray-800">Ekuitas (Aset - Liabilitas)</td>
+                                        <td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getEkuitas())">-
+                                        </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getEkuitasTahun(t))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Kas dan Bank</td>
+                                        <td class="px-3 py-2 text-right font-mono" x-text="formatNumber(kasDanBank)">-
+                                        </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'kasDanBank'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Piutang Bunga</td>
+                                        <td class="px-3 py-2 text-right font-mono" x-text="formatNumber(piutangBunga)">-
+                                        </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'piutangBunga'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Piutang Dividen</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(piutangDividen)">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'piutangDividen'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Piutang Lain-lain</td>
+                                        <td class="px-3 py-2 text-right font-mono" x-text="formatNumber(piutangLain)">-
+                                        </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'piutangLain'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr class="bg-gray-50/50">
+                                        <td class="px-3 py-2 text-gray-700">Total Piutang</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(getTotalPiutang())">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTotalPiutangTahun(t))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Utang Pajak</td>
+                                        <td class="px-3 py-2 text-right font-mono" x-text="formatNumber(utangPajak)">-
+                                        </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'utangPajak'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Utang Lain-lain</td>
+                                        <td class="px-3 py-2 text-right font-mono" x-text="formatNumber(utangLain)">-
+                                        </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'utangLain'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr class="font-semibold bg-gray-50">
+                                        <td class="px-3 py-2 text-gray-800">Nilai Aset Bersih (NAB)</td>
+                                        <td class="px-3 py-2 text-right font-mono" x-text="formatNumber(totalAum)">-
+                                        </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'totalAum'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Total Unit Penyertaan</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(unitPenyertaan)">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'unitPenyertaan'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">NAB per Unit</td>
+                                        <td class="px-3 py-2 text-right font-mono" x-text="formatNumber(nabPerUnit)">-
+                                        </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'nabPerUnit'))">-</td>
+                                        </template>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
 
                     <div x-show="jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
-                        <h4 class="font-semibold text-primary text-sm mb-3">Laporan Laba Rugi / Penghasilan Komprehensif</h4>
+                        <h4 class="font-semibold text-primary text-sm mb-3">Laporan Laba Rugi / Penghasilan Komprehensif
+                        </h4>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
                                 <thead class="bg-[#f8fafc]">
                                     <tr>
                                         <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item</th>
-                                        <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun Berjalan</span></th>
+                                        <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span
+                                                x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun
+                                                Berjalan</span></th>
                                         <template x-for="(t, i) in tahunTambahan" :key="i">
-                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted"><span x-text="t"></span></th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted"><span
+                                                    x-text="t"></span></th>
                                         </template>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-line">
-                                    <tr><td class="px-3 py-2 text-gray-700">Pendapatan Bunga</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(pendapatanBunga)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'pendapatanBunga'))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">Pendapatan Dividen</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(pendapatanDividen)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'pendapatanDividen'))">-</td></template></tr>
-                                    <tr class="bg-gray-50/50"><td class="px-3 py-2 text-gray-700">Total Pendapatan</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTotalPendapatan())">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTotalPendapatanTahun(t))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">Keuntungan Terealisasi (Gain Realized)</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(gainRealized)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'gainRealized'))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">Keuntungan Belum Terealisasi (Gain Unrealized)</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(gainUnrealized)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'gainUnrealized'))">-</td></template></tr>
-                                    <tr class="bg-gray-50/50"><td class="px-3 py-2 text-gray-700">Total Keuntungan Investasi</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTotalKeuntunganInvestasi())">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTotalKeuntunganInvestasiTahun(t))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">Beban Manajer Investasi</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(bebanMi)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'bebanMi'))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">Beban Kustodian</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(bebanKustodian)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'bebanKustodian'))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">Beban Lain-lain</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(bebanLain)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'bebanLain'))">-</td></template></tr>
-                                    <tr class="bg-gray-50/50"><td class="px-3 py-2 text-gray-700">Total Beban</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTotalBeban())">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTotalBebanTahun(t))">-</td></template></tr>
-                                    <tr class="font-semibold bg-blue-50/50"><td class="px-3 py-2 text-gray-800">Laba Bersih (Perhitungan)</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getLabaBersihPerhitungan())">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getLabaBersihPerhitunganTahun(t))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">Laba Sebelum Pajak</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(labaSebelumPajak)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'labaSebelumPajak'))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">Beban Pajak Penghasilan - Bersih</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(bebanPajakPenghasilan)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'bebanPajakPenghasilan'))">-</td></template></tr>
-                                    <tr class="font-semibold bg-gray-50"><td class="px-3 py-2 text-gray-800">Laba Bersih Tahun Berjalan</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(labaBersihTahunBerjalan)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'labaBersihTahunBerjalan'))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">Penghasilan Komprehensif Lain</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(penghasilanKomprehensifLain)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'penghasilanKomprehensifLain'))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">Penghasilan Komprehensif Lain Tahun Berjalan Setelah Pajak</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(penghasilanKomprehensifLainSetelahPajak)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'penghasilanKomprehensifLainSetelahPajak'))">-</td></template></tr>
-                                    <tr class="font-semibold bg-blue-50/50"><td class="px-3 py-2 text-gray-800">Penghasilan Komprehensif Tahun Berjalan</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getPenghasilanKomprehensifTahunBerjalan())">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getPenghasilanKomprehensifTahunBerjalanTahun(t))">-</td></template></tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Pendapatan Bunga</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(pendapatanBunga)">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'pendapatanBunga'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Pendapatan Dividen</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(pendapatanDividen)">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'pendapatanDividen'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr class="bg-gray-50/50">
+                                        <td class="px-3 py-2 text-gray-700">Total Pendapatan</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(getTotalPendapatan())">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTotalPendapatanTahun(t))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Keuntungan Terealisasi (Gain Realized)</td>
+                                        <td class="px-3 py-2 text-right font-mono" x-text="formatNumber(gainRealized)">-
+                                        </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'gainRealized'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Keuntungan Belum Terealisasi (Gain Unrealized)
+                                        </td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(gainUnrealized)">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'gainUnrealized'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr class="bg-gray-50/50">
+                                        <td class="px-3 py-2 text-gray-700">Total Keuntungan Investasi</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(getTotalKeuntunganInvestasi())">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTotalKeuntunganInvestasiTahun(t))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Beban Manajer Investasi</td>
+                                        <td class="px-3 py-2 text-right font-mono" x-text="formatNumber(bebanMi)">-</td>
+                                        <template x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'bebanMi'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Beban Kustodian</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(bebanKustodian)">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'bebanKustodian'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Beban Lain-lain</td>
+                                        <td class="px-3 py-2 text-right font-mono" x-text="formatNumber(bebanLain)">-
+                                        </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'bebanLain'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr class="bg-gray-50/50">
+                                        <td class="px-3 py-2 text-gray-700">Total Beban</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(getTotalBeban())">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTotalBebanTahun(t))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr class="font-semibold bg-blue-50/50">
+                                        <td class="px-3 py-2 text-gray-800">Laba Bersih (Perhitungan)</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(getLabaBersihPerhitungan())">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getLabaBersihPerhitunganTahun(t))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Laba Sebelum Pajak</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(labaSebelumPajak)">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'labaSebelumPajak'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Beban Pajak Penghasilan - Bersih</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(bebanPajakPenghasilan)">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'bebanPajakPenghasilan'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr class="font-semibold bg-gray-50">
+                                        <td class="px-3 py-2 text-gray-800">Laba Bersih Tahun Berjalan</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(labaBersihTahunBerjalan)">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'labaBersihTahunBerjalan'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Penghasilan Komprehensif Lain</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(penghasilanKomprehensifLain)">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'penghasilanKomprehensifLain'))">-
+                                            </td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Penghasilan Komprehensif Lain Tahun Berjalan
+                                            Setelah Pajak</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(penghasilanKomprehensifLainSetelahPajak)">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'penghasilanKomprehensifLainSetelahPajak'))">
+                                                -</td>
+                                        </template>
+                                    </tr>
+                                    <tr class="font-semibold bg-blue-50/50">
+                                        <td class="px-3 py-2 text-gray-800">Penghasilan Komprehensif Tahun Berjalan</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(getPenghasilanKomprehensifTahunBerjalan())">-</td>
+                                        <template x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getPenghasilanKomprehensifTahunBerjalanTahun(t))">-
+                                            </td>
+                                        </template>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -782,18 +1442,60 @@
                                 <thead class="bg-[#f8fafc]">
                                     <tr>
                                         <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item</th>
-                                        <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun Berjalan</span></th>
+                                        <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span
+                                                x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun
+                                                Berjalan</span></th>
                                         <template x-for="(t, i) in tahunTambahan" :key="i">
-                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted"><span x-text="t"></span></th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted"><span
+                                                    x-text="t"></span></th>
                                         </template>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-line">
-                                    <tr><td class="px-3 py-2 text-gray-700">Arus Kas Operasi</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(arusKasOperasi)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'arusKasOperasi'))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">Arus Kas Pendanaan</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(arusKasPendanaan)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'arusKasPendanaan'))">-</td></template></tr>
-                                    <tr class="bg-gray-50/50"><td class="px-3 py-2 text-gray-700">Total Arus Kas</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTotalArusKas())">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTotalArusKasTahun(t))">-</td></template></tr>
-                                    <tr><td class="px-3 py-2 text-gray-700">Kas Awal Tahun</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(kasAwalTahun)">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getTahunData(t, 'kasAwalTahun'))">-</td></template></tr>
-                                    <tr class="font-semibold bg-blue-50/50"><td class="px-3 py-2 text-gray-800">Kas Akhir (Perhitungan)</td><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getKasAkhirPerhitungan())">-</td><template x-for="(t, i) in tahunTambahan" :key="i"><td class="px-3 py-2 text-right font-mono" x-text="formatNumber(getKasAkhirPerhitunganTahun(t))">-</td></template></tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Arus Kas Operasi</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(arusKasOperasi)">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'arusKasOperasi'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Arus Kas Pendanaan</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(arusKasPendanaan)">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'arusKasPendanaan'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr class="bg-gray-50/50">
+                                        <td class="px-3 py-2 text-gray-700">Total Arus Kas</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(getTotalArusKas())">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTotalArusKasTahun(t))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700">Kas Awal Tahun</td>
+                                        <td class="px-3 py-2 text-right font-mono" x-text="formatNumber(kasAwalTahun)">-
+                                        </td><template x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getTahunData(t, 'kasAwalTahun'))">-</td>
+                                        </template>
+                                    </tr>
+                                    <tr class="font-semibold bg-blue-50/50">
+                                        <td class="px-3 py-2 text-gray-800">Kas Akhir (Perhitungan)</td>
+                                        <td class="px-3 py-2 text-right font-mono"
+                                            x-text="formatNumber(getKasAkhirPerhitungan())">-</td><template
+                                            x-for="(t, i) in tahunTambahan" :key="i">
+                                            <td class="px-3 py-2 text-right font-mono"
+                                                x-text="formatNumber(getKasAkhirPerhitunganTahun(t))">-</td>
+                                        </template>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -814,12 +1516,16 @@
                                 <tbody class="divide-y divide-line">
                                     <template x-for="(row, i) in alokasi_aset" :key="i">
                                         <tr>
-                                            <td class="px-3 py-1.5"><span x-text="row.nama_aset || '-'" class="text-gray-700"></span></td>
-                                            <td class="px-3 py-1.5 text-right"><span x-text="formatNumber(row.persentase)" class="text-gray-700"></span></td>
+                                            <td class="px-3 py-1.5"><span x-text="row.nama_aset || '-'"
+                                                    class="text-gray-700"></span></td>
+                                            <td class="px-3 py-1.5 text-right"><span
+                                                    x-text="formatNumber(row.persentase)" class="text-gray-700"></span>
+                                            </td>
                                         </tr>
                                     </template>
                                     <tr x-show="!alokasi_aset.length">
-                                        <td class="px-3 py-2 text-gray-400 italic" colspan="2">Tidak ada data alokasi aset</td>
+                                        <td class="px-3 py-2 text-gray-400 italic" colspan="2">Tidak ada data alokasi
+                                            aset</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -841,12 +1547,15 @@
                                 <tbody class="divide-y divide-line">
                                     <template x-for="(row, i) in sektor" :key="i">
                                         <tr>
-                                            <td class="px-3 py-1.5"><span x-text="row.nama_sektor || '-'" class="text-gray-700"></span></td>
-                                            <td class="px-3 py-1.5 text-right"><span x-text="formatNumber(row.bobot)" class="text-gray-700"></span></td>
+                                            <td class="px-3 py-1.5"><span x-text="row.nama_sektor || '-'"
+                                                    class="text-gray-700"></span></td>
+                                            <td class="px-3 py-1.5 text-right"><span x-text="formatNumber(row.bobot)"
+                                                    class="text-gray-700"></span></td>
                                         </tr>
                                     </template>
                                     <tr x-show="!sektor.length">
-                                        <td class="px-3 py-2 text-gray-400 italic" colspan="2">Tidak ada data sektor</td>
+                                        <td class="px-3 py-2 text-gray-400 italic" colspan="2">Tidak ada data sektor
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -856,7 +1565,8 @@
                     {{-- Efek --}}
                     <div>
                         <div class="flex items-center mb-3">
-                            <h4 class="font-semibold text-primary text-sm" x-text="jenisLaporan === 'laporan_tahunan' ? 'Portofolio Efek' : 'Daftar Efek'"></h4>
+                            <h4 class="font-semibold text-primary text-sm"
+                                x-text="jenisLaporan === 'laporan_tahunan' ? 'Portofolio Efek' : 'Daftar Efek'"></h4>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
@@ -867,36 +1577,56 @@
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Sektor</th>
                                         <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
                                         <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
-                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Harga Perolehan</th>
+                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Harga Perolehan
+                                        </th>
                                         <th class="text-right px-2 py-2 text-xs font-semibold text-muted">% thd NAB</th>
-                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Kontribusi % IHSG</th>
+                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Kontribusi %
+                                            IHSG</th>
                                         <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Return 1M</th>
                                         <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Return 3M</th>
                                         <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Return 6M</th>
-                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Return 1 Thn</th>
+                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Return 1 Thn
+                                        </th>
                                         <th class="text-center px-2 py-2 text-xs font-semibold text-muted">Top 10</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-line">
                                     <template x-for="(row, i) in efek" :key="i">
                                         <tr>
-                                            <td class="px-1 py-1"><span x-text="row.kode_efek || '-'" class="text-gray-700 text-xs"></span></td>
-                                            <td class="px-1 py-1"><span x-text="row.nama_efek || '-'" class="text-gray-700 text-xs"></span></td>
-                                            <td class="px-1 py-1"><span x-text="row.sektor || '-'" class="text-gray-700 text-xs"></span></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.bobot)" class="text-gray-700 text-xs"></span></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.nilai_pasar)" class="text-gray-700 text-xs"></span></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.harga_perolehan)" class="text-gray-700 text-xs"></span></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.persen_nab)" class="text-gray-700 text-xs"></span></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.kontribusi_kinerja)" class="text-gray-700 text-xs"></span></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.return_1m)" class="text-gray-700 text-xs"></span></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.return_3m)" class="text-gray-700 text-xs"></span></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.return_6m)" class="text-gray-700 text-xs"></span></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.return_1y)" class="text-gray-700 text-xs"></span></td>
-                                            <td class="px-1 py-1 text-center"><span x-text="row.top_10 ? '✓' : '-'" class="text-gray-700 text-xs"></span></td>
+                                            <td class="px-1 py-1"><span x-text="row.kode_efek || '-'"
+                                                    class="text-gray-700 text-xs"></span></td>
+                                            <td class="px-1 py-1"><span x-text="row.nama_efek || '-'"
+                                                    class="text-gray-700 text-xs"></span></td>
+                                            <td class="px-1 py-1"><span x-text="row.sektor || '-'"
+                                                    class="text-gray-700 text-xs"></span></td>
+                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.bobot)"
+                                                    class="text-gray-700 text-xs"></span></td>
+                                            <td class="px-1 py-1 text-right"><span
+                                                    x-text="formatNumber(row.nilai_pasar)"
+                                                    class="text-gray-700 text-xs"></span></td>
+                                            <td class="px-1 py-1 text-right"><span
+                                                    x-text="formatNumber(row.harga_perolehan)"
+                                                    class="text-gray-700 text-xs"></span></td>
+                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.persen_nab)"
+                                                    class="text-gray-700 text-xs"></span></td>
+                                            <td class="px-1 py-1 text-right"><span
+                                                    x-text="formatNumber(row.kontribusi_kinerja)"
+                                                    class="text-gray-700 text-xs"></span></td>
+                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.return_1m)"
+                                                    class="text-gray-700 text-xs"></span></td>
+                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.return_3m)"
+                                                    class="text-gray-700 text-xs"></span></td>
+                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.return_6m)"
+                                                    class="text-gray-700 text-xs"></span></td>
+                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.return_1y)"
+                                                    class="text-gray-700 text-xs"></span></td>
+                                            <td class="px-1 py-1 text-center"><span x-text="row.top_10 ? '✓' : '-'"
+                                                    class="text-gray-700 text-xs"></span></td>
                                         </tr>
                                     </template>
                                     <tr x-show="!efek.length">
-                                        <td class="px-3 py-2 text-gray-400 italic" colspan="13">Tidak ada data efek</td>
+                                        <td class="px-3 py-2 text-gray-400 italic" colspan="13">Tidak ada data efek
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -927,7 +1657,8 @@
                                 <thead class="bg-[#f8fafc]">
                                     <tr>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Kode</th>
-                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nama Obligasi</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nama Obligasi
+                                        </th>
                                         <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
                                         <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
                                         <th class="text-right px-2 py-2 text-xs font-semibold text-muted">YTM (%)</th>
@@ -935,28 +1666,56 @@
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Jatuh Tempo</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Penerbit</th>
                                         <th class="text-right px-2 py-2 text-xs font-semibold text-muted">% thd NAB</th>
-                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Durasi (thn)</th>
+                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Durasi (thn)
+                                        </th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Rating</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-line">
                                     <template x-for="(row, i) in obligasi" :key="i">
                                         <tr>
-                                            <td class="px-1 py-1"><span x-text="row.kode_obligasi || '-'" class="text-gray-700 text-xs"></span><input type="hidden" :name="`obligasi[${i}][kode_obligasi]`" :value="row.kode_obligasi"></td>
-                                            <td class="px-1 py-1"><span x-text="row.nama_obligasi || '-'" class="text-gray-700 text-xs"></span><input type="hidden" :name="`obligasi[${i}][nama_obligasi]`" :value="row.nama_obligasi"></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.bobot)" class="text-gray-700 text-xs"></span><input type="hidden" :name="`obligasi[${i}][bobot]`" :value="row.bobot"></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.nilai_pasar)" class="text-gray-700 text-xs"></span><input type="hidden" :name="`obligasi[${i}][nilai_pasar]`" :value="row.nilai_pasar"></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.ytm)" class="text-gray-700 text-xs"></span><input type="hidden" :name="`obligasi[${i}][ytm]`" :value="row.ytm"></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.kupon)" class="text-gray-700 text-xs"></span><input type="hidden" :name="`obligasi[${i}][kupon]`" :value="row.kupon"></td>
-                                            <td class="px-1 py-1"><span x-text="row.tanggal_jatuh_tempo || '-'" class="text-gray-700 text-xs"></span><input type="hidden" :name="`obligasi[${i}][tanggal_jatuh_tempo]`" :value="row.tanggal_jatuh_tempo"></td>
-                                            <td class="px-1 py-1"><span x-text="row.penerbit || '-'" class="text-gray-700 text-xs"></span><input type="hidden" :name="`obligasi[${i}][penerbit]`" :value="row.penerbit"></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.persen_nab)" class="text-gray-700 text-xs"></span><input type="hidden" :name="`obligasi[${i}][persen_nab]`" :value="row.persen_nab"></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.durasi)" class="text-gray-700 text-xs"></span><input type="hidden" :name="`obligasi[${i}][durasi]`" :value="row.durasi"></td>
-                                            <td class="px-1 py-1"><span x-text="row.rating || '-'" class="text-gray-700 text-xs"></span><input type="hidden" :name="`obligasi[${i}][rating]`" :value="row.rating"></td>
+                                            <td class="px-1 py-1"><span x-text="row.kode_obligasi || '-'"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`obligasi[${i}][kode_obligasi]`" :value="row.kode_obligasi">
+                                            </td>
+                                            <td class="px-1 py-1"><span x-text="row.nama_obligasi || '-'"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`obligasi[${i}][nama_obligasi]`" :value="row.nama_obligasi">
+                                            </td>
+                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.bobot)"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`obligasi[${i}][bobot]`" :value="row.bobot"></td>
+                                            <td class="px-1 py-1 text-right"><span
+                                                    x-text="formatNumber(row.nilai_pasar)"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`obligasi[${i}][nilai_pasar]`" :value="row.nilai_pasar"></td>
+                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.ytm)"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`obligasi[${i}][ytm]`" :value="row.ytm"></td>
+                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.kupon)"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`obligasi[${i}][kupon]`" :value="row.kupon"></td>
+                                            <td class="px-1 py-1"><span x-text="row.tanggal_jatuh_tempo || '-'"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`obligasi[${i}][tanggal_jatuh_tempo]`"
+                                                    :value="row.tanggal_jatuh_tempo"></td>
+                                            <td class="px-1 py-1"><span x-text="row.penerbit || '-'"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`obligasi[${i}][penerbit]`" :value="row.penerbit"></td>
+                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.persen_nab)"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`obligasi[${i}][persen_nab]`" :value="row.persen_nab"></td>
+                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.durasi)"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`obligasi[${i}][durasi]`" :value="row.durasi"></td>
+                                            <td class="px-1 py-1"><span x-text="row.rating || '-'"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`obligasi[${i}][rating]`" :value="row.rating"></td>
                                         </tr>
                                     </template>
                                     <tr x-show="!obligasi.length">
-                                        <td class="px-3 py-2 text-gray-400 italic" colspan="11">Tidak ada data obligasi</td>
+                                        <td class="px-3 py-2 text-gray-400 italic" colspan="11">Tidak ada data
+                                            obligasi</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -985,18 +1744,35 @@
                                 <tbody class="divide-y divide-line">
                                     <template x-for="(row, i) in sukuk" :key="i">
                                         <tr>
-                                            <td class="px-1 py-1"><span x-text="row.kode_sukuk || '-'" class="text-gray-700 text-xs"></span><input type="hidden" :name="`sukuk[${i}][kode_sukuk]`" :value="row.kode_sukuk"></td>
-                                            <td class="px-1 py-1"><span x-text="row.nama_sukuk || '-'" class="text-gray-700 text-xs"></span><input type="hidden" :name="`sukuk[${i}][nama_sukuk]`" :value="row.nama_sukuk"></td>
-                                            <td class="px-1 py-1"><span x-text="row.jenis_sukuk || '-'" class="text-gray-700 text-xs"></span><input type="hidden" :name="`sukuk[${i}][jenis_sukuk]`" :value="row.jenis_sukuk"></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.bobot)" class="text-gray-700 text-xs"></span><input type="hidden" :name="`sukuk[${i}][bobot]`" :value="row.bobot"></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.yield)" class="text-gray-700 text-xs"></span><input type="hidden" :name="`sukuk[${i}][yield]`" :value="row.yield"></td>
-                                            <td class="px-1 py-1"><span x-text="row.jatuh_tempo || '-'" class="text-gray-700 text-xs"></span><input type="hidden" :name="`sukuk[${i}][jatuh_tempo]`" :value="row.jatuh_tempo"></td>
-                                            <td class="px-1 py-1"><span x-text="row.rating || '-'" class="text-gray-700 text-xs"></span><input type="hidden" :name="`sukuk[${i}][rating]`" :value="row.rating"></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.persen_nab)" class="text-gray-700 text-xs"></span><input type="hidden" :name="`sukuk[${i}][persen_nab]`" :value="row.persen_nab"></td>
+                                            <td class="px-1 py-1"><span x-text="row.kode_sukuk || '-'"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`sukuk[${i}][kode_sukuk]`" :value="row.kode_sukuk"></td>
+                                            <td class="px-1 py-1"><span x-text="row.nama_sukuk || '-'"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`sukuk[${i}][nama_sukuk]`" :value="row.nama_sukuk"></td>
+                                            <td class="px-1 py-1"><span x-text="row.jenis_sukuk || '-'"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`sukuk[${i}][jenis_sukuk]`" :value="row.jenis_sukuk"></td>
+                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.bobot)"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`sukuk[${i}][bobot]`" :value="row.bobot"></td>
+                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.yield)"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`sukuk[${i}][yield]`" :value="row.yield"></td>
+                                            <td class="px-1 py-1"><span x-text="row.jatuh_tempo || '-'"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`sukuk[${i}][jatuh_tempo]`" :value="row.jatuh_tempo"></td>
+                                            <td class="px-1 py-1"><span x-text="row.rating || '-'"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`sukuk[${i}][rating]`" :value="row.rating"></td>
+                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.persen_nab)"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`sukuk[${i}][persen_nab]`" :value="row.persen_nab"></td>
                                         </tr>
                                     </template>
                                     <tr x-show="!sukuk.length">
-                                        <td class="px-3 py-2 text-gray-400 italic" colspan="8">Tidak ada data sukuk</td>
+                                        <td class="px-3 py-2 text-gray-400 italic" colspan="8">Tidak ada data sukuk
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1016,7 +1792,8 @@
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Jenis</th>
                                         <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
                                         <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
-                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Tingkat Bunga</th>
+                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Tingkat Bunga
+                                        </th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Jangka Waktu</th>
                                         <th class="text-right px-2 py-2 text-xs font-semibold text-muted">% thd NAB</th>
                                         <th class="text-right px-2 py-2 text-xs font-semibold text-muted">CAR %</th>
@@ -1027,20 +1804,44 @@
                                 <tbody class="divide-y divide-line">
                                     <template x-for="(row, i) in bank" :key="i">
                                         <tr>
-                                            <td class="px-1 py-1"><span x-text="row.nama_bank || '-'" class="text-gray-700 text-xs"></span><input type="hidden" :name="`bank[${i}][nama_bank]`" :value="row.nama_bank"></td>
-                                            <td class="px-1 py-1"><span x-text="row.jenis_bank || '-'" class="text-gray-700 text-xs"></span><input type="hidden" :name="`bank[${i}][jenis_bank]`" :value="row.jenis_bank"></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.bobot)" class="text-gray-700 text-xs"></span><input type="hidden" :name="`bank[${i}][bobot]`" :value="row.bobot"></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.nilai_pasar)" class="text-gray-700 text-xs"></span><input type="hidden" :name="`bank[${i}][nilai_pasar]`" :value="row.nilai_pasar"></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.tingkat_bunga)" class="text-gray-700 text-xs"></span><input type="hidden" :name="`bank[${i}][tingkat_bunga]`" :value="row.tingkat_bunga"></td>
-                                            <td class="px-1 py-1"><span x-text="row.jangka_waktu || '-'" class="text-gray-700 text-xs"></span><input type="hidden" :name="`bank[${i}][jangka_waktu]`" :value="row.jangka_waktu"></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.persen_nab)" class="text-gray-700 text-xs"></span><input type="hidden" :name="`bank[${i}][persen_nab]`" :value="row.persen_nab"></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.car)" class="text-gray-700 text-xs"></span><input type="hidden" :name="`bank[${i}][car]`" :value="row.car"></td>
-                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.npl)" class="text-gray-700 text-xs"></span><input type="hidden" :name="`bank[${i}][npl]`" :value="row.npl"></td>
-                                            <td class="px-1 py-1"><span x-text="row.klasifikasi_risiko || '-'" class="text-gray-700 text-xs"></span><input type="hidden" :name="`bank[${i}][klasifikasi_risiko]`" :value="row.klasifikasi_risiko"></td>
+                                            <td class="px-1 py-1"><span x-text="row.nama_bank || '-'"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`bank[${i}][nama_bank]`" :value="row.nama_bank"></td>
+                                            <td class="px-1 py-1"><span x-text="row.jenis_bank || '-'"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`bank[${i}][jenis_bank]`" :value="row.jenis_bank"></td>
+                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.bobot)"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`bank[${i}][bobot]`" :value="row.bobot"></td>
+                                            <td class="px-1 py-1 text-right"><span
+                                                    x-text="formatNumber(row.nilai_pasar)"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`bank[${i}][nilai_pasar]`" :value="row.nilai_pasar"></td>
+                                            <td class="px-1 py-1 text-right"><span
+                                                    x-text="formatNumber(row.tingkat_bunga)"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`bank[${i}][tingkat_bunga]`" :value="row.tingkat_bunga"></td>
+                                            <td class="px-1 py-1"><span x-text="row.jangka_waktu || '-'"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`bank[${i}][jangka_waktu]`" :value="row.jangka_waktu"></td>
+                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.persen_nab)"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`bank[${i}][persen_nab]`" :value="row.persen_nab"></td>
+                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.car)"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`bank[${i}][car]`" :value="row.car"></td>
+                                            <td class="px-1 py-1 text-right"><span x-text="formatNumber(row.npl)"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`bank[${i}][npl]`" :value="row.npl"></td>
+                                            <td class="px-1 py-1"><span x-text="row.klasifikasi_risiko || '-'"
+                                                    class="text-gray-700 text-xs"></span><input type="hidden"
+                                                    :name="`bank[${i}][klasifikasi_risiko]`"
+                                                    :value="row.klasifikasi_risiko"></td>
                                         </tr>
                                     </template>
                                     <tr x-show="!bank.length">
-                                        <td class="px-3 py-2 text-gray-400 italic" colspan="10">Tidak ada data bank</td>
+                                        <td class="px-3 py-2 text-gray-400 italic" colspan="10">Tidak ada data bank
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1156,7 +1957,10 @@
                                     <div class="space-y-2 max-h-48 overflow-y-auto">
                                         <template x-for="doc in existingDocs" :key="doc.id">
                                             <div class="p-2.5 bg-white rounded-lg border border-gray-200"
-                                                :class="{ 'border-primary/40 bg-primary/[0.03]': selectedDocIds.includes(doc.id) }">
+                                                :class="{
+                                                    'border-primary/40 bg-primary/[0.03]': selectedDocIds.includes(doc
+                                                        .id)
+                                                }">
                                                 <div class="flex items-center justify-between">
                                                     <div class="flex items-center gap-2 min-w-0">
                                                         <input type="checkbox" :value="doc.id"
@@ -1180,6 +1984,9 @@
                                                             }[doc.document_type] || doc.document_type"></span>
                                                         <span class="text-sm font-medium truncate"
                                                             x-text="doc.label"></span>
+                                                        <span
+                                                            class="text-xs font-semibold text-muted shrink-0 hidden sm:inline"
+                                                            x-text="doc.reksa_dana_nama"></span>
                                                         <span class="text-xs text-muted shrink-0 hidden sm:inline"
                                                             x-text="doc.reksa_dana_kode"></span>
                                                         <span class="text-xs text-muted shrink-0"
@@ -1191,7 +1998,8 @@
                                                             <svg class="w-3 h-3" fill="none" stroke="currentColor"
                                                                 viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round"
-                                                                    stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                    stroke-width="2"
+                                                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                                 <path stroke-linecap="round" stroke-linejoin="round"
                                                                     stroke-width="2"
                                                                     d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -1211,7 +2019,8 @@
                                                     </div>
                                                 </div>
                                                 <div x-show="doc.notes" class="mt-1.5 pl-6">
-                                                    <p class="text-xs text-muted italic leading-relaxed" x-text="doc.notes">
+                                                    <p class="text-xs text-muted italic leading-relaxed"
+                                                        x-text="doc.notes">
                                                     </p>
                                                 </div>
                                             </div>
@@ -1224,7 +2033,10 @@
                                     <div class="space-y-2 max-h-80 overflow-y-auto">
                                         <template x-for="doc in existingDocs" :key="doc.id">
                                             <div class="p-3 bg-white rounded-lg border border-gray-200"
-                                                :class="{ 'border-primary/40 bg-primary/[0.03]': selectedDocIds.includes(doc.id) }">
+                                                :class="{
+                                                    'border-primary/40 bg-primary/[0.03]': selectedDocIds.includes(doc
+                                                        .id)
+                                                }">
                                                 <div class="flex items-start justify-between gap-2">
                                                     <div class="flex items-start gap-2 min-w-0 flex-1">
                                                         <input type="checkbox" :value="doc.id"
@@ -1238,7 +2050,10 @@
                                                                 <span class="text-sm font-semibold truncate"
                                                                     x-text="doc.label"></span>
                                                             </div>
-                                                            <div class="flex items-center gap-2 mt-0.5 text-xs text-muted">
+                                                            <div
+                                                                class="flex items-center gap-2 mt-0.5 text-xs text-muted">
+                                                                <span x-text="doc.reksa_dana_nama"
+                                                                    class="text-xs font-semibold"></span>
                                                                 <span x-text="doc.reksa_dana_kode"></span>
                                                                 <span class="text-[10px]">•</span>
                                                                 <span x-text="doc.uploaded_at"></span>
@@ -1250,9 +2065,14 @@
                                                             <a :href="doc.url" target="_blank"
                                                                 class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition"
                                                                 title="Lihat">
-                                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                                <svg class="w-3.5 h-3.5" fill="none"
+                                                                    stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                                        stroke-width="2"
+                                                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                                        stroke-width="2"
+                                                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                                 </svg>
                                                             </a>
                                                         </template>
@@ -1314,7 +2134,8 @@
                     </div>
 
                     {{-- Tab: Multi-Document Upload Panel --}}
-                    <div x-show="activeTab === 'multi' && jenisLaporan !== 'kalender_ffs'" class="border border-line rounded-lg p-4 space-y-4">
+                    <div x-show="activeTab === 'multi' && jenisLaporan !== 'kalender_ffs'"
+                        class="border border-line rounded-lg p-4 space-y-4">
                         <div class="flex items-center gap-2">
                             <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
@@ -1409,7 +2230,8 @@
                     </div>
 
                     {{-- Tab: Partisi Halaman Panel --}}
-                    <div x-show="activeTab === 'partition' && jenisLaporan !== 'kalender_ffs'" class="border border-line rounded-lg p-4 space-y-4">
+                    <div x-show="activeTab === 'partition' && jenisLaporan !== 'kalender_ffs'"
+                        class="border border-line rounded-lg p-4 space-y-4">
                         <div class="flex items-center gap-2">
                             <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
@@ -1622,7 +2444,8 @@
                         </label>
                     </div>
 
-                    <div x-show="jenisLaporan !== 'kalender_ffs' && pdfLoading" class="flex items-center gap-2 text-sm text-muted">
+                    <div x-show="jenisLaporan !== 'kalender_ffs' && pdfLoading"
+                        class="flex items-center gap-2 text-sm text-muted">
                         <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none"
                             viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
@@ -2419,9 +3242,12 @@
                         this.labaSebelumPajak = data.laba_sebelum_pajak ?? this.labaSebelumPajak;
                         this.bebanPajakPenghasilan = data.beban_pajak_penghasilan ?? this.bebanPajakPenghasilan;
                         this.labaBersihTahunBerjalan = data.laba_bersih_tahun_berjalan ?? this.labaBersihTahunBerjalan;
-                        this.penghasilanKomprehensifLain = data.penghasilan_komprehensif_lain ?? this.penghasilanKomprehensifLain;
-                        this.penghasilanKomprehensifLainSetelahPajak = data.penghasilan_komprehensif_lain_setelah_pajak ?? this.penghasilanKomprehensifLainSetelahPajak;
-                        this.penghasilanKomprehensifTahunBerjalan = data.penghasilan_komprehensif_tahun_berjalan ?? this.penghasilanKomprehensifTahunBerjalan;
+                        this.penghasilanKomprehensifLain = data.penghasilan_komprehensif_lain ?? this
+                            .penghasilanKomprehensifLain;
+                        this.penghasilanKomprehensifLainSetelahPajak = data.penghasilan_komprehensif_lain_setelah_pajak ?? this
+                            .penghasilanKomprehensifLainSetelahPajak;
+                        this.penghasilanKomprehensifTahunBerjalan = data.penghasilan_komprehensif_tahun_berjalan ?? this
+                            .penghasilanKomprehensifTahunBerjalan;
                         this.arusKasOperasi = data.arus_kas_operasi ?? this.arusKasOperasi;
                         this.arusKasPendanaan = data.arus_kas_pendanaan ?? this.arusKasPendanaan;
                         this.kasAwalTahun = data.kas_awal_tahun ?? this.kasAwalTahun;
@@ -2436,7 +3262,10 @@
                         this.unitMilikMi = data.unit_milik_mi ?? this.unitMilikMi;
                         this.totalUnitBeredar = data.total_unit_beredar ?? this.totalUnitBeredar;
                         if (data.tahun_tambahan?.length) this.tahunTambahan = data.tahun_tambahan;
-                        if (data.data_tambahan) this.dataTambahan = {...this.dataTambahan, ...data.data_tambahan};
+                        if (data.data_tambahan) this.dataTambahan = {
+                            ...this.dataTambahan,
+                            ...data.data_tambahan
+                        };
                     },
 
                     setFieldValue(id, value) {
@@ -2771,9 +3600,12 @@
                         this.labaSebelumPajak = data.laba_sebelum_pajak ?? this.labaSebelumPajak;
                         this.bebanPajakPenghasilan = data.beban_pajak_penghasilan ?? this.bebanPajakPenghasilan;
                         this.labaBersihTahunBerjalan = data.laba_bersih_tahun_berjalan ?? this.labaBersihTahunBerjalan;
-                        this.penghasilanKomprehensifLain = data.penghasilan_komprehensif_lain ?? this.penghasilanKomprehensifLain;
-                        this.penghasilanKomprehensifLainSetelahPajak = data.penghasilan_komprehensif_lain_setelah_pajak ?? this.penghasilanKomprehensifLainSetelahPajak;
-                        this.penghasilanKomprehensifTahunBerjalan = data.penghasilan_komprehensif_tahun_berjalan ?? this.penghasilanKomprehensifTahunBerjalan;
+                        this.penghasilanKomprehensifLain = data.penghasilan_komprehensif_lain ?? this
+                            .penghasilanKomprehensifLain;
+                        this.penghasilanKomprehensifLainSetelahPajak = data.penghasilan_komprehensif_lain_setelah_pajak ?? this
+                            .penghasilanKomprehensifLainSetelahPajak;
+                        this.penghasilanKomprehensifTahunBerjalan = data.penghasilan_komprehensif_tahun_berjalan ?? this
+                            .penghasilanKomprehensifTahunBerjalan;
                         this.arusKasOperasi = data.arus_kas_operasi ?? this.arusKasOperasi;
                         this.arusKasPendanaan = data.arus_kas_pendanaan ?? this.arusKasPendanaan;
                         this.kasAwalTahun = data.kas_awal_tahun ?? this.kasAwalTahun;
@@ -2788,7 +3620,10 @@
                         this.unitMilikMi = data.unit_milik_mi ?? this.unitMilikMi;
                         this.totalUnitBeredar = data.total_unit_beredar ?? this.totalUnitBeredar;
                         if (data.tahun_tambahan?.length) this.tahunTambahan = data.tahun_tambahan;
-                        if (data.data_tambahan) this.dataTambahan = {...this.dataTambahan, ...data.data_tambahan};
+                        if (data.data_tambahan) this.dataTambahan = {
+                            ...this.dataTambahan,
+                            ...data.data_tambahan
+                        };
                         if (data.sektor?.length) this.sektor = data.sektor;
                         if (data.efek?.length) {
                             this.efek = data.efek.map(e => ({
@@ -3179,7 +4014,7 @@
                         // - Array fields: longest array wins (most complete)
                         let mergedData = {};
                         const allData = [...libraryData, ...this.docSlots.filter(s => s.success && s.data).map(s => s
-                        .data)];
+                            .data)];
                         allData.forEach(data => {
                             Object.keys(data).forEach(k => {
                                 const v = data[k];
@@ -3213,7 +4048,8 @@
 
                         if (successCount > 0) {
                             alert(
-                                '⚠️ Data hasil ekstraksi AI bisa saja tidak akurat atau tidak lengkap. Mohon periksa dan validasi setiap field sebelum menyimpan.');
+                                '⚠️ Data hasil ekstraksi AI bisa saja tidak akurat atau tidak lengkap. Mohon periksa dan validasi setiap field sebelum menyimpan.'
+                            );
                         }
                     },
 
@@ -3252,7 +4088,10 @@
                             return;
                         }
 
-                        const rangesWithValues = this.pageRanges.map((r, idx) => ({ ...r, idx }));
+                        const rangesWithValues = this.pageRanges.map((r, idx) => ({
+                            ...r,
+                            idx
+                        }));
                         const validRanges = rangesWithValues.filter(r => r.start_page && r.end_page);
                         if (!validRanges.length) {
                             this.partitionResult = 'Isi minimal 1 partisi halaman (Start Page & End Page).';
@@ -3303,7 +4142,8 @@
                                 const data = this.normalizeExtractedData(resp.data || {});
                                 const fieldCount = Object.keys(data).filter(k => {
                                     const v = data[k];
-                                    return v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0);
+                                    return v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v
+                                        .length === 0);
                                 }).length;
 
                                 validRanges.forEach(r => {
@@ -3320,7 +4160,8 @@
                                 }
 
                                 this.partitionSuccess = true;
-                                this.partitionResult = `${validRanges.length} partisi berhasil. ${fieldCount} field terisi.`;
+                                this.partitionResult =
+                                    `${validRanges.length} partisi berhasil. ${fieldCount} field terisi.`;
                             } else {
                                 const msg = resp?.message || 'Gagal parse';
                                 validRanges.forEach(r => {
@@ -3540,93 +4381,97 @@
                     parseSingleDocument(docId) {
                         this.parseExistingDocument(docId);
                     },
-                addTahun() {
-                    const t = prompt('Masukkan tahun (contoh: 2025):');
-                    if (t && t.match(/^\d{4}$/)) {
-                        this.tahunTambahan.push(t);
-                        if (!this.dataTambahan[t]) this.dataTambahan[t] = {};
-                    }
-                },
-                removeTahun(i) {
-                    const t = this.tahunTambahan[i];
-                    if (t && this.dataTambahan[t]) delete this.dataTambahan[t];
-                    this.tahunTambahan.splice(i, 1);
-                },
-                getTahunData(tahun, field) {
-                    var d = this.dataTambahan[tahun];
-                    return d ? (d[field] || '') : '';
-                },
-                setTahunData(tahun, field, val) {
-                    if (!this.dataTambahan[tahun]) this.dataTambahan[tahun] = {};
-                    this.dataTambahan[tahun][field] = val;
-                },
-                getTotalPiutang() {
-                    return (Number(this.piutangBunga)||0) + (Number(this.piutangDividen)||0) + (Number(this.piutangLain)||0);
-                },
-                getTotalPiutangTahun(tahun) {
-                    const d = this.dataTambahan[tahun] || {};
-                    return (Number(d.piutangBunga)||0) + (Number(d.piutangDividen)||0) + (Number(d.piutangLain)||0);
-                },
-                getEkuitas() {
-                    return (Number(this.totalAset)||0) - (Number(this.totalLiabilitas)||0);
-                },
-                getEkuitasTahun(tahun) {
-                    const d = this.dataTambahan[tahun] || {};
-                    return (Number(d.totalAset)||0) - (Number(d.totalLiabilitas)||0);
-                },
-                getTotalPendapatan() {
-                    return (Number(this.pendapatanBunga)||0) + (Number(this.pendapatanDividen)||0);
-                },
-                getTotalPendapatanTahun(tahun) {
-                    const d = this.dataTambahan[tahun] || {};
-                    return (Number(d.pendapatanBunga)||0) + (Number(d.pendapatanDividen)||0);
-                },
-                getTotalKeuntunganInvestasi() {
-                    return (Number(this.gainRealized)||0) + (Number(this.gainUnrealized)||0);
-                },
-                getTotalKeuntunganInvestasiTahun(tahun) {
-                    const d = this.dataTambahan[tahun] || {};
-                    return (Number(d.gainRealized)||0) + (Number(d.gainUnrealized)||0);
-                },
-                getTotalBeban() {
-                    return (Number(this.bebanMi)||0) + (Number(this.bebanKustodian)||0) + (Number(this.bebanLain)||0);
-                },
-                getTotalBebanTahun(tahun) {
-                    const d = this.dataTambahan[tahun] || {};
-                    return (Number(d.bebanMi)||0) + (Number(d.bebanKustodian)||0) + (Number(d.bebanLain)||0);
-                },
-                getLabaBersihPerhitungan() {
-                    return this.getTotalPendapatan() + this.getTotalKeuntunganInvestasi() - this.getTotalBeban();
-                },
-                getLabaBersihPerhitunganTahun(tahun) {
-                    return this.getTotalPendapatanTahun(tahun) + this.getTotalKeuntunganInvestasiTahun(tahun) - this.getTotalBebanTahun(tahun);
-                },
-                getTotalArusKas() {
-                    return (Number(this.arusKasOperasi)||0) + (Number(this.arusKasPendanaan)||0);
-                },
-                getTotalArusKasTahun(tahun) {
-                    const d = this.dataTambahan[tahun] || {};
-                    return (Number(d.arusKasOperasi)||0) + (Number(d.arusKasPendanaan)||0);
-                },
-                getKasAkhirPerhitungan() {
-                    return (Number(this.kasAwalTahun)||0) + this.getTotalArusKas();
-                },
-                getKasAkhirPerhitunganTahun(tahun) {
-                    const d = this.dataTambahan[tahun] || {};
-                    return (Number(d.kasAwalTahun)||0) + this.getTotalArusKasTahun(tahun);
-                },
-                getPenghasilanKomprehensifTahunBerjalan() {
-                    return (Number(this.labaBersihTahunBerjalan)||0) + (Number(this.penghasilanKomprehensifLainSetelahPajak)||0);
-                },
-                getPenghasilanKomprehensifTahunBerjalanTahun(tahun) {
-                    const d = this.dataTambahan[tahun] || {};
-                    return (Number(d.labaBersihTahunBerjalan)||0) + (Number(d.penghasilanKomprehensifLainSetelahPajak)||0);
-                },
-                formatNumber(val) {
-                    if (val === null || val === undefined || val === '' || isNaN(Number(val))) return '-';
-                    return Number(val).toLocaleString('id-ID');
-                },
-            };
+                    addTahun() {
+                        const t = prompt('Masukkan tahun (contoh: 2025):');
+                        if (t && t.match(/^\d{4}$/)) {
+                            this.tahunTambahan.push(t);
+                            if (!this.dataTambahan[t]) this.dataTambahan[t] = {};
+                        }
+                    },
+                    removeTahun(i) {
+                        const t = this.tahunTambahan[i];
+                        if (t && this.dataTambahan[t]) delete this.dataTambahan[t];
+                        this.tahunTambahan.splice(i, 1);
+                    },
+                    getTahunData(tahun, field) {
+                        var d = this.dataTambahan[tahun];
+                        return d ? (d[field] || '') : '';
+                    },
+                    setTahunData(tahun, field, val) {
+                        if (!this.dataTambahan[tahun]) this.dataTambahan[tahun] = {};
+                        this.dataTambahan[tahun][field] = val;
+                    },
+                    getTotalPiutang() {
+                        return (Number(this.piutangBunga) || 0) + (Number(this.piutangDividen) || 0) + (Number(this
+                            .piutangLain) || 0);
+                    },
+                    getTotalPiutangTahun(tahun) {
+                        const d = this.dataTambahan[tahun] || {};
+                        return (Number(d.piutangBunga) || 0) + (Number(d.piutangDividen) || 0) + (Number(d.piutangLain) || 0);
+                    },
+                    getEkuitas() {
+                        return (Number(this.totalAset) || 0) - (Number(this.totalLiabilitas) || 0);
+                    },
+                    getEkuitasTahun(tahun) {
+                        const d = this.dataTambahan[tahun] || {};
+                        return (Number(d.totalAset) || 0) - (Number(d.totalLiabilitas) || 0);
+                    },
+                    getTotalPendapatan() {
+                        return (Number(this.pendapatanBunga) || 0) + (Number(this.pendapatanDividen) || 0);
+                    },
+                    getTotalPendapatanTahun(tahun) {
+                        const d = this.dataTambahan[tahun] || {};
+                        return (Number(d.pendapatanBunga) || 0) + (Number(d.pendapatanDividen) || 0);
+                    },
+                    getTotalKeuntunganInvestasi() {
+                        return (Number(this.gainRealized) || 0) + (Number(this.gainUnrealized) || 0);
+                    },
+                    getTotalKeuntunganInvestasiTahun(tahun) {
+                        const d = this.dataTambahan[tahun] || {};
+                        return (Number(d.gainRealized) || 0) + (Number(d.gainUnrealized) || 0);
+                    },
+                    getTotalBeban() {
+                        return (Number(this.bebanMi) || 0) + (Number(this.bebanKustodian) || 0) + (Number(this.bebanLain) || 0);
+                    },
+                    getTotalBebanTahun(tahun) {
+                        const d = this.dataTambahan[tahun] || {};
+                        return (Number(d.bebanMi) || 0) + (Number(d.bebanKustodian) || 0) + (Number(d.bebanLain) || 0);
+                    },
+                    getLabaBersihPerhitungan() {
+                        return this.getTotalPendapatan() + this.getTotalKeuntunganInvestasi() - this.getTotalBeban();
+                    },
+                    getLabaBersihPerhitunganTahun(tahun) {
+                        return this.getTotalPendapatanTahun(tahun) + this.getTotalKeuntunganInvestasiTahun(tahun) - this
+                            .getTotalBebanTahun(tahun);
+                    },
+                    getTotalArusKas() {
+                        return (Number(this.arusKasOperasi) || 0) + (Number(this.arusKasPendanaan) || 0);
+                    },
+                    getTotalArusKasTahun(tahun) {
+                        const d = this.dataTambahan[tahun] || {};
+                        return (Number(d.arusKasOperasi) || 0) + (Number(d.arusKasPendanaan) || 0);
+                    },
+                    getKasAkhirPerhitungan() {
+                        return (Number(this.kasAwalTahun) || 0) + this.getTotalArusKas();
+                    },
+                    getKasAkhirPerhitunganTahun(tahun) {
+                        const d = this.dataTambahan[tahun] || {};
+                        return (Number(d.kasAwalTahun) || 0) + this.getTotalArusKasTahun(tahun);
+                    },
+                    getPenghasilanKomprehensifTahunBerjalan() {
+                        return (Number(this.labaBersihTahunBerjalan) || 0) + (Number(this
+                            .penghasilanKomprehensifLainSetelahPajak) || 0);
+                    },
+                    getPenghasilanKomprehensifTahunBerjalanTahun(tahun) {
+                        const d = this.dataTambahan[tahun] || {};
+                        return (Number(d.labaBersihTahunBerjalan) || 0) + (Number(d.penghasilanKomprehensifLainSetelahPajak) ||
+                            0);
+                    },
+                    formatNumber(val) {
+                        if (val === null || val === undefined || val === '' || isNaN(Number(val))) return '-';
+                        return Number(val).toLocaleString('id-ID');
+                    },
+                };
             }
         </script>
     @endpush

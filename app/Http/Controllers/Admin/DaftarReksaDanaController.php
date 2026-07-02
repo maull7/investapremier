@@ -1221,18 +1221,90 @@ class DaftarReksaDanaController extends Controller
 
             ActivityLogger::log(
                 'Parse FFS',
-                "FFS {$document->original_name} berhasil diparse dan disimpan. Field: " . implode(', ', $result['fields']),
+                "FFS {$document->original_name} berhasil diparse dan disimpan. Data tersimpan hingga total return.",
                 'success',
                 $document,
             );
 
             return response()->json([
                 'success' => true,
-                'message' => 'Data FFS berhasil diekstrak dan disimpan. Field: ' . implode(', ', $result['fields']),
+                'message' => 'Data FFS berhasil diekstrak dan disimpan. Data yang tersimpan di database hanya mencakup informasi hingga total return.',
                 'data'    => $result,
             ]);
         } catch (\Throwable $e) {
             return response()->json(['error' => 'Gagal parse FFS: ' . $e->getMessage()], 500);
         }
+    }
+
+    public function edit(ReksaDana $reksaDana)
+    {
+        return view('admin.daftar-reksa-dana.edit', compact('reksaDana'));
+    }
+
+    public function updateInformasi(Request $request, ReksaDana $reksaDana)
+    {
+        // Decode kategori jika dikirim sebagai JSON string dari JS
+        if ($request->has('kategori') && is_string($request->input('kategori'))) {
+            $decoded = json_decode($request->input('kategori'), true);
+            if (is_array($decoded)) {
+                $request->merge(['kategori' => $decoded]);
+            } elseif ($request->input('kategori') === '') {
+                $request->merge(['kategori' => []]);
+            }
+        }
+
+        $validated = $request->validate([
+            'kode_reksa_dana'       => 'nullable|string|max:20|unique:reksa_dana,kode_reksa_dana,' . $reksaDana->id,
+            'nama_reksa_dana'       => 'required|string|max:255',
+            'nama_manajer_investasi'=> 'nullable|string|max:255',
+            'jenis'                 => 'nullable|string|in:' . implode(',', self::JENIS_OPTIONS),
+            'kategori'              => 'nullable|array',
+            'kategori.*'            => 'string|in:' . implode(',', self::KATEGORI_OPTIONS),
+            'kategori_produk'       => 'nullable|string|in:' . implode(',', self::KATEGORI_PRODUK_OPTIONS),
+            'kelas'                 => 'nullable|string|max:10',
+            'benchmark'             => 'nullable|string|max:255',
+            'tujuan_investasi'      => 'nullable|string',
+            'kebijakan_investasi'   => 'nullable|string',
+            'custodian_bank'        => 'nullable|string|max:255',
+            'launch_date'           => 'nullable|date',
+            'mata_uang'             => 'nullable|string|max:10',
+            'isin_code'             => 'nullable|string|max:20',
+            'is_etf'                => 'nullable|boolean',
+            'is_index'              => 'nullable|boolean',
+            'conservative_category' => 'nullable|string|max:100',
+            'dividend'              => 'nullable|boolean',
+        ]);
+
+        if (!empty($validated['kode_reksa_dana'])) {
+            $parser = app(KodeReksaDanaParser::class);
+            if (!$parser->isValidKode($validated['kode_reksa_dana'])) {
+                unset($validated['kode_reksa_dana']);
+            } else {
+                $parsedFromKode = $parser->databaseAttributes($validated['kode_reksa_dana']);
+                foreach ($parsedFromKode as $key => $value) {
+                    if (empty($validated[$key])) {
+                        $validated[$key] = $value;
+                    }
+                }
+            }
+        }
+
+        $validated['kategori'] = $validated['kategori'] ?? [];
+
+        $reksaDana->update($validated);
+
+        ActivityLogger::log(
+            'Update Informasi Reksa Dana',
+            "Informasi reksa dana {$reksaDana->nama_reksa_dana} berhasil diperbarui",
+            'success',
+            $reksaDana,
+        );
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Informasi reksa dana berhasil diperbarui.']);
+        }
+
+        return redirect()->route('admin.daftar-reksa-dana.show', $reksaDana)
+            ->with('success', 'Informasi reksa dana berhasil diperbarui.');
     }
 }
