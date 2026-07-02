@@ -167,6 +167,13 @@ Ekstrak data dari teks Fund Fact Sheet berikut. Kembalikan HANYA JSON valid deng
   "beban_kustodian": angka rupiah penuh beban kustodian atau null,
   "beban_lain": angka rupiah penuh beban lain-lain atau null,
   "laba_bersih": angka rupiah penuh laba bersih atau null,
+  "total_beban": angka rupiah penuh total beban atau null,
+  "laba_sebelum_pajak": angka rupiah penuh laba sebelum pajak atau null,
+  "beban_pajak_penghasilan": angka rupiah penuh beban pajak penghasilan atau null,
+  "laba_bersih_tahun_berjalan": angka rupiah penuh laba bersih tahun berjalan atau null,
+  "penghasilan_komprehensif_lain": angka rupiah penuh penghasilan komprehensif lain atau null,
+  "penghasilan_komprehensif_lain_setelah_pajak": angka rupiah penuh penghasilan komprehensif lain setelah pajak atau null,
+  "penghasilan_komprehensif_tahun_berjalan": angka rupiah penuh penghasilan komprehensif tahun berjalan atau null,
   "arus_kas_operasi": angka rupiah penuh arus kas operasi atau null,
   "arus_kas_pendanaan": angka rupiah penuh arus kas pendanaan atau null,
   "kas_awal_tahun": angka rupiah penuh kas awal tahun atau null,
@@ -932,6 +939,13 @@ FIELDS,
   "beban_kustodian": angka rupiah penuh beban kustodian atau null,
   "beban_lain": angka rupiah penuh beban lain-lain atau null,
   "laba_bersih": angka rupiah penuh laba bersih atau null,
+  "total_beban": angka rupiah penuh total beban atau null,
+  "laba_sebelum_pajak": angka rupiah penuh laba sebelum pajak atau null,
+  "beban_pajak_penghasilan": angka rupiah penuh beban pajak penghasilan atau null,
+  "laba_bersih_tahun_berjalan": angka rupiah penuh laba bersih tahun berjalan atau null,
+  "penghasilan_komprehensif_lain": angka rupiah penuh penghasilan komprehensif lain atau null,
+  "penghasilan_komprehensif_lain_setelah_pajak": angka rupiah penuh penghasilan komprehensif lain setelah pajak atau null,
+  "penghasilan_komprehensif_tahun_berjalan": angka rupiah penuh penghasilan komprehensif tahun berjalan atau null,
   "arus_kas_operasi": angka rupiah penuh arus kas operasi atau null,
   "arus_kas_pendanaan": angka rupiah penuh arus kas pendanaan atau null,
   "kas_awal_tahun": angka rupiah penuh kas awal tahun atau null,
@@ -951,7 +965,7 @@ FIELDS,
 
 Cari label-label berikut di tabel:
 - NERACA: Total Aset/JUMLAH ASET, Total Liabilitas/JUMLAH LIABILITAS, Kas dan Bank/Kas & Setara Kas, Piutang Bunga, Piutang Dividen, Piutang Lain-lain, Utang Pajak, Utang Lain-lain
-- LABA RUGI: Pendapatan Bunga, Pendapatan Dividen, Gain Realized, Gain Unrealized/Laba Belum Realisasi, Beban MI/Beban Manajer Investasi, Beban Kustodian, Beban Lain-lain, Laba Bersih
+- LABA RUGI: Pendapatan Bunga, Pendapatan Dividen, Gain Realized, Gain Unrealized/Laba Belum Realisasi, Beban MI/Beban Manajer Investasi, Beban Kustodian, Beban Lain-lain, Total Beban, Laba Sebelum Pajak, Beban Pajak Penghasilan, Laba Bersih, Laba Bersih Tahun Berjalan, Penghasilan Komprehensif Lain, Penghasilan Komprehensif Tahun Berjalan
 - ARUS KAS: Arus Kas Operasi/Kas dari Aktivitas Operasi, Arus Kas Pendanaan/Kas dari Aktivitas Pendanaan, Kas Awal Tahun, Kas Akhir Tahun
 - RASIO: Total Hasil Investasi, Biaya Operasi/Rasio Biaya, Portfolio Turnover, Persentase PPH
 - FAIR VALUE: Level 1/Tingkat 1, Level 2/Tingkat 2, Level 3/Tingkat 3
@@ -1108,6 +1122,13 @@ Baca PDF Fund Fact Sheet berikut seperti analis yang melihat halaman PDF langsun
   "beban_kustodian": angka rupiah penuh beban kustodian atau null,
   "beban_lain": angka rupiah penuh beban lain-lain atau null,
   "laba_bersih": angka rupiah penuh laba bersih atau null,
+  "total_beban": angka rupiah penuh total beban atau null,
+  "laba_sebelum_pajak": angka rupiah penuh laba sebelum pajak atau null,
+  "beban_pajak_penghasilan": angka rupiah penuh beban pajak penghasilan atau null,
+  "laba_bersih_tahun_berjalan": angka rupiah penuh laba bersih tahun berjalan atau null,
+  "penghasilan_komprehensif_lain": angka rupiah penuh penghasilan komprehensif lain atau null,
+  "penghasilan_komprehensif_lain_setelah_pajak": angka rupiah penuh penghasilan komprehensif lain setelah pajak atau null,
+  "penghasilan_komprehensif_tahun_berjalan": angka rupiah penuh penghasilan komprehensif tahun berjalan atau null,
   "arus_kas_operasi": angka rupiah penuh arus kas operasi atau null,
   "arus_kas_pendanaan": angka rupiah penuh arus kas pendanaan atau null,
   "kas_awal_tahun": angka rupiah penuh kas awal tahun atau null,

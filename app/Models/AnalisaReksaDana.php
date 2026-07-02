@@ -148,6 +148,16 @@ class AnalisaReksaDana extends Model
         return $this->hasMany(AnalisaPasarUang::class, 'analisa_reksa_dana_id');
     }
 
+    public function likuiditas(): HasMany
+    {
+        return $this->hasMany(AnalisaLikuiditas::class, 'analisa_reksa_dana_id');
+    }
+
+    public function keuangan(): HasMany
+    {
+        return $this->hasMany(AnalisaKeuangan::class, 'analisa_reksa_dana_id');
+    }
+
     public function piutangBungaDetail(): HasMany
     {
         return $this->hasMany(AnalisaPiutangBunga::class, 'analisa_reksa_dana_id');

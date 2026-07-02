@@ -22,7 +22,7 @@
         } finally {
             this.personModal.loading = false;
         }
-    }
+    },
 }">
 
 <div class="mb-6">
@@ -98,21 +98,26 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {{-- Informasi Reksa Dana --}}
         <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden">
-            <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
+            <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light flex items-center justify-between">
                 <h2 class="font-bold text-white text-sm flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     Informasi Reksa Dana
                 </h2>
+                <a href="{{ route('admin.daftar-reksa-dana.edit', $fund) }}"
+                    class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    Edit
+                </a>
             </div>
             <div class="divide-y divide-line">
                 <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Nama Reksa Dana</span><span class="text-sm">{{ $fund->nama_reksa_dana }}</span></div>
                 @if($fund->kode_reksa_dana)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Kode Reksa Dana</span><span class="text-sm font-mono">{{ $fund->kode_reksa_dana }}</span></div>@endif
                 @if($fund->investmentManager || $fund->nama_manajer_investasi)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Manajer Investasi</span><span class="text-sm">@if($fund->investmentManager)<a href="{{ route('admin.investment-managers.show', $fund->investmentManager) }}" class="text-accent hover:underline">{{ $fund->nama_manajer_investasi }}</a>@else{{ $fund->nama_manajer_investasi }}@endif</span></div>@endif
                 @if($fund->custodian_bank)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Bank Kustodian</span><span class="text-sm">{{ $fund->custodian_bank }}</span></div>@endif
-                @if($fund->launch_date)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Tanggal Peluncuran</span><span class="text-sm">{{ $fund->launch_date->format('d M Y') }}</span></div>@endif
+                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Tanggal Efektif</span><span class="text-sm">{{ $fund->launch_date?->format('d M Y') ?: '-' }}</span></div>
                 @if($fund->tujuan_investasi)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Tujuan Investasi</span><span class="text-sm">{{ $fund->tujuan_investasi }}</span></div>@endif
                 @if($fund->kebijakan_investasi)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Kebijakan Investasi</span><span class="text-sm">{{ $fund->kebijakan_investasi }}</span></div>@endif
-                @if($fund->benchmark)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Tolak Ukur / Benchmark</span><span class="text-sm">{{ $fund->benchmark }}</span></div>@endif
+                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Benchmark Tolak Ukur</span><span class="text-sm">{{ $fund->benchmark ?: '-' }}</span></div>
                 @if($fund->display_mata_uang)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Mata Uang</span><span class="text-sm">{{ $fund->display_mata_uang }}</span></div>@endif
                 @if($fund->jenis)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Kategori</span><span class="text-sm">{{ $fund->kategori_label ?: $fund->jenis }}</span></div>@endif
                 @if($fund->jenis)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Jenis Reksa Dana</span><span class="text-sm">{{ $fund->jenis }}</span></div>@endif
@@ -706,6 +711,7 @@
     </div>
 </div>
 </div>
+
 
 <script>
 function documentTabData(defaultDocType) {
