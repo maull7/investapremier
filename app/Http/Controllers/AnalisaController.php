@@ -219,6 +219,8 @@ class AnalisaController extends Controller
             ->latest()
             ->first();
 
+        $ffsPembandingOptions = $master ? $this->getFfsPembandingOptions($master->id) : [];
+
         return response()->json([
             'found' => (bool) ($master || $lastAnalisa),
             'master' => $master ? [
@@ -244,6 +246,7 @@ class AnalisaController extends Controller
                 'expense_ratio'        => $master->expense_ratio,
             ] : null,
             'last_analisa' => $lastAnalisa ? $this->serializeAnalisaForForm($lastAnalisa) : null,
+            'ffs_pembanding_options' => $ffsPembandingOptions,
         ]);
     }
 
@@ -1524,10 +1527,12 @@ class AnalisaController extends Controller
         }
         if (!$reksaDanaId) return [];
 
-        $query = FfsExtractionResult::where('reksa_dana_id', $reksaDanaId);
+        $docQuery = ReksaDanaDocument::where('reksa_dana_id', $reksaDanaId)
+            ->where('document_type', 'ffs')
+            ->whereHas('ffsExtractionResults');
 
         if ($excludeMonth && $excludeYear) {
-            $query->where(function ($q) use ($excludeMonth, $excludeYear) {
+            $docQuery->where(function ($q) use ($excludeMonth, $excludeYear) {
                 $q->where('ffs_month', '!=', $excludeMonth)
                   ->orWhere('ffs_year', '!=', $excludeYear);
             });
@@ -1535,13 +1540,16 @@ class AnalisaController extends Controller
 
         $months = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
-        return $query->orderBy('ffs_year')->orderBy('ffs_month')->get()
-            ->map(function ($r) use ($months) {
-                $ed = $r->extracted_data ?: [];
+        return $docQuery->orderBy('ffs_year')->orderBy('ffs_month')->get()
+            ->map(function ($doc) use ($months) {
+                $extraction = $doc->ffsExtractionResults()->latest('tanggal_data')->first();
+                if (!$extraction) return null;
+
+                $ed = $extraction->extracted_data ?: [];
                 $efekList = $ed['daftar_efek'] ?? $ed['efek'] ?? [];
                 return [
-                    'id' => $r->id,
-                    'label' => ($months[$r->ffs_month] ?? '') . ' ' . $r->ffs_year,
+                    'id' => $extraction->id,
+                    'label' => ($months[$doc->ffs_month] ?? '') . ' ' . $doc->ffs_year,
                     'efek' => collect($efekList)
                         ->filter(fn($e) => !empty($e['kode_efek']))
                         ->map(fn($e) => [
@@ -1551,7 +1559,7 @@ class AnalisaController extends Controller
                         ])
                         ->values(),
                 ];
-            })->values()->toArray();
+            })->filter()->values()->toArray();
     }
 
     private function serializeAnalisaForForm(AnalisaReksaDana $analisa): array

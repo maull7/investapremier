@@ -178,8 +178,9 @@
                             </div>
                             <div>
                                 <x-input-label for="ffs_tahun_top" value="Tahun" />
-                                <x-text-input id="ffs_tahun_top" type="number" min="2000" max="2100"
-                                    placeholder="2026" class="mt-1 block w-full" x-model="ffsTahun" />
+                                <input id="ffs_tahun_top" type="number" min="2000" max="2100"
+                                    placeholder="2026" class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm"
+                                    x-model="ffsTahun" />
                             </div>
                         </div>
                         <div class="mt-4 max-w-xs" x-show="jenisLaporan === 'laporan_tahunan'" x-cloak>
@@ -285,8 +286,87 @@
                         </div>
                     </div>
 
+                    {{-- Rasio Keuangan --}}
+                    <div class="border-t border-line pt-4">
+                        <h4 class="font-semibold text-primary text-sm mb-3">Rasio Keuangan</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <x-input-label for="total_hasil_investasi" value="Total Hasil Investasi (%)" />
+                                <x-text-input id="total_hasil_investasi" name="total_hasil_investasi" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="totalHasilInvestasi" />
+                            </div>
+                            <div>
+                                <x-input-label for="hasil_investasi_setelah_biaya"
+                                    value="Hasil Investasi Setelah Biaya Pemasaran (%)" />
+                                <x-text-input id="hasil_investasi_setelah_biaya" name="hasil_investasi_setelah_biaya"
+                                    type="number" step="0.01" class="mt-1 block w-full"
+                                    x-model="hasilInvestasiSetelahBiaya" />
+                            </div>
+                            <div>
+                                <x-input-label for="biaya_operasi_lengkap" value="Biaya Operasi (%)" />
+                                <x-text-input id="biaya_operasi_lengkap" name="biaya_operasi" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="biayaOperasi" />
+                            </div>
+                            <div>
+                                <x-input-label for="portfolio_turnover_lengkap" value="Portfolio Turnover Ratio" />
+                                <x-text-input id="portfolio_turnover_lengkap" name="portfolio_turnover_ratio"
+                                    type="number" step="0.01" class="mt-1 block w-full"
+                                    x-model="portfolioTurnover" />
+                            </div>
+                            <div>
+                                <x-input-label for="persentase_pph" value="Persentase Penghasilan Kena Pajak (%)" />
+                                <x-text-input id="persentase_pph" name="persentase_pph" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="persentasePph" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Fair Value --}}
+                    <div class="border-t border-line pt-4">
+                        <h4 class="font-semibold text-primary text-sm mb-3">Fair Value / Pengukuran Nilai Wajar</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <x-input-label for="fair_value_level_1" value="Level 1 (Rp)" />
+                                <x-text-input id="fair_value_level_1" name="fair_value_level_1" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="fairValueLevel1" />
+                            </div>
+                            <div>
+                                <x-input-label for="fair_value_level_2" value="Level 2 (Rp)" />
+                                <x-text-input id="fair_value_level_2" name="fair_value_level_2" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="fairValueLevel2" />
+                            </div>
+                            <div>
+                                <x-input-label for="fair_value_level_3" value="Level 3 (Rp)" />
+                                <x-text-input id="fair_value_level_3" name="fair_value_level_3" type="number"
+                                    step="0.01" class="mt-1 block w-full" x-model="fairValueLevel3" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Unit Penyertaan --}}
+                    <div class="border-t border-line pt-4">
+                        <h4 class="font-semibold text-primary text-sm mb-3">Unit Penyertaan</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <x-input-label for="unit_milik_investor" value="Unit Milik Investor" />
+                                <x-text-input id="unit_milik_investor" name="unit_milik_investor" type="number"
+                                    step="0.0001" class="mt-1 block w-full" x-model="unitMilikInvestor" />
+                            </div>
+                            <div>
+                                <x-input-label for="unit_milik_mi" value="Unit Milik Manajer Investasi" />
+                                <x-text-input id="unit_milik_mi" name="unit_milik_mi" type="number"
+                                    step="0.0001" class="mt-1 block w-full" x-model="unitMilikMi" />
+                            </div>
+                            <div>
+                                <x-input-label for="total_unit_beredar" value="Total Unit Beredar" />
+                                <x-text-input id="total_unit_beredar" name="total_unit_beredar" type="number"
+                                    step="0.0001" class="mt-1 block w-full" x-model="totalUnitBeredar" />
+                            </div>
+                        </div>
+                    </div>
+
                     {{-- Informasi Reksa Dana --}}
-                    <div x-show="jenisLaporan !== 'kalender_ffs'" class="border-t border-line pt-4">
+                    <div x-show="false" class="border-t border-line pt-4">
                         <h4 class="font-semibold text-primary text-sm mb-3">Informasi Reksa Dana</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
@@ -318,7 +398,7 @@
                     </div>
 
                     {{-- Kinerja --}}
-                    <div x-show="jenisLaporan !== 'kalender_ffs'" class="border-t border-line pt-4">
+                    <div x-show="false" class="border-t border-line pt-4">
                         <h4 class="font-semibold text-primary text-sm mb-3">Kinerja</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
@@ -335,7 +415,7 @@
                     </div>
 
                     {{-- Rasio Keuangan --}}
-                    <div x-show="jenisLaporan !== 'kalender_ffs'" class="border-t border-line pt-4">
+                    <div x-show="false" class="border-t border-line pt-4">
                         <h4 class="font-semibold text-primary text-sm mb-3">Rasio Keuangan</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
@@ -358,7 +438,7 @@
                     </div>
 
                     {{-- Biaya --}}
-                    <div x-show="jenisLaporan !== 'kalender_ffs'" class="border-t border-line pt-4">
+                    <div x-show="false" class="border-t border-line pt-4">
                         <h4 class="font-semibold text-primary text-sm mb-3">Biaya</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
@@ -980,84 +1060,6 @@
                             </div>
                         </div>
 
-                        {{-- Rasio Keuangan --}}
-                        <div class="border-t border-line pt-4">
-                            <h4 class="font-semibold text-primary text-sm mb-3">Rasio Keuangan</h4>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div>
-                                    <x-input-label for="total_hasil_investasi" value="Total Hasil Investasi (%)" />
-                                    <x-text-input id="total_hasil_investasi" name="total_hasil_investasi" type="number"
-                                        step="0.01" class="mt-1 block w-full" x-model="totalHasilInvestasi" />
-                                </div>
-                                <div>
-                                    <x-input-label for="hasil_investasi_setelah_biaya"
-                                        value="Hasil Investasi Setelah Biaya Pemasaran (%)" />
-                                    <x-text-input id="hasil_investasi_setelah_biaya" name="hasil_investasi_setelah_biaya"
-                                        type="number" step="0.01" class="mt-1 block w-full"
-                                        x-model="hasilInvestasiSetelahBiaya" />
-                                </div>
-                                <div>
-                                    <x-input-label for="biaya_operasi_lengkap" value="Biaya Operasi (%)" />
-                                    <x-text-input id="biaya_operasi_lengkap" name="biaya_operasi" type="number"
-                                        step="0.01" class="mt-1 block w-full" x-model="biayaOperasi" />
-                                </div>
-                                <div>
-                                    <x-input-label for="portfolio_turnover_lengkap" value="Portfolio Turnover Ratio" />
-                                    <x-text-input id="portfolio_turnover_lengkap" name="portfolio_turnover_ratio"
-                                        type="number" step="0.01" class="mt-1 block w-full"
-                                        x-model="portfolioTurnover" />
-                                </div>
-                                <div>
-                                    <x-input-label for="persentase_pph" value="Persentase Penghasilan Kena Pajak (%)" />
-                                    <x-text-input id="persentase_pph" name="persentase_pph" type="number"
-                                        step="0.01" class="mt-1 block w-full" x-model="persentasePph" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- Fair Value --}}
-                        <div class="border-t border-line pt-4">
-                            <h4 class="font-semibold text-primary text-sm mb-3">Fair Value / Pengukuran Nilai Wajar</h4>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div>
-                                    <x-input-label for="fair_value_level_1" value="Level 1 (Rp)" />
-                                    <x-text-input id="fair_value_level_1" name="fair_value_level_1" type="number"
-                                        step="0.01" class="mt-1 block w-full" x-model="fairValueLevel1" />
-                                </div>
-                                <div>
-                                    <x-input-label for="fair_value_level_2" value="Level 2 (Rp)" />
-                                    <x-text-input id="fair_value_level_2" name="fair_value_level_2" type="number"
-                                        step="0.01" class="mt-1 block w-full" x-model="fairValueLevel2" />
-                                </div>
-                                <div>
-                                    <x-input-label for="fair_value_level_3" value="Level 3 (Rp)" />
-                                    <x-text-input id="fair_value_level_3" name="fair_value_level_3" type="number"
-                                        step="0.01" class="mt-1 block w-full" x-model="fairValueLevel3" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- Unit Penyertaan --}}
-                        <div class="border-t border-line pt-4">
-                            <h4 class="font-semibold text-primary text-sm mb-3">Unit Penyertaan</h4>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div>
-                                    <x-input-label for="unit_milik_investor" value="Unit Milik Investor" />
-                                    <x-text-input id="unit_milik_investor" name="unit_milik_investor" type="number"
-                                        step="0.0001" class="mt-1 block w-full" x-model="unitMilikInvestor" />
-                                </div>
-                                <div>
-                                    <x-input-label for="unit_milik_mi" value="Unit Milik Manajer Investasi" />
-                                    <x-text-input id="unit_milik_mi" name="unit_milik_mi" type="number"
-                                        step="0.0001" class="mt-1 block w-full" x-model="unitMilikMi" />
-                                </div>
-                                <div>
-                                    <x-input-label for="total_unit_beredar" value="Total Unit Beredar" />
-                                    <x-text-input id="total_unit_beredar" name="total_unit_beredar" type="number"
-                                        step="0.0001" class="mt-1 block w-full" x-model="totalUnitBeredar" />
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -1547,6 +1549,21 @@
                                         <option :value="opt.id" x-text="opt.label"></option>
                                     </template>
                                 </select>
+                                <template x-if="ffsPembanding">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                                        Membandingkan dengan <strong x-text="ffsPembandingOptions.find(o => o.id === ffsPembanding)?.label"></strong>
+                                    </span>
+                                </template>
+                                <template x-if="pembandingLoading">
+                                    <span class="inline-flex items-center gap-1 text-xs text-blue-600">
+                                        <svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                        Menerapkan pembanding...
+                                    </span>
+                                </template>
+                                <template x-if="pembandingMessage">
+                                    <span class="inline-flex items-center gap-1 text-xs text-green-600 font-medium" x-text="pembandingMessage"></span>
+                                </template>
                             </div>
                         </template>
                         <template x-if="ffsPembandingOptions.length === 0">
@@ -2894,6 +2911,10 @@
                     ffsPembandingOptions: @json($ffsPembandingOptions ?? []),
                     ffsPembanding: '',
                     pembandingEfek: {},
+                    pembandingLoading: false,
+                    pembandingMessage: '',
+                    likuiditas: [],
+                    keuangan: [],
                     jenisLaporan: @json(old('jenis_laporan', 'laporan_tahunan')),
                     periodeAwal: @json(old('periode_awal')),
                     periodeAkhir: @json(old('periode_akhir')),
@@ -3034,6 +3055,8 @@
                                 el.value = resumeData.kode_reksa_dana;
                             }
                             this.applyLookupData(resumeData);
+                        } else if (this.kodeReksaDana) {
+                            this.lookupReksaDana(this.kodeReksaDana);
                         }
                         this.fetchExistingDocuments();
                         this.$watch('jenisLaporan', () => this.fetchExistingDocuments());
@@ -3424,6 +3447,9 @@
                                     ...(resp.master || {}),
                                     ...(resp.last_analisa || {}),
                                 };
+                                this.ffsPembandingOptions = resp.ffs_pembanding_options || [];
+                                this.ffsPembanding = '';
+                                this.pembandingEfek = {};
                                 this.applyLookupData(data);
                                 this.lookupOk = true;
                                 this.lookupMessage = resp.last_analisa ?
@@ -3606,22 +3632,34 @@
                     applyPembanding(id) {
                         if (!id) {
                             this.pembandingEfek = {};
+                            this.pembandingMessage = '';
                             return;
                         }
-                        const opt = this.ffsPembandingOptions.find(o => o.id === id);
-                        if (!opt?.efek?.length) {
-                            this.pembandingEfek = {};
-                            return;
-                        }
-                        const lookup = {};
-                        opt.efek.forEach(e => { lookup[e.kode_efek] = e; });
-                        this.pembandingEfek = lookup;
-                        this.efek.forEach(row => {
-                            const m = lookup[row.kode_efek];
-                            if (m) {
-                                if (m.bobot_seharusnya != null) row.bobot_seharusnya = m.bobot_seharusnya;
-                                if (m.kontribusi_return != null) row.kontribusi_return = m.kontribusi_return;
+                        this.pembandingLoading = true;
+                        this.pembandingMessage = '';
+                        this.$nextTick(() => {
+                            const opt = this.ffsPembandingOptions.find(o => o.id === id);
+                            if (!opt?.efek?.length) {
+                                this.pembandingEfek = {};
+                                this.pembandingLoading = false;
+                                this.pembandingMessage = 'Tidak ada data efek pada pembanding ini.';
+                                return;
                             }
+                            const lookup = {};
+                            opt.efek.forEach(e => { lookup[e.kode_efek] = e; });
+                            this.pembandingEfek = lookup;
+                            let matched = 0;
+                            this.efek.forEach(row => {
+                                const m = lookup[row.kode_efek];
+                                if (m) {
+                                    if (m.bobot_seharusnya != null) row.bobot_seharusnya = m.bobot_seharusnya;
+                                    if (m.kontribusi_return != null) row.kontribusi_return = m.kontribusi_return;
+                                    matched++;
+                                }
+                            });
+                            this.pembandingLoading = false;
+                            this.pembandingMessage = `${matched} efek dicocokkan dengan pembanding ${opt.label}.`;
+                            setTimeout(() => { this.pembandingMessage = ''; }, 4000);
                         });
                     },
 
@@ -3858,13 +3896,6 @@
 
                     normalizeExtractedData(data) {
                         data = data || {};
-                        if (data.tanggal_data && (!data.ffs_bulan || !data.ffs_tahun)) {
-                            const d = new Date(`${data.tanggal_data}T00:00:00`);
-                            if (!Number.isNaN(d.getTime())) {
-                                data.ffs_bulan = data.ffs_bulan || d.getMonth() + 1;
-                                data.ffs_tahun = data.ffs_tahun || d.getFullYear();
-                            }
-                        }
 
                         if (!Array.isArray(data.alokasi_aset)) {
                             data.alokasi_aset = [];
@@ -3938,8 +3969,6 @@
                         this.portfolioTurnover = data.portfolio_turnover_ratio ?? this.portfolioTurnover;
                         this.managementFee = data.management_fee ?? this.managementFee;
                         this.custodianFee = data.custodian_fee ?? this.custodianFee;
-                        if (data.ffs_bulan) this.ffsBulan = data.ffs_bulan;
-                        if (data.ffs_tahun) this.ffsTahun = data.ffs_tahun;
                         if (data.tahun_laporan) this.tahunLaporan = data.tahun_laporan;
                         this.totalAset = data.total_aset ?? this.totalAset;
                         this.totalLiabilitas = data.total_liabilitas ?? this.totalLiabilitas;
