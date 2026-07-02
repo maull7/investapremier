@@ -243,15 +243,14 @@
                 <div x-show="mode==='manual'" class="p-6 space-y-8">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
+                            <x-input-label for="nama_reksa_dana_manual" value="Nama Reksa Dana" />
+                            <x-text-input id="nama_reksa_dana_manual" name="nama_reksa_dana" type="text"
+                                class="mt-1 block w-full" x-model="namaReksaDana" />
+                        </div>
+                        <div>
                             <x-input-label for="total_aum_manual" value="Total AUM (Rp)" />
                             <x-text-input id="total_aum_manual" name="total_aum" type="number" step="0.01"
                                 class="mt-1 block w-full" x-model="totalAum" />
-                        </div>
-                        <div>
-                            <x-input-label for="total_marcap_10_efek_manual"
-                                value="Total MarCap 10 Saham Terbesar (Rp)" />
-                            <x-text-input id="total_marcap_10_efek_manual" name="total_marcap_10_efek" type="number"
-                                step="0.01" class="mt-1 block w-full" x-model="totalMarcap10Efek" />
                         </div>
                     </div>
 
@@ -425,17 +424,7 @@
                                     <tr>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Kode</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nama Efek</th>
-                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Sektor</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
-                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
-                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Harga Perolehan
-                                        </th>
-                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">% thd NAB</th>
-                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Kontribusi % IHSG
-                                        </th>
-                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 1M</th>
-                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 3M</th>
-                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 6M</th>
                                         <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Return 1 Thn</th>
                                         <th class="text-center px-2 py-2 text-xs font-semibold text-muted">Top 10</th>
                                         <th></th>
@@ -446,55 +435,15 @@
                                         <tr>
                                             <td class="px-1 py-1"><input type="text" :name="`efek[${i}][kode_efek]`"
                                                     x-model="row.kode_efek" placeholder="BBCA"
-                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20"
-                                                    @change.debounce.500ms="lookupEfekData(i)" />
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="text" :name="`efek[${i}][nama_efek]`"
                                                     x-model="row.nama_efek" placeholder="Nama Efek"
                                                     class="w-40 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
-                                            <td class="px-1 py-1">
-                                                <input type="hidden" :name="`efek[${i}][effect_type]`"
-                                                    x-model="row.effect_type" />
-                                                <input type="text" :name="`efek[${i}][sektor]`" x-model="row.sektor"
-                                                    placeholder="Sektor"
-                                                    class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
-                                            </td>
                                             <td class="px-1 py-1"><input type="number" :name="`efek[${i}][bobot]`"
                                                     x-model="row.bobot" step="0.01"
-                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20"
-                                                    @input="hitungNilaiPasarEfek(i)" />
-                                            </td>
-                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][nilai_pasar]`"
-                                                    x-model="row.nilai_pasar" step="0.01" readonly
-                                                    class="w-28 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
-                                            </td>
-                                            <td class="px-1 py-1"><input type="number"
-                                                    :name="`efek[${i}][harga_perolehan]`" x-model="row.harga_perolehan"
-                                                    step="0.01"
-                                                    class="w-28 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
-                                            </td>
-                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][persen_nab]`"
-                                                    x-model="row.persen_nab" step="0.01"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
-                                            </td>
-                                            <td class="px-1 py-1"><input type="number"
-                                                    :name="`efek[${i}][kontribusi_kinerja]`"
-                                                    x-model="row.kontribusi_kinerja" step="0.0001"
-                                                    class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20"
-                                                    @change="hitungTotalMarcap10" />
-                                            </td>
-                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_1m]`"
-                                                    x-model="row.return_1m" step="0.0001"
-                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
-                                            </td>
-                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_3m]`"
-                                                    x-model="row.return_3m" step="0.0001"
-                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
-                                            </td>
-                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_6m]`"
-                                                    x-model="row.return_6m" step="0.0001"
-                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_1y]`"
                                                     x-model="row.return_1y" step="0.0001"
@@ -502,8 +451,7 @@
                                             </td>
                                             <td class="px-1 py-1 text-center"><input type="checkbox"
                                                     :name="`efek[${i}][top_10]`" x-model="row.top_10" value="1"
-                                                    class="rounded border-gray-300 text-primary focus:ring-primary"
-                                                    @change="hitungTotalMarcap10" /></td>
+                                                    class="rounded border-gray-300 text-primary focus:ring-primary" /></td>
                                             <td class="px-1 py-1"><button type="button" @click="removeRow('efek', i)"
                                                     class="text-red-400 hover:text-red-600 text-xs">✕</button></td>
                                         </tr>
@@ -1501,6 +1449,41 @@
                         </div>
                     </div>
 
+                    {{-- Entry fields dari Input Manual --}}
+                    <div x-show="jenisLaporan === 'kalender_ffs'" class="border rounded-lg p-4 bg-white shadow-sm">
+                        <h4 class="font-semibold text-primary text-sm mb-3">Data Portofolio</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <x-input-label value="Nama Reksa Dana" />
+                                <p class="mt-1 text-sm font-mono text-gray-700" x-text="namaReksaDana || '-'"></p>
+                            </div>
+                            <div>
+                                <x-input-label value="Total AUM (Rp)" />
+                                <p class="mt-1 text-sm font-mono text-gray-700" x-text="totalAum ? formatNumber(totalAum) : '-'"></p>
+                            </div>
+                            <div>
+                                <x-input-label value="Total MarCap 10 Saham Terbesar (Rp)" />
+                                <p class="mt-1 text-sm font-mono text-gray-700" x-text="totalMarcap10Efek ? formatNumber(totalMarcap10Efek) : '-'"></p>
+                            </div>
+                            <div>
+                                <x-input-label value="Jumlah Unit Penyertaan" />
+                                <p class="mt-1 text-sm font-mono text-gray-700" x-text="unitPenyertaan ? formatNumber(unitPenyertaan) : '-'"></p>
+                            </div>
+                            <div>
+                                <x-input-label value="NAB/UP" />
+                                <p class="mt-1 text-sm font-mono text-gray-700" x-text="nabPerUnit ? formatNumber(nabPerUnit) : '-'"></p>
+                            </div>
+                            <div>
+                                <x-input-label value="Return 1m" />
+                                <label class="mt-1 inline-flex items-center gap-2">
+                                    <input type="checkbox" name="return_1m_checklist" x-model="return1mChecklist" value="1"
+                                        class="rounded border-gray-300 text-primary focus:ring-primary">
+                                    <span class="text-sm text-gray-600">Checklist</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <div x-show="jenisLaporan === 'kalender_ffs'">
                         <div class="flex items-center mb-3">
                             <h4 class="font-semibold text-primary text-sm">Alokasi Aset / % Portfolio</h4>
@@ -1568,7 +1551,9 @@
                             <h4 class="font-semibold text-primary text-sm"
                                 x-text="jenisLaporan === 'laporan_tahunan' ? 'Portofolio Efek' : 'Daftar Efek'"></h4>
                         </div>
-                        <div class="overflow-x-auto">
+
+                        {{-- Read-only (laporan_tahunan) --}}
+                        <div x-show="jenisLaporan === 'laporan_tahunan'" class="overflow-x-auto">
                             <table class="w-full text-sm">
                                 <thead class="bg-[#f8fafc]">
                                     <tr>
@@ -1626,6 +1611,84 @@
                                     </template>
                                     <tr x-show="!efek.length">
                                         <td class="px-3 py-2 text-gray-400 italic" colspan="13">Tidak ada data efek
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {{-- Editable (kalender_ffs) --}}
+                        <div x-show="jenisLaporan === 'kalender_ffs'" class="overflow-x-auto">
+                            <div class="flex justify-end mb-2">
+                                <button type="button" @click="addRow('efek')" class="text-xs text-primary hover:underline">+
+                                    Tambah Baris</button>
+                            </div>
+                            <table class="w-full text-sm">
+                                <thead class="bg-[#f8fafc]">
+                                    <tr>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Kode</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Nama Efek</th>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Sektor</th>
+                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Bobot %</th>
+                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
+                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Bobot Seharusnya</th>
+                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Kontribusi Return</th>
+                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Return 1 Thn</th>
+                                        <th class="text-center px-2 py-2 text-xs font-semibold text-muted">Top 10</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-line">
+                                    <template x-for="(row, i) in efek" :key="i">
+                                        <tr>
+                                            <td class="px-1 py-1"><input type="text" :name="`efek[${i}][kode_efek]`"
+                                                    x-model="row.kode_efek" placeholder="BBCA"
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20"
+                                                    @change.debounce.500ms="lookupEfekData(i)" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="text" :name="`efek[${i}][nama_efek]`"
+                                                    x-model="row.nama_efek" placeholder="Nama Efek"
+                                                    class="w-36 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1">
+                                                <input type="hidden" :name="`efek[${i}][effect_type]`"
+                                                    x-model="row.effect_type" />
+                                                <input type="text" :name="`efek[${i}][sektor]`" x-model="row.sektor"
+                                                    placeholder="Sektor"
+                                                    class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][bobot]`"
+                                                    x-model="row.bobot" step="0.01"
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20"
+                                                    @input="hitungNilaiPasarEfek(i)" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][nilai_pasar]`"
+                                                    x-model="row.nilai_pasar" step="0.01" readonly
+                                                    class="w-28 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`efek[${i}][bobot_seharusnya]`"
+                                                    x-model="row.bobot_seharusnya" step="0.01"
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number"
+                                                    :name="`efek[${i}][kontribusi_return]`"
+                                                    x-model="row.kontribusi_return" step="0.0001"
+                                                    class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_1y]`"
+                                                    x-model="row.return_1y" step="0.0001"
+                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            </td>
+                                            <td class="px-1 py-1 text-center"><input type="checkbox"
+                                                    :name="`efek[${i}][top_10]`" x-model="row.top_10" value="1"
+                                                    class="rounded border-gray-300 text-primary focus:ring-primary" /></td>
+                                            <td class="px-1 py-1"><button type="button" @click="removeRow('efek', i)"
+                                                    class="text-red-400 hover:text-red-600 text-xs">✕</button></td>
+                                        </tr>
+                                    </template>
+                                    <tr x-show="!efek.length">
+                                        <td class="px-3 py-2 text-gray-400 italic" colspan="10">Tidak ada data efek
                                         </td>
                                     </tr>
                                 </tbody>
@@ -2499,7 +2562,7 @@
             function analisaForm(resumeData = null, resumeMode = null) {
                 @php
                     $oldSektor = old('sektor', [['nama_sektor' => '', 'bobot' => '']]);
-                    $oldEfek = old('efek', [['kode_efek' => '', 'nama_efek' => '', 'sektor' => '', 'bobot' => '', 'kontribusi_kinerja' => '', 'market_cap' => '', 'nilai_pasar' => '', 'harga_perolehan' => '', 'persen_nab' => '', 'return_1m' => '', 'return_3m' => '', 'return_6m' => '', 'return_1y' => '', 'top_10' => false]]);
+                    $oldEfek = old('efek', [['kode_efek' => '', 'nama_efek' => '', 'sektor' => '', 'bobot' => '', 'bobot_seharusnya' => '', 'kontribusi_kinerja' => '', 'market_cap' => '', 'nilai_pasar' => '', 'harga_perolehan' => '', 'persen_nab' => '', 'return_1m' => '', 'return_3m' => '', 'return_6m' => '', 'return_1y' => '', 'kontribusi_return' => '', 'top_10' => false]]);
                     $oldKinerja = old('kinerja', [['periode' => '', 'return_pct' => ''], ['periode' => '', 'return_pct' => '']]);
                     $oldObligasi = old('obligasi', [['kode_obligasi' => '', 'nama_obligasi' => '', 'bobot' => '', 'durasi' => '', 'rating' => '', 'ytm' => '', 'kupon' => '', 'tanggal_jatuh_tempo' => '', 'penerbit' => '', 'persen_nab' => '', 'nilai_pasar' => '', 'return_1m' => '', 'return_3m' => '', 'return_6m' => '', 'return_1y' => '']]);
                     $oldSukuk = old('sukuk', [['kode_sukuk' => '', 'nama_sukuk' => '', 'jenis_sukuk' => '', 'bobot' => '', 'yield' => '', 'jatuh_tempo' => '', 'rating' => '', 'persen_nab' => '']]);
@@ -2599,6 +2662,7 @@
                     managementFee: @json(old('management_fee')),
                     custodianFee: @json(old('custodian_fee')),
                     investmentManagerFee: @json(old('investment_manager_fee')),
+                    return1mChecklist: @json(old('return_1m_checklist', false)),
                     totalAset: @json(old('total_aset')),
                     totalLiabilitas: @json(old('total_liabilitas')),
                     kasDanBank: @json(old('kas_dan_bank')),
@@ -2767,6 +2831,7 @@
                                 nama_efek: '',
                                 sektor: '',
                                 bobot: '',
+                                bobot_seharusnya: '',
                                 kontribusi_kinerja: '',
                                 market_cap: '',
                                 nilai_pasar: '',
@@ -2776,6 +2841,7 @@
                                 return_3m: '',
                                 return_6m: '',
                                 return_1y: '',
+                                kontribusi_return: '',
                                 effect_type: 'Saham',
                                 top_10: false
                             },
@@ -3140,6 +3206,7 @@
                                 nama_efek: e.nama_efek || '',
                                 sektor: e.sektor || '',
                                 bobot: e.bobot ?? '',
+                                bobot_seharusnya: e.bobot_seharusnya ?? '',
                                 kontribusi_kinerja: e.kontribusi_kinerja ?? '',
                                 market_cap: e.market_cap ?? '',
                                 nilai_pasar: e.nilai_pasar ?? '',
@@ -3148,6 +3215,7 @@
                                 return_6m: e.return_6m ?? '',
                                 return_1y: e.return_1y ?? '',
                                 ihsg_contribution: e.ihsg_contribution ?? '',
+                                kontribusi_return: e.kontribusi_return ?? '',
                                 effect_type: e.effect_type || 'Saham',
                                 top_10: e.top_10 === true || e.top_10 === 'Ya',
                             }));
@@ -3448,6 +3516,7 @@
                                     nama_efek: e.nama_efek || '',
                                     sektor: e.sektor || '',
                                     bobot: e.bobot ?? '',
+                                    bobot_seharusnya: e.bobot_seharusnya ?? '',
                                     kontribusi_kinerja: e.kontribusi_kinerja ?? '',
                                     market_cap: e.market_cap ?? '',
                                     nilai_pasar: '',
@@ -3455,6 +3524,7 @@
                                     return_3m: '',
                                     return_6m: '',
                                     return_1y: '',
+                                    kontribusi_return: e.kontribusi_return ?? '',
                                     effect_type: 'Saham',
                                     top_10: i < 10,
                                 }));
@@ -3464,6 +3534,7 @@
                                 nama_efek: e.nama_efek || '',
                                 sektor: e.sektor || '',
                                 bobot: e.bobot ?? '',
+                                bobot_seharusnya: e.bobot_seharusnya ?? '',
                                 kontribusi_kinerja: e.kontribusi_kinerja ?? '',
                                 market_cap: e.market_cap ?? '',
                                 nilai_pasar: e.nilai_pasar ?? '',
@@ -3471,6 +3542,7 @@
                                 return_3m: e.return_3m ?? '',
                                 return_6m: e.return_6m ?? '',
                                 return_1y: e.return_1y ?? '',
+                                kontribusi_return: e.kontribusi_return ?? '',
                                 effect_type: e.effect_type || 'Saham',
                                 top_10: i < 10,
                             }));
@@ -3631,6 +3703,7 @@
                                 nama_efek: e.nama_efek || '',
                                 sektor: e.sektor || '',
                                 bobot: e.bobot ?? '',
+                                bobot_seharusnya: e.bobot_seharusnya ?? '',
                                 kontribusi_kinerja: e.kontribusi_kinerja ?? '',
                                 market_cap: e.market_cap ?? '',
                                 nilai_pasar: e.nilai_pasar ?? '',
@@ -3640,6 +3713,7 @@
                                 return_3m: e.return_3m ?? '',
                                 return_6m: e.return_6m ?? '',
                                 return_1y: e.return_1y ?? '',
+                                kontribusi_return: e.kontribusi_return ?? '',
                                 effect_type: e.effect_type || 'Saham',
                                 top_10: e.top_10 === 'Ya' || e.top_10 === true,
                             }));

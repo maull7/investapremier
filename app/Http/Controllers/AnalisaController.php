@@ -991,9 +991,7 @@ class AnalisaController extends Controller
     public function store(Request $request)
     {
         $request->merge([
-            'jenis_laporan' => 'laporan_tahunan',
-            'ffs_bulan' => null,
-            'ffs_tahun' => null,
+            'jenis_laporan' => $request->jenis_laporan ?: 'laporan_tahunan',
             'tahun_laporan' => $request->tahun_laporan ?: now()->year,
         ]);
 
@@ -1093,6 +1091,8 @@ class AnalisaController extends Controller
             'efek.*.kontribusi_kinerja' => 'nullable|numeric',
             'efek.*.market_cap'         => 'nullable|numeric',
             'efek.*.nilai_pasar'        => 'nullable|numeric',
+            'efek.*.bobot_seharusnya'   => 'nullable|numeric',
+            'efek.*.kontribusi_return'  => 'nullable|numeric',
             'efek.*.return_1m'          => 'nullable|numeric',
             'efek.*.return_3m'          => 'nullable|numeric',
             'efek.*.return_6m'          => 'nullable|numeric',
@@ -1228,7 +1228,7 @@ class AnalisaController extends Controller
             }
 
             $sektor   = collect($request->sektor)->filter(fn($r) => !empty($r['nama_sektor']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
-            $efek     = collect($request->efek)->filter(fn($r) => !empty($r['nama_efek']) && (isset($r['bobot']) && $r['bobot'] !== '' || !empty($r['persen_nab'])))->values()->all();
+            $efek     = collect($request->efek)->filter(fn($r) => !empty($r['nama_efek']) && (isset($r['bobot']) && $r['bobot'] !== ''))->values()->all();
             $kinerja  = collect($request->kinerja)->filter(fn($r) => !empty($r['periode']) && isset($r['return_pct']) && $r['return_pct'] !== '')->values()->all();
             $obligasi = collect($request->obligasi)->filter(fn($r) => !empty($r['kode_obligasi']) && !empty($r['nama_obligasi']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
             $sukuk    = collect($request->sukuk)->filter(fn($r) => !empty($r['kode_sukuk']) && !empty($r['nama_sukuk']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
@@ -1504,6 +1504,7 @@ class AnalisaController extends Controller
                 'nama_efek' => $e->nama_efek,
                 'sektor' => $e->sektor,
                 'bobot' => $e->bobot,
+                'bobot_seharusnya' => $e->bobot_seharusnya,
                 'kontribusi_kinerja' => $e->kontribusi_kinerja,
                 'market_cap' => $e->market_cap,
                 'nilai_pasar' => $e->nilai_pasar,
@@ -1512,6 +1513,7 @@ class AnalisaController extends Controller
                 'return_6m' => $e->return_6m,
                 'return_1y' => $e->return_1y,
                 'ihsg_contribution' => $e->ihsg_contribution,
+                'kontribusi_return' => $e->kontribusi_return,
                 'effect_type' => $e->effect_type,
                 'top_10' => $e->top_10,
                 'harga_perolehan' => $e->harga_perolehan,
@@ -1631,9 +1633,7 @@ class AnalisaController extends Controller
         abort_if($analisa->product_type !== $this->productType, 404);
 
         $request->merge([
-            'jenis_laporan' => 'laporan_tahunan',
-            'ffs_bulan' => null,
-            'ffs_tahun' => null,
+            'jenis_laporan' => $request->jenis_laporan ?: 'laporan_tahunan',
             'tahun_laporan' => $request->tahun_laporan ?: now()->year,
         ]);
 
@@ -1702,12 +1702,14 @@ class AnalisaController extends Controller
         $this->validateAlokasiAsetTotal($request);
 
         $request->validate([
-            'efek.*.nilai_pasar'       => 'nullable|numeric',
-            'efek.*.return_1m'         => 'nullable|numeric',
-            'efek.*.return_3m'         => 'nullable|numeric',
-            'efek.*.return_6m'         => 'nullable|numeric',
-            'efek.*.return_1y'         => 'nullable|numeric',
-            'efek.*.ihsg_contribution' => 'nullable|numeric',
+            'efek.*.nilai_pasar'        => 'nullable|numeric',
+            'efek.*.bobot_seharusnya'   => 'nullable|numeric',
+            'efek.*.kontribusi_return'  => 'nullable|numeric',
+            'efek.*.return_1m'          => 'nullable|numeric',
+            'efek.*.return_3m'          => 'nullable|numeric',
+            'efek.*.return_6m'          => 'nullable|numeric',
+            'efek.*.return_1y'          => 'nullable|numeric',
+            'efek.*.ihsg_contribution'  => 'nullable|numeric',
             'obligasi.*.nilai_pasar'   => 'nullable|numeric',
             'obligasi.*.return_1m'     => 'nullable|numeric',
             'obligasi.*.return_3m'     => 'nullable|numeric',
@@ -1788,7 +1790,7 @@ class AnalisaController extends Controller
             ]);
 
             $sektor   = collect($request->sektor ?? [])->filter(fn($r) => !empty($r['nama_sektor']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
-            $efek     = collect($request->efek ?? [])->filter(fn($r) => !empty($r['nama_efek']) && (isset($r['bobot']) && $r['bobot'] !== '' || !empty($r['persen_nab'])))->values()->all();
+            $efek     = collect($request->efek ?? [])->filter(fn($r) => !empty($r['nama_efek']) && (isset($r['bobot']) && $r['bobot'] !== ''))->values()->all();
             $kinerja  = collect($request->kinerja ?? [])->filter(fn($r) => !empty($r['periode']) && isset($r['return_pct']) && $r['return_pct'] !== '')->values()->all();
             $obligasi = collect($request->obligasi ?? [])->filter(fn($r) => !empty($r['kode_obligasi']) && !empty($r['nama_obligasi']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
             $sukuk    = collect($request->sukuk ?? [])->filter(fn($r) => !empty($r['kode_sukuk']) && !empty($r['nama_sukuk']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();
