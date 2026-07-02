@@ -1535,6 +1535,25 @@
                         </div>
                     </div>
 
+                    {{-- FFS Pembanding --}}
+                    <div x-show="jenisLaporan === 'kalender_ffs'" class="mb-4">
+                        <template x-if="ffsPembandingOptions.length > 0">
+                            <div class="flex items-center gap-2 text-sm">
+                                <label for="ffs_pembanding" class="font-medium text-muted">FFS Pembanding:</label>
+                                <select id="ffs_pembanding" x-model="ffsPembanding"
+                                    class="border-gray-300 rounded text-sm px-3 py-1.5 focus:border-primary focus:ring focus:ring-primary/20 w-64">
+                                    <option value="">Pilih FFS Pembanding</option>
+                                    <template x-for="opt in ffsPembandingOptions" :key="opt.id">
+                                        <option :value="opt.id" x-text="opt.label"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </template>
+                        <template x-if="ffsPembandingOptions.length === 0">
+                            <p class="text-sm text-gray-400 italic">tidak ada pembanding pada ffs sebelumnya</p>
+                        </template>
+                    </div>
+
                     {{-- Efek --}}
                     <div>
                         <div class="flex items-center mb-3">
@@ -1623,6 +1642,8 @@
                                         <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Nilai Pasar</th>
                                         <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Bobot Seharusnya</th>
                                         <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Kontribusi Return</th>
+                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Bobot Seharusnya<br><span class="font-normal">(Pembanding)</span></th>
+                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Kontribusi Return<br><span class="font-normal">(Pembanding)</span></th>
                                         <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Return 1 Thn</th>
                                         <th class="text-center px-2 py-2 text-xs font-semibold text-muted">Top 10</th>
                                         <th></th>
@@ -1656,15 +1677,33 @@
                                                     x-model="row.nilai_pasar" step="0.01" readonly
                                                     class="w-28 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
-                                            <td class="px-1 py-1"><input type="number"
-                                                    :name="`efek[${i}][bobot_seharusnya]`"
-                                                    x-model="row.bobot_seharusnya" step="0.01"
-                                                    class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            <td class="px-1 py-1">
+                                                <template x-if="ffsPembandingOptions.length > 0">
+                                                    <input type="number"
+                                                        :name="`efek[${i}][bobot_seharusnya]`"
+                                                        x-model="row.bobot_seharusnya" step="0.01"
+                                                        class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                                </template>
+                                                <template x-if="ffsPembandingOptions.length === 0">
+                                                    <span class="text-gray-400 italic whitespace-nowrap">tidak ada pembanding pada ffs sebelumnya</span>
+                                                </template>
                                             </td>
-                                            <td class="px-1 py-1"><input type="number"
-                                                    :name="`efek[${i}][kontribusi_return]`"
-                                                    x-model="row.kontribusi_return" step="0.0001"
-                                                    class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            <td class="px-1 py-1">
+                                                <template x-if="ffsPembandingOptions.length > 0">
+                                                    <input type="number"
+                                                        :name="`efek[${i}][kontribusi_return]`"
+                                                        x-model="row.kontribusi_return" step="0.0001"
+                                                        class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
+                                                </template>
+                                                <template x-if="ffsPembandingOptions.length === 0">
+                                                    <span class="text-gray-400 italic whitespace-nowrap">tidak ada pembanding pada ffs sebelumnya</span>
+                                                </template>
+                                            </td>
+                                            <td class="px-1 py-1 text-right">
+                                                <span x-text="formatNumber(pembandingEfek[row.kode_efek]?.bobot_seharusnya)" class="text-gray-500 text-xs"></span>
+                                            </td>
+                                            <td class="px-1 py-1 text-right">
+                                                <span x-text="formatNumber(pembandingEfek[row.kode_efek]?.kontribusi_return)" class="text-gray-500 text-xs"></span>
                                             </td>
                                             <td class="px-1 py-1"><input type="number" :name="`efek[${i}][return_1y]`"
                                                     x-model="row.return_1y" step="0.0001"
@@ -1678,7 +1717,7 @@
                                         </tr>
                                     </template>
                                     <tr x-show="!efek.length">
-                                        <td class="px-3 py-2 text-gray-400 italic" colspan="10">Tidak ada data efek
+                                        <td class="px-3 py-2 text-gray-400 italic" colspan="12">Tidak ada data efek
                                         </td>
                                     </tr>
                                 </tbody>
@@ -2852,6 +2891,9 @@
                     tanggalData: @json(old('tanggal_data')),
                     ffsBulan: @json(old('ffs_bulan')),
                     ffsTahun: @json(old('ffs_tahun', now()->year)),
+                    ffsPembandingOptions: @json($ffsPembandingOptions ?? []),
+                    ffsPembanding: '',
+                    pembandingEfek: {},
                     jenisLaporan: @json(old('jenis_laporan', 'laporan_tahunan')),
                     periodeAwal: @json(old('periode_awal')),
                     periodeAkhir: @json(old('periode_akhir')),
@@ -2997,6 +3039,7 @@
                         this.$watch('jenisLaporan', () => this.fetchExistingDocuments());
                         this.$watch('ffsBulan', () => this.fetchExistingDocuments());
                         this.$watch('ffsTahun', () => this.fetchExistingDocuments());
+                        this.$watch('ffsPembanding', (id) => this.applyPembanding(id));
                         this.$watch('tahunLaporan', () => this.fetchExistingDocuments());
 
                         this.$watch('unitMilikInvestor', () => this.autoCalcDerived());
@@ -3558,6 +3601,28 @@
                             ...this.dataTambahan,
                             ...data.data_tambahan
                         };
+                    },
+
+                    applyPembanding(id) {
+                        if (!id) {
+                            this.pembandingEfek = {};
+                            return;
+                        }
+                        const opt = this.ffsPembandingOptions.find(o => o.id === id);
+                        if (!opt?.efek?.length) {
+                            this.pembandingEfek = {};
+                            return;
+                        }
+                        const lookup = {};
+                        opt.efek.forEach(e => { lookup[e.kode_efek] = e; });
+                        this.pembandingEfek = lookup;
+                        this.efek.forEach(row => {
+                            const m = lookup[row.kode_efek];
+                            if (m) {
+                                if (m.bobot_seharusnya != null) row.bobot_seharusnya = m.bobot_seharusnya;
+                                if (m.kontribusi_return != null) row.kontribusi_return = m.kontribusi_return;
+                            }
+                        });
                     },
 
                     setFieldValue(id, value) {

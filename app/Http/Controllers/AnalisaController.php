@@ -9,6 +9,7 @@ use App\Models\AnalisaReksaDana;
 use App\Models\DataSourceLink;
 use App\Models\ReksaDana;
 use App\Models\ReksaDanaDocument;
+use App\Models\FfsExtractionResult;
 use App\Models\StockPrice;
 use App\Services\AnalisaPayloadBuilder;
 use App\Services\BankDataService;
@@ -160,6 +161,7 @@ class AnalisaController extends Controller
     {
         $resumeAnalisa = null;
         $resumeMode = null;
+        $ffsPembandingOptions = [];
 
         if ($resumeId = request('resume')) {
             $analisa = AnalisaReksaDana::with(['sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasiAset'])
@@ -169,13 +171,19 @@ class AnalisaController extends Controller
             if ($analisa) {
                 $resumeAnalisa = $this->serializeAnalisaForForm($analisa);
                 $resumeMode = $analisa->mode ?: 'manual';
+                $ffsPembandingOptions = $this->getFfsPembandingOptions(
+                    $analisa->reksa_dana_id,
+                    $analisa->ffs_bulan,
+                    $analisa->ffs_tahun,
+                    $analisa->kode_reksa_dana
+                );
             }
         }
 
         return view('analisa.create', array_merge(
             ['formRoutes' => $this->formRoutes(), 'productLabel' => $this->productLabel],
             $this->dataSourceLinkContext(),
-            compact('resumeAnalisa', 'resumeMode'),
+            compact('resumeAnalisa', 'resumeMode', 'ffsPembandingOptions'),
         ));
     }
 
@@ -1508,6 +1516,44 @@ class AnalisaController extends Controller
         }
     }
 
+    private function getFfsPembandingOptions($reksaDanaId, $excludeMonth = null, $excludeYear = null, $kodeReksaDana = null): array
+    {
+        if (!$reksaDanaId && $kodeReksaDana) {
+            $master = ReksaDana::where('kode_reksa_dana', $kodeReksaDana)->first();
+            $reksaDanaId = $master?->id;
+        }
+        if (!$reksaDanaId) return [];
+
+        $query = FfsExtractionResult::where('reksa_dana_id', $reksaDanaId);
+
+        if ($excludeMonth && $excludeYear) {
+            $query->where(function ($q) use ($excludeMonth, $excludeYear) {
+                $q->where('ffs_month', '!=', $excludeMonth)
+                  ->orWhere('ffs_year', '!=', $excludeYear);
+            });
+        }
+
+        $months = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+        return $query->orderBy('ffs_year')->orderBy('ffs_month')->get()
+            ->map(function ($r) use ($months) {
+                $ed = $r->extracted_data ?: [];
+                $efekList = $ed['daftar_efek'] ?? $ed['efek'] ?? [];
+                return [
+                    'id' => $r->id,
+                    'label' => ($months[$r->ffs_month] ?? '') . ' ' . $r->ffs_year,
+                    'efek' => collect($efekList)
+                        ->filter(fn($e) => !empty($e['kode_efek']))
+                        ->map(fn($e) => [
+                            'kode_efek' => $e['kode_efek'],
+                            'bobot_seharusnya' => $e['bobot_seharusnya'] ?? null,
+                            'kontribusi_return' => $e['kontribusi_return'] ?? null,
+                        ])
+                        ->values(),
+                ];
+            })->values()->toArray();
+    }
+
     private function serializeAnalisaForForm(AnalisaReksaDana $analisa): array
     {
         return [
@@ -1711,11 +1757,17 @@ class AnalisaController extends Controller
         $resumeAnalisa = $this->serializeAnalisaForForm($analisa);
         $resumeMode = $analisa->mode ?: 'manual';
         $isEditMode = true;
+        $ffsPembandingOptions = $this->getFfsPembandingOptions(
+            $analisa->reksa_dana_id,
+            $analisa->ffs_bulan,
+            $analisa->ffs_tahun,
+            $analisa->kode_reksa_dana
+        );
 
         return view('analisa.create', array_merge(
             ['formRoutes' => $formRoutes, 'productLabel' => $this->productLabel, 'isEditMode' => true],
             $this->dataSourceLinkContext(),
-            compact('resumeAnalisa', 'resumeMode'),
+            compact('resumeAnalisa', 'resumeMode', 'ffsPembandingOptions'),
         ));
     }
 
