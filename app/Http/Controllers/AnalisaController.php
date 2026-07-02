@@ -1133,9 +1133,46 @@ class AnalisaController extends Controller
             'bank.*.return_3m'          => 'nullable|numeric',
             'bank.*.return_6m'          => 'nullable|numeric',
             'bank.*.return_1y'          => 'nullable|numeric',
-            'alokasi_aset'              => 'nullable|array',
-            'alokasi_aset.*.nama_aset'  => 'nullable|string',
-            'alokasi_aset.*.persentase' => 'nullable|numeric',
+            'alokasi_aset'                  => 'nullable|array',
+            'alokasi_aset.*.nama_aset'      => 'nullable|string',
+            'alokasi_aset.*.persentase'     => 'nullable|numeric',
+            'likuiditas'                    => 'nullable|array',
+            'likuiditas.*.kategori'         => 'nullable|string',
+            'likuiditas.*.kode_efek'        => 'nullable|string',
+            'likuiditas.*.nama_efek'        => 'nullable|string',
+            'likuiditas.*.rata_volume_transaksi_harian' => 'nullable|numeric',
+            'likuiditas.*.volume_terendah'  => 'nullable|numeric',
+            'likuiditas.*.volume_saham'     => 'nullable|numeric',
+            'likuiditas.*.skenario_20_persen_reds' => 'nullable|numeric',
+            'likuiditas.*.skenario_reds_closing_10' => 'nullable|numeric',
+            'likuiditas.*.rasio_likuiditas_harian'  => 'nullable|numeric',
+            'likuiditas.*.rasio_likuiditas' => 'nullable|numeric',
+            'keuangan'                      => 'nullable|array',
+            'keuangan.*.kategori'           => 'nullable|string',
+            'keuangan.*.kode_efek'          => 'nullable|string',
+            'keuangan.*.nama_efek'          => 'nullable|string',
+            'keuangan.*.per'                => 'nullable|numeric',
+            'keuangan.*.pbv'                => 'nullable|numeric',
+            'keuangan.*.roe'                => 'nullable|numeric',
+            'keuangan.*.roa'                => 'nullable|numeric',
+            'keuangan.*.npm'                => 'nullable|numeric',
+            'keuangan.*.ev_ebitda'          => 'nullable|numeric',
+            'keuangan.*.der'                => 'nullable|numeric',
+            'keuangan.*.current_ratio'      => 'nullable|numeric',
+            'keuangan.*.aktivitas_lancar'   => 'nullable|numeric',
+            'keuangan.*.gross_profit_margin' => 'nullable|numeric',
+            'keuangan.*.operating_profit_margin' => 'nullable|numeric',
+            'keuangan.*.ytm'                => 'nullable|numeric',
+            'keuangan.*.rating'             => 'nullable|string',
+            'keuangan.*.kupon'              => 'nullable|numeric',
+            'keuangan.*.tenor'              => 'nullable|numeric',
+            'keuangan.*.durasi'             => 'nullable|numeric',
+            'keuangan.*.shadow_rating'      => 'nullable|string',
+            'keuangan.*.npl'                => 'nullable|numeric',
+            'keuangan.*.car'                => 'nullable|numeric',
+            'keuangan.*.ldr'                => 'nullable|numeric',
+            'keuangan.*.nim'                => 'nullable|numeric',
+            'keuangan.*.cir'                => 'nullable|numeric',
         ]);
 
         $this->validateAlokasiAsetTotal($request);
@@ -1223,6 +1260,8 @@ class AnalisaController extends Controller
                 $analisa->alokasiAset()->delete();
                 $analisa->pasarUang()->delete();
                 $analisa->piutangBungaDetail()->delete();
+                $analisa->likuiditas()->delete();
+                $analisa->keuangan()->delete();
             } else {
                 $analisa = AnalisaReksaDana::create($payload);
             }
@@ -1236,6 +1275,8 @@ class AnalisaController extends Controller
             $alokasiAset = $this->filteredAlokasiAset($request);
             $pasarUang = collect($request->pasar_uang ?? [])->filter(fn($r) => !empty($r['nama_instrumen']))->values()->all();
             $piutangBungaDetail = collect($request->piutang_bunga_detail ?? [])->filter(fn($r) => !empty($r['jenis_instrumen']) && !empty($r['jumlah']))->values()->all();
+            $likuiditas = collect($request->likuiditas ?? [])->filter(fn($r) => !empty($r['kode_efek']))->values()->all();
+            $keuangan   = collect($request->keuangan ?? [])->filter(fn($r) => !empty($r['kode_efek']))->values()->all();
 
             if ($sektor)   $analisa->sektor()->createMany($sektor);
             if ($efek)     $analisa->efek()->createMany($efek);
@@ -1246,6 +1287,8 @@ class AnalisaController extends Controller
             if ($alokasiAset) $analisa->alokasiAset()->createMany($alokasiAset);
             if ($pasarUang) $analisa->pasarUang()->createMany($pasarUang);
             if ($piutangBungaDetail) $analisa->piutangBungaDetail()->createMany($piutangBungaDetail);
+            if ($likuiditas) $analisa->likuiditas()->createMany($likuiditas);
+            if ($keuangan)   $analisa->keuangan()->createMany($keuangan);
 
             if (!$isSimpan) {
                 $this->persistAiFromRequest($request, $analisa);
@@ -1370,7 +1413,7 @@ class AnalisaController extends Controller
 
     private function persistAiFromRequest(Request $request, AnalisaReksaDana $analisa): void
     {
-        $analisa->load(['sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasiAset']);
+        $analisa->load(['sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasiAset', 'likuiditas', 'keuangan']);
 
         if ($request->filled('ai_narasi') && $request->filled('ai_output')) {
             $analisa->update([
@@ -1595,6 +1638,56 @@ class AnalisaController extends Controller
             'unit_milik_investor'     => $analisa->unit_milik_investor,
             'unit_milik_mi'           => $analisa->unit_milik_mi,
             'total_unit_beredar'      => $analisa->total_unit_beredar,
+            'pasar_uang'              => $analisa->pasarUang->map(fn($p) => [
+                'nama_instrumen' => $p->nama_instrumen,
+                'jenis_instrumen' => $p->jenis_instrumen,
+                'nilai' => $p->nilai,
+                'persentase' => $p->persentase,
+            ])->values(),
+            'piutang_bunga_detail'    => $analisa->piutangBungaDetail->map(fn($p) => [
+                'jenis_instrumen' => $p->jenis_instrumen,
+                'jumlah' => $p->jumlah,
+                'persentase' => $p->persentase,
+            ])->values(),
+            'likuiditas'              => $analisa->likuiditas->map(fn($l) => [
+                'kategori' => $l->kategori,
+                'kode_efek' => $l->kode_efek,
+                'nama_efek' => $l->nama_efek,
+                'rata_volume_transaksi_harian' => $l->rata_volume_transaksi_harian,
+                'volume_terendah' => $l->volume_terendah,
+                'volume_saham' => $l->volume_saham,
+                'skenario_20_persen_reds' => $l->skenario_20_persen_reds,
+                'skenario_reds_closing_10' => $l->skenario_reds_closing_10,
+                'rasio_likuiditas_harian' => $l->rasio_likuiditas_harian,
+                'rasio_likuiditas' => $l->rasio_likuiditas,
+            ])->values(),
+            'keuangan'                => $analisa->keuangan->map(fn($k) => [
+                'kategori' => $k->kategori,
+                'kode_efek' => $k->kode_efek,
+                'nama_efek' => $k->nama_efek,
+                'per' => $k->per,
+                'pbv' => $k->pbv,
+                'roe' => $k->roe,
+                'roa' => $k->roa,
+                'npm' => $k->npm,
+                'ev_ebitda' => $k->ev_ebitda,
+                'der' => $k->der,
+                'current_ratio' => $k->current_ratio,
+                'aktivitas_lancar' => $k->aktivitas_lancar,
+                'gross_profit_margin' => $k->gross_profit_margin,
+                'operating_profit_margin' => $k->operating_profit_margin,
+                'ytm' => $k->ytm,
+                'rating' => $k->rating,
+                'kupon' => $k->kupon,
+                'tenor' => $k->tenor,
+                'durasi' => $k->durasi,
+                'shadow_rating' => $k->shadow_rating,
+                'npl' => $k->npl,
+                'car' => $k->car,
+                'ldr' => $k->ldr,
+                'nim' => $k->nim,
+                'cir' => $k->cir,
+            ])->values(),
         ];
     }
 
@@ -1604,7 +1697,7 @@ class AnalisaController extends Controller
         abort_if(!$this->isAdminContext && $analisa->status === 'reviewed', 403, 'Data yang sudah direview tidak dapat diedit.');
         abort_if($analisa->product_type !== $this->productType, 404);
 
-        $analisa->load(['sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasiAset']);
+        $analisa->load(['sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasiAset', 'likuiditas', 'keuangan']);
 
         $formRoutes = array_merge($this->formRoutes(), [
             'update' => $this->isAdminContext
@@ -1798,6 +1891,8 @@ class AnalisaController extends Controller
             $alokasiAset = $this->filteredAlokasiAset($request);
             $pasarUang = collect($request->pasar_uang ?? [])->filter(fn($r) => !empty($r['nama_instrumen']))->values()->all();
             $piutangBungaDetail = collect($request->piutang_bunga_detail ?? [])->filter(fn($r) => !empty($r['jenis_instrumen']) && !empty($r['jumlah']))->values()->all();
+            $likuiditas = collect($request->likuiditas ?? [])->filter(fn($r) => !empty($r['kode_efek']))->values()->all();
+            $keuangan   = collect($request->keuangan ?? [])->filter(fn($r) => !empty($r['kode_efek']))->values()->all();
 
             $analisa->sektor()->delete();
             $analisa->efek()->delete();
@@ -1808,6 +1903,8 @@ class AnalisaController extends Controller
             $analisa->alokasiAset()->delete();
             $analisa->pasarUang()->delete();
             $analisa->piutangBungaDetail()->delete();
+            $analisa->likuiditas()->delete();
+            $analisa->keuangan()->delete();
 
             if ($sektor)   $analisa->sektor()->createMany($sektor);
             if ($efek)     $analisa->efek()->createMany($efek);
@@ -1818,6 +1915,8 @@ class AnalisaController extends Controller
             if ($alokasiAset) $analisa->alokasiAset()->createMany($alokasiAset);
             if ($pasarUang) $analisa->pasarUang()->createMany($pasarUang);
             if ($piutangBungaDetail) $analisa->piutangBungaDetail()->createMany($piutangBungaDetail);
+            if ($likuiditas) $analisa->likuiditas()->createMany($likuiditas);
+            if ($keuangan)   $analisa->keuangan()->createMany($keuangan);
         });
 
         return redirect()
@@ -1828,7 +1927,7 @@ class AnalisaController extends Controller
     public function show(AnalisaReksaDana $analisa)
     {
         abort_if($analisa->user_id !== auth()->id(), 403);
-        $analisa->load(['sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasiAset']);
+        $analisa->load(['sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasiAset', 'likuiditas', 'keuangan']);
 
         return view('analisa.show', compact('analisa'));
     }
@@ -1836,7 +1935,7 @@ class AnalisaController extends Controller
     public function exportPdf(AnalisaReksaDana $analisa)
     {
         abort_if($analisa->user_id !== auth()->id(), 403);
-        $analisa->load(['user', 'sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasiAset']);
+        $analisa->load(['user', 'sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasiAset', 'likuiditas', 'keuangan']);
 
         $pdf = Pdf::loadView('analisa.pdf', compact('analisa'))
             ->setPaper('a4', 'portrait');

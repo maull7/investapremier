@@ -286,7 +286,7 @@
                     </div>
 
                     {{-- Informasi Reksa Dana --}}
-                    <div class="border-t border-line pt-4">
+                    <div x-show="jenisLaporan !== 'kalender_ffs'" class="border-t border-line pt-4">
                         <h4 class="font-semibold text-primary text-sm mb-3">Informasi Reksa Dana</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
@@ -314,21 +314,11 @@
                                 <x-text-input id="mata_uang_manual" name="mata_uang" type="text"
                                     class="mt-1 block w-full" x-model="mataUang" />
                             </div>
-                            <div x-show="jenisLaporan === 'kalender_ffs'">
-                                <x-input-label for="mi_fee_manual" value="MI Fee (%)" />
-                                <x-text-input id="mi_fee_manual" name="investment_manager_fee" type="number"
-                                    step="0.01" class="mt-1 block w-full" x-model="investmentManagerFee" />
-                            </div>
-                            <div x-show="jenisLaporan === 'kalender_ffs'">
-                                <x-input-label for="bk_fee_manual" value="BK Fee (%)" />
-                                <x-text-input id="bk_fee_manual" name="custodian_fee" type="number" step="0.01"
-                                    class="mt-1 block w-full" x-model="custodianFee" />
-                            </div>
                         </div>
                     </div>
 
                     {{-- Kinerja --}}
-                    <div class="border-t border-line pt-4">
+                    <div x-show="jenisLaporan !== 'kalender_ffs'" class="border-t border-line pt-4">
                         <h4 class="font-semibold text-primary text-sm mb-3">Kinerja</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
@@ -345,7 +335,7 @@
                     </div>
 
                     {{-- Rasio Keuangan --}}
-                    <div class="border-t border-line pt-4">
+                    <div x-show="jenisLaporan !== 'kalender_ffs'" class="border-t border-line pt-4">
                         <h4 class="font-semibold text-primary text-sm mb-3">Rasio Keuangan</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
@@ -368,7 +358,7 @@
                     </div>
 
                     {{-- Biaya --}}
-                    <div class="border-t border-line pt-4">
+                    <div x-show="jenisLaporan !== 'kalender_ffs'" class="border-t border-line pt-4">
                         <h4 class="font-semibold text-primary text-sm mb-3">Biaya</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
@@ -380,7 +370,7 @@
                                 <x-input-label for="custodian_fee_manual" value="Custodian Fee (%)" />
                                 <x-text-input id="custodian_fee_manual" name="custodian_fee" type="number"
                                     step="0.01" class="mt-1 block w-full" x-model="custodianFee" />
-                                {{-- ponytail: duplicated as BK Fee in Informasi Reksa Dana (shown for kalender_ffs). remove from here if BK Fee covers it. --}}
+                                {{-- ponytail: duplicated as BK Fee in Informasi Reksa Dana (hidden for kalender_ffs). --}}
                             </div>
                         </div>
                     </div>
@@ -1910,6 +1900,240 @@
                             </table>
                         </div>
                     </div>
+
+                    {{-- Analisa Likuiditas --}}
+                    <div x-show="jenisLaporan === 'kalender_ffs'">
+                        <div class="flex items-center mb-3">
+                            <h4 class="font-semibold text-primary text-sm">Analisa Likuiditas</h4>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead class="bg-[#f8fafc]">
+                                    <tr>
+                                        <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Daftar Efek</th>
+                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Rata-rata Volume Transaksi Harian</th>
+                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Volume Terendah</th>
+                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Volume Saham</th>
+                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Skenario 20% Reds</th>
+                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Skenario Reds Vol. Closing (10%)</th>
+                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Rasio Likuiditas Harian</th>
+                                        <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Rasio Likuiditas</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-line">
+                                    <template x-for="(row, i) in likuiditas" :key="i">
+                                        <tr x-show="row.kategori === 'Saham'">
+                                            <td class="px-1 py-1 whitespace-nowrap">
+                                                <span class="text-xs text-gray-700" x-text="row.kode_efek + ' - ' + row.nama_efek"></span>
+                                                <input type="hidden" :name="`likuiditas[${i}][kategori]`" value="Saham" />
+                                                <input type="hidden" :name="`likuiditas[${i}][kode_efek]`" x-model="row.kode_efek" />
+                                                <input type="hidden" :name="`likuiditas[${i}][nama_efek]`" x-model="row.nama_efek" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][rata_volume_transaksi_harian]`" x-model="row.rata_volume_transaksi_harian" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][volume_terendah]`" x-model="row.volume_terendah" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][volume_saham]`" x-model="row.volume_saham" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][skenario_20_persen_reds]`" x-model="row.skenario_20_persen_reds" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][skenario_reds_closing_10]`" x-model="row.skenario_reds_closing_10" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][rasio_likuiditas_harian]`" x-model="row.rasio_likuiditas_harian" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][rasio_likuiditas]`" x-model="row.rasio_likuiditas" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                        </tr>
+                                    </template>
+                                    <template x-for="(row, i) in likuiditas" :key="'o'+i">
+                                        <tr x-show="row.kategori === 'Obligasi'">
+                                            <td class="px-1 py-1 whitespace-nowrap">
+                                                <span class="text-xs text-gray-700" x-text="row.kode_efek + ' - ' + row.nama_efek"></span>
+                                                <input type="hidden" :name="`likuiditas[${i}][kategori]`" value="Obligasi" />
+                                                <input type="hidden" :name="`likuiditas[${i}][kode_efek]`" x-model="row.kode_efek" />
+                                                <input type="hidden" :name="`likuiditas[${i}][nama_efek]`" x-model="row.nama_efek" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][rata_volume_transaksi_harian]`" x-model="row.rata_volume_transaksi_harian" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][volume_terendah]`" x-model="row.volume_terendah" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][volume_saham]`" x-model="row.volume_saham" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][skenario_20_persen_reds]`" x-model="row.skenario_20_persen_reds" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][skenario_reds_closing_10]`" x-model="row.skenario_reds_closing_10" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][rasio_likuiditas_harian]`" x-model="row.rasio_likuiditas_harian" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][rasio_likuiditas]`" x-model="row.rasio_likuiditas" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                        </tr>
+                                    </template>
+                                    <template x-for="(row, i) in likuiditas" :key="'b'+i">
+                                        <tr x-show="row.kategori === 'Bank'">
+                                            <td class="px-1 py-1 whitespace-nowrap">
+                                                <span class="text-xs text-gray-700" x-text="row.kode_efek + ' - ' + row.nama_efek"></span>
+                                                <input type="hidden" :name="`likuiditas[${i}][kategori]`" value="Bank" />
+                                                <input type="hidden" :name="`likuiditas[${i}][kode_efek]`" x-model="row.kode_efek" />
+                                                <input type="hidden" :name="`likuiditas[${i}][nama_efek]`" x-model="row.nama_efek" />
+                                            </td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][rata_volume_transaksi_harian]`" x-model="row.rata_volume_transaksi_harian" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][volume_terendah]`" x-model="row.volume_terendah" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][volume_saham]`" x-model="row.volume_saham" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][skenario_20_persen_reds]`" x-model="row.skenario_20_persen_reds" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][skenario_reds_closing_10]`" x-model="row.skenario_reds_closing_10" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][rasio_likuiditas_harian]`" x-model="row.rasio_likuiditas_harian" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            <td class="px-1 py-1"><input type="number" :name="`likuiditas[${i}][rasio_likuiditas]`" x-model="row.rasio_likuiditas" step="0.0001" class="w-24 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                        </tr>
+                                    </template>
+                                    <tr x-show="!likuiditas.filter(r => r.kategori === 'Saham').length && !likuiditas.filter(r => r.kategori === 'Obligasi').length && !likuiditas.filter(r => r.kategori === 'Bank').length">
+                                        <td class="px-3 py-2 text-gray-400 italic" colspan="8">Tidak ada data likuiditas</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {{-- Analisa Keuangan --}}
+                    <div x-show="jenisLaporan === 'kalender_ffs'">
+                        <div class="flex items-center mb-3">
+                            <h4 class="font-semibold text-primary text-sm">Analisa Keuangan</h4>
+                        </div>
+
+                        {{-- Saham --}}
+                        <div class="mb-4">
+                            <h5 class="text-xs font-semibold text-muted mb-2">Saham</h5>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm">
+                                    <thead class="bg-[#f8fafc]">
+                                        <tr>
+                                            <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Daftar Efek</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">PER</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">PBV</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">ROE</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">ROA</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">NPM</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">EV/EBITDA</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">DER</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Current Ratio</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Aktivitas Lancar</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Gross Profit Margin</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Operating Profit Margin</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-line">
+                                        <template x-for="(row, i) in keuangan" :key="'ks'+i">
+                                            <tr x-show="row.kategori === 'Saham'">
+                                                <td class="px-1 py-1 whitespace-nowrap">
+                                                    <span class="text-xs text-gray-700" x-text="row.kode_efek + ' - ' + row.nama_efek"></span>
+                                                    <input type="hidden" :name="`keuangan[${i}][kategori]`" value="Saham" />
+                                                    <input type="hidden" :name="`keuangan[${i}][kode_efek]`" x-model="row.kode_efek" />
+                                                    <input type="hidden" :name="`keuangan[${i}][nama_efek]`" x-model="row.nama_efek" />
+                                                </td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][per]`" x-model="row.per" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][pbv]`" x-model="row.pbv" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][roe]`" x-model="row.roe" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][roa]`" x-model="row.roa" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][npm]`" x-model="row.npm" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][ev_ebitda]`" x-model="row.ev_ebitda" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][der]`" x-model="row.der" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][current_ratio]`" x-model="row.current_ratio" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][aktivitas_lancar]`" x-model="row.aktivitas_lancar" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][gross_profit_margin]`" x-model="row.gross_profit_margin" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][operating_profit_margin]`" x-model="row.operating_profit_margin" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            </tr>
+                                        </template>
+                                        <tr x-show="!keuangan.filter(r => r.kategori === 'Saham').length">
+                                            <td class="px-3 py-2 text-gray-400 italic" colspan="12">Tidak ada data saham</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {{-- Obligasi --}}
+                        <div class="mb-4">
+                            <h5 class="text-xs font-semibold text-muted mb-2">Obligasi</h5>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm">
+                                    <thead class="bg-[#f8fafc]">
+                                        <tr>
+                                            <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Daftar Efek</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">YTM</th>
+                                            <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Rating</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Kupon</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Tenor</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Durasi</th>
+                                            <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Shadow Rating</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">DER</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Current Ratio</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Aktivitas Lancar</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Gross Profit Margin</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Operating Profit Margin</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-line">
+                                        <template x-for="(row, i) in keuangan" :key="'ko'+i">
+                                            <tr x-show="row.kategori === 'Obligasi'">
+                                                <td class="px-1 py-1 whitespace-nowrap">
+                                                    <span class="text-xs text-gray-700" x-text="row.kode_efek + ' - ' + row.nama_efek"></span>
+                                                    <input type="hidden" :name="`keuangan[${i}][kategori]`" value="Obligasi" />
+                                                    <input type="hidden" :name="`keuangan[${i}][kode_efek]`" x-model="row.kode_efek" />
+                                                    <input type="hidden" :name="`keuangan[${i}][nama_efek]`" x-model="row.nama_efek" />
+                                                </td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][ytm]`" x-model="row.ytm" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="text" :name="`keuangan[${i}][rating]`" x-model="row.rating" class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][kupon]`" x-model="row.kupon" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][tenor]`" x-model="row.tenor" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][durasi]`" x-model="row.durasi" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="text" :name="`keuangan[${i}][shadow_rating]`" x-model="row.shadow_rating" class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][der]`" x-model="row.der" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][current_ratio]`" x-model="row.current_ratio" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][aktivitas_lancar]`" x-model="row.aktivitas_lancar" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][gross_profit_margin]`" x-model="row.gross_profit_margin" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][operating_profit_margin]`" x-model="row.operating_profit_margin" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            </tr>
+                                        </template>
+                                        <tr x-show="!keuangan.filter(r => r.kategori === 'Obligasi').length">
+                                            <td class="px-3 py-2 text-gray-400 italic" colspan="12">Tidak ada data obligasi</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {{-- Bank --}}
+                        <div>
+                            <h5 class="text-xs font-semibold text-muted mb-2">Bank</h5>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm">
+                                    <thead class="bg-[#f8fafc]">
+                                        <tr>
+                                            <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Daftar Efek</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">NPL</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">CAR</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">ROE</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">ROA</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">LDR</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">NIM</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">CIR</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Aktivitas Lancar</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-line">
+                                        <template x-for="(row, i) in keuangan" :key="'kb'+i">
+                                            <tr x-show="row.kategori === 'Bank'">
+                                                <td class="px-1 py-1 whitespace-nowrap">
+                                                    <span class="text-xs text-gray-700" x-text="row.kode_efek + ' - ' + row.nama_efek"></span>
+                                                    <input type="hidden" :name="`keuangan[${i}][kategori]`" value="Bank" />
+                                                    <input type="hidden" :name="`keuangan[${i}][kode_efek]`" x-model="row.kode_efek" />
+                                                    <input type="hidden" :name="`keuangan[${i}][nama_efek]`" x-model="row.nama_efek" />
+                                                </td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][npl]`" x-model="row.npl" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][car]`" x-model="row.car" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][roe]`" x-model="row.roe" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][roa]`" x-model="row.roa" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][ldr]`" x-model="row.ldr" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][nim]`" x-model="row.nim" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][cir]`" x-model="row.cir" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][aktivitas_lancar]`" x-model="row.aktivitas_lancar" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            </tr>
+                                        </template>
+                                        <tr x-show="!keuangan.filter(r => r.kategori === 'Bank').length">
+                                            <td class="px-3 py-2 text-gray-400 italic" colspan="9">Tidak ada data bank</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
                 {{-- TAB: EXCEL --}}
