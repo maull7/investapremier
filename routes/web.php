@@ -167,6 +167,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::post('daftar-reksa-dana/{reksaDana}/update-info', [DaftarReksaDanaController::class, 'updateInformasi'])->name('daftar-reksa-dana.update-info');
     Route::get('daftar-reksa-dana/{reksaDana}/edit', [DaftarReksaDanaController::class, 'edit'])->name('daftar-reksa-dana.edit');
     Route::post('daftar-reksa-dana/{reksaDana}/toggle-parser-lock', [DaftarReksaDanaController::class, 'toggleParserLock'])->name('daftar-reksa-dana.toggle-parser-lock');
+    Route::post('daftar-reksa-dana/{reksaDana}/save-portfolio', [DaftarReksaDanaController::class, 'savePortfolio'])->name('daftar-reksa-dana.save-portfolio');
     Route::get('daftar-reksa-dana/{reksaDana}', [DaftarReksaDanaController::class, 'show'])->name('daftar-reksa-dana.show');
 
     Route::post('data-source-links', [DataSourceLinkController::class, 'store'])->name('data-source-links.store');

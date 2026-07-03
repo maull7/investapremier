@@ -13,6 +13,8 @@ use App\Models\DocumentPartition;
 use App\Models\FfsExtractionResult;
 use App\Models\HargaReksaDana;
 use App\Models\InvestmentManager;
+use App\Models\MutualFundAssetAllocation;
+use App\Models\MutualFundPortfolioComposition;
 use App\Models\ReksaDana;
 use App\Models\ReksaDanaDocument;
 use App\Models\SyncRun;
@@ -457,6 +459,25 @@ class DaftarReksaDanaController extends Controller
             'max_drawdown_3y' => $fund->max_drawdown_3y,
             'max_drawdown_5y' => $fund->max_drawdown_5y,
         ];
+
+        if ($period = request('period')) {
+            $aa = $fund->assetAllocations()->where('period_date', $period)->first();
+            $holdings = $fund->portfolioCompositions()->where('period_date', $period)->get();
+            $topHoldingsText = $holdings->map(fn($h) => trim("{$h->security_name}:{$h->weight_percent}:{$h->security_type}"))->implode("\n");
+
+            return response()->json([
+                'aa' => $aa ? ['equity_percent' => $aa->equity_percent, 'bond_percent' => $aa->bond_percent, 'money_market_percent' => $aa->money_market_percent, 'cash_percent' => $aa->cash_percent] : null,
+                'top_holdings_text' => $topHoldingsText,
+                'nab_per_unit' => $fund->nab_per_unit,
+                'tanggal_nab' => $fund->tanggal_nab?->format('Y-m-d'),
+                'aum' => $fund->aum,
+                'total_unit' => $fund->total_unit,
+                'return_ytd' => $fund->return_ytd,
+                'return_1y' => $fund->return_1y,
+                'return_1m' => $fund->return_1m,
+                'return_inception' => $fund->return_inception,
+            ]);
+        }
 
         return view('admin.daftar-reksa-dana.show', compact(
             'fund', 'navHistory', 'navLabels', 'navValues', 'aumValues', 'upValues',
@@ -1322,6 +1343,88 @@ class DaftarReksaDanaController extends Controller
             'locked' => in_array($section, $locks),
             'parser_locks' => $locks,
         ]);
+    }
+
+    public function savePortfolio(Request $request, ReksaDana $reksaDana)
+    {
+        $validated = $request->validate([
+            'month' => 'required|integer|between:1,12',
+            'year' => 'required|integer|min:2000|max:2099',
+            'saham' => 'nullable|numeric|min:0|max:100',
+            'obligasi' => 'nullable|numeric|min:0|max:100',
+            'pasar_uang' => 'nullable|numeric|min:0|max:100',
+            'kas' => 'nullable|numeric|min:0|max:100',
+            'top_holdings' => 'nullable|string',
+            'nab_per_unit' => 'nullable|numeric',
+            'tanggal_nab' => 'nullable|date',
+            'aum' => 'nullable|numeric',
+            'total_unit' => 'nullable|numeric',
+            'return_ytd' => 'nullable|numeric',
+            'return_1y' => 'nullable|numeric',
+            'return_1m' => 'nullable|numeric',
+            'return_inception' => 'nullable|numeric',
+        ]);
+
+        $periodDate = sprintf('%04d-%02d-01', $validated['year'], $validated['month']);
+
+        if (array_key_exists('saham', $validated) || array_key_exists('obligasi', $validated) || array_key_exists('pasar_uang', $validated) || array_key_exists('kas', $validated)) {
+            MutualFundAssetAllocation::updateOrCreate(
+                ['reksa_dana_id' => $reksaDana->id, 'period_date' => $periodDate],
+                [
+                    'equity_percent' => $validated['saham'] ?? 0,
+                    'bond_percent' => $validated['obligasi'] ?? 0,
+                    'money_market_percent' => $validated['pasar_uang'] ?? 0,
+                    'cash_percent' => $validated['kas'] ?? 0,
+                ]
+            );
+        }
+
+        if (!empty($validated['top_holdings'])) {
+            MutualFundPortfolioComposition::where('reksa_dana_id', $reksaDana->id)
+                ->where('period_date', $periodDate)
+                ->delete();
+
+            $lines = explode("\n", $validated['top_holdings']);
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if (empty($line)) continue;
+                $parts = explode(':', $line);
+                if (count($parts) < 2) continue;
+                MutualFundPortfolioComposition::create([
+                    'reksa_dana_id' => $reksaDana->id,
+                    'period_date' => $periodDate,
+                    'security_name' => trim($parts[0]),
+                    'weight_percent' => (float) trim($parts[1]),
+                    'security_type' => trim($parts[2] ?? ''),
+                ]);
+            }
+        }
+
+        $ringkasanFields = ['nab_per_unit', 'tanggal_nab', 'aum', 'total_unit', 'return_ytd', 'return_1y', 'return_1m', 'return_inception'];
+        $ringkasanUpdates = array_intersect_key($validated, array_flip($ringkasanFields));
+        if (!empty($ringkasanUpdates)) {
+            $reksaDana->update($ringkasanUpdates);
+        }
+
+        if (isset($validated['nab_per_unit']) || isset($validated['aum']) || isset($validated['total_unit'])) {
+            HargaReksaDana::updateOrCreate(
+                ['reksa_dana_id' => $reksaDana->id, 'tanggal' => $periodDate],
+                [
+                    'nab_per_unit' => $validated['nab_per_unit'] ?? null,
+                    'aum' => $validated['aum'] ?? null,
+                    'unit_participation' => $validated['total_unit'] ?? null,
+                ]
+            );
+        }
+
+        ActivityLogger::log(
+            'Simpan Portfolio',
+            "Data portfolio {$reksaDana->nama_reksa_dana} periode {$validated['month']}/{$validated['year']} berhasil disimpan.",
+            'success',
+            $reksaDana,
+        );
+
+        return response()->json(['success' => true, 'message' => 'Data portfolio berhasil disimpan.']);
     }
 
     public function updateInformasi(Request $request, ReksaDana $reksaDana)
