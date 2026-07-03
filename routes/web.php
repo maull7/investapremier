@@ -131,6 +131,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
 
     // Daftar Reksa Dana (master data + harga harian) tes commit
     Route::get('daftar-reksa-dana', [DaftarReksaDanaController::class, 'index'])->name('daftar-reksa-dana.index');
+    Route::get('daftar-reksa-dana/documents/check', [DaftarReksaDanaController::class, 'checkDocumentExists'])->name('daftar-reksa-dana.documents.check');
     Route::post('daftar-reksa-dana/documents', [DaftarReksaDanaController::class, 'storeDocument'])->name('daftar-reksa-dana.documents.store');
     Route::get('daftar-reksa-dana/documents/{document}/view', [DaftarReksaDanaController::class, 'viewDocument'])->name('daftar-reksa-dana.documents.view');
     Route::get('daftar-reksa-dana/documents/{document}/download', [DaftarReksaDanaController::class, 'downloadDocument'])->name('daftar-reksa-dana.documents.download');

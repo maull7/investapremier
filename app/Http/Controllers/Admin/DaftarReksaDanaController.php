@@ -182,6 +182,13 @@ class DaftarReksaDanaController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
+        // ponytail: duplicate check at the shared method, not in callers
+        $existing = $this->findExistingDocument($validated);
+        if ($existing) {
+            return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs'])
+                ->with('error', 'Dokumen untuk periode tersebut sudah ada. Silakan edit dokumen yang sudah ada.');
+        }
+
         $file = $request->file('file');
         $filename = now()->format('Ymd-His') . '-' . Str::random(10) . '.pdf';
         $path = $file->storeAs('reksa-dana-documents/' . $validated['reksa_dana_id'], $filename, 'public');
@@ -242,6 +249,13 @@ class DaftarReksaDanaController extends Controller
             'file' => 'nullable|file|mimes:pdf|max:20480',
         ]);
 
+        // ponytail: same duplicate guard, exclude self
+        $existing = $this->findExistingDocument($validated, $document->id);
+        if ($existing) {
+            return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs'])
+                ->with('error', 'Dokumen untuk periode tersebut sudah ada. Silakan edit dokumen yang sudah ada.');
+        }
+
         if ($validated['document_type'] === 'prospektus') {
             $validated['ffs_month'] = null;
         }
@@ -288,6 +302,51 @@ class DaftarReksaDanaController extends Controller
 
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs'])
             ->with('success', 'Dokumen berhasil dihapus.');
+    }
+
+    public function checkDocumentExists(Request $request)
+    {
+        $validated = $request->validate([
+            'reksa_dana_id' => 'required|exists:reksa_dana,id',
+            'document_type' => 'required|in:prospektus,ffs',
+            'ffs_month' => 'nullable|integer|min:1|max:12',
+            'ffs_year' => 'required|integer|min:2000|max:2100',
+        ]);
+
+        $document = $this->findExistingDocument($validated);
+
+        return response()->json([
+            'exists' => $document !== null,
+            'document' => $document ? [
+                'id' => $document->id,
+                'original_name' => $document->original_name,
+                'document_type' => $document->document_type,
+                'ffs_month' => $document->ffs_month,
+                'ffs_year' => $document->ffs_year,
+                'notes' => $document->notes,
+                'updated_at' => $document->updated_at?->format('Y-m-d H:i:s'),
+            ] : null,
+        ]);
+    }
+
+    private function findExistingDocument(array $params, ?int $excludeId = null): ?ReksaDanaDocument
+    {
+        $query = ReksaDanaDocument::where('reksa_dana_id', $params['reksa_dana_id'])
+            ->where('document_type', $params['document_type']);
+
+        if ($params['document_type'] === 'ffs') {
+            $query->where('ffs_month', $params['ffs_month'])
+                  ->where('ffs_year', $params['ffs_year']);
+        } else {
+            $query->whereNull('ffs_month')
+                  ->where('ffs_year', $params['ffs_year']);
+        }
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        return $query->first();
     }
 
     private function ensureDocumentExists(ReksaDanaDocument $document): void

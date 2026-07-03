@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AnalisaEfek;
+use App\Models\AnalisaReksaDana;
 use App\Models\AnalisaSaham;
+use App\Models\ReksaDana;
+use App\Models\ReksaDanaDocument;
 use App\Models\Stock;
 use App\Models\StockBrokerDocument;
 use App\Models\StockBrokerResearch;
@@ -11,6 +15,7 @@ use App\Services\NewsService;
 use App\Services\YahooStockDataService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class StockDetailController extends Controller
@@ -67,6 +72,32 @@ class StockDetailController extends Controller
                 : null,
         ];
 
+        $reksaDanaHoldings = AnalisaEfek::query()
+            ->whereRaw('UPPER(kode_efek) = ?', [strtoupper($stock->kode)])
+            ->with(['analisa.reksaDana'])
+            ->get()
+            ->groupBy(fn($e) => $e->analisa?->reksa_dana_id ?: 'orphan_' . $e->analisa_id)
+            ->map(fn($group) => $group->sortByDesc(fn($e) => $e->analisa?->tanggal_data)?->first())
+            ->filter();
+
+        $rdIds = $reksaDanaHoldings
+            ->pluck('analisa.reksa_dana_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->toArray();
+
+        $prospektusDates = [];
+        if (!empty($rdIds)) {
+            $prospektusDates = ReksaDanaDocument::query()
+                ->whereIn('reksa_dana_id', $rdIds)
+                ->whereIn('document_type', ['prospektus', 'ffs'])
+                ->select('reksa_dana_id', DB::raw('MAX(created_at) as latest_date'))
+                ->groupBy('reksa_dana_id')
+                ->pluck('latest_date', 'reksa_dana_id')
+                ->toArray();
+        }
+
         return view('saham.detail', [
             'layout' => $request->routeIs('admin.*') ? 'layouts.admin' : 'layouts.user',
             'routePrefix' => $request->routeIs('admin.*') ? 'admin' : 'user',
@@ -75,6 +106,8 @@ class StockDetailController extends Controller
             'legacyResearches' => $legacyResearches,
             'consensus' => $consensus,
             'timeframe' => $request->input('timeframe', '1M'),
+            'reksaDanaHoldings' => $reksaDanaHoldings,
+            'prospektusDates' => $prospektusDates,
         ]);
     }
 
@@ -108,6 +141,8 @@ class StockDetailController extends Controller
     {
         try {
             $data = $yahoo->fetchSummary($stock);
+
+            $stock->update(['yahoo_synced_at' => now()]);
 
             $googleNews = $news->fetchGoogleNews($stock);
             if (!empty($googleNews)) {
