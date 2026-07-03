@@ -1,6 +1,10 @@
 <div class="py-2 first:pt-0 border-b border-line/60 last:border-b-0">
     <p class="text-xs font-semibold text-primary">{{ $label }}</p>
+    @if ($document->notes)
+        <p class="text-[11px] text-muted mt-0.5 italic">{{ $document->notes }}</p>
+    @endif
     <p class="text-[11px] text-muted mt-0.5">{{ $document->created_at->format('d M Y H:i') }}</p>
+    <p class="text-[10px] text-muted mt-0.5">Pembaruan: {{ ($months[$document->updated_at->month - 1] ?? $document->updated_at->format('F')) . ' ' . $document->updated_at->year }}</p>
     <div class="flex flex-wrap gap-2 mt-2">
         <a target="_blank" href="{{ route('admin.daftar-reksa-dana.documents.view', $document) }}"
             class="px-2 py-1 border border-line rounded text-[11px] font-semibold text-muted hover:text-primary">Preview</a>
@@ -24,6 +28,7 @@
             data-edit-ffs-month="{{ $document->ffs_month }}"
             data-edit-ffs-year="{{ $document->ffs_year }}"
             data-edit-notes="{{ $document->notes }}"
+            data-edit-updated="{{ $document->updated_at?->format('Y-m-d H:i:s') }}"
             class="btn-edit-document px-2 py-1 border border-blue-200 text-blue-600 rounded text-[11px] font-semibold hover:bg-blue-50">Edit</button>
         <form method="POST" action="{{ route('admin.daftar-reksa-dana.documents.destroy', $document) }}"
             onsubmit="return confirm('Hapus dokumen ini?')">

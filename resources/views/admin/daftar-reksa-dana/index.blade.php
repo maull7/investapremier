@@ -1161,7 +1161,41 @@
         if (el) el.classList.add('hidden');
     }
 
+    function openEditModalFromData(doc) {
+        document.getElementById('edit-doc-filename').textContent = doc.original_name;
+        document.getElementById('form-document-edit').action = '{{ route('admin.daftar-reksa-dana.documents.update', '_docid_') }}'.replace('_docid_', doc.id);
+        document.getElementById('edit-doc-notes').value = doc.notes || '';
+        // ponytail: updated_at shown in table, no field in modal
+
+        const typeSelect = document.querySelector('#form-document-edit select[name="document_type"]');
+        if (typeSelect) typeSelect.value = doc.document_type;
+
+        const ffsMonthEl = document.getElementById('edit-doc-ffs-month');
+        const ffsYearEl = document.getElementById('edit-doc-ffs-year');
+        const prospektusYearEl = document.getElementById('edit-doc-prospektus-year');
+
+        if (doc.document_type === 'ffs') {
+            if (ffsMonthEl) ffsMonthEl.value = doc.ffs_month || '';
+            if (ffsYearEl) ffsYearEl.value = doc.ffs_year || '';
+            if (prospektusYearEl) prospektusYearEl.value = doc.ffs_year || '';
+        } else {
+            if (ffsMonthEl) ffsMonthEl.value = '';
+            if (ffsYearEl) ffsYearEl.value = doc.ffs_year || '';
+            if (prospektusYearEl) prospektusYearEl.value = doc.ffs_year || '';
+        }
+
+        openModal('modal-document-edit');
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
+
+        // --- Auto-open edit modal from ?edit_doc= ---
+        const editDocId = new URLSearchParams(window.location.search).get('edit_doc');
+        if (editDocId) {
+            const btn = document.querySelector(`.btn-edit-document[data-edit-doc="${editDocId}"]`);
+            if (btn) btn.click();
+            // ponytail: if button not on current page, user can navigate manually
+        }
 
         // --- Event delegation: Parse Document buttons ---
         document.addEventListener('click', function(e) {
@@ -1201,6 +1235,7 @@
                 const docMonth = editBtn.dataset.editFfsMonth;
                 const docYear = editBtn.dataset.editFfsYear;
                 const docNotes = editBtn.dataset.editNotes;
+                const docUpdated = editBtn.dataset.editUpdated;
                 document.getElementById('edit-doc-filename').textContent = docName;
                 document.getElementById('form-document-edit').action = '{{ route('admin.daftar-reksa-dana.documents.update', '_docid_') }}'.replace('_docid_', docId);
                 document.getElementById('edit-doc-notes').value = docNotes || '';

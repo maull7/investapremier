@@ -79,6 +79,10 @@
                     :class="tab === 'detail-broker' ? 'border-b-2 border-primary text-primary font-semibold' :
                         'text-muted hover:text-primary'"
                     class="px-5 py-3.5 text-sm whitespace-nowrap transition">Detail Broker</button>
+                <button type="button" @click="tab='reksa-dana'"
+                    :class="tab === 'reksa-dana' ? 'border-b-2 border-primary text-primary font-semibold' :
+                        'text-muted hover:text-primary'"
+                    class="px-5 py-3.5 text-sm whitespace-nowrap transition">Daftar Reksa Dana</button>
             </div>
 
             <div x-show="tab==='info'" class="p-6 space-y-6">
@@ -106,6 +110,14 @@
                     <p class="text-gray-700 leading-relaxed">
                         {{ $profile->description ?? 'Deskripsi perusahaan belum tersedia.' }}</p>
                 </div>
+
+                {{-- Yahoo Sync Date --}}
+                @if ($stock->yahoo_synced_at)
+                    <div class="flex items-center gap-2 text-xs text-muted">
+                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                    Sinkronisasi Yahoo: {{ $stock->yahoo_synced_at->format('d/m/Y H:i') }}
+                    </div>
+                @endif
 
                 {{-- Data dari Yahoo Finance (yfapi) --}}
                 <div x-show="summary" class="space-y-4">
@@ -220,6 +232,38 @@
                         @endforeach
                     </div>
                 </div>
+
+                {{-- Data Laporan Keuangan untuk Analisa FFS --}}
+                @if ($stock->financialReports->isNotEmpty())
+                    <div>
+                        <h3 class="font-semibold text-primary mb-3">Laporan Keuangan (untuk Analisa FFS)</h3>
+                        @foreach ($stock->financialReports as $report)
+                            <div class="border border-line rounded-xl p-4 mb-4">
+                                <h4 class="font-semibold text-primary text-sm">{{ $report->report_year }} · {{ $report->report_period }}</h4>
+                                <div class="grid md:grid-cols-3 gap-4 mt-3 text-sm">
+                                    <div>
+                                        <p class="font-semibold mb-2 text-xs uppercase text-muted">Neraca</p>
+                                        <p>Total Aset: <span class="font-medium">{{ $fmt($report->total_asset) }}</span></p>
+                                        <p>Total Liabilitas: <span class="font-medium">{{ $fmt($report->total_liabilities) }}</span></p>
+                                        <p>Total Ekuitas: <span class="font-medium">{{ $fmt($report->total_equity) }}</span></p>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold mb-2 text-xs uppercase text-muted">Laba Rugi</p>
+                                        <p>Pendapatan: <span class="font-medium">{{ $fmt($report->revenue) }}</span></p>
+                                        <p>Laba Operasional: <span class="font-medium">{{ $fmt($report->operating_income) }}</span></p>
+                                        <p>Laba Bersih: <span class="font-medium">{{ $fmt($report->net_income) }}</span></p>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold mb-2 text-xs uppercase text-muted">Arus Kas</p>
+                                        <p>CFO: <span class="font-medium">{{ $fmt($report->cfo) }}</span></p>
+                                        <p>CFI: <span class="font-medium">{{ $fmt($report->cfi) }}</span></p>
+                                        <p>CFF: <span class="font-medium">{{ $fmt($report->cff) }}</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
             </div>
 
             <div x-show="tab==='grafik'" class="p-6 space-y-4">
@@ -759,6 +803,59 @@
                 @empty
                     <div class="p-12 text-center text-muted border border-line rounded-xl">Belum ada dokumen broker tersedia.</div>
                 @endforelse
+            </div>
+
+            <div x-show="tab==='reksa-dana'" class="p-6 space-y-4">
+                <h3 class="font-semibold text-primary">Daftar Reksa Dana yang Memiliki Efek Ini</h3>
+                @if ($reksaDanaHoldings->isNotEmpty())
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm border border-line">
+                            <thead class="bg-gray-50 text-muted">
+                                <tr>
+                                    <th class="px-3 py-2 text-left whitespace-nowrap">Kode RD</th>
+                                    <th class="px-3 py-2 text-left whitespace-nowrap">Nama Reksa Dana</th>
+                                    <th class="px-3 py-2 text-left whitespace-nowrap">Kode Efek</th>
+                                    <th class="px-3 py-2 text-right whitespace-nowrap">Bobot (%)</th>
+                                    <th class="px-3 py-2 text-right whitespace-nowrap">Nilai Pasar</th>
+                                    <th class="px-3 py-2 text-right whitespace-nowrap">% NAB</th>
+                                    <th class="px-3 py-2 text-right whitespace-nowrap">Tanggal Data</th>
+                                    <th class="px-3 py-2 text-right whitespace-nowrap">Jumlah Lembar</th>
+                                    <th class="px-3 py-2 text-right whitespace-nowrap">% Mkt Kap</th>
+                                    <th class="px-3 py-2 text-right whitespace-nowrap">Prospektus/FFS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($reksaDanaHoldings as $efek)
+                                    @php
+                                        $analisa = $efek->analisa;
+                                        $rd = $analisa?->reksaDana;
+                                        $rdId = $rd?->id;
+                                        $marketCapPct = $stock->market_capital && $efek->nilai_pasar
+                                            ? round(($efek->nilai_pasar / $stock->market_capital) * 100, 2)
+                                            : null;
+                                        $prospektusDate = isset($prospektusDates[$rdId]) ? \Illuminate\Support\Carbon::parse($prospektusDates[$rdId]) : null;
+                                    @endphp
+                                    <tr class="border-t border-line hover:bg-gray-50">
+                                        <td class="px-3 py-2 font-semibold text-primary whitespace-nowrap">{{ $rd?->kode_reksa_dana ?? '-' }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap">{{ $rd?->nama_reksa_dana ?? $analisa?->nama_reksa_dana ?? '-' }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap">{{ $efek->kode_efek }}</td>
+                                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ $efek->bobot ? number_format((float) $efek->bobot, 2) . '%' : '-' }}</td>
+                                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ $efek->nilai_pasar ? 'Rp' . number_format((float) $efek->nilai_pasar, 0, ',', '.') : '-' }}</td>
+                                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ $efek->persen_nab ? number_format((float) $efek->persen_nab, 2) . '%' : '-' }}</td>
+                                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ $analisa?->tanggal_data?->format('d/m/Y') ?: '-' }}</td>
+                                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ $efek->jumlah_lembar ? number_format((float) $efek->jumlah_lembar, 0, ',', '.') : '-' }}</td>
+                                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ $marketCapPct !== null ? $marketCapPct . '%' : '-' }}</td>
+                                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ $prospektusDate?->format('d/m/Y') ?: '-' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <div class="p-12 text-center text-muted border border-line rounded-xl">
+                        Belum ada data Reksa Dana yang memiliki efek ini.
+                    </div>
+                @endif
             </div>
         </div>
     </div>

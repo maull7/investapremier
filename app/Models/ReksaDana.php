@@ -68,6 +68,7 @@ class ReksaDana extends Model
         'ten_year_rating',
         'aum_published_date', 'aum_last_update', 'last_update',
         'last_fund_factsheet', 'last_updated_portfolio', 'expense_ratio_date',
+        'parser_locks',
     ];
 
     protected $casts = [
@@ -118,6 +119,7 @@ class ReksaDana extends Model
         'last_fund_factsheet'   => 'date',
         'last_updated_portfolio' => 'date',
         'expense_ratio_date'    => 'date',
+        'parser_locks'          => 'array',
     ];
 
     public function investmentManager(): BelongsTo

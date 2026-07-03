@@ -27,6 +27,7 @@ class Stock extends Model
         'value' => 'decimal:2',
         'market_capital' => 'decimal:2',
         'last_update' => 'date',
+        'yahoo_synced_at' => 'datetime',
     ];
 
     public function profile(): HasOne

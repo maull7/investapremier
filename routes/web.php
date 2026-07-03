@@ -131,6 +131,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
 
     // Daftar Reksa Dana (master data + harga harian) tes commit
     Route::get('daftar-reksa-dana', [DaftarReksaDanaController::class, 'index'])->name('daftar-reksa-dana.index');
+    Route::get('daftar-reksa-dana/documents/check', [DaftarReksaDanaController::class, 'checkDocumentExists'])->name('daftar-reksa-dana.documents.check');
     Route::post('daftar-reksa-dana/documents', [DaftarReksaDanaController::class, 'storeDocument'])->name('daftar-reksa-dana.documents.store');
     Route::get('daftar-reksa-dana/documents/{document}/view', [DaftarReksaDanaController::class, 'viewDocument'])->name('daftar-reksa-dana.documents.view');
     Route::get('daftar-reksa-dana/documents/{document}/download', [DaftarReksaDanaController::class, 'downloadDocument'])->name('daftar-reksa-dana.documents.download');
@@ -165,6 +166,8 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::post('daftar-reksa-dana/replace-rewrite', [DaftarReksaDanaController::class, 'replaceRewrite'])->name('daftar-reksa-dana.replace-rewrite');
     Route::post('daftar-reksa-dana/{reksaDana}/update-info', [DaftarReksaDanaController::class, 'updateInformasi'])->name('daftar-reksa-dana.update-info');
     Route::get('daftar-reksa-dana/{reksaDana}/edit', [DaftarReksaDanaController::class, 'edit'])->name('daftar-reksa-dana.edit');
+    Route::post('daftar-reksa-dana/{reksaDana}/toggle-parser-lock', [DaftarReksaDanaController::class, 'toggleParserLock'])->name('daftar-reksa-dana.toggle-parser-lock');
+    Route::post('daftar-reksa-dana/{reksaDana}/save-portfolio', [DaftarReksaDanaController::class, 'savePortfolio'])->name('daftar-reksa-dana.save-portfolio');
     Route::get('daftar-reksa-dana/{reksaDana}', [DaftarReksaDanaController::class, 'show'])->name('daftar-reksa-dana.show');
 
     Route::post('data-source-links', [DataSourceLinkController::class, 'store'])->name('data-source-links.store');
