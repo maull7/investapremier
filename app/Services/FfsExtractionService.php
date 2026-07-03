@@ -17,7 +17,7 @@ class FfsExtractionService
     ) {
     }
 
-    public function extractAndSave(ReksaDanaDocument $document, ?int $userId = null): array
+    public function extractAndSave(ReksaDanaDocument $document, ?int $userId = null, array $parserLocks = []): array
     {
         if ($document->document_type !== ReksaDanaDocument::TYPE_FFS) {
             throw new \RuntimeException('Dokumen bukan tipe FFS.');
@@ -49,7 +49,7 @@ class FfsExtractionService
             ]
         );
 
-        $this->syncToTables($document, $aiResult);
+        $this->syncToTables($document, $aiResult, $parserLocks);
 
         return [
             'saved'    => true,
@@ -59,7 +59,7 @@ class FfsExtractionService
         ];
     }
 
-    private function syncToTables(ReksaDanaDocument $document, array $data): void
+    private function syncToTables(ReksaDanaDocument $document, array $data, array $parserLocks = []): void
     {
         $fund = ReksaDana::find($document->reksa_dana_id);
         if (!$fund) return;
@@ -68,41 +68,57 @@ class FfsExtractionService
 
         $updates = [];
 
-        if (isset($data['total_aum'])) $updates['aum'] = $data['total_aum'];
-        if (isset($data['total_aum'])) $updates['aum_published_date'] = $tanggalData;
-        if (isset($data['nab_per_unit'])) $updates['nab_per_unit'] = $data['nab_per_unit'];
-        if (isset($data['nab_per_unit'])) $updates['tanggal_nab'] = $tanggalData;
-        if (isset($data['unit_penyertaan'])) $updates['total_unit'] = $data['unit_penyertaan'];
-        if (isset($data['return_ytd'])) $updates['return_ytd'] = $this->toDecimal($data['return_ytd']);
-        if (isset($data['return_1y'])) $updates['return_1y'] = $this->toDecimal($data['return_1y']);
-        if (isset($data['return_1m'])) $updates['return_1m'] = $this->toDecimal($data['return_1m']);
-        if (isset($data['total_return'])) $updates['return_inception'] = $this->toDecimal($data['total_return']);
-        if (isset($data['management_fee'])) $updates['management_fee'] = $data['management_fee'];
-        if (isset($data['custodian_fee'])) $updates['custodian_fee'] = $data['custodian_fee'];
-        if (isset($data['benchmark'])) $updates['benchmark'] = $data['benchmark'];
-        if (isset($data['tujuan_investasi'])) $updates['tujuan_investasi'] = $data['tujuan_investasi'];
-        if (isset($data['kebijakan_investasi'])) $updates['kebijakan_investasi'] = $data['kebijakan_investasi'];
-        if (isset($data['bank_kustodian'])) $updates['custodian_bank'] = $data['bank_kustodian'];
-        if (isset($data['tanggal_peluncuran'])) $updates['launch_date'] = $data['tanggal_peluncuran'];
-        if (isset($data['mata_uang'])) $updates['mata_uang'] = $data['mata_uang'];
+        $lockedRingkasan = in_array('ringkasan', $parserLocks);
+        $lockedBiaya = in_array('biaya', $parserLocks);
+        $lockedInfo = in_array('info', $parserLocks);
 
-        $updates['last_fund_factsheet'] = $tanggalData;
-        $updates['last_updated_portfolio'] = $tanggalData;
+        if (!$lockedRingkasan) {
+            if (isset($data['total_aum'])) $updates['aum'] = $data['total_aum'];
+            if (isset($data['total_aum'])) $updates['aum_published_date'] = $tanggalData;
+            if (isset($data['nab_per_unit'])) $updates['nab_per_unit'] = $data['nab_per_unit'];
+            if (isset($data['nab_per_unit'])) $updates['tanggal_nab'] = $tanggalData;
+            if (isset($data['unit_penyertaan'])) $updates['total_unit'] = $data['unit_penyertaan'];
+            if (isset($data['return_ytd'])) $updates['return_ytd'] = $this->toDecimal($data['return_ytd']);
+            if (isset($data['return_1y'])) $updates['return_1y'] = $this->toDecimal($data['return_1y']);
+            if (isset($data['return_1m'])) $updates['return_1m'] = $this->toDecimal($data['return_1m']);
+            if (isset($data['total_return'])) $updates['return_inception'] = $this->toDecimal($data['total_return']);
+        }
+
+        if (!$lockedBiaya) {
+            if (isset($data['management_fee'])) $updates['management_fee'] = $data['management_fee'];
+            if (isset($data['custodian_fee'])) $updates['custodian_fee'] = $data['custodian_fee'];
+        }
+
+        if (!$lockedInfo) {
+            if (isset($data['benchmark'])) $updates['benchmark'] = $data['benchmark'];
+            if (isset($data['tujuan_investasi'])) $updates['tujuan_investasi'] = $data['tujuan_investasi'];
+            if (isset($data['kebijakan_investasi'])) $updates['kebijakan_investasi'] = $data['kebijakan_investasi'];
+            if (isset($data['bank_kustodian'])) $updates['custodian_bank'] = $data['bank_kustodian'];
+            if (isset($data['tanggal_peluncuran'])) $updates['launch_date'] = $data['tanggal_peluncuran'];
+            if (isset($data['mata_uang'])) $updates['mata_uang'] = $data['mata_uang'];
+        }
+
+        if (!$lockedRingkasan) {
+            $updates['last_fund_factsheet'] = $tanggalData;
+            $updates['last_updated_portfolio'] = $tanggalData;
+        }
 
         if (!empty($updates)) {
             $fund->update($updates);
         }
 
-        $hargaData = [
-            'nab_per_unit' => $data['nab_per_unit'] ?? null,
-            'aum' => $data['total_aum'] ?? null,
-            'unit_participation' => $data['unit_penyertaan'] ?? null,
-        ];
-        if (array_filter($hargaData, fn($v) => $v !== null)) {
-            HargaReksaDana::updateOrCreate(
-                ['reksa_dana_id' => $fund->id, 'tanggal' => $tanggalData],
-                $hargaData
-            );
+        if (!$lockedRingkasan) {
+            $hargaData = [
+                'nab_per_unit' => $data['nab_per_unit'] ?? null,
+                'aum' => $data['total_aum'] ?? null,
+                'unit_participation' => $data['unit_penyertaan'] ?? null,
+            ];
+            if (array_filter($hargaData, fn($v) => $v !== null)) {
+                HargaReksaDana::updateOrCreate(
+                    ['reksa_dana_id' => $fund->id, 'tanggal' => $tanggalData],
+                    $hargaData
+                );
+            }
         }
 
         if (!empty($data['alokasi_aset']) && is_array($data['alokasi_aset'])) {

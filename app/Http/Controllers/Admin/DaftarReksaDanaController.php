@@ -1276,7 +1276,7 @@ class DaftarReksaDanaController extends Controller
     public function parseFfs(Request $request, ReksaDanaDocument $document, FfsExtractionService $ffsService)
     {
         try {
-            $result = $ffsService->extractAndSave($document, $request->user()->id);
+            $result = $ffsService->extractAndSave($document, $request->user()->id, $document->reksaDana->parser_locks ?? []);
 
             ActivityLogger::log(
                 'Parse FFS',
@@ -1298,6 +1298,30 @@ class DaftarReksaDanaController extends Controller
     public function edit(ReksaDana $reksaDana)
     {
         return view('admin.daftar-reksa-dana.edit', compact('reksaDana'));
+    }
+
+    public function toggleParserLock(Request $request, ReksaDana $reksaDana)
+    {
+        $validated = $request->validate([
+            'section' => 'required|in:info,ringkasan,risiko,biaya',
+        ]);
+
+        $locks = $reksaDana->parser_locks ?? [];
+        $section = $validated['section'];
+
+        if (in_array($section, $locks)) {
+            $locks = array_values(array_filter($locks, fn($s) => $s !== $section));
+        } else {
+            $locks[] = $section;
+        }
+
+        $reksaDana->update(['parser_locks' => $locks]);
+
+        return response()->json([
+            'success' => true,
+            'locked' => in_array($section, $locks),
+            'parser_locks' => $locks,
+        ]);
     }
 
     public function updateInformasi(Request $request, ReksaDana $reksaDana)
@@ -1332,6 +1356,36 @@ class DaftarReksaDanaController extends Controller
             'is_index'              => 'nullable|boolean',
             'conservative_category' => 'nullable|string|max:100',
             'dividend'              => 'nullable|boolean',
+            // ringkasan
+            'nab_per_unit'          => 'nullable|numeric',
+            'tanggal_nab'           => 'nullable|date',
+            'aum'                   => 'nullable|numeric',
+            'total_unit'            => 'nullable|numeric',
+            // risiko
+            'risk_category'         => 'nullable|string|max:50',
+            'sharpe_ratio_1y'       => 'nullable|numeric',
+            'sharpe_ratio_3y'       => 'nullable|numeric',
+            'sharpe_ratio_5y'       => 'nullable|numeric',
+            'stdev_1y'              => 'nullable|numeric',
+            'stdev_3y'              => 'nullable|numeric',
+            'stdev_5y'              => 'nullable|numeric',
+            'beta_1y'               => 'nullable|numeric',
+            'beta_3y'               => 'nullable|numeric',
+            'beta_5y'               => 'nullable|numeric',
+            'max_drawdown_1y'       => 'nullable|numeric',
+            'max_drawdown_3y'       => 'nullable|numeric',
+            'max_drawdown_5y'       => 'nullable|numeric',
+            // biaya
+            'subscription_fee'      => 'nullable|numeric',
+            'redemption_fee'        => 'nullable|numeric',
+            'switching_fee'         => 'nullable|numeric',
+            'management_fee'        => 'nullable|numeric',
+            'custodian_fee'         => 'nullable|numeric',
+            'expense_ratio'         => 'nullable|numeric',
+            'investment_manager_fee'=> 'nullable|string|max:255',
+            'minimum_subscription'  => 'nullable|numeric',
+            'minimum_topup'         => 'nullable|numeric',
+            'minimum_redemption'    => 'nullable|numeric',
         ]);
 
         if (!empty($validated['kode_reksa_dana'])) {

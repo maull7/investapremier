@@ -6,6 +6,62 @@
 <div x-data="{
     tab: {{ Js::from(request('tab', 'snapshot')) }},
     personModal: { open: false, loading: false, error: null, data: null },
+    parserLocks: @js($fund->parser_locks ?? []),
+    toggling: false,
+    editModal: null,
+    editData: {},
+    editSaving: false,
+    openEdit(section) {
+        this.editData = {};
+        if (section === 'ringkasan') {
+            this.editData = { nab_per_unit: @js($fund->nab_per_unit), tanggal_nab: @js($fund->tanggal_nab?->format('Y-m-d')), aum: @js($fund->aum), total_unit: @js($fund->total_unit) };
+        } else if (section === 'risiko') {
+            this.editData = {
+                risk_category: @js($fund->risk_category),
+                sharpe_ratio_1y: @js($fund->sharpe_ratio_1y), sharpe_ratio_3y: @js($fund->sharpe_ratio_3y), sharpe_ratio_5y: @js($fund->sharpe_ratio_5y),
+                stdev_1y: @js($fund->stdev_1y), stdev_3y: @js($fund->stdev_3y), stdev_5y: @js($fund->stdev_5y),
+                beta_1y: @js($fund->beta_1y), beta_3y: @js($fund->beta_3y), beta_5y: @js($fund->beta_5y),
+                max_drawdown_1y: @js($fund->max_drawdown_1y), max_drawdown_3y: @js($fund->max_drawdown_3y), max_drawdown_5y: @js($fund->max_drawdown_5y),
+            };
+        } else if (section === 'biaya') {
+            this.editData = {
+                subscription_fee: @js($fund->subscription_fee), redemption_fee: @js($fund->redemption_fee), switching_fee: @js($fund->switching_fee),
+                management_fee: @js($fund->management_fee), custodian_fee: @js($fund->custodian_fee),
+                expense_ratio: @js($fund->expense_ratio), investment_manager_fee: @js($fund->investment_manager_fee),
+                minimum_subscription: @js($fund->minimum_subscription), minimum_topup: @js($fund->minimum_topup), minimum_redemption: @js($fund->minimum_redemption),
+            };
+        }
+        this.editModal = section;
+    },
+    async submitEdit(section) {
+        if (this.editSaving) return;
+        this.editSaving = true;
+        try {
+            const res = await fetch('{{ route('admin.daftar-reksa-dana.update-info', $fund) }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                body: JSON.stringify(this.editData),
+            });
+            const json = await res.json();
+            if (json.success) location.reload();
+        } catch (e) {}
+        this.editSaving = false;
+    },
+    isLocked(section) { return this.parserLocks.includes(section) },
+    async toggleLock(section) {
+        if (this.toggling) return;
+        this.toggling = true;
+        try {
+            const res = await fetch('{{ route('admin.daftar-reksa-dana.toggle-parser-lock', $fund) }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                body: JSON.stringify({ section }),
+            });
+            const json = await res.json();
+            if (json.success) this.parserLocks = json.parser_locks;
+        } catch (e) {}
+        this.toggling = false;
+    },
     async openPerson(name) {
         this.personModal = { open: true, loading: true, error: null, data: null };
         try {
@@ -103,11 +159,20 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     Informasi Reksa Dana
                 </h2>
-                <a href="{{ route('admin.daftar-reksa-dana.edit', $fund) }}"
-                    class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                    Edit
-                </a>
+                <div class="flex items-center gap-2">
+                    <button @click="toggleLock('info')" :disabled="toggling"
+                        class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5"
+                        :class="isLocked('info') ? 'bg-amber-400/30 text-amber-100 hover:bg-amber-400/40' : 'bg-white/20 text-white hover:bg-white/30'">
+                        <template x-if="isLocked('info')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg></template>
+                        <template x-if="!isLocked('info')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg></template>
+                        <span x-text="isLocked('info') ? 'Terkunci' : 'Lock Parser'"></span>
+                    </button>
+                    <a href="{{ route('admin.daftar-reksa-dana.edit', $fund) }}"
+                        class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        Edit
+                    </a>
+                </div>
             </div>
             <div class="divide-y divide-line">
                 <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Nama Reksa Dana</span><span class="text-sm">{{ $fund->nama_reksa_dana }}</span></div>
@@ -133,11 +198,16 @@
 
         {{-- Ringkasan Kinerja --}}
         <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden">
-            <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
+            <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light flex items-center justify-between">
                 <h2 class="font-bold text-white text-sm flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                     Ringkasan Kinerja
                 </h2>
+                <button @click="openEdit('ringkasan')"
+                    class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    Edit
+                </button>
             </div>
             <div class="divide-y divide-line">
                 <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">NAV / NAB-UP</span><span class="text-sm font-bold text-primary">{{ $latestNav ? number_format($latestNav->nab_per_unit, 4, ',', '.') : ($fund->nab_per_unit ? number_format($fund->nab_per_unit, 4, ',', '.') : '—') }}</span></div>
@@ -395,8 +465,22 @@
     <div class="space-y-6">
         {{-- Risk Category --}}
         <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden">
-            <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
+            <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light flex items-center justify-between">
                 <h2 class="font-bold text-white text-sm">Tingkat Risiko</h2>
+                <div class="flex items-center gap-2">
+                    <button @click="toggleLock('risiko')" :disabled="toggling"
+                        class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5"
+                        :class="isLocked('risiko') ? 'bg-amber-400/30 text-amber-100 hover:bg-amber-400/40' : 'bg-white/20 text-white hover:bg-white/30'">
+                        <template x-if="isLocked('risiko')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg></template>
+                        <template x-if="!isLocked('risiko')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg></template>
+                        <span x-text="isLocked('risiko') ? 'Terkunci' : 'Lock Parser'"></span>
+                    </button>
+                    <button @click="openEdit('risiko')"
+                        class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        Edit
+                    </button>
+                </div>
             </div>
             @if($fund->risk_category || $fund->conservative_category)
             <div class="divide-y divide-line">
@@ -435,8 +519,22 @@
         @endphp
         @if($hasRiskMetrics)
         <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden">
-            <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
+            <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light flex items-center justify-between">
                 <h2 class="font-bold text-white text-sm">Metrik Risiko</h2>
+                <div class="flex items-center gap-2">
+                    <button @click="toggleLock('risiko')" :disabled="toggling"
+                        class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5"
+                        :class="isLocked('risiko') ? 'bg-amber-400/30 text-amber-100 hover:bg-amber-400/40' : 'bg-white/20 text-white hover:bg-white/30'">
+                        <template x-if="isLocked('risiko')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg></template>
+                        <template x-if="!isLocked('risiko')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg></template>
+                        <span x-text="isLocked('risiko') ? 'Terkunci' : 'Lock Parser'"></span>
+                    </button>
+                    <button @click="openEdit('risiko')"
+                        class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        Edit
+                    </button>
+                </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -492,8 +590,22 @@
 {{-- TAB: BIAYA --}}
 <div x-show="tab === 'biaya'" x-cloak>
     <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
+        <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light flex items-center justify-between">
             <h2 class="font-bold text-white text-sm">Informasi Biaya</h2>
+            <div class="flex items-center gap-2">
+                <button @click="toggleLock('biaya')" :disabled="toggling"
+                    class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5"
+                    :class="isLocked('biaya') ? 'bg-amber-400/30 text-amber-100 hover:bg-amber-400/40' : 'bg-white/20 text-white hover:bg-white/30'">
+                    <template x-if="isLocked('biaya')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg></template>
+                    <template x-if="!isLocked('biaya')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg></template>
+                    <span x-text="isLocked('biaya') ? 'Terkunci' : 'Lock Parser'"></span>
+                </button>
+                <button @click="openEdit('biaya')"
+                    class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    Edit
+                </button>
+            </div>
         </div>
         @php
             $hasFeeData = $fund->subscription_fee || $fund->redemption_fee || $fund->switching_fee || $fund->management_fee || $fund->custodian_fee || $fund->minimum_subscription || $fund->minimum_topup || $fund->minimum_redemption || $fund->expense_ratio || $fund->investment_manager_fee;
@@ -710,8 +822,190 @@
         </div>
     </div>
 </div>
+
+{{-- Modal Edit Ringkasan Kinerja --}}
+<div x-show="editModal === 'ringkasan'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+    @click.self="editModal = null">
+    <div class="absolute inset-0 bg-black/40" @click="editModal = null"></div>
+    <div class="relative bg-white rounded-2xl shadow-xl border border-line w-full max-w-lg max-h-[85vh] overflow-y-auto">
+        <div class="px-6 py-4 border-b border-line flex items-center justify-between">
+            <h3 class="font-bold text-primary">Edit Ringkasan Kinerja</h3>
+            <button @click="editModal = null" class="text-muted hover:text-primary text-xl leading-none">&times;</button>
+        </div>
+        <form @submit.prevent="submitEdit('ringkasan')" class="p-6 space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-primary mb-1">NAB/UP</label>
+                <input type="number" step="0.0001" x-model="editData.nab_per_unit" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-primary mb-1">Tanggal NAB</label>
+                <input type="date" x-model="editData.tanggal_nab" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-primary mb-1">AUM</label>
+                <input type="number" step="0.01" x-model="editData.aum" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-primary mb-1">Total Unit Penyertaan</label>
+                <input type="number" step="0.01" x-model="editData.total_unit" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" @click="editModal = null" class="px-4 py-2 text-sm text-muted border border-line rounded-lg hover:bg-gray-50">Batal</button>
+                <button type="submit" class="px-4 py-2 text-sm text-white bg-emerald-700 rounded-lg hover:bg-emerald-800">Simpan</button>
+            </div>
+        </form>
+    </div>
 </div>
 
+{{-- Modal Edit Risiko --}}
+<div x-show="editModal === 'risiko'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+    @click.self="editModal = null">
+    <div class="absolute inset-0 bg-black/40" @click="editModal = null"></div>
+    <div class="relative bg-white rounded-2xl shadow-xl border border-line w-full max-w-lg max-h-[85vh] overflow-y-auto">
+        <div class="px-6 py-4 border-b border-line flex items-center justify-between">
+            <h3 class="font-bold text-primary">Edit Risiko</h3>
+            <button @click="editModal = null" class="text-muted hover:text-primary text-xl leading-none">&times;</button>
+        </div>
+        <form @submit.prevent="submitEdit('risiko')" class="p-6 space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-primary mb-1">Risk Category</label>
+                <select x-model="editData.risk_category" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                    <option value="">—</option>
+                    <option value="Rendah">Rendah</option>
+                    <option value="Sedang">Sedang</option>
+                    <option value="Tinggi">Tinggi</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Sharpe 1Th</label>
+                    <input type="number" step="0.0001" x-model="editData.sharpe_ratio_1y" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Sharpe 3Th</label>
+                    <input type="number" step="0.0001" x-model="editData.sharpe_ratio_3y" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Sharpe 5Th</label>
+                    <input type="number" step="0.0001" x-model="editData.sharpe_ratio_5y" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Std Dev 1Th</label>
+                    <input type="number" step="0.0001" x-model="editData.stdev_1y" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Std Dev 3Th</label>
+                    <input type="number" step="0.0001" x-model="editData.stdev_3y" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Std Dev 5Th</label>
+                    <input type="number" step="0.0001" x-model="editData.stdev_5y" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Beta 1Th</label>
+                    <input type="number" step="0.0001" x-model="editData.beta_1y" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Beta 3Th</label>
+                    <input type="number" step="0.0001" x-model="editData.beta_3y" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Beta 5Th</label>
+                    <input type="number" step="0.0001" x-model="editData.beta_5y" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Max DD 1Th</label>
+                    <input type="number" step="0.0001" x-model="editData.max_drawdown_1y" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Max DD 3Th</label>
+                    <input type="number" step="0.0001" x-model="editData.max_drawdown_3y" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Max DD 5Th</label>
+                    <input type="number" step="0.0001" x-model="editData.max_drawdown_5y" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" @click="editModal = null" class="px-4 py-2 text-sm text-muted border border-line rounded-lg hover:bg-gray-50">Batal</button>
+                <button type="submit" class="px-4 py-2 text-sm text-white bg-emerald-700 rounded-lg hover:bg-emerald-800">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- Modal Edit Biaya --}}
+<div x-show="editModal === 'biaya'" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+    @click.self="editModal = null">
+    <div class="absolute inset-0 bg-black/40" @click="editModal = null"></div>
+    <div class="relative bg-white rounded-2xl shadow-xl border border-line w-full max-w-lg max-h-[85vh] overflow-y-auto">
+        <div class="px-6 py-4 border-b border-line flex items-center justify-between">
+            <h3 class="font-bold text-primary">Edit Biaya</h3>
+            <button @click="editModal = null" class="text-muted hover:text-primary text-xl leading-none">&times;</button>
+        </div>
+        <form @submit.prevent="submitEdit('biaya')" class="p-6 space-y-4">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Subscription Fee (%)</label>
+                    <input type="number" step="0.01" x-model="editData.subscription_fee" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Redemption Fee (%)</label>
+                    <input type="number" step="0.01" x-model="editData.redemption_fee" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Switching Fee (%)</label>
+                    <input type="number" step="0.01" x-model="editData.switching_fee" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Management Fee (%)</label>
+                    <input type="number" step="0.01" x-model="editData.management_fee" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Custodian Fee (%)</label>
+                    <input type="number" step="0.01" x-model="editData.custodian_fee" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Expense Ratio (%)</label>
+                    <input type="number" step="0.0001" x-model="editData.expense_ratio" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-primary mb-1">IM Fee</label>
+                <input type="text" x-model="editData.investment_manager_fee" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Min Pembelian (Rp)</label>
+                    <input type="number" step="1" x-model="editData.minimum_subscription" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Min Top Up (Rp)</label>
+                    <input type="number" step="1" x-model="editData.minimum_topup" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-primary mb-1">Min Redemption (Rp)</label>
+                    <input type="number" step="1" x-model="editData.minimum_redemption" class="w-full border border-line rounded-lg px-3 py-2 text-sm">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" @click="editModal = null" class="px-4 py-2 text-sm text-muted border border-line rounded-lg hover:bg-gray-50">Batal</button>
+                <button type="submit" class="px-4 py-2 text-sm text-white bg-emerald-700 rounded-lg hover:bg-emerald-800">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
 
 <script>
 function documentTabData(defaultDocType) {
