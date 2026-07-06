@@ -399,6 +399,43 @@
             </div>
         </div>
 
+        {{-- Analisa Pengelolaan Investasi / Portofolio --}}
+        <div class="bg-white rounded-xl border border-line p-6 space-y-4">
+            <h4 class="font-semibold text-primary text-sm">Analisa Pengelolaan Investasi / Portofolio</h4>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-[#f8fafc] border-b border-line">
+                        <tr>
+                            <th class="text-left px-4 py-2.5 font-semibold text-primary">Analisa</th>
+                            <th class="text-right px-4 py-2.5 font-semibold text-primary">Hasil</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="px-4 py-2 text-muted">Fee Cost to Performance</td>
+                            <td class="px-4 py-2 text-right font-medium">{{ number_format($analisa->fee_cost_to_performance, 4) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-2 text-muted">Pendapatan terhadap NAB</td>
+                            <td class="px-4 py-2 text-right font-medium">{{ number_format($analisa->pendapatan_terhadap_nab, 4) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-2 text-muted">Beban terhadap Pendapatan</td>
+                            <td class="px-4 py-2 text-right font-medium">{{ number_format($analisa->beban_terhadap_pendapatan, 4) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-2 text-muted">Pengelolaan Investasi terhadap Pendapatan</td>
+                            <td class="px-4 py-2 text-right font-medium">{{ number_format($analisa->pengelolaan_investasi_terhadap_pendapatan, 4) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-2 text-muted">Transaction Profit terhadap NAB</td>
+                            <td class="px-4 py-2 text-right font-medium">{{ number_format($analisa->transaction_profit_terhadap_nab, 4) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         {{-- Sektor --}}
         <div class="bg-white rounded-xl border border-line p-6 space-y-3">
             <div class="flex items-center justify-between">
@@ -737,6 +774,11 @@ function editForm() {
         unitMilikInvestor: @json(old('unit_milik_investor', $analisa->unit_milik_investor)),
         unitMilikMi: @json(old('unit_milik_mi', $analisa->unit_milik_mi)),
         totalUnitBeredar: @json(old('total_unit_beredar', $analisa->total_unit_beredar)),
+        feeCostToPerformance: @json(old('fee_cost_to_performance', $analisa->fee_cost_to_performance)),
+        pendapatanTerhadapNab: @json(old('pendapatan_terhadap_nab', $analisa->pendapatan_terhadap_nab)),
+        bebanTerhadapPendapatan: @json(old('beban_terhadap_pendapatan', $analisa->beban_terhadap_pendapatan)),
+        pengelolaanInvestasiTerhadapPendapatan: @json(old('pengelolaan_investasi_terhadap_pendapatan', $analisa->pengelolaan_investasi_terhadap_pendapatan)),
+        transactionProfitTerhadapNab: @json(old('transaction_profit_terhadap_nab', $analisa->transaction_profit_terhadap_nab)),
 
         lookupSektorUrl: @json($formRoutes['lookup_sektor'] ?? null),
         lookupIhsgUrl: @json($formRoutes['lookup_ihsg'] ?? null),

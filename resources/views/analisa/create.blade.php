@@ -284,10 +284,16 @@
                                     placeholder="2026" />
                             </div>
                         </div>
+                        <div x-show="jenisLaporan === 'laporan_tahunan'" x-cloak>
+                            <x-input-label for="tahun_laporan_manual" value="Tahun" />
+                            <x-text-input id="tahun_laporan_manual" name="tahun_laporan" type="text" maxlength="4"
+                                pattern="[0-9]{4}" placeholder="2025" class="mt-1 block w-full"
+                                x-model="tahunLaporan" />
+                        </div>
                     </div>
 
                     {{-- Rasio Keuangan --}}
-                    <div class="border-t border-line pt-4">
+                    <div x-show="jenisLaporan === 'laporan_tahunan'" x-cloak class="border-t border-line pt-4">
                         <h4 class="font-semibold text-primary text-sm mb-3">Rasio Keuangan</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
@@ -322,7 +328,7 @@
                     </div>
 
                     {{-- Fair Value --}}
-                    <div class="border-t border-line pt-4">
+                    <div x-show="jenisLaporan === 'laporan_tahunan'" x-cloak class="border-t border-line pt-4">
                         <h4 class="font-semibold text-primary text-sm mb-3">Fair Value / Pengukuran Nilai Wajar</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
@@ -344,7 +350,7 @@
                     </div>
 
                     {{-- Unit Penyertaan --}}
-                    <div class="border-t border-line pt-4">
+                    <div x-show="jenisLaporan === 'laporan_tahunan'" x-cloak class="border-t border-line pt-4">
                         <h4 class="font-semibold text-primary text-sm mb-3">Unit Penyertaan</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
@@ -1066,8 +1072,102 @@
                 {{-- TAB: INPUT LENGKAP --}}
                 <div x-show="mode==='lengkap'" class="p-6 space-y-6">
 
-                    {{-- Read-only Financial Statement Cards (Lengkap tab) --}}
+                    {{-- Informasi Reksa Dana Card (Laporan Tahunan) --}}
                     <div x-show="jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
+                        <h4 class="font-semibold text-primary text-sm mb-3">Informasi Reksa Dana</h4>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-6 gap-4 text-sm mb-4">
+                            <div>
+                                <span class="block text-xs text-muted">Nama Reksa Dana</span>
+                                <span class="font-semibold" x-text="namaReksaDana || '-'"></span>
+                            </div>
+                            <div>
+                                <span class="block text-xs text-muted">Total AUM (Rp)</span>
+                                <span class="font-semibold" x-text="totalAum ? formatNumber(totalAum) : '-'"></span>
+                            </div>
+                            <div>
+                                <span class="block text-xs text-muted">Jumlah Unit Penyertaan</span>
+                                <span class="font-semibold" x-text="unitPenyertaan ? formatNumber(unitPenyertaan) : '-'"></span>
+                            </div>
+                            <div>
+                                <span class="block text-xs text-muted">NAB/UP</span>
+                                <span class="font-semibold" x-text="nabPerUnit ? formatNumber(nabPerUnit) : '-'"></span>
+                            </div>
+                            <div>
+                                <span class="block text-xs text-muted">Total Unit Beredar</span>
+                                <span class="font-semibold" x-text="totalUnitBeredar ? formatNumber(totalUnitBeredar) : '-'"></span>
+                            </div>
+                            <div>
+                                <span class="block text-xs text-muted">Tahun</span>
+                                <span class="font-semibold" x-text="tahunLaporan || '-'"></span>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-line pt-3 mb-3">
+                            <h5 class="font-semibold text-primary text-xs mb-2">Rasio Keuangan</h5>
+                            <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm">
+                                <div>
+                                    <span class="block text-xs text-muted">Total Hasil Investasi (%)</span>
+                                    <span class="font-semibold" x-text="totalHasilInvestasi ? totalHasilInvestasi + '%' : '-'"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs text-muted">Hasil Investasi Setelah Biaya Pemasaran (%)</span>
+                                    <span class="font-semibold" x-text="hasilInvestasiSetelahBiaya ? hasilInvestasiSetelahBiaya + '%' : '-'"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs text-muted">Biaya Operasi (%)</span>
+                                    <span class="font-semibold" x-text="biayaOperasi ? biayaOperasi + '%' : '-'"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs text-muted">Portfolio Turnover Ratio</span>
+                                    <span class="font-semibold" x-text="portfolioTurnover ?? '-'"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs text-muted">Persentase Penghasilan Kena Pajak (%)</span>
+                                    <span class="font-semibold" x-text="persentasePph ? persentasePph + '%' : '-'"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-line pt-3 mb-3">
+                            <h5 class="font-semibold text-primary text-xs mb-2">Fair Value / Pengukuran Nilai Wajar</h5>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                                <div>
+                                    <span class="block text-xs text-muted">Level 1 (Rp)</span>
+                                    <span class="font-semibold" x-text="fairValueLevel1 ? formatNumber(fairValueLevel1) : '-'"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs text-muted">Level 2 (Rp)</span>
+                                    <span class="font-semibold" x-text="fairValueLevel2 ? formatNumber(fairValueLevel2) : '-'"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs text-muted">Level 3 (Rp)</span>
+                                    <span class="font-semibold" x-text="fairValueLevel3 ? formatNumber(fairValueLevel3) : '-'"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-line pt-3">
+                            <h5 class="font-semibold text-primary text-xs mb-2">Unit Penyertaan</h5>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                                <div>
+                                    <span class="block text-xs text-muted">Unit Milik Investor</span>
+                                    <span class="font-semibold" x-text="unitMilikInvestor ? formatNumber(unitMilikInvestor) : '-'"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs text-muted">Unit Milik Manajer Investasi</span>
+                                    <span class="font-semibold" x-text="unitMilikMi ? formatNumber(unitMilikMi) : '-'"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs text-muted">Total Unit Beredar</span>
+                                    <span class="font-semibold" x-text="totalUnitBeredar ? formatNumber(totalUnitBeredar) : '-'"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Read-only Financial Statement Cards (Lengkap tab) --}}
+                    <div x-show="jenisLaporan === 'kalender_ffs' || jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
                         <h4 class="font-semibold text-primary text-sm mb-3">Laporan Posisi Keuangan</h4>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
@@ -1197,7 +1297,7 @@
                         </div>
                     </div>
 
-                    <div x-show="jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
+                    <div x-show="jenisLaporan === 'kalender_ffs' || jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
                         <h4 class="font-semibold text-primary text-sm mb-3">Laporan Laba Rugi / Penghasilan Komprehensif
                         </h4>
                         <div class="overflow-x-auto">
@@ -1375,7 +1475,7 @@
                         </div>
                     </div>
 
-                    <div x-show="jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
+                    <div x-show="jenisLaporan === 'kalender_ffs' || jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
                         <h4 class="font-semibold text-primary text-sm mb-3">Laporan Arus Kas</h4>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
@@ -1958,7 +2058,7 @@
                     </div>
 
                     {{-- Analisa Likuiditas --}}
-                    <div x-show="jenisLaporan === 'kalender_ffs'">
+                    <div x-show="jenisLaporan === 'kalender_ffs' || jenisLaporan === 'laporan_tahunan'">
                         <div class="flex items-center mb-3">
                             <h4 class="font-semibold text-primary text-sm">Analisa Likuiditas</h4>
                         </div>
@@ -2037,7 +2137,7 @@
                     </div>
 
                     {{-- Analisa Keuangan --}}
-                    <div x-show="jenisLaporan === 'kalender_ffs'">
+                    <div x-show="jenisLaporan === 'kalender_ffs' || jenisLaporan === 'laporan_tahunan'">
                         <div class="flex items-center mb-3">
                             <h4 class="font-semibold text-primary text-sm">Analisa Keuangan</h4>
                         </div>
@@ -2183,6 +2283,62 @@
                                         </template>
                                         <tr x-show="!keuangan.filter(r => r.kategori === 'Bank').length">
                                             <td class="px-3 py-2 text-gray-400 italic" colspan="9">Tidak ada data bank</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Analisa Pengelolaan Investasi / Portofolio --}}
+                    <div x-show="jenisLaporan === 'laporan_tahunan'">
+                        <div class="flex items-center mb-3">
+                            <h4 class="font-semibold text-primary text-sm">Analisa Pengelolaan Investasi / Portofolio</h4>
+                        </div>
+                        <div class="border rounded-lg p-4 bg-white shadow-sm">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm">
+                                    <thead class="bg-[#f8fafc]">
+                                        <tr>
+                                            <th class="text-left px-3 py-2 text-xs font-semibold text-muted">Analisa</th>
+                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted">Hasil</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="px-3 py-2 text-muted">Fee Cost to Performance</td>
+                                            <td class="px-3 py-2 text-right font-mono">
+                                                <span x-text="feeCostToPerformance !== null && feeCostToPerformance !== undefined ? Number(feeCostToPerformance).toFixed(4) : '-'"></span>
+                                                <input type="hidden" name="fee_cost_to_performance" :value="feeCostToPerformance">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-muted">Pendapatan terhadap NAB</td>
+                                            <td class="px-3 py-2 text-right font-mono">
+                                                <span x-text="pendapatanTerhadapNab !== null && pendapatanTerhadapNab !== undefined ? Number(pendapatanTerhadapNab).toFixed(4) : '-'"></span>
+                                                <input type="hidden" name="pendapatan_terhadap_nab" :value="pendapatanTerhadapNab">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-muted">Beban terhadap Pendapatan</td>
+                                            <td class="px-3 py-2 text-right font-mono">
+                                                <span x-text="bebanTerhadapPendapatan !== null && bebanTerhadapPendapatan !== undefined ? Number(bebanTerhadapPendapatan).toFixed(4) : '-'"></span>
+                                                <input type="hidden" name="beban_terhadap_pendapatan" :value="bebanTerhadapPendapatan">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-muted">Pengelolaan Investasi terhadap Pendapatan</td>
+                                            <td class="px-3 py-2 text-right font-mono">
+                                                <span x-text="pengelolaanInvestasiTerhadapPendapatan !== null && pengelolaanInvestasiTerhadapPendapatan !== undefined ? Number(pengelolaanInvestasiTerhadapPendapatan).toFixed(4) : '-'"></span>
+                                                <input type="hidden" name="pengelolaan_investasi_terhadap_pendapatan" :value="pengelolaanInvestasiTerhadapPendapatan">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-3 py-2 text-muted">Transaction Profit terhadap NAB</td>
+                                            <td class="px-3 py-2 text-right font-mono">
+                                                <span x-text="transactionProfitTerhadapNab !== null && transactionProfitTerhadapNab !== undefined ? Number(transactionProfitTerhadapNab).toFixed(4) : '-'"></span>
+                                                <input type="hidden" name="transaction_profit_terhadap_nab" :value="transactionProfitTerhadapNab">
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -2988,6 +3144,11 @@
                     unitMilikInvestor: @json(old('unit_milik_investor')),
                     unitMilikMi: @json(old('unit_milik_mi')),
                     totalUnitBeredar: @json(old('total_unit_beredar')),
+                    feeCostToPerformance: @json(old('fee_cost_to_performance')),
+                    pendapatanTerhadapNab: @json(old('pendapatan_terhadap_nab')),
+                    bebanTerhadapPendapatan: @json(old('beban_terhadap_pendapatan')),
+                    pengelolaanInvestasiTerhadapPendapatan: @json(old('pengelolaan_investasi_terhadap_pendapatan')),
+                    transactionProfitTerhadapNab: @json(old('transaction_profit_terhadap_nab')),
 
                     // Multi-document parse slots
                     docSlots: [{
@@ -3108,6 +3269,16 @@
                         if ((ako || akp) && kaw && !this.kasAkhirTahun) {
                             this.kasAkhirTahun = (kaw + ako + akp).toFixed(2);
                         }
+
+                        const nab = Number(this.totalAum) || 0;
+                        const totalPend = this.getTotalPendapatan();
+                        const totalBeb = this.getTotalBeban();
+
+                        this.feeCostToPerformance = nab ? bl / nab : null;
+                        this.pendapatanTerhadapNab = nab ? totalPend / nab : null;
+                        this.bebanTerhadapPendapatan = totalPend ? totalBeb / totalPend : null;
+                        this.pengelolaanInvestasiTerhadapPendapatan = totalPend ? bm / totalPend : null;
+                        this.transactionProfitTerhadapNab = nab ? (gr + gu) / nab : null;
                     },
 
                     addRow(type) {
@@ -3622,6 +3793,11 @@
                         this.unitMilikInvestor = data.unit_milik_investor ?? this.unitMilikInvestor;
                         this.unitMilikMi = data.unit_milik_mi ?? this.unitMilikMi;
                         this.totalUnitBeredar = data.total_unit_beredar ?? this.totalUnitBeredar;
+                        this.feeCostToPerformance = data.fee_cost_to_performance ?? this.feeCostToPerformance;
+                        this.pendapatanTerhadapNab = data.pendapatan_terhadap_nab ?? this.pendapatanTerhadapNab;
+                        this.bebanTerhadapPendapatan = data.beban_terhadap_pendapatan ?? this.bebanTerhadapPendapatan;
+                        this.pengelolaanInvestasiTerhadapPendapatan = data.pengelolaan_investasi_terhadap_pendapatan ?? this.pengelolaanInvestasiTerhadapPendapatan;
+                        this.transactionProfitTerhadapNab = data.transaction_profit_terhadap_nab ?? this.transactionProfitTerhadapNab;
                         if (data.tahun_tambahan?.length) this.tahunTambahan = data.tahun_tambahan;
                         if (data.data_tambahan) this.dataTambahan = {
                             ...this.dataTambahan,
