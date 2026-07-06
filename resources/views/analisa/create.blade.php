@@ -284,10 +284,16 @@
                                     placeholder="2026" />
                             </div>
                         </div>
+                        <div x-show="jenisLaporan === 'laporan_tahunan'" x-cloak>
+                            <x-input-label for="tahun_laporan_manual" value="Tahun" />
+                            <x-text-input id="tahun_laporan_manual" name="tahun_laporan" type="text" maxlength="4"
+                                pattern="[0-9]{4}" placeholder="2025" class="mt-1 block w-full"
+                                x-model="tahunLaporan" />
+                        </div>
                     </div>
 
                     {{-- Rasio Keuangan --}}
-                    <div class="border-t border-line pt-4">
+                    <div x-show="jenisLaporan === 'laporan_tahunan'" x-cloak class="border-t border-line pt-4">
                         <h4 class="font-semibold text-primary text-sm mb-3">Rasio Keuangan</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
@@ -322,7 +328,7 @@
                     </div>
 
                     {{-- Fair Value --}}
-                    <div class="border-t border-line pt-4">
+                    <div x-show="jenisLaporan === 'laporan_tahunan'" x-cloak class="border-t border-line pt-4">
                         <h4 class="font-semibold text-primary text-sm mb-3">Fair Value / Pengukuran Nilai Wajar</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
@@ -344,7 +350,7 @@
                     </div>
 
                     {{-- Unit Penyertaan --}}
-                    <div class="border-t border-line pt-4">
+                    <div x-show="jenisLaporan === 'laporan_tahunan'" x-cloak class="border-t border-line pt-4">
                         <h4 class="font-semibold text-primary text-sm mb-3">Unit Penyertaan</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
@@ -1065,6 +1071,100 @@
 
                 {{-- TAB: INPUT LENGKAP --}}
                 <div x-show="mode==='lengkap'" class="p-6 space-y-6">
+
+                    {{-- Informasi Reksa Dana Card (Laporan Tahunan) --}}
+                    <div x-show="jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
+                        <h4 class="font-semibold text-primary text-sm mb-3">Informasi Reksa Dana</h4>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-6 gap-4 text-sm mb-4">
+                            <div>
+                                <span class="block text-xs text-muted">Nama Reksa Dana</span>
+                                <span class="font-semibold" x-text="namaReksaDana || '-'"></span>
+                            </div>
+                            <div>
+                                <span class="block text-xs text-muted">Total AUM (Rp)</span>
+                                <span class="font-semibold" x-text="totalAum ? formatNumber(totalAum) : '-'"></span>
+                            </div>
+                            <div>
+                                <span class="block text-xs text-muted">Jumlah Unit Penyertaan</span>
+                                <span class="font-semibold" x-text="unitPenyertaan ? formatNumber(unitPenyertaan) : '-'"></span>
+                            </div>
+                            <div>
+                                <span class="block text-xs text-muted">NAB/UP</span>
+                                <span class="font-semibold" x-text="nabPerUnit ? formatNumber(nabPerUnit) : '-'"></span>
+                            </div>
+                            <div>
+                                <span class="block text-xs text-muted">Total Unit Beredar</span>
+                                <span class="font-semibold" x-text="totalUnitBeredar ? formatNumber(totalUnitBeredar) : '-'"></span>
+                            </div>
+                            <div>
+                                <span class="block text-xs text-muted">Tahun</span>
+                                <span class="font-semibold" x-text="tahunLaporan || '-'"></span>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-line pt-3 mb-3">
+                            <h5 class="font-semibold text-primary text-xs mb-2">Rasio Keuangan</h5>
+                            <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm">
+                                <div>
+                                    <span class="block text-xs text-muted">Total Hasil Investasi (%)</span>
+                                    <span class="font-semibold" x-text="totalHasilInvestasi ? totalHasilInvestasi + '%' : '-'"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs text-muted">Hasil Investasi Setelah Biaya Pemasaran (%)</span>
+                                    <span class="font-semibold" x-text="hasilInvestasiSetelahBiaya ? hasilInvestasiSetelahBiaya + '%' : '-'"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs text-muted">Biaya Operasi (%)</span>
+                                    <span class="font-semibold" x-text="biayaOperasi ? biayaOperasi + '%' : '-'"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs text-muted">Portfolio Turnover Ratio</span>
+                                    <span class="font-semibold" x-text="portfolioTurnover ?? '-'"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs text-muted">Persentase Penghasilan Kena Pajak (%)</span>
+                                    <span class="font-semibold" x-text="persentasePph ? persentasePph + '%' : '-'"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-line pt-3 mb-3">
+                            <h5 class="font-semibold text-primary text-xs mb-2">Fair Value / Pengukuran Nilai Wajar</h5>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                                <div>
+                                    <span class="block text-xs text-muted">Level 1 (Rp)</span>
+                                    <span class="font-semibold" x-text="fairValueLevel1 ? formatNumber(fairValueLevel1) : '-'"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs text-muted">Level 2 (Rp)</span>
+                                    <span class="font-semibold" x-text="fairValueLevel2 ? formatNumber(fairValueLevel2) : '-'"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs text-muted">Level 3 (Rp)</span>
+                                    <span class="font-semibold" x-text="fairValueLevel3 ? formatNumber(fairValueLevel3) : '-'"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-line pt-3">
+                            <h5 class="font-semibold text-primary text-xs mb-2">Unit Penyertaan</h5>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                                <div>
+                                    <span class="block text-xs text-muted">Unit Milik Investor</span>
+                                    <span class="font-semibold" x-text="unitMilikInvestor ? formatNumber(unitMilikInvestor) : '-'"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs text-muted">Unit Milik Manajer Investasi</span>
+                                    <span class="font-semibold" x-text="unitMilikMi ? formatNumber(unitMilikMi) : '-'"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs text-muted">Total Unit Beredar</span>
+                                    <span class="font-semibold" x-text="totalUnitBeredar ? formatNumber(totalUnitBeredar) : '-'"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     {{-- Read-only Financial Statement Cards (Lengkap tab) --}}
                     <div x-show="jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
