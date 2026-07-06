@@ -611,6 +611,56 @@
                 </div>
             </div>
             @endif
+
+            {{-- Analisa Pengelolaan Investasi / Portofolio --}}
+            @if($analisa->fee_cost_to_performance !== null || $analisa->pendapatan_terhadap_nab !== null || $analisa->beban_terhadap_pendapatan !== null || $analisa->pengelolaan_investasi_terhadap_pendapatan !== null || $analisa->transaction_profit_terhadap_nab !== null)
+            <div class="bg-white rounded-xl border border-line p-6">
+                <h3 class="font-semibold text-primary mb-4">Analisa Pengelolaan Investasi / Portofolio</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-[#f8fafc] border-b border-line">
+                            <tr>
+                                <th class="text-left px-4 py-2.5 font-semibold text-primary">Analisa</th>
+                                <th class="text-right px-4 py-2.5 font-semibold text-primary">Hasil</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if($analisa->fee_cost_to_performance !== null)
+                            <tr>
+                                <td class="px-4 py-2 text-muted">Fee Cost to Performance</td>
+                                <td class="px-4 py-2 text-right font-medium">{{ number_format($analisa->fee_cost_to_performance, 4) }}</td>
+                            </tr>
+                            @endif
+                            @if($analisa->pendapatan_terhadap_nab !== null)
+                            <tr>
+                                <td class="px-4 py-2 text-muted">Pendapatan terhadap NAB</td>
+                                <td class="px-4 py-2 text-right font-medium">{{ number_format($analisa->pendapatan_terhadap_nab, 4) }}</td>
+                            </tr>
+                            @endif
+                            @if($analisa->beban_terhadap_pendapatan !== null)
+                            <tr>
+                                <td class="px-4 py-2 text-muted">Beban terhadap Pendapatan</td>
+                                <td class="px-4 py-2 text-right font-medium">{{ number_format($analisa->beban_terhadap_pendapatan, 4) }}</td>
+                            </tr>
+                            @endif
+                            @if($analisa->pengelolaan_investasi_terhadap_pendapatan !== null)
+                            <tr>
+                                <td class="px-4 py-2 text-muted">Pengelolaan Investasi terhadap Pendapatan</td>
+                                <td class="px-4 py-2 text-right font-medium">{{ number_format($analisa->pengelolaan_investasi_terhadap_pendapatan, 4) }}</td>
+                            </tr>
+                            @endif
+                            @if($analisa->transaction_profit_terhadap_nab !== null)
+                            <tr>
+                                <td class="px-4 py-2 text-muted">Transaction Profit terhadap NAB</td>
+                                <td class="px-4 py-2 text-right font-medium">{{ number_format($analisa->transaction_profit_terhadap_nab, 4) }}</td>
+                            </tr>
+                            @endif
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
+
         </div>
 
         {{-- Sidebar: Form Review --}}
