@@ -184,6 +184,12 @@ class DaftarReksaDanaController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
+        // Untuk prospektus, simpan tahun ke ffs_year sebelum duplicate check
+        if ($validated['document_type'] === 'prospektus' && !empty($validated['prospektus_year'])) {
+            $validated['ffs_year'] = $validated['prospektus_year'];
+        }
+        unset($validated['prospektus_year']);
+
         // ponytail: duplicate check at the shared method, not in callers
         $existing = $this->findExistingDocument($validated);
         if ($existing) {
@@ -194,12 +200,6 @@ class DaftarReksaDanaController extends Controller
         $file = $request->file('file');
         $filename = now()->format('Ymd-His') . '-' . Str::random(10) . '.pdf';
         $path = $file->storeAs('reksa-dana-documents/' . $validated['reksa_dana_id'], $filename, 'public');
-
-        // Untuk prospektus, simpan tahun ke ffs_year
-        if ($validated['document_type'] === 'prospektus' && !empty($validated['prospektus_year'])) {
-            $validated['ffs_year'] = $validated['prospektus_year'];
-        }
-        unset($validated['prospektus_year']);
 
         ReksaDanaDocument::create([
             ...$validated,
