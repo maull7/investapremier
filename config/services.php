@@ -85,7 +85,7 @@ return [
     ],
 
     'backend_sync' => [
-        'url' => env('BACKEND_SYNC_URL', 'http://localhost:3456'),
+        'url' => env('BACKEND_SYNC_URL'),
         'timeout' => (int) env('BACKEND_SYNC_TIMEOUT', 600),
     ],
 

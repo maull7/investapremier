@@ -76,11 +76,16 @@ class SyncAllPasardanaJob implements ShouldQueue
                 $nama = $item['nama_reksa_dana'] ?? $item['name'] ?? '';
                 if (empty($nama)) { $rdSkipped++; continue; }
 
-                $existing = \App\Models\ReksaDana::where(function ($q) use ($item, $nama) {
-                    if (!empty($item['kode_reksa_dana'])) $q->where('kode_reksa_dana', $item['kode_reksa_dana']);
-                    elseif (!empty($item['pasardana_id'])) $q->where('pasardana_id', $item['pasardana_id']);
-                    else $q->where('nama_reksa_dana', $nama);
-                })->first();
+                $existing = null;
+                if (!empty($item['kode_reksa_dana'])) {
+                    $existing = \App\Models\ReksaDana::where('kode_reksa_dana', $item['kode_reksa_dana'])->first();
+                }
+                if (!$existing && !empty($item['pasardana_id'])) {
+                    $existing = \App\Models\ReksaDana::where('pasardana_id', $item['pasardana_id'])->first();
+                }
+                if (!$existing) {
+                    $existing = \App\Models\ReksaDana::where('nama_reksa_dana', $nama)->first();
+                }
 
                 $attrs = [];
                 foreach (['nama_reksa_dana','kode_reksa_dana','jenis','jenis_reksa_dana','kategori','mata_uang','nama_manajer_investasi','nab_per_unit','tanggal_nab','aum','total_unit','return_1d','return_1m','return_1y','return_3y','return_5y','sharpe_ratio_1y','sharpe_ratio_3y','sharpe_ratio_5y','stdev_1y','stdev_3y','stdev_5y','beta_1y','beta_3y','beta_5y','max_drawdown_1y','max_drawdown_3y','max_drawdown_5y','pasardana_id'] as $f) {

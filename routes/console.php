@@ -23,3 +23,27 @@ Schedule::command('stocks:check-price-alerts')
 Schedule::command('stocks:check-price-alerts')
     ->everyThirtyMinutes()
     ->withoutOverlapping();
+
+// Sync RD + Harga Harian dari Pasardana setiap hari jam 07:00 WIB
+Schedule::call(function () {
+    $inflight = \App\Models\SyncRun::whereIn('type', [
+        \App\Models\SyncRun::TYPE_RD_HARGA_HARIAN,
+        \App\Models\SyncRun::TYPE_ALL_PASARDANA,
+    ])->whereIn('status', [
+        \App\Models\SyncRun::STATUS_QUEUED,
+        \App\Models\SyncRun::STATUS_RUNNING,
+    ])->where('updated_at', '>=', now()->subHours(2))
+        ->exists();
+
+    if ($inflight) return;
+
+    $run = \App\Models\SyncRun::create([
+        'type' => \App\Models\SyncRun::TYPE_RD_HARGA_HARIAN,
+        'status' => \App\Models\SyncRun::STATUS_QUEUED,
+        'current_step' => 'queued',
+        'current_step_label' => 'Menunggu worker mengambil job dari antrian (scheduled)',
+        'progress_percent' => 0,
+    ]);
+
+    \App\Jobs\SyncReksaDanaFromPasardanaJob::dispatch($run->id);
+})->name('sync-rd-harian')->dailyAt('07:00')->withoutOverlapping()->timezone(config('app.timezone'));

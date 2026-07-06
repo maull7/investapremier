@@ -1114,7 +1114,7 @@ class DaftarReksaDanaController extends Controller
 
         $applied = 0;
         foreach ($pendingLogs as $log) {
-            $attrs = json_decode($log->pending_data, true);
+            $attrs = $log->pending_data;
             if (!$attrs) continue;
             ReksaDana::create($attrs);
             $log->update(['pending_data' => null]);

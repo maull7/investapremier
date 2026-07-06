@@ -752,11 +752,16 @@
             @if($selectedRun && $changesUrl)
                 {{-- Sub-tabs --}}
                 @php
+                    $existingNames = \App\Models\ReksaDana::pluck('nama_reksa_dana')->map(fn($n) => trim(strtolower($n)))->unique()->values()->all();
                     $pendingRdList = \App\Models\SyncChangeLog::where('sync_run_id', $selectedRun->id)
                         ->where('entity_type', 'rd')
                         ->where('change_type', 'created')
                         ->whereNotNull('pending_data')
-                        ->get();
+                        ->get()
+                        ->filter(function ($log) use ($existingNames) {
+                            $name = trim(strtolower($log->entity_label ?? ''));
+                            return $name !== '' && !in_array($name, $existingNames, true);
+                        });
                 @endphp
 
                 @if($pendingRdList->isNotEmpty())

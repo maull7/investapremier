@@ -63,15 +63,16 @@ class SyncReksaDanaFromPasardanaJob implements ShouldQueue
                     continue;
                 }
 
-                $existing = ReksaDana::where(function ($q) use ($item, $nama) {
-                    if (!empty($item['kode_reksa_dana'])) {
-                        $q->where('kode_reksa_dana', $item['kode_reksa_dana']);
-                    } elseif (!empty($item['pasardana_id'])) {
-                        $q->where('pasardana_id', $item['pasardana_id']);
-                    } else {
-                        $q->where('nama_reksa_dana', $nama);
-                    }
-                })->first();
+                $existing = null;
+                if (!empty($item['kode_reksa_dana'])) {
+                    $existing = ReksaDana::where('kode_reksa_dana', $item['kode_reksa_dana'])->first();
+                }
+                if (!$existing && !empty($item['pasardana_id'])) {
+                    $existing = ReksaDana::where('pasardana_id', $item['pasardana_id'])->first();
+                }
+                if (!$existing) {
+                    $existing = ReksaDana::where('nama_reksa_dana', $nama)->first();
+                }
 
                 $attrs = [];
                 if (isset($item['nama_reksa_dana'])) $attrs['nama_reksa_dana'] = $item['nama_reksa_dana'];
