@@ -744,27 +744,7 @@
                         <span class="text-xs text-white/70 font-normal ml-2">Run #{{ $selectedRun->id }}</span>
                     @endif
                 </h2>
-                @if($selectedRun && !$selectedRun->applied_at)
-                    @php
-                        $hasPending = \App\Models\SyncChangeLog::where('sync_run_id', $selectedRun->id)
-                            ->where('entity_type', 'rd')
-                            ->where('change_type', 'created')
-                            ->whereNotNull('pending_data')
-                            ->exists();
-                    @endphp
-                    @if($hasPending)
-                        <form method="POST" action="{{ route('admin.daftar-reksa-dana.sync-pasardana.apply', $selectedRun) }}"
-                            onsubmit="return confirm('Yakin ingin menambahkan semua reksa dana baru dari sync ini ke database?')">
-                            @csrf
-                            <button type="submit" class="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                Terapkan RD Baru
-                            </button>
-                        </form>
-                    @endif
-                @elseif($selectedRun && $selectedRun->applied_at)
+                @if($selectedRun && $selectedRun->applied_at)
                     <span class="text-xs text-white/70 font-normal">✓ Applied {{ $selectedRun->applied_at->format('d M Y H:i') }}</span>
                 @endif
             </div>
@@ -805,41 +785,62 @@
                 {{-- Tab: RD Baru --}}
                 @if($pendingRdList->isNotEmpty())
                 <div x-show="syncDetailTab === 'pending'" x-cloak class="p-4">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
-                            <thead>
-                                <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide">
-                                    <th class="px-4 py-3 font-semibold">#</th>
-                                    <th class="px-4 py-3 font-semibold">Nama Reksa Dana</th>
-                                    <th class="px-4 py-3 font-semibold">Jenis</th>
-                                    <th class="px-4 py-3 font-semibold">MI</th>
-                                    <th class="px-4 py-3 font-semibold">NAB/UP</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-line">
-                                @foreach($pendingRdList as $i => $prd)
-                                    @php $pData = $prd->pending_data; @endphp
-                                    <tr class="hover:bg-[#f8fafc] transition-colors">
-                                        <td class="px-4 py-2.5 text-xs text-muted">{{ $i + 1 }}</td>
-                                        <td class="px-4 py-2.5 text-xs font-medium text-primary">{{ $pData['nama_reksa_dana'] ?? '-' }}</td>
-                                        <td class="px-4 py-2.5 text-xs text-muted">{{ $pData['jenis'] ?? '-' }}</td>
-                                        <td class="px-4 py-2.5 text-xs text-muted max-w-[150px] truncate">{{ $pData['nama_manajer_investasi'] ?? '-' }}</td>
-                                        <td class="px-4 py-2.5 text-xs font-mono">{{ isset($pData['nab_per_unit']) ? number_format($pData['nab_per_unit'], 2) : '-' }}</td>
+                    <form method="POST" action="{{ route('admin.daftar-reksa-dana.sync-pasardana.apply', $selectedRun) }}"
+                        id="form-apply-rd-baru" onsubmit="return confirmApplySelected()">
+                        @csrf
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide">
+                                        <th class="px-4 py-3 font-semibold w-10">
+                                            <input type="checkbox" id="check-all-rd-baru" onchange="toggleAllCheckboxes(this)"
+                                                class="rounded border-line text-emerald-700 focus:ring-emerald-700/30">
+                                        </th>
+                                        <th class="px-4 py-3 font-semibold">#</th>
+                                        <th class="px-4 py-3 font-semibold">Nama Reksa Dana</th>
+                                        <th class="px-4 py-3 font-semibold">Jenis</th>
+                                        <th class="px-4 py-3 font-semibold">MI</th>
+                                        <th class="px-4 py-3 font-semibold">NAB/UP</th>
                                     </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                    @if(!$selectedRun->applied_at)
-                        <p class="mt-3 text-xs text-amber-600">
-                            <svg class="w-3.5 h-3.5 inline -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                            </svg>
-                            Data ini belum masuk ke database. Klik "Terapkan RD Baru" untuk menambahkannya.
-                        </p>
-                    @else
-                        <p class="mt-3 text-xs text-emerald-600">✓ Semua RD baru sudah diterapkan pada {{ $selectedRun->applied_at->format('d M Y H:i') }}</p>
-                    @endif
+                                </thead>
+                                <tbody class="divide-y divide-line">
+                                    @foreach($pendingRdList as $i => $prd)
+                                        @php $pData = $prd->pending_data; @endphp
+                                        <tr class="hover:bg-[#f8fafc] transition-colors">
+                                            <td class="px-4 py-2.5">
+                                                <input type="checkbox" name="selected_ids[]" value="{{ $prd->id }}"
+                                                    class="cb-rd-baru rounded border-line text-emerald-700 focus:ring-emerald-700/30">
+                                            </td>
+                                            <td class="px-4 py-2.5 text-xs text-muted">{{ $i + 1 }}</td>
+                                            <td class="px-4 py-2.5 text-xs font-medium text-primary">{{ $pData['nama_reksa_dana'] ?? '-' }}</td>
+                                            <td class="px-4 py-2.5 text-xs text-muted">{{ $pData['jenis'] ?? '-' }}</td>
+                                            <td class="px-4 py-2.5 text-xs text-muted max-w-[150px] truncate">{{ $pData['nama_manajer_investasi'] ?? '-' }}</td>
+                                            <td class="px-4 py-2.5 text-xs font-mono">{{ isset($pData['nab_per_unit']) ? number_format($pData['nab_per_unit'], 2) : '-' }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        @if(!$selectedRun->applied_at)
+                            <div class="mt-4 flex items-center justify-between gap-3">
+                                <p class="text-xs text-amber-600">
+                                    <svg class="w-3.5 h-3.5 inline -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                    </svg>
+                                    Centang reksa dana yang ingin ditambahkan ke database.
+                                </p>
+                                <button type="submit" id="btn-apply-selected" disabled
+                                    class="flex items-center gap-1.5 px-4 py-2 bg-emerald-700 text-white rounded-lg text-xs font-semibold hover:bg-emerald-800 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Terapkan Terpilih
+                                </button>
+                            </div>
+                        @else
+                            <p class="mt-3 text-xs text-emerald-600">✓ Semua RD baru sudah diterapkan pada {{ $selectedRun->applied_at->format('d M Y H:i') }}</p>
+                        @endif
+                    </form>
                 </div>
                 @endif
             @else
@@ -1161,6 +1162,30 @@
         if (el) el.classList.add('hidden');
     }
 
+    function toggleAllCheckboxes(master) {
+        document.querySelectorAll('.cb-rd-baru').forEach(cb => cb.checked = master.checked);
+        updateApplyButton();
+    }
+
+    function updateApplyButton() {
+        const checked = document.querySelectorAll('.cb-rd-baru:checked').length;
+        const btn = document.getElementById('btn-apply-selected');
+        if (btn) btn.disabled = checked === 0;
+    }
+
+    function confirmApplySelected() {
+        const checked = document.querySelectorAll('.cb-rd-baru:checked').length;
+        if (checked === 0) {
+            alert('Pilih minimal satu reksa dana.');
+            return false;
+        }
+        return confirm(`Yakin ingin menambahkan ${checked} reksa dana yang dipilih ke database?`);
+    }
+
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('cb-rd-baru')) updateApplyButton();
+    });
+
     function openEditModalFromData(doc) {
         document.getElementById('edit-doc-filename').textContent = doc.original_name;
         document.getElementById('form-document-edit').action = '{{ route('admin.daftar-reksa-dana.documents.update', '_docid_') }}'.replace('_docid_', doc.id);
@@ -1174,15 +1199,9 @@
         const ffsYearEl = document.getElementById('edit-doc-ffs-year');
         const prospektusYearEl = document.getElementById('edit-doc-prospektus-year');
 
-        if (doc.document_type === 'ffs') {
-            if (ffsMonthEl) ffsMonthEl.value = doc.ffs_month || '';
-            if (ffsYearEl) ffsYearEl.value = doc.ffs_year || '';
-            if (prospektusYearEl) prospektusYearEl.value = doc.ffs_year || '';
-        } else {
-            if (ffsMonthEl) ffsMonthEl.value = '';
-            if (ffsYearEl) ffsYearEl.value = doc.ffs_year || '';
-            if (prospektusYearEl) prospektusYearEl.value = doc.ffs_year || '';
-        }
+        if (ffsMonthEl) ffsMonthEl.value = doc.ffs_month || '';
+        if (ffsYearEl) ffsYearEl.value = doc.ffs_year || '';
+        if (prospektusYearEl) prospektusYearEl.value = doc.ffs_year || '';
 
         openModal('modal-document-edit');
     }
@@ -1241,19 +1260,14 @@
                 document.getElementById('edit-doc-notes').value = docNotes || '';
                 const typeSelect = document.querySelector('#form-document-edit select[name="document_type"]');
                 if (typeSelect) typeSelect.value = docType;
-                if (docType === 'ffs') {
+                {
                     const ffsMonthEl = document.getElementById('edit-doc-ffs-month');
                     const ffsYearEl = document.getElementById('edit-doc-ffs-year');
+                    const prospektusMonthEl = document.getElementById('edit-doc-prospektus-month');
                     const prospektusYearEl = document.getElementById('edit-doc-prospektus-year');
                     if (ffsMonthEl) ffsMonthEl.value = docMonth || '';
                     if (ffsYearEl) ffsYearEl.value = docYear || '';
-                    if (prospektusYearEl) prospektusYearEl.value = docYear || '';
-                } else {
-                    const ffsMonthEl = document.getElementById('edit-doc-ffs-month');
-                    const ffsYearEl = document.getElementById('edit-doc-ffs-year');
-                    const prospektusYearEl = document.getElementById('edit-doc-prospektus-year');
-                    if (ffsMonthEl) ffsMonthEl.value = '';
-                    if (ffsYearEl) ffsYearEl.value = docYear || '';
+                    if (prospektusMonthEl) prospektusMonthEl.value = docMonth || '';
                     if (prospektusYearEl) prospektusYearEl.value = docYear || '';
                 }
                 openModal('modal-document-edit');

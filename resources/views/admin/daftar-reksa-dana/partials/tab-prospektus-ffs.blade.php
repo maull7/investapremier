@@ -29,8 +29,9 @@
              return this.months[d.getMonth()] + ' ' + d.getFullYear();
          },
          ffsMonth: @js(old('ffs_month') ? (int) old('ffs_month') : ''),
-         ffsYear: @js(old('ffs_year', now()->year)),
-         prospektusYear: @js(old('prospektus_year', now()->year)),
+          ffsYear: @js(old('ffs_year', now()->year)),
+          prospektusMonth: @js(old('prospektus_month', '')),
+          prospektusYear: @js(old('prospektus_year', now()->year)),
          existingDoc: null,
          checking: false,
          checkUrl: @js(route('admin.daftar-reksa-dana.documents.check')),
@@ -57,7 +58,7 @@
              const params = new URLSearchParams({
                  reksa_dana_id: this.rdSelected,
                  document_type: this.type,
-                 ffs_month: this.type === 'ffs' ? this.ffsMonth : '',
+                  ffs_month: this.type === 'ffs' ? this.ffsMonth : this.prospektusMonth,
                  ffs_year: this.type === 'ffs' ? this.ffsYear : this.prospektusYear,
              });
              this.checking = true;
@@ -111,6 +112,16 @@
                     class="w-full text-xs border border-line rounded-lg px-3 py-2 file:mr-2 file:rounded file:border-0 file:bg-emerald-50 file:px-2 file:py-1 file:text-emerald-700">
             </div>
             <div x-show="type === 'prospektus'">
+                <label class="block text-xs font-semibold text-muted mb-1">Bulan Prospektus *</label>
+                <select name="prospektus_month" x-model="prospektusMonth" @change="checkExisting()" :required="type === 'prospektus'"
+                    class="w-full text-sm border border-line rounded-lg px-3 py-2">
+                    <option value="">Pilih Bulan</option>
+                    @foreach ($months as $index => $month)
+                        <option value="{{ $index + 1 }}">{{ $month }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div x-show="type === 'prospektus'">
                 <label class="block text-xs font-semibold text-muted mb-1">Tahun Prospektus *</label>
                 <input type="number" x-model="prospektusYear" name="prospektus_year" min="2000" max="2100"
                     @input.debounce="checkExisting()" :required="type === 'prospektus'"
@@ -155,7 +166,7 @@
             <div class="text-xs text-muted">Memeriksa dokumen yang sudah ada...</div>
         </template>
 
-        <p class="text-[11px] text-muted">Format PDF, maksimal 20 MB. Dokumen FFS wajib memiliki bulan dan tahun.</p>
+        <p class="text-[11px] text-muted">Format PDF, maksimal 20 MB. Dokumen wajib memiliki bulan dan tahun.</p>
         <button :disabled="existingDoc !== null"
             class="px-5 py-2.5 rounded-lg text-sm font-semibold transition"
             :class="existingDoc ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-emerald-700 text-white hover:bg-emerald-800'">
@@ -250,7 +261,7 @@
                             @forelse ($prospectuses as $document)
                                 @include('admin.daftar-reksa-dana.partials.document-actions', [
                                     'document' => $document,
-                                    'label' => $document->ffs_year ?? $document->original_name,
+                                    'label' => $document->ffs_month ? ($months[$document->ffs_month - 1] ?? '-') . ' ' . $document->ffs_year : (string) $document->ffs_year,
                                 ])
                             @empty
                                 <p class="text-xs text-muted">Prospektus belum tersedia.</p>
@@ -353,11 +364,23 @@
                             class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-emerald-700 focus:ring focus:ring-emerald-700/20">
                     </div>
                 </div>
-                <div x-show="docType === 'prospektus'" class="mt-4">
-                    <label class="block text-xs font-semibold text-primary mb-1">Tahun Prospektus *</label>
-                    <input type="number" name="ffs_year" id="edit-doc-prospektus-year" min="2000"
-                        max="2100" :required="docType === 'prospektus'"
-                        class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-emerald-700 focus:ring focus:ring-emerald-700/20">
+                <div x-show="docType === 'prospektus'" class="grid grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-primary mb-1">Bulan Prospektus *</label>
+                        <select name="ffs_month" id="edit-doc-prospektus-month" :required="docType === 'prospektus'"
+                            class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-emerald-700 focus:ring focus:ring-emerald-700/20">
+                            <option value="">— Pilih Bulan —</option>
+                            @foreach ($months as $index => $month)
+                                <option value="{{ $index + 1 }}">{{ $month }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-primary mb-1">Tahun Prospektus *</label>
+                        <input type="number" name="ffs_year" id="edit-doc-prospektus-year" min="2000" max="2100"
+                            :required="docType === 'prospektus'"
+                            class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-emerald-700 focus:ring focus:ring-emerald-700/20">
+                    </div>
                 </div>
                 <div class="mt-4">
                     <label class="block text-xs font-semibold text-primary mb-1">Ganti File (PDF)</label>

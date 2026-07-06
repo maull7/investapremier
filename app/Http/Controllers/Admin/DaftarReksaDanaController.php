@@ -177,6 +177,7 @@ class DaftarReksaDanaController extends Controller
         $validated = $request->validate([
             'reksa_dana_id' => 'required|exists:reksa_dana,id',
             'document_type' => 'required|in:prospektus,ffs',
+            'prospektus_month' => 'required_if:document_type,prospektus|nullable|integer|min:1|max:12',
             'prospektus_year' => 'required_if:document_type,prospektus|nullable|integer|min:2000|max:2100',
             'ffs_month' => 'required_if:document_type,ffs|nullable|integer|min:1|max:12',
             'ffs_year' => 'required_if:document_type,ffs|nullable|integer|min:2000|max:2100',
@@ -184,11 +185,17 @@ class DaftarReksaDanaController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        // Untuk prospektus, simpan tahun ke ffs_year sebelum duplicate check
-        if ($validated['document_type'] === 'prospektus' && !empty($validated['prospektus_year'])) {
-            $validated['ffs_year'] = $validated['prospektus_year'];
+        // Untuk prospektus, simpan tahun & bulan ke ffs_year & ffs_month sebelum duplicate check
+        if ($validated['document_type'] === 'prospektus') {
+            if (!empty($validated['prospektus_year'])) {
+                $validated['ffs_year'] = $validated['prospektus_year'];
+            }
+            if (!empty($validated['prospektus_month'])) {
+                $validated['ffs_month'] = $validated['prospektus_month'];
+            }
         }
         unset($validated['prospektus_year']);
+        unset($validated['prospektus_month']);
 
         // ponytail: duplicate check at the shared method, not in callers
         $existing = $this->findExistingDocument($validated);
@@ -245,7 +252,7 @@ class DaftarReksaDanaController extends Controller
     {
         $validated = $request->validate([
             'document_type' => 'required|in:prospektus,ffs',
-            'ffs_month' => 'required_if:document_type,ffs|nullable|integer|min:1|max:12',
+            'ffs_month' => 'nullable|integer|min:1|max:12',
             'ffs_year' => 'required|integer|min:2000|max:2100',
             'notes' => 'nullable|string|max:1000',
             'file' => 'nullable|file|mimes:pdf|max:20480',
@@ -256,10 +263,6 @@ class DaftarReksaDanaController extends Controller
         if ($existing) {
             return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs'])
                 ->with('error', 'Dokumen untuk periode tersebut sudah ada. Silakan edit dokumen yang sudah ada.');
-        }
-
-        if ($validated['document_type'] === 'prospektus') {
-            $validated['ffs_month'] = null;
         }
 
         unset($validated['file']);
@@ -336,7 +339,7 @@ class DaftarReksaDanaController extends Controller
         $query = ReksaDanaDocument::where('reksa_dana_id', $params['reksa_dana_id'])
             ->where('document_type', $params['document_type']);
 
-        if ($params['document_type'] === 'ffs') {
+        if (!empty($params['ffs_month'])) {
             $query->where('ffs_month', $params['ffs_month'])
                   ->where('ffs_year', $params['ffs_year']);
         } else {
@@ -1092,21 +1095,42 @@ class DaftarReksaDanaController extends Controller
                 : back()->with('error', $msg);
         }
 
-        $pendingLogs = \App\Models\SyncChangeLog::where('sync_run_id', $run->id)
+        $selectedIds = $request->input('selected_ids', []);
+
+        $query = \App\Models\SyncChangeLog::where('sync_run_id', $run->id)
             ->where('entity_type', 'rd')
             ->where('change_type', 'created')
-            ->whereNotNull('pending_data')
-            ->get();
+            ->whereNotNull('pending_data');
+
+        if (!empty($selectedIds)) {
+            $query->whereIn('id', $selectedIds);
+        }
+
+        $pendingLogs = $query->get();
+
+        if ($pendingLogs->isEmpty()) {
+            return back()->with('error', 'Tidak ada data reksa dana baru yang dipilih.');
+        }
 
         $applied = 0;
         foreach ($pendingLogs as $log) {
             $attrs = json_decode($log->pending_data, true);
             if (!$attrs) continue;
             ReksaDana::create($attrs);
+            $log->update(['pending_data' => null]);
             $applied++;
         }
 
-        $run->update(['applied_at' => now()]);
+        $remainingPending = \App\Models\SyncChangeLog::where('sync_run_id', $run->id)
+            ->where('entity_type', 'rd')
+            ->where('change_type', 'created')
+            ->whereNotNull('pending_data')
+            ->count();
+
+        // ponytail: mark applied only when all pending RDs are done
+        if ($remainingPending <= 0) {
+            $run->update(['applied_at' => now()]);
+        }
 
         $msg = "{$applied} reksa dana baru berhasil ditambahkan.";
         ActivityLogger::log('Apply Sync RD', $msg, 'success');
