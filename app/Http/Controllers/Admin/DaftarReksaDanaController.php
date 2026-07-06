@@ -252,7 +252,7 @@ class DaftarReksaDanaController extends Controller
         ]);
 
         // ponytail: same duplicate guard, exclude self
-        $existing = $this->findExistingDocument($validated, $document->id);
+        $existing = $this->findExistingDocument(['reksa_dana_id' => $document->reksa_dana_id, ...$validated], $document->id);
         if ($existing) {
             return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'prospektus-ffs'])
                 ->with('error', 'Dokumen untuk periode tersebut sudah ada. Silakan edit dokumen yang sudah ada.');
