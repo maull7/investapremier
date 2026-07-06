@@ -1417,6 +1417,12 @@ class DaftarReksaDanaController extends Controller
             );
         }
 
+        $locks = $reksaDana->parser_locks ?? [];
+        if (!in_array('ringkasan', $locks)) {
+            $locks[] = 'ringkasan';
+            $reksaDana->update(['parser_locks' => $locks]);
+        }
+
         ActivityLogger::log(
             'Simpan Portfolio',
             "Data portfolio {$reksaDana->nama_reksa_dana} periode {$validated['month']}/{$validated['year']} berhasil disimpan.",

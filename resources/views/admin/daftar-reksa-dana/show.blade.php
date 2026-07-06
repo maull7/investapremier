@@ -496,8 +496,22 @@
 
     {{-- Tabel Historis --}}
     <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mt-6">
-        <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
+        <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light flex items-center justify-between">
             <h2 class="font-bold text-white text-sm">Riwayat NAV / AUM / Unit Penyertaan</h2>
+            <div class="flex items-center gap-2">
+                <button @click="toggleLock('ringkasan')" :disabled="toggling"
+                    class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5"
+                    :class="isLocked('ringkasan') ? 'bg-amber-400/30 text-amber-100 hover:bg-amber-400/40' : 'bg-white/20 text-white hover:bg-white/30'">
+                    <template x-if="isLocked('ringkasan')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg></template>
+                    <template x-if="!isLocked('ringkasan')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg></template>
+                    <span x-text="isLocked('ringkasan') ? 'Terkunci' : 'Lock Parser'"></span>
+                </button>
+                <button @click="openEdit('ringkasan')"
+                    class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    Edit
+                </button>
+            </div>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-sm">

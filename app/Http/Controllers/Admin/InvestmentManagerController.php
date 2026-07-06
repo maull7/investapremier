@@ -130,6 +130,11 @@ class InvestmentManagerController extends Controller
             }
         }
 
+        $pihakTerafiliasiRaw = $manager->pihak_terafiliasi;
+        $pihakTerafiliasiItems = filled($pihakTerafiliasiRaw)
+            ? array_values(array_filter(array_map('trim', explode("\n", $pihakTerafiliasiRaw))))
+            : [];
+
         $range = request('range', '1y');
         $chartData = $chartDataService->forManager(
             $manager,
@@ -159,7 +164,7 @@ class InvestmentManagerController extends Controller
 
         return view('admin.investment-managers.show', compact(
             'manager', 'fundsWithProspektus', 'managerFundsWithProspektus', 'range', 'chartData', 'governanceSections',
-            'pasardanaGovernance', 'prospektusHistory', 'availableYears', 'selectedYear',
+            'pasardanaGovernance', 'prospektusHistory', 'availableYears', 'selectedYear', 'pihakTerafiliasiItems',
         ));
     }
 
