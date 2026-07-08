@@ -145,16 +145,9 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::delete('daftar-reksa-dana/partitions/{partition}', [DaftarReksaDanaController::class, 'destroyPartition'])->name('daftar-reksa-dana.partitions.destroy');
     Route::post('daftar-reksa-dana/extract-data', [DaftarReksaDanaController::class, 'extractReksaDanaData'])->name('daftar-reksa-dana.extract-data');
     Route::post('daftar-reksa-dana/documents/{document}/parse-ffs', [DaftarReksaDanaController::class, 'parseFfs'])->name('daftar-reksa-dana.documents.parse-ffs');
-    Route::post('daftar-reksa-dana/upload-harga', [DaftarReksaDanaController::class, 'uploadHarga'])->name('daftar-reksa-dana.upload-harga');
-    Route::post('daftar-reksa-dana/upload-harian', [DaftarReksaDanaController::class, 'uploadHarian'])->name('daftar-reksa-dana.upload-harian');
-    Route::get('daftar-reksa-dana/template-harga', [DaftarReksaDanaController::class, 'downloadTemplateHarga'])->name('daftar-reksa-dana.template-harga');
-    Route::get('daftar-reksa-dana/template-harian', [DaftarReksaDanaController::class, 'downloadTemplateHarian'])->name('daftar-reksa-dana.template-harian');
     Route::post('daftar-reksa-dana/harga/store', [DaftarReksaDanaController::class, 'storeHarga'])->name('daftar-reksa-dana.harga.store');
     Route::post('daftar-reksa-dana/harga/update/{reksaDana}', [DaftarReksaDanaController::class, 'updateHarga'])->name('daftar-reksa-dana.harga.update');
     Route::delete('daftar-reksa-dana/harga/destroy/{reksaDana}', [DaftarReksaDanaController::class, 'destroyHarga'])->name('daftar-reksa-dana.harga.destroy');
-    Route::post('daftar-reksa-dana/harian/store', [DaftarReksaDanaController::class, 'storeHarian'])->name('daftar-reksa-dana.harian.store');
-    Route::post('daftar-reksa-dana/harian/update/{hargaReksaDana}', [DaftarReksaDanaController::class, 'updateHarian'])->name('daftar-reksa-dana.harian.update');
-    Route::delete('daftar-reksa-dana/harian/destroy/{hargaReksaDana}', [DaftarReksaDanaController::class, 'destroyHarian'])->name('daftar-reksa-dana.harian.destroy');
     Route::get('daftar-reksa-dana/parse-kode', [DaftarReksaDanaController::class, 'parseKode'])->name('daftar-reksa-dana.parse-kode');
     Route::post('daftar-reksa-dana/{reksaDana}/export-investment-manager', [DaftarReksaDanaController::class, 'exportInvestmentManager'])->name('daftar-reksa-dana.export-investment-manager');
     Route::post('daftar-reksa-dana/sync-pasardana', [DaftarReksaDanaController::class, 'syncFromPasardana'])->name('daftar-reksa-dana.sync-pasardana');
@@ -186,6 +179,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::post('analisa-rd/parse-prospektus-pdf', [AdminAnalisaRdController::class, 'parseProspektusPdf'])->name('analisa-rd.parse-prospektus-pdf');
     Route::post('analisa-rd/parse-pdf-vision', [AnalisaFfsVisionController::class, 'parsePdf'])->name('analisa-rd.parse-pdf-vision');
     Route::post('analisa-rd/parse-web-file', [AdminAnalisaRdController::class, 'parseWebFile'])->name('analisa-rd.parse-web-file');
+    Route::post('analisa-rd/import-excel-preview', [AdminAnalisaRdController::class, 'importExcelPreview'])->name('analisa-rd.import-excel-preview');
     Route::post('analisa-rd/scrape-web-data', [AdminAnalisaRdController::class, 'scrapeWebData'])->name('analisa-rd.scrape-web-data');
     Route::post('analisa-rd/scrape-url', [AdminAnalisaRdController::class, 'scrapeUrl'])->name('analisa-rd.scrape-url');
     Route::get('analisa-rd/lookup-kode', [AdminAnalisaRdController::class, 'lookupKode'])->name('analisa-rd.lookup-kode');
@@ -370,6 +364,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::post('analisa-ul/parse-pdf', [AdminAnalisaUlController::class, 'parsePdf'])->name('analisa-ul.parse-pdf');
     Route::post('analisa-ul/parse-pdf-vision', [AnalisaFfsVisionController::class, 'parsePdf'])->name('analisa-ul.parse-pdf-vision');
     Route::post('analisa-ul/parse-web-file', [AdminAnalisaUlController::class, 'parseWebFile'])->name('analisa-ul.parse-web-file');
+    Route::post('analisa-ul/import-excel-preview', [AdminAnalisaUlController::class, 'importExcelPreview'])->name('analisa-ul.import-excel-preview');
     Route::post('analisa-ul/scrape-web-data', [AdminAnalisaUlController::class, 'scrapeWebData'])->name('analisa-ul.scrape-web-data');
     Route::post('analisa-ul/scrape-url', [AdminAnalisaUlController::class, 'scrapeUrl'])->name('analisa-ul.scrape-url');
     Route::post('analisa-ul/preview-ai', [AdminAnalisaUlController::class, 'previewAi'])->name('analisa-ul.preview-ai');
@@ -426,6 +421,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::post('/analisa/parse-pdf-vision', [AnalisaFfsVisionController::class, 'parsePdf'])->name('analisa.parse-pdf-vision');
     Route::get('/analisa/existing-documents', [AnalisaController::class, 'getExistingDocuments'])->name('analisa.existing-documents');
     Route::post('/analisa/parse-existing-document', [AnalisaController::class, 'parseExistingDocument'])->name('analisa.parse-existing-document');
+    Route::post('/analisa/import-excel-preview', [AnalisaController::class, 'importExcelPreview'])->name('analisa.import-excel-preview');
     Route::post('/analisa/parse-web-file', [AnalisaController::class, 'parseWebFile'])->name('analisa.parse-web-file');
     Route::post('/analisa/scrape-web-data', [AnalisaController::class, 'scrapeWebData'])->name('analisa.scrape-web-data');
     Route::post('/analisa/scrape-url', [AnalisaController::class, 'scrapeUrl'])->name('analisa.scrape-url');
@@ -520,6 +516,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/unit-link-analisa/existing-documents', [UserAnalisaUlController::class, 'getExistingDocuments'])->name('unit-link-analisa.existing-documents');
     Route::post('/unit-link-analisa/parse-existing-document', [UserAnalisaUlController::class, 'parseExistingDocument'])->name('unit-link-analisa.parse-existing-document');
     Route::post('/unit-link-analisa/parse-web-file', [UserAnalisaUlController::class, 'parseWebFile'])->name('unit-link-analisa.parse-web-file');
+    Route::post('/unit-link-analisa/import-excel-preview', [UserAnalisaUlController::class, 'importExcelPreview'])->name('unit-link-analisa.import-excel-preview');
     Route::post('/unit-link-analisa/scrape-web-data', [UserAnalisaUlController::class, 'scrapeWebData'])->name('unit-link-analisa.scrape-web-data');
     Route::post('/unit-link-analisa/scrape-url', [UserAnalisaUlController::class, 'scrapeUrl'])->name('unit-link-analisa.scrape-url');
     Route::post('/unit-link-analisa/preview-ai', [UserAnalisaUlController::class, 'previewAi'])->name('unit-link-analisa.preview-ai');

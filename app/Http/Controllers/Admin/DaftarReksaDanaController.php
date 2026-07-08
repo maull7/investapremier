@@ -18,10 +18,6 @@ use App\Models\MutualFundPortfolioComposition;
 use App\Models\ReksaDana;
 use App\Models\ReksaDanaDocument;
 use App\Models\SyncRun;
-use App\Imports\HargaReksaDanaImport;
-use App\Imports\HarianReksaDanaImport;
-use App\Exports\HargaReksaDanaTemplateExport;
-use App\Exports\HarianReksaDanaTemplateExport;
 use App\Services\KodeReksaDanaParser;
 use App\Services\InvestmentPersonService;
 use App\Services\ReksaDanaChartDataService;
@@ -32,7 +28,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Support\ActivityLogger;
-use Maatwebsite\Excel\Facades\Excel;
 
 class DaftarReksaDanaController extends Controller
 {
@@ -53,31 +48,14 @@ class DaftarReksaDanaController extends Controller
         $reksaDanas = $hargaQuery->paginate(20, ['*'], 'harga_page')->withQueryString();
 
         $harianTanggal = $request->get('harian_tanggal');
-        $harianSort = $request->get('harian_sort', 'reksa_dana.nama_reksa_dana');
+        $harianSort = $request->get('harian_sort', 'nama_reksa_dana');
         $harianDir = $request->get('harian_direction', 'asc');
-
+        $harianQuery = ReksaDana::orderBy($harianSort, $harianDir);
         if ($harianTanggal) {
-            $harianQuery = HargaReksaDana::with('reksaDana')
-                ->join('reksa_dana', 'harga_reksa_dana.reksa_dana_id', '=', 'reksa_dana.id')
-                ->where('tanggal', $harianTanggal)
-                ->orderBy('reksa_dana.nama_reksa_dana', $harianDir)
-                ->select('harga_reksa_dana.*');
-        } else {
-            $latestPerRd = HargaReksaDana::selectRaw('reksa_dana_id, MAX(tanggal) as max_tanggal')
-                ->groupBy('reksa_dana_id');
-
-            $harianQuery = HargaReksaDana::with('reksaDana')
-                ->joinSub($latestPerRd, 'latest', function ($join) {
-                    $join->on('harga_reksa_dana.reksa_dana_id', '=', 'latest.reksa_dana_id')
-                        ->whereColumn('harga_reksa_dana.tanggal', 'latest.max_tanggal');
-                })
-                ->join('reksa_dana', 'harga_reksa_dana.reksa_dana_id', '=', 'reksa_dana.id')
-                ->orderBy('reksa_dana.nama_reksa_dana', $harianDir)
-                ->select('harga_reksa_dana.*');
+            $harianQuery->whereDate('tanggal_nab', $harianTanggal);
         }
-
         if ($request->search) {
-            $harianQuery->whereHas('reksaDana', fn($q) => $q->where('nama_reksa_dana', 'like', '%' . $request->search . '%'));
+            $harianQuery->where('nama_reksa_dana', 'like', '%' . $request->search . '%');
         }
         $harian = $harianQuery->paginate(20, ['*'], 'harian_page')->withQueryString();
 
@@ -542,78 +520,6 @@ class DaftarReksaDanaController extends Controller
             ->with('success', 'Data Manajer Investasi berhasil diupdate dari Reksa Dana.');
     }
 
-    public function uploadHarga(Request $request)
-    {
-        $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:5120']);
-
-        $import = new HargaReksaDanaImport();
-        Excel::import($import, $request->file('file'));
-
-        if ($import->imported === 0) {
-            $msg = 'Tidak ada data yang berhasil diimport. ';
-            if ($import->skipped > 0) {
-                $msg .= $import->skipped . ' baris dilewati (nama_reksa_dana tidak boleh kosong).';
-            } elseif ($import->duplicates > 0) {
-                $msg .= $import->duplicates . ' baris duplikat dilewati.';
-            } else {
-                $msg .= 'Periksa kembali format file excel anda.';
-            }
-            return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harga'])
-                ->with('error', $msg);
-        }
-
-        $msg = $this->buildImportMessage('data reksa dana', $import);
-        ActivityLogger::log(
-            'Upload Harga Reksa Dana',
-            $msg,
-            'success',
-        );
-
-        return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harga'])
-            ->with('success', $msg);
-    }
-
-    public function uploadHarian(Request $request)
-    {
-        $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:5120']);
-
-        $import = new HarianReksaDanaImport();
-        Excel::import($import, $request->file('file'));
-
-        if ($import->imported === 0) {
-            $msg = 'Tidak ada data yang berhasil diimport. ';
-            if ($import->skipped > 0) {
-                $msg .= $import->skipped . ' baris dilewati. Pastikan nama_reksa_dana, tanggal, dan nab_per_unit terisi dengan benar.';
-            } elseif ($import->duplicates > 0) {
-                $msg .= $import->duplicates . ' baris duplikat dilewati.';
-            } else {
-                $msg .= 'Periksa kembali format file excel anda.';
-            }
-            return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harian'])
-                ->with('error', $msg);
-        }
-
-        $msg = $this->buildImportMessage('data harian', $import);
-        ActivityLogger::log(
-            'Upload Data Harian Reksa Dana',
-            $msg,
-            'success',
-        );
-
-        return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harian'])
-            ->with('success', $msg);
-    }
-
-    public function downloadTemplateHarga()
-    {
-        return Excel::download(new HargaReksaDanaTemplateExport(), 'template-harga-reksa-dana.xlsx');
-    }
-
-    public function downloadTemplateHarian()
-    {
-        return Excel::download(new HarianReksaDanaTemplateExport(), 'template-harian-reksa-dana.xlsx');
-    }
-
     public function storeHarga(Request $request)
     {
         if ($request->has('kategori') && is_string($request->input('kategori'))) {
@@ -845,31 +751,6 @@ class DaftarReksaDanaController extends Controller
 
         return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => 'harian'])
             ->with('success', 'Data harian berhasil dihapus.');
-    }
-
-    private function buildImportMessage(string $label, object $import): string
-    {
-        $msg = $import->imported . ' ' . $label . ' berhasil diupload.';
-
-        $details = [];
-        if ($import->created > 0) {
-            $details[] = $import->created . ' baru';
-        }
-        if ($import->updated > 0) {
-            $details[] = $import->updated . ' diperbarui';
-        }
-        if ($import->duplicates > 0) {
-            $details[] = $import->duplicates . ' duplikat dilewati';
-        }
-        if ($import->skipped > 0) {
-            $details[] = $import->skipped . ' baris kosong dilewati';
-        }
-
-        if (!empty($details)) {
-            $msg .= ' (' . implode(', ', $details) . ')';
-        }
-
-        return $msg;
     }
 
     private function mergePeopleText(?string $old, string $new, InvestmentPersonService $personService): string
