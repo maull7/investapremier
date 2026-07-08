@@ -2114,4 +2114,32 @@ class FfsParserService
 
         return $this->normalizeAiData($merged);
     }
+
+    public function parseWithPageRangesHybrid(string $pdfPath, GroqService $groq, array $pageRanges, AiTableService $aiTable): array
+    {
+        set_time_limit(600);
+
+        $aiData = $this->parseWithPageRanges($pdfPath, $groq, $pageRanges);
+
+        $partitions = [];
+        foreach ($pageRanges as $i => $range) {
+            $partitions[] = [
+                'id' => $i + 1,
+                'start' => (int) ($range['start_page'] ?? 1),
+                'end' => (int) ($range['end_page'] ?? 1),
+                'section_type' => $range['section_type'] ?? 'auto',
+            ];
+        }
+
+        try {
+            $tablePartitions = $aiTable->extractTables($pdfPath, $partitions);
+            $aiData['_raw_tables'] = $tablePartitions;
+            \Log::info('[PARSE-HYBRID] Tables extracted from ' . count($tablePartitions) . ' partitions');
+        } catch (\Throwable $e) {
+            \Log::warning('[PARSE-HYBRID] Table extraction failed: ' . $e->getMessage());
+            $aiData['_raw_tables'] = [];
+        }
+
+        return $aiData;
+    }
 }

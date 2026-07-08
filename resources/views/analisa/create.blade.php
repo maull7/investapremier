@@ -3214,7 +3214,7 @@
                         </div>
 
                         {{-- Actions --}}
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-3 flex-wrap">
                             <button type="button" @click="parseAllPageRanges()"
                                 :disabled="partitionLoading || !selectedDocId || !pageRanges.some(r => r.start_page && r.end_page)"
                                 class="px-4 py-2 text-xs font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition">
@@ -3239,6 +3239,236 @@
                                 <button type="button" @click="mode = 'lengkap'" class="text-xs underline">Lihat di
                                     Input Lengkap</button>
                             </div>
+                        </div>
+
+                        {{-- Preview Tables grouped by content type --}}
+                        <div x-show="partitionSuccess && groupedTables.length > 0">
+                            <hr class="border-line my-3">
+                            <div class="space-y-3">
+                                <h4 class="text-xs font-semibold text-primary">Hasil Tabel</h4>
+                                <div class="flex flex-wrap gap-1.5 mb-2">
+                                    <template x-for="(grp, gi) in groupedTables" :key="gi">
+                                        <button type="button" @click="activeContentTab = grp.table_name"
+                                            class="px-2.5 py-1 text-[10px] font-medium rounded-lg border transition"
+                                            :class="activeContentTab === grp.table_name ? 'bg-primary text-white border-primary' : 'bg-white text-muted border-line hover:border-primary/40'"
+                                            x-text="grp.table_name + ' (' + grp.tables.length + ')'"></button>
+                                    </template>
+                                </div>
+                                <div class="overflow-x-auto border border-line rounded-xl bg-white">
+                                    <template x-for="(grp, gi) in groupedTables" :key="gi">
+                                        <div x-show="activeContentTab === grp.table_name" class="p-3 space-y-4">
+                                            <template x-for="(tbl, ti) in grp.tables" :key="ti">
+                                                <div>
+                                                    <div x-show="grp.tables.length > 1" class="text-[10px] font-medium text-muted mb-1" x-text="'Tabel ' + (ti + 1)"></div>
+                                                    <table class="w-full text-xs">
+                                                        <thead>
+                                                            <tr class="bg-gray-50 border-b border-line">
+                                                                <template x-for="(h, hi) in tbl.headers" :key="hi">
+                                                                    <th class="px-3 py-2 text-left font-semibold text-primary whitespace-nowrap"
+                                                                        x-text="h"></th>
+                                                                </template>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="divide-y divide-line">
+                                                            <template x-for="(row, ri) in tbl.rows" :key="ri">
+                                                                <tr class="hover:bg-gray-50/50">
+                                                                    <template x-for="(cell, ci) in row" :key="ci">
+                                                                        <td class="px-3 py-1.5 whitespace-nowrap"
+                                                                            :class="ci === 0 ? 'font-medium text-gray-800' : 'text-right font-mono text-gray-600'"
+                                                                            x-text="cell"></td>
+                                                                    </template>
+                                                                </tr>
+                                                            </template>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Portfolio Tables (efek, obligasi, sukuk, bank, sektor) --}}
+                        <div x-show="partitionSuccess && (partitionSektor.length || partitionEfek.length || partitionObligasi.length || partitionSukuk.length || partitionBank.length)">
+                            <hr class="border-line my-3">
+                            <div class="space-y-3">
+                                <h4 class="text-xs font-semibold text-primary">📋 Portofolio</h4>
+                                <div class="flex flex-wrap gap-1.5 mb-2">
+                                    <button type="button" @click="activePortfolioTab = 'efek'"
+                                        class="px-2.5 py-1 text-[10px] font-medium rounded-lg border transition"
+                                        :class="activePortfolioTab === 'efek' ? 'bg-primary text-white border-primary' : 'bg-white text-muted border-line hover:border-primary/40'">
+                                        Efek <span x-show="partitionEfek.length" class="ml-1 opacity-70" x-text="'('+partitionEfek.length+')'"></span>
+                                    </button>
+                                    <button type="button" @click="activePortfolioTab = 'obligasi'"
+                                        x-show="partitionObligasi.length"
+                                        class="px-2.5 py-1 text-[10px] font-medium rounded-lg border transition"
+                                        :class="activePortfolioTab === 'obligasi' ? 'bg-primary text-white border-primary' : 'bg-white text-muted border-line hover:border-primary/40'">
+                                        Obligasi <span class="ml-1 opacity-70" x-text="'('+partitionObligasi.length+')'"></span>
+                                    </button>
+                                    <button type="button" @click="activePortfolioTab = 'sukuk'"
+                                        x-show="partitionSukuk.length"
+                                        class="px-2.5 py-1 text-[10px] font-medium rounded-lg border transition"
+                                        :class="activePortfolioTab === 'sukuk' ? 'bg-primary text-white border-primary' : 'bg-white text-muted border-line hover:border-primary/40'">
+                                        Sukuk <span class="ml-1 opacity-70" x-text="'('+partitionSukuk.length+')'"></span>
+                                    </button>
+                                    <button type="button" @click="activePortfolioTab = 'bank'"
+                                        x-show="partitionBank.length"
+                                        class="px-2.5 py-1 text-[10px] font-medium rounded-lg border transition"
+                                        :class="activePortfolioTab === 'bank' ? 'bg-primary text-white border-primary' : 'bg-white text-muted border-line hover:border-primary/40'">
+                                        Bank <span class="ml-1 opacity-70" x-text="'('+partitionBank.length+')'"></span>
+                                    </button>
+                                    <button type="button" @click="activePortfolioTab = 'sektor'"
+                                        x-show="partitionSektor.length"
+                                        class="px-2.5 py-1 text-[10px] font-medium rounded-lg border transition"
+                                        :class="activePortfolioTab === 'sektor' ? 'bg-primary text-white border-primary' : 'bg-white text-muted border-line hover:border-primary/40'">
+                                        Sektor <span class="ml-1 opacity-70" x-text="'('+partitionSektor.length+')'"></span>
+                                    </button>
+                                </div>
+
+                                {{-- Efek Table --}}
+                                <div x-show="activePortfolioTab === 'efek'" class="overflow-x-auto border border-line rounded-xl bg-white p-3">
+                                    <table x-show="partitionEfek.length" class="w-full text-xs">
+                                        <thead><tr class="bg-gray-50 border-b border-line">
+                                            <th class="px-3 py-2 text-left font-semibold text-primary whitespace-nowrap">Kode</th>
+                                            <th class="px-3 py-2 text-left font-semibold text-primary whitespace-nowrap">Nama Efek</th>
+                                            <th class="px-3 py-2 text-left font-semibold text-primary whitespace-nowrap">Sektor</th>
+                                            <th class="px-3 py-2 text-right font-semibold text-primary whitespace-nowrap">Jumlah Lembar</th>
+                                            <th class="px-3 py-2 text-right font-semibold text-primary whitespace-nowrap">Harga Perolehan</th>
+                                            <th class="px-3 py-2 text-right font-semibold text-primary whitespace-nowrap">Bobot %</th>
+                                            <th class="px-3 py-2 text-right font-semibold text-primary whitespace-nowrap">Nilai Pasar</th>
+                                            <th class="px-3 py-2 text-right font-semibold text-primary whitespace-nowrap">% NAB</th>
+                                            <th class="px-3 py-2 text-right font-semibold text-primary whitespace-nowrap">Return 1Y</th>
+                                        </tr></thead>
+                                        <tbody class="divide-y divide-line">
+                                            <template x-for="(row, ri) in partitionEfek" :key="ri">
+                                                <tr class="hover:bg-gray-50/50">
+                                                    <td class="px-3 py-1.5 font-medium text-gray-800 whitespace-nowrap" x-text="row.kode_efek || '-'"></td>
+                                                    <td class="px-3 py-1.5 whitespace-nowrap" x-text="row.nama_efek || '-'"></td>
+                                                    <td class="px-3 py-1.5 whitespace-nowrap" x-text="row.sektor || '-'"></td>
+                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.jumlah_lembar != null ? formatNumber(row.jumlah_lembar) : '-'"></td>
+                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.harga_perolehan != null ? formatNumber(row.harga_perolehan) : '-'"></td>
+                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.bobot != null ? row.bobot.toFixed(2) : '-'"></td>
+                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.nilai_pasar != null ? formatNumber(row.nilai_pasar) : '-'"></td>
+                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.persen_nab != null ? row.persen_nab.toFixed(2) : '-'"></td>
+                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.return_1y != null ? row.return_1y.toFixed(2) : '-'"></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                    <div x-show="!partitionEfek.length" class="text-xs text-muted italic py-4 text-center">Tidak ada data efek</div>
+                                </div>
+
+                                {{-- Obligasi Table --}}
+                                <div x-show="activePortfolioTab === 'obligasi'" class="overflow-x-auto border border-line rounded-xl bg-white p-3">
+                                    <table class="w-full text-xs">
+                                        <thead><tr class="bg-gray-50 border-b border-line">
+                                            <th class="px-3 py-2 text-left font-semibold text-primary">Kode</th>
+                                            <th class="px-3 py-2 text-left font-semibold text-primary">Nama</th>
+                                            <th class="px-3 py-2 text-right font-semibold text-primary">Bobot %</th>
+                                            <th class="px-3 py-2 text-right font-semibold text-primary">Nilai Pasar</th>
+                                            <th class="px-3 py-2 text-right font-semibold text-primary">YTM</th>
+                                            <th class="px-3 py-2 text-right font-semibold text-primary">Kupon</th>
+                                            <th class="px-3 py-2 text-left font-semibold text-primary">Jatuh Tempo</th>
+                                            <th class="px-3 py-2 text-left font-semibold text-primary">Penerbit</th>
+                                            <th class="px-3 py-2 text-left font-semibold text-primary">Rating</th>
+                                        </tr></thead>
+                                        <tbody class="divide-y divide-line">
+                                            <template x-for="(row, ri) in partitionObligasi" :key="ri">
+                                                <tr class="hover:bg-gray-50/50">
+                                                    <td class="px-3 py-1.5 font-medium text-gray-800" x-text="row.kode_obligasi || '-'"></td>
+                                                    <td class="px-3 py-1.5" x-text="row.nama_obligasi || '-'"></td>
+                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.bobot != null ? row.bobot.toFixed(2) : '-'"></td>
+                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.nilai_pasar != null ? formatNumber(row.nilai_pasar) : '-'"></td>
+                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.ytm != null ? row.ytm.toFixed(2) : '-'"></td>
+                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.kupon != null ? row.kupon.toFixed(2) : '-'"></td>
+                                                    <td class="px-3 py-1.5 whitespace-nowrap" x-text="row.tanggal_jatuh_tempo || '-'"></td>
+                                                    <td class="px-3 py-1.5" x-text="row.penerbit || '-'"></td>
+                                                    <td class="px-3 py-1.5" x-text="row.rating || '-'"></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {{-- Sukuk Table --}}
+                                <div x-show="activePortfolioTab === 'sukuk'" class="overflow-x-auto border border-line rounded-xl bg-white p-3">
+                                    <table class="w-full text-xs">
+                                        <thead><tr class="bg-gray-50 border-b border-line">
+                                            <th class="px-3 py-2 text-left font-semibold text-primary">Kode</th>
+                                            <th class="px-3 py-2 text-left font-semibold text-primary">Nama</th>
+                                            <th class="px-3 py-2 text-left font-semibold text-primary">Jenis</th>
+                                            <th class="px-3 py-2 text-right font-semibold text-primary">Bobot %</th>
+                                            <th class="px-3 py-2 text-right font-semibold text-primary">Yield</th>
+                                            <th class="px-3 py-2 text-left font-semibold text-primary">Jatuh Tempo</th>
+                                            <th class="px-3 py-2 text-left font-semibold text-primary">Rating</th>
+                                        </tr></thead>
+                                        <tbody class="divide-y divide-line">
+                                            <template x-for="(row, ri) in partitionSukuk" :key="ri">
+                                                <tr class="hover:bg-gray-50/50">
+                                                    <td class="px-3 py-1.5 font-medium text-gray-800" x-text="row.kode_sukuk || '-'"></td>
+                                                    <td class="px-3 py-1.5" x-text="row.nama_sukuk || '-'"></td>
+                                                    <td class="px-3 py-1.5" x-text="row.jenis_sukuk || '-'"></td>
+                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.bobot != null ? row.bobot.toFixed(2) : '-'"></td>
+                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.yield != null ? row.yield.toFixed(2) : '-'"></td>
+                                                    <td class="px-3 py-1.5 whitespace-nowrap" x-text="row.jatuh_tempo || '-'"></td>
+                                                    <td class="px-3 py-1.5" x-text="row.rating || '-'"></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {{-- Bank Table --}}
+                                <div x-show="activePortfolioTab === 'bank'" class="overflow-x-auto border border-line rounded-xl bg-white p-3">
+                                    <table class="w-full text-xs">
+                                        <thead><tr class="bg-gray-50 border-b border-line">
+                                            <th class="px-3 py-2 text-left font-semibold text-primary">Nama Bank</th>
+                                            <th class="px-3 py-2 text-left font-semibold text-primary">Jenis</th>
+                                            <th class="px-3 py-2 text-right font-semibold text-primary">Bobot %</th>
+                                            <th class="px-3 py-2 text-right font-semibold text-primary">Nilai Pasar</th>
+                                            <th class="px-3 py-2 text-right font-semibold text-primary">Bunga</th>
+                                            <th class="px-3 py-2 text-left font-semibold text-primary">Jangka Waktu</th>
+                                        </tr></thead>
+                                        <tbody class="divide-y divide-line">
+                                            <template x-for="(row, ri) in partitionBank" :key="ri">
+                                                <tr class="hover:bg-gray-50/50">
+                                                    <td class="px-3 py-1.5 font-medium text-gray-800" x-text="row.nama_bank || '-'"></td>
+                                                    <td class="px-3 py-1.5" x-text="row.jenis_bank || '-'"></td>
+                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.bobot != null ? row.bobot.toFixed(2) : '-'"></td>
+                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.nilai_pasar != null ? formatNumber(row.nilai_pasar) : '-'"></td>
+                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.tingkat_bunga != null ? row.tingkat_bunga.toFixed(2) : '-'"></td>
+                                                    <td class="px-3 py-1.5" x-text="row.jangka_waktu || '-'"></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {{-- Sektor Table --}}
+                                <div x-show="activePortfolioTab === 'sektor'" class="overflow-x-auto border border-line rounded-xl bg-white p-3">
+                                    <table class="w-full text-xs">
+                                        <thead><tr class="bg-gray-50 border-b border-line">
+                                            <th class="px-3 py-2 text-left font-semibold text-primary">Sektor</th>
+                                            <th class="px-3 py-2 text-right font-semibold text-primary">Bobot %</th>
+                                        </tr></thead>
+                                        <tbody class="divide-y divide-line">
+                                            <template x-for="(row, ri) in partitionSektor" :key="ri">
+                                                <tr class="hover:bg-gray-50/50">
+                                                    <td class="px-3 py-1.5 font-medium text-gray-800" x-text="row.nama_sektor || '-'"></td>
+                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.bobot != null ? row.bobot.toFixed(2) : '-'"></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Data export --}}
+                        <div x-show="partitionSuccess && groupedTables.length > 0" class="mt-2">
+                            <button type="button" @click="$clipboard(JSON.stringify(groupedTables, null, 2))"
+                                class="text-[10px] text-primary underline">Copy JSON</button>
                         </div>
                     </div>
 
@@ -3564,6 +3794,16 @@
                     partitionLoading: false,
                     partitionSuccess: false,
                     partitionResult: '',
+                    partitionTables: [],
+                    groupedTables: [],
+                    activeContentTab: '',
+                    activeTableTab: 0,
+                    partitionSektor: [],
+                    partitionEfek: [],
+                    partitionObligasi: [],
+                    partitionSukuk: [],
+                    partitionBank: [],
+                    activePortfolioTab: 'efek',
                     pageRanges: [{
                         id: 1,
                         start_page: '',
@@ -4904,9 +5144,12 @@
                         formData.append('file_pdf', file);
                         formData.append('_token', this.analisaFormEl().querySelector('input[name="_token"]').value);
 
-                        const url = this.pdfScanMode === 'vision' && this.parsePdfVisionUrl ?
-                            this.parsePdfVisionUrl :
-                            @json($formRoutes['parse_pdf']);
+                        let url;
+                        if (this.pdfScanMode === 'vision' && this.parsePdfVisionUrl) {
+                            url = this.parsePdfVisionUrl;
+                        } else {
+                            url = @json($formRoutes['parse_pdf']);
+                        }
 
                         fetch(url, {
                                 method: 'POST',
@@ -4968,8 +5211,12 @@
                             fd.append('file_pdf', slot.file);
                             fd.append('document_type', slot.type);
                             fd.append('_token', token);
-                            const url = this.pdfScanMode === 'vision' && this.parsePdfVisionUrl ? this
-                                .parsePdfVisionUrl : @json($formRoutes['parse_pdf']);
+                            let url;
+                                if (this.pdfScanMode === 'vision' && this.parsePdfVisionUrl) {
+                                url = this.parsePdfVisionUrl;
+                            } else {
+                                url = @json($formRoutes['parse_pdf']);
+                            }
                             return fetch(url, {
                                     method: 'POST',
                                     headers: {
@@ -4996,7 +5243,8 @@
                                     'X-CSRF-TOKEN': token
                                 },
                                 body: JSON.stringify({
-                                    document_id: docId
+                                    document_id: docId,
+                                    parse_mode: 'ai'
                                 }),
                             }).then(r => r.json()).then(resp => ({
                                 isLibrary: true,
@@ -5124,10 +5372,7 @@
                             return;
                         }
 
-                        const rangesWithValues = this.pageRanges.map((r, idx) => ({
-                            ...r,
-                            idx
-                        }));
+                        const rangesWithValues = this.pageRanges.map((r, idx) => ({...r, idx}));
                         const validRanges = rangesWithValues.filter(r => r.start_page && r.end_page);
                         if (!validRanges.length) {
                             this.partitionResult = 'Isi minimal 1 partisi halaman (Start Page & End Page).';
@@ -5138,15 +5383,8 @@
                         this.partitionLoading = true;
                         this.partitionResult = '';
                         this.partitionSuccess = false;
-                        this.pageRanges.forEach(r => {
-                            r.success = null;
-                            r.message = '';
-                            r.data = null;
-                        });
-
-                        validRanges.forEach(r => {
-                            this.pageRanges[r.idx].loading = true;
-                        });
+                        this.pageRanges.forEach(r => { r.success = null; r.message = ''; r.data = null; });
+                        validRanges.forEach(r => { this.pageRanges[r.idx].loading = true; });
 
                         try {
                             const response = await fetch(this.parseExistingDocUrl, {
@@ -5158,6 +5396,7 @@
                                 },
                                 body: JSON.stringify({
                                     document_id: this.selectedDocId,
+                                    parse_mode: 'hybrid',
                                     page_ranges: validRanges.map(r => ({
                                         start_page: parseInt(r.start_page),
                                         end_page: parseInt(r.end_page),
@@ -5170,42 +5409,73 @@
 
                             validRanges.forEach(r => {
                                 const range = this.pageRanges[r.idx];
-                                if (!range) return;
-                                range.loading = false;
+                                if (range) range.loading = false;
                             });
 
                             if (resp?.success) {
-                                const data = this.normalizeExtractedData(resp.data || {});
-                                const fieldCount = Object.keys(data).filter(k => {
-                                    const v = data[k];
-                                    return v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v
-                                        .length === 0);
-                                }).length;
+                                const data = resp.data || {};
 
+                                // Auto-fill fields
+                                const extracted = this.normalizeExtractedData(data);
+                                const fieldCount = Object.keys(extracted).filter(k => {
+                                    const v = extracted[k];
+                                    return v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0);
+                                }).length;
+                                if (fieldCount > 0) {
+                                    this.applyExtractedData(extracted, this.hasFullInputData(extracted) ? 'lengkap' : 'manual');
+                                }
                                 validRanges.forEach(r => {
                                     const range = this.pageRanges[r.idx];
-                                    if (range) {
-                                        range.success = true;
-                                        range.data = data;
-                                        range.message = `${fieldCount} field diekstrak`;
+                                    if (range) { range.success = true; range.data = data; range.message = `${fieldCount} field`; }
+                                });
+
+                                // Collect tables from _raw_tables
+                                const allTables = [];
+                                const rawTablesData = data._raw_tables || [];
+                                rawTablesData.forEach(p => {
+                                    if (Array.isArray(p.tables)) {
+                                        p.tables.forEach(t => allTables.push(t));
                                     }
                                 });
 
-                                if (fieldCount > 0) {
-                                    this.applyExtractedData(data, this.hasFullInputData(data) ? 'lengkap' : 'manual');
-                                }
+                                this.partitionTables = allTables;
+                                this.activeTableTab = 0;
 
+                                // Group tables by table_name (keep separate instances)
+                                const groups = {};
+                                allTables.forEach(t => {
+                                    const name = t.table_name || 'Lainnya';
+                                    if (!groups[name]) {
+                                        groups[name] = { table_name: name, tables: [] };
+                                    }
+                                    groups[name].tables.push({ headers: t.headers || [], rows: t.rows || [] });
+                                });
+                                const grouped = Object.entries(groups).sort((a, b) => {
+                                    const order = ['Aset','Liabilitas','Pendapatan','Beban','Arus Kas Operasi','Arus Kas Pendanaan','Pengukuran Nilai Wajar','Informasi Lainnya','Portofolio Efek','Obligasi','Sektor','Sukuk','Bank'];
+                                    return (order.indexOf(a[0]) - order.indexOf(b[0]));
+                                }).map(([_, v]) => v);
+                                this.groupedTables = grouped;
+                                if (grouped.length) this.activeContentTab = grouped[0].table_name;
+
+                                // Map tables to portfolio tabs
+                                this.mapPortfolioTables(allTables);
+
+                                // Apply portfolio table data to Input Lengkap form fields
+                                if (this.partitionEfek.length) this.efek = this.partitionEfek;
+                                if (this.partitionSektor.length) this.sektor = this.partitionSektor;
+                                if (this.partitionObligasi.length) this.obligasi = this.partitionObligasi;
+                                if (this.partitionSukuk.length) this.sukuk = this.partitionSukuk;
+                                if (this.partitionBank.length) this.bank = this.partitionBank;
+
+                                let resultMsg = `${validRanges.length} partisi berhasil.`;
+                                if (allTables.length) resultMsg += ` ${allTables.length} tabel ditemukan.`;
                                 this.partitionSuccess = true;
-                                this.partitionResult =
-                                    `${validRanges.length} partisi berhasil. ${fieldCount} field terisi.`;
+                                this.partitionResult = resultMsg;
                             } else {
                                 const msg = resp?.message || 'Gagal parse';
                                 validRanges.forEach(r => {
                                     const range = this.pageRanges[r.idx];
-                                    if (range) {
-                                        range.success = false;
-                                        range.message = msg;
-                                    }
+                                    if (range) { range.success = false; range.message = msg; }
                                 });
                                 this.partitionSuccess = false;
                                 this.partitionResult = msg;
@@ -5213,11 +5483,7 @@
                         } catch (e) {
                             validRanges.forEach(r => {
                                 const range = this.pageRanges[r.idx];
-                                if (range) {
-                                    range.loading = false;
-                                    range.success = false;
-                                    range.message = 'Gagal: ' + e.message;
-                                }
+                                if (range) { range.loading = false; range.success = false; range.message = 'Gagal: ' + e.message; }
                             });
                             this.partitionSuccess = false;
                             this.partitionResult = 'Gagal: ' + e.message;
@@ -5239,12 +5505,20 @@
                         }];
                         this.partitionResult = '';
                         this.partitionSuccess = false;
+                        this.partitionTables = [];
+                        this.groupedTables = [];
+                        this.activeContentTab = '';
+                        this.activeTableTab = 0;
+                        this.partitionSektor = [];
+                        this.partitionEfek = [];
+                        this.partitionObligasi = [];
+                        this.partitionSukuk = [];
+                        this.partitionBank = [];
                         this.selectedDocId = null;
                     },
 
                     selectDocumentForPartition(docId) {
                         this.selectedDocId = docId;
-                        // Reset hasil parsing sebelumnya saat ganti dokumen
                         this.pageRanges.forEach(r => {
                             r.success = null;
                             r.message = '';
@@ -5252,6 +5526,115 @@
                         });
                         this.partitionResult = '';
                         this.partitionSuccess = false;
+                        this.partitionTables = [];
+                        this.groupedTables = [];
+                        this.activeContentTab = '';
+                        this.activeTableTab = 0;
+                        this.partitionSektor = [];
+                        this.partitionEfek = [];
+                        this.partitionObligasi = [];
+                        this.partitionSukuk = [];
+                        this.partitionBank = [];
+                    },
+
+                    mapPortfolioTables(tables) {
+                        this.partitionEfek = [];
+                        this.partitionObligasi = [];
+                        this.partitionSektor = [];
+                        this.partitionSukuk = [];
+                        this.partitionBank = [];
+
+                        const headerMaps = {
+                            'Portofolio Efek': {
+                                'Kode': 'kode_efek',
+                                'Nama Efek': 'nama_efek',
+                                'Nama': 'nama_efek',
+                                'Sektor': 'sektor',
+                                'Bobot %': 'bobot',
+                                'Bobot': 'bobot',
+                                'Persentase': 'bobot',
+                                '% thd Portofolio': 'bobot',
+                                'Nilai Pasar': 'nilai_pasar',
+                                'Nilai Wajar': 'nilai_pasar',
+                                'Jumlah Harga Pasar': 'nilai_pasar',
+                                '% thd NAB': 'persen_nab',
+                                '% NAB': 'persen_nab',
+                                'Return 1Y': 'return_1y',
+                                'Jumlah Lembar Saham': 'jumlah_lembar',
+                                'Jumlah Lembar': 'jumlah_lembar',
+                                'Lembar Saham': 'jumlah_lembar',
+                                'Harga Perolehan': 'harga_perolehan',
+                                'Harga Perolehan Rata-rata': 'harga_perolehan',
+                                'Average Cost': 'harga_perolehan',
+                            },
+                            'Obligasi': {
+                                'Kode': 'kode_obligasi',
+                                'Nama Obligasi': 'nama_obligasi',
+                                'Nama': 'nama_obligasi',
+                                'Bobot %': 'bobot',
+                                'Nilai Pasar': 'nilai_pasar',
+                                'YTM': 'ytm',
+                                'Kupon': 'kupon',
+                                'Jatuh Tempo': 'tanggal_jatuh_tempo',
+                                'Penerbit': 'penerbit',
+                                'Rating': 'rating',
+                            },
+                            'Sektor': {
+                                'Sektor': 'nama_sektor',
+                                'Bobot %': 'bobot',
+                            },
+                            'Sukuk': {
+                                'Kode': 'kode_sukuk',
+                                'Nama': 'nama_sukuk',
+                                'Jenis': 'jenis_sukuk',
+                                'Bobot %': 'bobot',
+                                'Yield': 'yield',
+                                'Jatuh Tempo': 'jatuh_tempo',
+                                'Rating': 'rating',
+                            },
+                            'Bank': {
+                                'Nama Bank': 'nama_bank',
+                                'Jenis': 'jenis_bank',
+                                'Bobot %': 'bobot',
+                                'Nilai Pasar': 'nilai_pasar',
+                                'Tingkat Bunga': 'tingkat_bunga',
+                                'Bunga': 'tingkat_bunga',
+                                'Jangka Waktu': 'jangka_waktu',
+                            },
+                        };
+
+                        const targetMap = {
+                            'Portofolio Efek': 'partitionEfek',
+                            'Obligasi': 'partitionObligasi',
+                            'Sektor': 'partitionSektor',
+                            'Sukuk': 'partitionSukuk',
+                            'Bank': 'partitionBank',
+                        };
+
+                        tables.forEach(table => {
+                            const name = table.table_name || '';
+                            const map = headerMaps[name];
+                            const target = targetMap[name];
+                            if (!map || !target) return;
+
+                            const rows = (table.rows || []).map(row => {
+                                const obj = {};
+                                table.headers.forEach((h, i) => {
+                                    const prop = map[h];
+                                    if (prop) {
+                                        let val = row[i];
+                                        if (val === undefined || val === null) val = '';
+                                        if (['bobot', 'persen_nab', 'return_1y', 'ytm', 'kupon', 'yield', 'tingkat_bunga', 'jumlah_lembar', 'harga_perolehan', 'nilai_pasar'].includes(prop)) {
+                                            val = parseFloat(String(val).replace(/[^0-9.,-]/g, '').replace(',', '.')) || val;
+                                        }
+                                        obj[prop] = val;
+                                    }
+                                });
+                                return obj;
+                            });
+
+                            this[target] = rows;
+                        });
                     },
 
                     fetchExistingDocuments() {
@@ -5309,7 +5692,8 @@
                                     'X-CSRF-TOKEN': this.analisaFormEl().querySelector('input[name="_token"]').value,
                                 },
                                 body: JSON.stringify({
-                                    document_id: documentId
+                                    document_id: documentId,
+                                    parse_mode: 'ai'
                                 }),
                             })
                             .then(res => {
@@ -5378,7 +5762,8 @@
                                             .value,
                                     },
                                     body: JSON.stringify({
-                                        document_id: docId
+                                        document_id: docId,
+                                        parse_mode: 'ai'
                                     }),
                                 })
                                 .then(res => {
