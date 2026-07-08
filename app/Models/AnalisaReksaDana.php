@@ -132,6 +132,7 @@ class AnalisaReksaDana extends Model
         'ai_output',
         'ai_narasi_plus',
         'ai_output_plus',
+        'data_tahunan',
         'pdf_path',
     ];
 
@@ -139,6 +140,7 @@ class AnalisaReksaDana extends Model
         'ai_output'        => 'array',
         'ai_output_plus'   => 'array',
         'kategori'         => 'array',
+        'data_tahunan'     => 'array',
         'tanggal_data'     => 'date',
         'tanggal_peluncuran' => 'date',
         'nab_per_unit'     => 'decimal:6',

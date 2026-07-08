@@ -1506,6 +1506,7 @@ class AnalisaController extends Controller
                 'beban_terhadap_pendapatan' => $request->beban_terhadap_pendapatan,
                 'pengelolaan_investasi_terhadap_pendapatan' => $request->pengelolaan_investasi_terhadap_pendapatan,
                 'transaction_profit_terhadap_nab' => $request->transaction_profit_terhadap_nab,
+                'data_tahunan'         => $this->parseDataTahunan($request->data_tahunan),
                 'status'               => $isSimpan ? 'input_manual' : 'submitted',
                 'mode'                 => $request->input('saved_mode', $request->input_mode ?: 'manual'),
                 'pdf_path'             => $pdfPath,
@@ -1583,6 +1584,21 @@ class AnalisaController extends Controller
         } catch (\Throwable $e) {
             return null;
         }
+    }
+
+    private function parseDataTahunan($value): ?array
+    {
+        if (empty($value)) {
+            return null;
+        }
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            return is_array($decoded) ? $decoded : null;
+        }
+        if (is_array($value)) {
+            return $value;
+        }
+        return null;
     }
 
     private function storeFromExcel(Request $request)
@@ -1699,6 +1715,7 @@ class AnalisaController extends Controller
                 'beban_terhadap_pendapatan' => $request->beban_terhadap_pendapatan,
                 'pengelolaan_investasi_terhadap_pendapatan' => $request->pengelolaan_investasi_terhadap_pendapatan,
                 'transaction_profit_terhadap_nab' => $request->transaction_profit_terhadap_nab,
+                'data_tahunan'         => $this->parseDataTahunan($request->data_tahunan),
                 'status'               => $isSimpan ? 'input_manual' : 'submitted',
                 'mode'                 => $request->input('saved_mode', $request->input_mode ?: 'excel'),
                 'pdf_path'             => $pdfPath,
@@ -2091,6 +2108,7 @@ class AnalisaController extends Controller
                 'nim' => $k->nim,
                 'cir' => $k->cir,
             ])->values(),
+            'data_tahunan'            => $analisa->data_tahunan ?? null,
         ];
     }
 
@@ -2371,6 +2389,7 @@ class AnalisaController extends Controller
                 'pengelolaan_investasi_terhadap_pendapatan' => $request->pengelolaan_investasi_terhadap_pendapatan,
                 'transaction_profit_terhadap_nab' => $request->transaction_profit_terhadap_nab,
                 'mode'                 => $request->input_mode ?: 'manual',
+                'data_tahunan'         => $this->parseDataTahunan($request->data_tahunan),
             ]);
 
             $sektor   = collect($request->sektor ?? [])->filter(fn($r) => !empty($r['nama_sektor']) && isset($r['bobot']) && $r['bobot'] !== '')->values()->all();

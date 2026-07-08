@@ -9,12 +9,159 @@ class LegacyFormatReader
     public function read(string $filePath): array
     {
         $spreadsheet = IOFactory::load($filePath);
-        $data = [];
+        $data = [
+            'data_tahunan' => [
+                'years' => [],
+            ],
+        ];
 
         foreach ($spreadsheet->getSheetNames() as $name) {
             $method = 'read' . str_replace(' ', '', $name);
             if (method_exists($this, $method)) {
                 $this->$method($spreadsheet->getSheetByName($name), $data);
+            }
+        }
+
+        // Flatten latest year values to scalar fields for backward compatibility
+        $data = $this->flattenLatestYear($data);
+
+        return $data;
+    }
+
+    private function detectYears(array $headerRow): array
+    {
+        $years = [];
+        foreach ($headerRow as $idx => $cell) {
+            if ($idx < 3) continue;
+            $year = $this->extractYear($cell);
+            if ($year) {
+                $years[$idx] = $year;
+            }
+        }
+        return $years;
+    }
+
+    private function extractYear($value): ?int
+    {
+        $value = trim((string) $value);
+        if (preg_match('/(\d{4})/', $value, $matches)) {
+            return (int) $matches[1];
+        }
+        return null;
+    }
+
+    private function getValuesByYear(array $row, array $yearMap): array
+    {
+        $values = [];
+        foreach ($yearMap as $idx => $year) {
+            $val = $row[$idx] ?? '';
+            $values[$year] = $this->normalizeNumber($val);
+        }
+        return $values;
+    }
+
+    private function normalizeNumber($value)
+    {
+        if ($value === null || $value === '') return null;
+        if (is_numeric($value)) return $value;
+
+        $str = trim((string) $value);
+        if ($str === '' || $str === '-') return null;
+
+        $isNegative = false;
+        if (str_starts_with($str, '(') && str_ends_with($str, ')')) {
+            $isNegative = true;
+            $str = trim($str, '()');
+        } elseif (str_starts_with($str, '-')) {
+            $isNegative = true;
+            $str = ltrim($str, '-');
+        }
+
+        // Indonesian format: 1.234.567,89
+        $str = str_replace('.', '', $str);
+        $str = str_replace(',', '.', $str);
+
+        if (!is_numeric($str)) return null;
+
+        $num = (float) $str;
+        return $isNegative ? -$num : $num;
+    }
+
+    private function setDataTahunan(array &$data, string $key, array $yearValues): void
+    {
+        foreach ($yearValues as $year => $value) {
+            if ($value !== null && $value !== '') {
+                $yearStr = (string) $year;
+                if (!isset($data['data_tahunan'][$yearStr])) {
+                    $data['data_tahunan'][$yearStr] = [];
+                }
+                $data['data_tahunan'][$yearStr][$key] = $value;
+            }
+        }
+    }
+
+    private function flattenLatestYear(array $data): array
+    {
+        $years = $data['data_tahunan']['years'] ?? [];
+        if (empty($years)) {
+            return $data;
+        }
+
+        $latestYear = (string) $years[0];
+        $latest = $data['data_tahunan'][$latestYear] ?? [];
+
+        $map = [
+            'portofolio_efek' => 'portofolio_efek',
+            'kas_dan_bank' => 'kas_dan_bank',
+            'piutang_transaksi_efek' => 'piutang_transaksi_efek',
+            'piutang_bunga' => 'piutang_bunga',
+            'piutang_dividen' => 'piutang_dividen',
+            'piutang_lain' => 'piutang_lain',
+            'instrumen_pasar_uang' => 'instrumen_pasar_uang',
+            'total_unit_beredar' => 'total_unit_beredar',
+            'nab_per_unit' => 'nab_per_unit',
+            'total_aset' => 'total_aset',
+            'uang_muka_diterima' => 'uang_muka_diterima',
+            'liabilitas_pembelian_kembali' => 'liabilitas_pembelian_kembali',
+            'beban_akrual' => 'beban_akrual',
+            'liabilitas_atas_biaya' => 'liabilitas_atas_biaya',
+            'utang_pajak' => 'utang_pajak',
+            'utang_lain' => 'utang_lain',
+            'nilai_aset_bersih' => 'nilai_aset_bersih',
+            'total_liabilitas' => 'total_liabilitas',
+            'pendapatan_bunga' => 'pendapatan_bunga',
+            'pendapatan_dividen' => 'pendapatan_dividen',
+            'pendapatan_lainnya' => 'pendapatan_lainnya',
+            'gain_realized' => 'gain_realized',
+            'gain_unrealized' => 'gain_unrealized',
+            'total_pendapatan' => 'total_pendapatan',
+            'beban_pengelolaan_investasi' => 'beban_pengelolaan_investasi',
+            'beban_kustodian' => 'beban_kustodian',
+            'beban_lain' => 'beban_lain',
+            'total_beban' => 'total_beban',
+            'laba_sebelum_pajak' => 'laba_sebelum_pajak',
+            'beban_pajak_penghasilan' => 'beban_pajak_penghasilan',
+            'laba_bersih_tahun_berjalan' => 'laba_bersih_tahun_berjalan',
+            'penghasilan_komprehensif_lain' => 'penghasilan_komprehensif_lain',
+            'penghasilan_komprehensif_tahun_berjalan' => 'penghasilan_komprehensif_tahun_berjalan',
+            'laba_bersih' => 'laba_bersih',
+            'penerimaan_bunga_deposito' => 'penerimaan_bunga_deposito',
+            'penerimaan_dividen_kas' => 'penerimaan_dividen_kas',
+            'penjualan_efek_ekuitas' => 'penjualan_efek_ekuitas',
+            'pembelian_efek_ekuitas' => 'pembelian_efek_ekuitas',
+            'beban_investasi' => 'beban_investasi',
+            'arus_kas_operasi' => 'arus_kas_operasi',
+            'penerimaan_penjualan_unit' => 'penerimaan_penjualan_unit',
+            'pembayaran_pembelian_kembali_unit' => 'pembayaran_pembelian_kembali_unit',
+            'arus_kas_pendanaan' => 'arus_kas_pendanaan',
+            'kas_awal_tahun' => 'kas_awal_tahun',
+            'kas_akhir_tahun' => 'kas_akhir_tahun',
+        ];
+
+        foreach ($map as $key => $scalarKey) {
+            $value = $latest[$key] ?? null;
+            if ($value !== null && $value !== '') {
+                $data[$scalarKey] = $value;
             }
         }
 
@@ -24,138 +171,113 @@ class LegacyFormatReader
     private function readPosisiKeuangan($sheet, array &$data): void
     {
         $rows = $sheet->toArray();
+        if (empty($rows[3])) return;
+
+        $yearMap = $this->detectYears($rows[3]);
+        $years = array_values($yearMap);
+        if (!empty($years)) {
+            $existing = $data['data_tahunan']['years'] ?? [];
+            $data['data_tahunan']['years'] = array_values(array_unique(array_merge($existing, $years)));
+            rsort($data['data_tahunan']['years']);
+        }
+
+        $map = [
+            'Kas di bank' => 'kas_dan_bank',
+            'Piutang transaksi efek' => 'piutang_transaksi_efek',
+            'Piutang bunga' => 'piutang_bunga',
+            'Piutang dividen' => 'piutang_dividen',
+            'Piutang lain-lain' => 'piutang_lain',
+            'Jumlah portofolio efek' => 'portofolio_efek',
+            'Instrumen pasar uang' => 'instrumen_pasar_uang',
+            'Utang pajak' => 'utang_pajak',
+            'Utang lain-lain' => 'utang_lain',
+            'Uang muka diterima atas pemesanan unit penyertaan' => 'uang_muka_diterima',
+            'Liabilitas atas pembelian kembali unit penyertaan' => 'liabilitas_pembelian_kembali',
+            'Beban akrual' => 'beban_akrual',
+            'Liabilitas atas biaya pembelian kembali unit penyertaan' => 'liabilitas_atas_biaya',
+            'JUMLAH ASET' => 'total_aset',
+            'JUMLAH LIABILITAS' => 'total_liabilitas',
+            'NILAI ASET BERSIH' => 'nilai_aset_bersih',
+            'JUMLAH UNIT PENYERTAAN BEREDAR' => 'total_unit_beredar',
+            'NILAI ASET BERSIH PER UNIT PENYERTAAN' => 'nab_per_unit',
+        ];
+
         foreach ($rows as $row) {
             $uraian = trim((string)($row[1] ?? ''));
-            $val = $row[3] ?? '';
-            switch ($uraian) {
-                case 'Kas di bank':
-                    $data['kas_dan_bank'] = $val;
-                    break;
-                case 'Piutang transaksi efek':
-                    $data['piutang_transaksi_efek'] = $val;
-                    break;
-                case 'Piutang bunga':
-                    $data['piutang_bunga'] = $val;
-                    break;
-                case 'Piutang dividen':
-                    $data['piutang_dividen'] = $val;
-                    break;
-                case 'Piutang lain-lain':
-                    $data['piutang_lain'] = $val;
-                    break;
-                case 'Jumlah portofolio efek':
-                    $data['portofolio_efek'] = $val;
-                    break;
-                case 'Instrumen pasar uang':
-                    $data['instrumen_pasar_uang'] = $val;
-                    break;
-                case 'Utang pajak':
-                    $data['utang_pajak'] = $val;
-                    break;
-                case 'Utang lain-lain':
-                    $data['utang_lain'] = $val;
-                    break;
-                case 'Uang muka diterima atas pemesanan unit penyertaan':
-                    $data['uang_muka_diterima'] = $val;
-                    break;
-                case 'Liabilitas atas pembelian kembali unit penyertaan':
-                    $data['liabilitas_pembelian_kembali'] = $val;
-                    break;
-                case 'Beban akrual':
-                    $data['beban_akrual'] = $val;
-                    break;
-                case 'Liabilitas atas biaya pembelian kembali unit penyertaan':
-                    $data['liabilitas_atas_biaya'] = $val;
-                    break;
-                case 'Utang transaksi efek':
-                    $data['utang_lain'] = $val;
-                    break;
-            }
+            if (!isset($map[$uraian])) continue;
+            $this->setDataTahunan($data, $map[$uraian], $this->getValuesByYear($row, $yearMap));
         }
     }
 
     private function readLabaRugi($sheet, array &$data): void
     {
         $rows = $sheet->toArray();
+        if (empty($rows[3])) return;
+
+        $yearMap = $this->detectYears($rows[3]);
+        $years = array_values($yearMap);
+        if (!empty($years)) {
+            $existing = $data['data_tahunan']['years'] ?? [];
+            $data['data_tahunan']['years'] = array_values(array_unique(array_merge($existing, $years)));
+            rsort($data['data_tahunan']['years']);
+        }
+
+        $map = [
+            'Pendapatan bunga' => 'pendapatan_bunga',
+            'Pendapatan dividen' => 'pendapatan_dividen',
+            'Pendapatan lain-lain' => 'pendapatan_lainnya',
+            'Kerugian investasi yang telah direalisasi' => 'gain_realized',
+            'Keuntungan (kerugian) investasi yang belum direalisasi' => 'gain_unrealized',
+            'Beban pengelolaan investasi' => 'beban_pengelolaan_investasi',
+            'Beban kustodian' => 'beban_kustodian',
+            'Beban lain-lain' => 'beban_lain',
+            'JUMLAH BEBAN' => 'total_beban',
+            'LABA (RUGI) SEBELUM PAJAK' => 'laba_sebelum_pajak',
+            'BEBAN PAJAK' => 'beban_pajak_penghasilan',
+            'LABA (RUGI) TAHUN BERJALAN' => 'laba_bersih_tahun_berjalan',
+            'PENGHASILAN KOMPREHENSIF LAIN' => 'penghasilan_komprehensif_lain',
+            'JUMLAH PENGHASILAN (RUGI) KOMPREHENSIF TAHUN BERJALAN' => 'penghasilan_komprehensif_tahun_berjalan',
+            'JUMLAH PENDAPATAN (KERUGIAN) - BERSIH' => 'total_pendapatan',
+            'LABA BERSIH' => 'laba_bersih',
+        ];
+
         foreach ($rows as $row) {
             $uraian = trim((string)($row[1] ?? ''));
-            $val = $row[3] ?? '';
-            switch ($uraian) {
-                case 'Pendapatan bunga':
-                    $data['pendapatan_bunga'] = $val;
-                    break;
-                case 'Pendapatan dividen':
-                    $data['pendapatan_dividen'] = $val;
-                    break;
-                case 'Pendapatan lain-lain':
-                    $data['pendapatan_lainnya'] = $val;
-                    break;
-                case 'Kerugian investasi yang telah direalisasi':
-                    $data['gain_realized'] = $val;
-                    break;
-                case 'Keuntungan (kerugian) investasi yang belum direalisasi':
-                    $data['gain_unrealized'] = $val;
-                    break;
-                case 'Beban pengelolaan investasi':
-                    $data['beban_pengelolaan_investasi'] = $val;
-                    break;
-                case 'Beban kustodian':
-                    $data['beban_kustodian'] = $val;
-                    break;
-                case 'Beban lain-lain':
-                    $data['beban_lain'] = $val;
-                    break;
-                case 'JUMLAH BEBAN':
-                    $data['total_beban'] = $val;
-                    break;
-                case 'LABA (RUGI) SEBELUM PAJAK':
-                    $data['laba_sebelum_pajak'] = $val;
-                    break;
-                case 'BEBAN PAJAK':
-                    $data['beban_pajak_penghasilan'] = $val;
-                    break;
-                case 'LABA (RUGI) TAHUN BERJALAN':
-                    $data['laba_bersih_tahun_berjalan'] = $val;
-                    break;
-                case 'PENGHASILAN KOMPREHENSIF LAIN':
-                    $data['penghasilan_komprehensif_lain'] = $val;
-                    break;
-                case 'JUMLAH PENGHASILAN (RUGI) KOMPREHENSIF TAHUN BERJALAN':
-                    $data['penghasilan_komprehensif_tahun_berjalan'] = $val;
-                    break;
-            }
+            if (!isset($map[$uraian])) continue;
+            $this->setDataTahunan($data, $map[$uraian], $this->getValuesByYear($row, $yearMap));
         }
     }
 
     private function readArusKas($sheet, array &$data): void
     {
         $rows = $sheet->toArray();
+        if (empty($rows[3])) return;
+
+        $yearMap = $this->detectYears($rows[3]);
+        $years = array_values($yearMap);
+        if (!empty($years)) {
+            $existing = $data['data_tahunan']['years'] ?? [];
+            $data['data_tahunan']['years'] = array_values(array_unique(array_merge($existing, $years)));
+            rsort($data['data_tahunan']['years']);
+        }
+
+        $map = [
+            'Pembelian portofolio efek ekuitas' => 'pembelian_efek_ekuitas',
+            'Hasil penjualan portofolio efek ekuitas' => 'penjualan_efek_ekuitas',
+            'Penerimaan dari penjualan unit penyertaan' => 'penerimaan_penjualan_unit',
+            'Pembayaran untuk pembelian kembali unit penyertaan' => 'pembayaran_pembelian_kembali_unit',
+            'KAS DI BANK AWAL TAHUN' => 'kas_awal_tahun',
+            'KAS DI BANK AKHIR TAHUN' => 'kas_akhir_tahun',
+            'Penerimaan bunga - bersih' => 'penerimaan_bunga_deposito',
+            'Pembayaran beban investasi' => 'beban_investasi',
+            'Kas Bersih Diperoleh dari (Digunakan untuk) Aktivitas Operasi' => 'arus_kas_operasi',
+            'Kas Bersih Diperoleh dari (Digunakan untuk) Aktivitas Pendanaan' => 'arus_kas_pendanaan',
+        ];
+
         foreach ($rows as $row) {
             $uraian = trim((string)($row[1] ?? ''));
-            $val = $row[3] ?? '';
-            switch ($uraian) {
-                case 'Pembelian portofolio efek ekuitas':
-                    $data['pembelian_efek_ekuitas'] = $val;
-                    break;
-                case 'Hasil penjualan portofolio efek ekuitas':
-                    $data['penjualan_efek_ekuitas'] = $val;
-                    break;
-                case 'Penerimaan dari penjualan unit penyertaan':
-                    $data['penerimaan_penjualan_unit'] = $val;
-                    break;
-                case 'Pembayaran untuk pembelian kembali unit penyertaan':
-                    $data['pembayaran_pembelian_kembali_unit'] = $val;
-                    break;
-                case 'KAS DI BANK AWAL TAHUN':
-                    $data['kas_awal_tahun'] = $val;
-                    break;
-                case 'KAS DI BANK AKHIR TAHUN':
-                    $data['kas_akhir_tahun'] = $val;
-                    break;
-                case 'Penerimaan bunga - bersih':
-                    $data['penerimaan_bunga_deposito'] = $val;
-                    break;
-            }
+            if (!isset($map[$uraian])) continue;
+            $this->setDataTahunan($data, $map[$uraian], $this->getValuesByYear($row, $yearMap));
         }
     }
 
@@ -163,45 +285,19 @@ class LegacyFormatReader
     {
         $rows = $sheet->toArray();
 
-        $infoMap = [
-            'Periode laporan' => 'tahun_laporan',
-            'Tanggal konversi' => 'tanggal_data',
-        ];
         foreach ($rows as $row) {
             $label = trim((string)($row[0] ?? ''));
-            $value = trim((string)($row[1] ?? ''));
-            if (isset($infoMap[$label])) {
-                $data[$infoMap[$label]] = $value;
+            if ($label === 'Periode laporan') {
+                $data['tahun_laporan'] = $this->extractYear($row[1] ?? '') ?: ($row[1] ?? null);
             }
-        }
-
-        $indicatorMap = [
-            'Jumlah Aset' => 'total_aset',
-            'Jumlah Liabilitas' => 'total_liabilitas',
-            'Nilai Aset Bersih' => 'nilai_aset_bersih',
-            'Jumlah Unit Penyertaan Beredar' => 'total_unit_beredar',
-            'NAB per Unit Penyertaan' => 'nab_per_unit',
-            'Jumlah Pendapatan (Kerugian) - Bersih' => 'total_pendapatan',
-            'Laba (Rugi) Tahun Berjalan' => 'laba_bersih_tahun_berjalan',
-            'Kas Bersih dari Aktivitas Operasi' => 'arus_kas_operasi',
-            'Kas Bersih dari Aktivitas Pendanaan' => 'arus_kas_pendanaan',
-            'Kas di Bank Akhir Tahun' => 'kas_akhir_tahun',
-        ];
-
-        $foundHeader = false;
-        foreach ($rows as $row) {
-            $label = trim((string)($row[0] ?? ''));
-            if ($label === 'Indikator') {
-                $foundHeader = true;
-                continue;
-            }
-            if ($foundHeader && isset($indicatorMap[$label])) {
-                $data[$indicatorMap[$label]] = $row[1] ?? '';
+            if ($label === 'Tanggal konversi') {
+                $data['tanggal_data'] = $row[1] ?? null;
             }
         }
     }
 
     private function readPerubahanAsetBersih($sheet, array &$data): void
     {
+        // Placeholder: data PAB diambil dari sheet lain
     }
 }

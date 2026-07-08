@@ -145,16 +145,9 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::delete('daftar-reksa-dana/partitions/{partition}', [DaftarReksaDanaController::class, 'destroyPartition'])->name('daftar-reksa-dana.partitions.destroy');
     Route::post('daftar-reksa-dana/extract-data', [DaftarReksaDanaController::class, 'extractReksaDanaData'])->name('daftar-reksa-dana.extract-data');
     Route::post('daftar-reksa-dana/documents/{document}/parse-ffs', [DaftarReksaDanaController::class, 'parseFfs'])->name('daftar-reksa-dana.documents.parse-ffs');
-    Route::post('daftar-reksa-dana/upload-harga', [DaftarReksaDanaController::class, 'uploadHarga'])->name('daftar-reksa-dana.upload-harga');
-    Route::post('daftar-reksa-dana/upload-harian', [DaftarReksaDanaController::class, 'uploadHarian'])->name('daftar-reksa-dana.upload-harian');
-    Route::get('daftar-reksa-dana/template-harga', [DaftarReksaDanaController::class, 'downloadTemplateHarga'])->name('daftar-reksa-dana.template-harga');
-    Route::get('daftar-reksa-dana/template-harian', [DaftarReksaDanaController::class, 'downloadTemplateHarian'])->name('daftar-reksa-dana.template-harian');
     Route::post('daftar-reksa-dana/harga/store', [DaftarReksaDanaController::class, 'storeHarga'])->name('daftar-reksa-dana.harga.store');
     Route::post('daftar-reksa-dana/harga/update/{reksaDana}', [DaftarReksaDanaController::class, 'updateHarga'])->name('daftar-reksa-dana.harga.update');
     Route::delete('daftar-reksa-dana/harga/destroy/{reksaDana}', [DaftarReksaDanaController::class, 'destroyHarga'])->name('daftar-reksa-dana.harga.destroy');
-    Route::post('daftar-reksa-dana/harian/store', [DaftarReksaDanaController::class, 'storeHarian'])->name('daftar-reksa-dana.harian.store');
-    Route::post('daftar-reksa-dana/harian/update/{hargaReksaDana}', [DaftarReksaDanaController::class, 'updateHarian'])->name('daftar-reksa-dana.harian.update');
-    Route::delete('daftar-reksa-dana/harian/destroy/{hargaReksaDana}', [DaftarReksaDanaController::class, 'destroyHarian'])->name('daftar-reksa-dana.harian.destroy');
     Route::get('daftar-reksa-dana/parse-kode', [DaftarReksaDanaController::class, 'parseKode'])->name('daftar-reksa-dana.parse-kode');
     Route::post('daftar-reksa-dana/{reksaDana}/export-investment-manager', [DaftarReksaDanaController::class, 'exportInvestmentManager'])->name('daftar-reksa-dana.export-investment-manager');
     Route::post('daftar-reksa-dana/sync-pasardana', [DaftarReksaDanaController::class, 'syncFromPasardana'])->name('daftar-reksa-dana.sync-pasardana');

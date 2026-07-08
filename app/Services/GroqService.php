@@ -318,6 +318,391 @@ PROMPT,
     }
 
     /**
+     * Strict prospectus financial extraction engine for "Parse semua partisi".
+     */
+    public function parseProspectusFinancialStrict(string $text, ?string $documentType = null): array
+    {
+        $text = mb_substr($text, 0, 60000);
+
+        $systemPrompt = <<<'PROMPT'
+# SYSTEM PROMPT - Prospectus Financial Extractor
+
+Anda adalah Financial Prospectus Extraction Engine.
+
+Tugas Anda BUKAN menganalisis atau merangkum dokumen.
+
+Tugas Anda hanya mengekstrak data secara akurat dari section prospektus yang diberikan.
+
+## Tujuan
+
+Ekstrak informasi ke dalam JSON sesuai schema yang diberikan.
+
+---
+
+# Aturan Utama
+
+1. Jangan mengarang data.
+2. Jangan menebak nilai.
+3. Jika data tidak ditemukan, gunakan null.
+4. Jangan mengubah angka.
+5. Jangan menghitung ulang total.
+6. Jangan menyimpulkan.
+7. Jangan memperbaiki angka.
+8. Jangan menghilangkan item yang ditemukan.
+9. Output HARUS berupa JSON valid.
+10. Jangan menambahkan penjelasan apa pun di luar JSON.
+
+---
+
+# Aturan Mengenai Tahun
+
+Prospektus dapat memiliki kolom tahun yang berbeda-beda, misalnya:
+
+* 2025 | 2024
+* 2024 | 2023
+* 2023 | 2022
+
+AI HARUS:
+
+* Mendeteksi seluruh kolom tahun secara otomatis.
+* Jangan meng-hardcode tahun.
+* Gunakan tahun yang ditemukan sebagai key JSON.
+
+Contoh:
+
+Input
+
+Item | 2025 | 2024
+
+Output
+
+{
+"years":[2025,2024]
+}
+
+---
+
+# Aturan Mengenai Kolom Catatan
+
+Prospektus sering memiliki kolom seperti:
+
+Catatan
+
+Notes
+
+No.
+
+Referensi
+
+atau angka seperti
+
+24
+
+31
+
+34
+
+12
+
+dst.
+
+SELURUH nilai tersebut HARUS DIABAIKAN.
+
+Kolom tersebut bukan nilai keuangan.
+
+Contoh
+
+Kas dan Bank | 24 | 767.000.672 | 177.644.486
+
+Hasil
+
+{
+"cash_bank":{
+"2025":767000672,
+"2024":177644486
+}
+}
+
+BUKAN
+
+{
+"cash_bank":24
+}
+
+---
+
+# Aturan Mengenai Angka
+
+Konversikan seluruh angka menjadi number.
+
+Hilangkan:
+
+* titik ribuan
+* spasi
+* pemisah format
+
+Contoh
+
+67.399.852.053
+
+menjadi
+
+67399852053
+
+Jika angka negatif ditulis:
+
+(1.250.000)
+
+ubah menjadi
+
+-1250000
+
+Jika angka menggunakan minus
+
+-1.250.000
+
+ubah menjadi
+
+-1250000
+
+---
+
+# Aturan Mengenai Item
+
+Gunakan nama item sesuai schema.
+
+Jika ditemukan sinonim, lakukan normalisasi.
+
+Contoh
+
+Kas
+Kas dan Bank
+Kas pada Bank
+Kas & Bank
+
+→ cash_bank
+
+Portofolio Efek
+Efek
+Investasi pada Efek
+
+→ portfolio_effect
+
+---
+
+# Aturan Mengenai Tabel
+
+Jika section berupa tabel:
+
+* identifikasi header terlebih dahulu
+* identifikasi kolom tahun
+* identifikasi nama item
+* abaikan kolom catatan
+* ekstrak seluruh nilai
+
+Jangan membaca tabel dari kiri ke kanan secara sembarangan.
+
+Gunakan struktur tabel.
+
+---
+
+# Aturan Mengenai Portofolio
+
+Jika menemukan daftar portofolio seperti:
+
+Obligasi
+Saham
+Sukuk
+Deposito
+Efek Beragun Aset
+Reksa Dana
+
+Ekstrak seluruh item menjadi array.
+
+Contoh
+
+[
+{
+"type":"Obligasi",
+"name":"FR0101",
+"percentage":8.52,
+"fair_value":23500000000
+}
+]
+
+Jangan membatasi jumlah item.
+
+---
+
+# Aturan Mengenai Section
+
+Fokus HANYA pada section yang diberikan.
+
+Jangan mencari data di luar section.
+
+Jangan menggabungkan informasi dari section lain.
+
+---
+
+# Aturan Confidence
+
+Untuk setiap field tambahkan confidence.
+
+Contoh
+
+{
+"cash_bank":{
+"2025":767000672,
+"2024":177644486,
+"confidence":0.99
+}
+}
+
+Jika AI tidak yakin karena format ambigu, turunkan confidence.
+
+---
+
+# Validasi Sebelum Menghasilkan Output
+
+Sebelum mengembalikan JSON lakukan pengecekan:
+
+* Apakah tahun sudah benar?
+* Apakah kolom Catatan sudah diabaikan?
+* Apakah angka sudah benar?
+* Apakah item sudah sesuai schema?
+* Apakah ada nilai yang tertukar dengan nomor catatan?
+* Apakah output JSON valid?
+
+Jika tidak yakin terhadap suatu nilai, isi null dan turunkan confidence.
+
+Prioritaskan akurasi daripada kelengkapan.
+PROMPT;
+
+        $schemaDocType = $documentType ?: 'laporan_tahunan';
+
+        $userPrompt = <<<PROMPT
+Ekstrak data dari teks prospektus/reksa dana berikut. Kembalikan HANYA JSON valid dengan struktur PERSIS seperti ini:
+
+{
+  "years": [tahun_terbaru, tahun_sebelumnya],
+
+  "nama_reksa_dana": "string atau null",
+  "jenis_reksa_dana": "Saham" atau "Pendapatan Tetap" atau "Campuran" atau "Pasar Uang" atau null,
+  "kategori": ["Konvensional"|"Syariah"|"index"|"ETF"],
+  "manajer_investasi": "string atau null",
+  "bank_kustodian": "string atau null",
+  "tanggal_peluncuran": "YYYY-MM-DD atau null",
+  "mata_uang": "string atau null",
+  "benchmark": "string atau null",
+  "tujuan_investasi": "string atau null",
+  "kebijakan_investasi": "string atau null",
+  "total_aum": angka rupiah penuh atau null,
+  "unit_penyertaan": angka jumlah unit penyertaan atau null,
+  "nab_per_unit": angka NAB/UP atau null,
+  "total_marcap_10_efek": angka rupiah penuh atau null,
+  "tanggal_data": "YYYY-MM-DD atau null",
+  "ffs_bulan": angka bulan 1-12 atau null,
+  "ffs_tahun": angka tahun 4 digit atau null,
+  "return_ytd": angka persen return YTD atau null,
+  "return_1y": angka persen return 1 tahun atau null,
+  "total_return": angka persen total return atau null,
+  "biaya_operasi": angka persen biaya operasi atau null,
+  "portfolio_turnover_ratio": angka portfolio turnover ratio atau null,
+  "management_fee": angka persen management fee atau null,
+  "custodian_fee": angka persen custodian fee atau null,
+
+  "aset": {
+    "total_aset": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "kas_dan_bank": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "piutang_transaksi_efek": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "piutang_bunga": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "piutang_dividen": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "piutang_lain": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "portofolio_efek": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "instrumen_pasar_uang": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "total_unit_beredar": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "nab_per_unit": {"2025": angka, "2024": angka, "confidence": 0.0-1.0}
+  },
+  "liabilitas": {
+    "total_liabilitas": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "uang_muka_diterima": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "liabilitas_pembelian_kembali": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "beban_akrual": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "liabilitas_atas_biaya": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "utang_pajak": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "utang_lain": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "nilai_aset_bersih": {"2025": angka, "2024": angka, "confidence": 0.0-1.0}
+  },
+  "laba_rugi": {
+    "pendapatan_bunga": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "pendapatan_dividen": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "pendapatan_lainnya": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "gain_realized": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "gain_unrealized": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "total_pendapatan": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "beban_pengelolaan_investasi": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "beban_kustodian": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "beban_lain": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "total_beban": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "laba_sebelum_pajak": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "beban_pajak_penghasilan": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "laba_bersih_tahun_berjalan": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "penghasilan_komprehensif_lain": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "penghasilan_komprehensif_tahun_berjalan": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "laba_bersih": {"2025": angka, "2024": angka, "confidence": 0.0-1.0}
+  },
+  "arus_kas": {
+    "penerimaan_bunga_deposito": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "penerimaan_dividen_kas": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "penjualan_efek_ekuitas": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "pembelian_efek_ekuitas": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "beban_investasi": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "arus_kas_operasi": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "penerimaan_penjualan_unit": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "pembayaran_pembelian_kembali_unit": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "arus_kas_pendanaan": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "kas_awal_tahun": {"2025": angka, "2024": angka, "confidence": 0.0-1.0},
+    "kas_akhir_tahun": {"2025": angka, "2024": angka, "confidence": 0.0-1.0}
+  },
+  "perubahan_aset_bersih": {
+    "penghasilan_komprehensif_tahun_berjalan": {"2025": angka, "2024": angka, "confidence": 0.0-1.0}
+  },
+
+  "alokasi_aset": [{"nama_aset": "string", "persentase": angka}],
+  "sektor": [{"nama_sektor": "string", "bobot": angka_persen}],
+  "efek": [{"kode_efek":"string", "nama_efek":"string", "sektor":"string", "bobot":angka_persen, "kontribusi_kinerja":angka_persen, "ihsg_contribution":angka_persen, "market_cap":angka, "nilai_pasar":angka, "harga_perolehan":angka, "persen_nab":angka_persen, "return_1m":angka_persen, "return_3m":angka_persen, "return_6m":angka_persen, "return_1y":angka_persen, "top_10": boolean}],
+  "kinerja": [{"periode": "YYYY-MM", "return_pct": angka}],
+  "obligasi": [{"kode_obligasi":"string", "nama_obligasi":"string", "bobot":angka_persen, "nilai_pasar":angka, "durasi":angka, "ytm":angka_persen, "kupon":angka_persen, "tanggal_jatuh_tempo":"YYYY-MM-DD", "penerbit":"string", "persen_nab":angka_persen, "rating":"string"}],
+  "sukuk": [{"kode_sukuk":"string", "nama_sukuk":"string", "jenis_sukuk":"Negara"|"Korporasi", "bobot":angka_persen, "yield":angka_persen, "jatuh_tempo":"string", "persen_nab":angka_persen, "rating":"string"}],
+  "bank": [{"nama_bank":"string", "jenis_bank":"string", "bobot":angka_persen, "nilai_pasar":angka, "tingkat_bunga":angka_persen, "jangka_waktu":angka, "persen_nab":angka_persen, "car":angka_persen, "npl":angka_persen, "klasifikasi_risiko":"Rendah"|"Sedang"|"Tinggi"}]
+}
+
+ATURAN PENTING:
+- Section type saat ini: {$schemaDocType}
+- Fokus HANYA pada section yang diberikan.
+- Deteksi kolom tahun secara otomatis dari teks/tabel; isi "years" dengan tahun yang ditemukan (terbaru dulu).
+- ABAIKAN kolom Catatan/Notes/No./Referensi.
+- Konversi angka: hilangkan titik ribuan, ubah (1.234) menjadi negatif, ubah -1.234 menjadi negatif.
+- Angka persen dalam desimal (12,5% = 12.5).
+- Setiap field finansial WAJIB year-based dengan confidence.
+- Jika data tidak ada untuk suatu tahun, isi null.
+- Jika data tidak ada gunakan null atau array kosong [].
+- Output HANYA JSON valid, tanpa penjelasan, tanpa markdown.
+
+TEKS:
+{$text}
+PROMPT;
+
+        $messages = [
+            ['role' => 'system', 'content' => $systemPrompt],
+            ['role' => 'user', 'content' => $userPrompt],
+        ];
+
+        $raw = $this->callAi($messages, 180, 0.1);
+        return self::parseJsonOutput($raw);
+    }
+
+    /**
      * Slot 1: Informasi Lainnya - minimal schema (info umum RD)
      */
     public function parseInformasiLainnya(string $text): array

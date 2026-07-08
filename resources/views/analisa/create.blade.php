@@ -55,6 +55,8 @@
             <input type="hidden" name="ffs_bulan" :value="jenisLaporan === 'kalender_ffs' ? ffsBulan : ''">
             <input type="hidden" name="ffs_tahun" :value="jenisLaporan === 'kalender_ffs' ? ffsTahun : ''">
             <input type="hidden" name="jenis_laporan" :value="jenisLaporan">
+            <input type="hidden" name="data_tahunan"
+                :value="(() => { const camelToSnake = s => s.replace(/[A-Z]/g, l => '_' + l.toLowerCase()); return JSON.stringify(Object.fromEntries([['years', tahunTambahan], ...Object.entries(dataTambahan).map(([year, fields]) => [year, Object.fromEntries(Object.entries(fields).map(([k, v]) => [camelToSnake(k), v]))])])); })()">
 
             {{-- Info Dasar --}}
             @if (empty($isEditMode) || ($formRoutes['layout'] ?? '') !== 'layouts.admin')
@@ -3600,6 +3602,17 @@
                     ];
                 @endphp
 
+                const resumeDataTahunan = resumeData?.data_tahunan || {};
+                const initialTahunTambahan = resumeDataTahunan.years || [];
+                const snakeToCamel = s => s.replace(/_([a-z])/g, (_, l) => l.toUpperCase());
+                const initialDataTambahan = {};
+                initialTahunTambahan.forEach(year => {
+                    initialDataTambahan[year] = {};
+                    Object.entries(resumeDataTahunan[year] || {}).forEach(([key, val]) => {
+                        initialDataTambahan[year][snakeToCamel(key)] = val;
+                    });
+                });
+
                 return {
                     mode: resumeMode || @json(old('input_mode', request('tab') === 'link-website' ? 'link-website' : 'manual')),
                     webLoading: false,
@@ -3751,8 +3764,8 @@
                     arusKasPendanaan: @json(old('arus_kas_pendanaan')),
                     kasAwalTahun: @json(old('kas_awal_tahun')),
                     kasAkhirTahun: @json(old('kas_akhir_tahun')),
-                    tahunTambahan: [],
-                    dataTambahan: {},
+                    tahunTambahan: initialTahunTambahan,
+                    dataTambahan: initialDataTambahan,
                     totalHasilInvestasi: @json(old('total_hasil_investasi')),
                     hasilInvestasiSetelahBiaya: @json(old('hasil_investasi_setelah_biaya')),
                     persentasePph: @json(old('persentase_pph')),
@@ -4784,6 +4797,22 @@
                             persentase: row.persentase ?? row.bobot ?? '',
                         })).filter(row => String(row.nama_aset || '').trim() !== '' || String(row.persentase || '')
                             .trim() !== '');
+
+                        // ponytail: convert backend data_tahunan shape to frontend dataTambahan/tahunTambahan
+                        if (data.data_tahunan && !data.data_tambahan) {
+                            const snakeToCamel = s => s.replace(/_([a-z])/g, (_, l) => l.toUpperCase());
+                            const years = Array.isArray(data.data_tahunan.years) ? data.data_tahunan.years : [];
+                            data.tahun_tambahan = years;
+                            data.data_tambahan = {};
+                            years.forEach(year => {
+                                if (data.data_tahunan[year] && typeof data.data_tahunan[year] === 'object') {
+                                    data.data_tambahan[year] = {};
+                                    Object.entries(data.data_tahunan[year]).forEach(([key, val]) => {
+                                        data.data_tambahan[year][snakeToCamel(key)] = val;
+                                    });
+                                }
+                            });
+                        }
 
                         return data;
                     },

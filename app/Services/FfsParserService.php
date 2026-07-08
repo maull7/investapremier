@@ -745,6 +745,83 @@ class FfsParserService
         return $data;
     }
 
+    /**
+     * Normalize year-based strict prospectus output into scalar fields + data_tahunan.
+     */
+    public function normalizeProspectusStrictData(array $ai): array
+    {
+        $data = $this->normalizeAiData($ai);
+
+        $years = $ai['years'] ?? [];
+        if (empty($years)) {
+            return $data;
+        }
+
+        $data['data_tahunan'] = ['years' => $years];
+
+        $sections = [
+            'aset' => [
+                'total_aset', 'kas_dan_bank', 'piutang_transaksi_efek', 'piutang_bunga',
+                'piutang_dividen', 'piutang_lain', 'portofolio_efek', 'instrumen_pasar_uang',
+                'total_unit_beredar', 'nab_per_unit',
+            ],
+            'liabilitas' => [
+                'total_liabilitas', 'uang_muka_diterima', 'liabilitas_pembelian_kembali',
+                'beban_akrual', 'liabilitas_atas_biaya', 'utang_pajak', 'utang_lain',
+                'nilai_aset_bersih',
+            ],
+            'laba_rugi' => [
+                'pendapatan_bunga', 'pendapatan_dividen', 'pendapatan_lainnya', 'gain_realized',
+                'gain_unrealized', 'total_pendapatan', 'beban_pengelolaan_investasi',
+                'beban_kustodian', 'beban_lain', 'total_beban', 'laba_sebelum_pajak',
+                'beban_pajak_penghasilan', 'laba_bersih_tahun_berjalan',
+                'penghasilan_komprehensif_lain', 'penghasilan_komprehensif_tahun_berjalan',
+                'laba_bersih',
+            ],
+            'arus_kas' => [
+                'penerimaan_bunga_deposito', 'penerimaan_dividen_kas', 'penjualan_efek_ekuitas',
+                'pembelian_efek_ekuitas', 'beban_investasi', 'arus_kas_operasi',
+                'penerimaan_penjualan_unit', 'pembayaran_pembelian_kembali_unit',
+                'arus_kas_pendanaan', 'kas_awal_tahun', 'kas_akhir_tahun',
+            ],
+            'perubahan_aset_bersih' => [
+                'penghasilan_komprehensif_tahun_berjalan',
+            ],
+        ];
+
+        foreach ($sections as $section => $fields) {
+            foreach ($fields as $field) {
+                if (!isset($ai[$section][$field]) || !is_array($ai[$section][$field])) {
+                    continue;
+                }
+
+                foreach ($ai[$section][$field] as $year => $value) {
+                    if ($year === 'confidence' || !is_numeric($year)) {
+                        continue;
+                    }
+                    if ($value !== null && $value !== '') {
+                        $yearStr = (string) $year;
+                        if (!isset($data['data_tahunan'][$yearStr])) {
+                            $data['data_tahunan'][$yearStr] = [];
+                        }
+                        $data['data_tahunan'][$yearStr][$field] = $value;
+                    }
+                }
+            }
+        }
+
+        // Flatten latest year to scalar fields for backward compatibility
+        $latestYear = (string) $years[0];
+        $latest = $data['data_tahunan'][$latestYear] ?? [];
+        foreach ($latest as $field => $value) {
+            if ($value !== null && $value !== '') {
+                $data[$field] = $value;
+            }
+        }
+
+        return $data;
+    }
+
     private function safeExtract(string $method, array $args): mixed
     {
         try {
@@ -1994,6 +2071,10 @@ class FfsParserService
                 if ($value === null || $value === '' || (is_array($value) && empty($value))) {
                     continue;
                 }
+                if ($key === 'data_tahunan') {
+                    $merged[$key] = $this->mergeDataTahunan($merged[$key] ?? [], $value);
+                    continue;
+                }
                 if (in_array($key, $arrayFields)) {
                     if (!isset($merged[$key]) || !is_array($merged[$key]) || count($value) > count($merged[$key])) {
                         $merged[$key] = $value;
@@ -2005,6 +2086,39 @@ class FfsParserService
         }
 
         return $merged;
+    }
+
+    private function mergeDataTahunan(array $existing, array $new): array
+    {
+        if (empty($existing)) {
+            return $new;
+        }
+        if (empty($new)) {
+            return $existing;
+        }
+
+        $years = array_values(array_unique(array_merge($existing['years'] ?? [], $new['years'] ?? [])));
+        rsort($years);
+
+        $merged = ['years' => $years];
+
+        foreach ($years as $year) {
+            $yearStr = (string) $year;
+            $merged[$yearStr] = array_merge(
+                $existing[$yearStr] ?? [],
+                $new[$yearStr] ?? []
+            );
+        }
+
+        return $merged;
+    }
+
+    private function normalizeParseResult(array $aiResult): array
+    {
+        if (isset($aiResult['aset']) || isset($aiResult['liabilitas']) || isset($aiResult['laba_rugi']) || isset($aiResult['arus_kas'])) {
+            return $this->normalizeProspectusStrictData($aiResult);
+        }
+        return $this->normalizeAiData($aiResult);
     }
 
     /**
@@ -2077,18 +2191,18 @@ class FfsParserService
 
             try {
                 if ($sectionType === 'auto') {
-                    $aiResult = $groq->parseFfsPdf($text, null);
+                    $aiResult = $groq->parseProspectusFinancialStrict($text, null);
                 } else {
                     $aiResult = match ($sectionType) {
                         'informasi_lainnya' => $groq->parseInformasiLainnya($text),
                         'portofolio_efek' => $groq->parsePortofolioEfek($text),
                         'pengukuran_nilai_wajar' => $groq->parsePengukuranNilaiWajar($text),
-                        'bs_is_cf_pup' => $groq->parseBsIsCfPup($text),
-                        default => $groq->parseFfsPdf($text, $sectionType),
+                        'bs_is_cf_pup' => $groq->parseProspectusFinancialStrict($text, 'bs_is_cf_pup'),
+                        default => $groq->parseProspectusFinancialStrict($text, $sectionType),
                     };
                 }
 
-                $normalized = $this->normalizeAiData($aiResult);
+                $normalized = $this->normalizeParseResult($aiResult);
                 $results[] = $normalized;
 
                 \Log::info("[PARSE-PAGE-RANGE] Range #{$idx} success: " . count(array_filter($normalized, fn($v) => !empty($v))) . " fields");
@@ -2101,8 +2215,8 @@ class FfsParserService
             \Log::warning('[PARSE-PAGE-RANGE] No results from any range, falling back to full document parse');
             // Final fallback: parse full document
             try {
-                $aiResult = $groq->parseFfsPdf($fullText, null);
-                return $this->normalizeAiData($aiResult);
+                $aiResult = $groq->parseProspectusFinancialStrict($fullText, null);
+                return $this->normalizeParseResult($aiResult);
             } catch (\Throwable $e) {
                 \Log::warning('[PARSE-PAGE-RANGE] Final fallback failed: ' . $e->getMessage());
                 return $this->normalizeAiData([]);
@@ -2112,7 +2226,7 @@ class FfsParserService
         $merged = $this->smartMergeResults($results);
         \Log::info('[PARSE-PAGE-RANGE] Merged: ' . count(array_filter($merged, fn($v) => !empty($v))) . ' fields from ' . count($results) . ' ranges');
 
-        return $this->normalizeAiData($merged);
+        return $this->normalizeParseResult($merged);
     }
 
     public function parseWithPageRangesHybrid(string $pdfPath, GroqService $groq, array $pageRanges, AiTableService $aiTable): array
