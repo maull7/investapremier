@@ -186,6 +186,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::post('analisa-rd/parse-prospektus-pdf', [AdminAnalisaRdController::class, 'parseProspektusPdf'])->name('analisa-rd.parse-prospektus-pdf');
     Route::post('analisa-rd/parse-pdf-vision', [AnalisaFfsVisionController::class, 'parsePdf'])->name('analisa-rd.parse-pdf-vision');
     Route::post('analisa-rd/parse-web-file', [AdminAnalisaRdController::class, 'parseWebFile'])->name('analisa-rd.parse-web-file');
+    Route::post('analisa-rd/import-excel-preview', [AdminAnalisaRdController::class, 'importExcelPreview'])->name('analisa-rd.import-excel-preview');
     Route::post('analisa-rd/scrape-web-data', [AdminAnalisaRdController::class, 'scrapeWebData'])->name('analisa-rd.scrape-web-data');
     Route::post('analisa-rd/scrape-url', [AdminAnalisaRdController::class, 'scrapeUrl'])->name('analisa-rd.scrape-url');
     Route::get('analisa-rd/lookup-kode', [AdminAnalisaRdController::class, 'lookupKode'])->name('analisa-rd.lookup-kode');
@@ -370,6 +371,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::post('analisa-ul/parse-pdf', [AdminAnalisaUlController::class, 'parsePdf'])->name('analisa-ul.parse-pdf');
     Route::post('analisa-ul/parse-pdf-vision', [AnalisaFfsVisionController::class, 'parsePdf'])->name('analisa-ul.parse-pdf-vision');
     Route::post('analisa-ul/parse-web-file', [AdminAnalisaUlController::class, 'parseWebFile'])->name('analisa-ul.parse-web-file');
+    Route::post('analisa-ul/import-excel-preview', [AdminAnalisaUlController::class, 'importExcelPreview'])->name('analisa-ul.import-excel-preview');
     Route::post('analisa-ul/scrape-web-data', [AdminAnalisaUlController::class, 'scrapeWebData'])->name('analisa-ul.scrape-web-data');
     Route::post('analisa-ul/scrape-url', [AdminAnalisaUlController::class, 'scrapeUrl'])->name('analisa-ul.scrape-url');
     Route::post('analisa-ul/preview-ai', [AdminAnalisaUlController::class, 'previewAi'])->name('analisa-ul.preview-ai');
@@ -426,6 +428,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::post('/analisa/parse-pdf-vision', [AnalisaFfsVisionController::class, 'parsePdf'])->name('analisa.parse-pdf-vision');
     Route::get('/analisa/existing-documents', [AnalisaController::class, 'getExistingDocuments'])->name('analisa.existing-documents');
     Route::post('/analisa/parse-existing-document', [AnalisaController::class, 'parseExistingDocument'])->name('analisa.parse-existing-document');
+    Route::post('/analisa/import-excel-preview', [AnalisaController::class, 'importExcelPreview'])->name('analisa.import-excel-preview');
     Route::post('/analisa/parse-web-file', [AnalisaController::class, 'parseWebFile'])->name('analisa.parse-web-file');
     Route::post('/analisa/scrape-web-data', [AnalisaController::class, 'scrapeWebData'])->name('analisa.scrape-web-data');
     Route::post('/analisa/scrape-url', [AnalisaController::class, 'scrapeUrl'])->name('analisa.scrape-url');
@@ -520,6 +523,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/unit-link-analisa/existing-documents', [UserAnalisaUlController::class, 'getExistingDocuments'])->name('unit-link-analisa.existing-documents');
     Route::post('/unit-link-analisa/parse-existing-document', [UserAnalisaUlController::class, 'parseExistingDocument'])->name('unit-link-analisa.parse-existing-document');
     Route::post('/unit-link-analisa/parse-web-file', [UserAnalisaUlController::class, 'parseWebFile'])->name('unit-link-analisa.parse-web-file');
+    Route::post('/unit-link-analisa/import-excel-preview', [UserAnalisaUlController::class, 'importExcelPreview'])->name('unit-link-analisa.import-excel-preview');
     Route::post('/unit-link-analisa/scrape-web-data', [UserAnalisaUlController::class, 'scrapeWebData'])->name('unit-link-analisa.scrape-web-data');
     Route::post('/unit-link-analisa/scrape-url', [UserAnalisaUlController::class, 'scrapeUrl'])->name('unit-link-analisa.scrape-url');
     Route::post('/unit-link-analisa/preview-ai', [UserAnalisaUlController::class, 'previewAi'])->name('unit-link-analisa.preview-ai');

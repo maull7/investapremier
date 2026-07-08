@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Exports\AnalisaTemplateExport;
+use App\Exports\AnalisaExcelExport;
 use App\Imports\AnalisaImport;
+use App\Imports\AnalisaImportPreview;
+use App\Imports\LegacyFormatReader;
 use App\Jobs\AnalisaAiJob;
 use App\Models\AnalisaReksaDana;
 use App\Models\DataSourceLink;
@@ -96,8 +99,9 @@ class AnalisaController extends Controller
             'lookup_bond_return' => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-bond-return") ? route("{$prefix}.lookup-bond-return") : null,
             'lookup_bank_data' => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-bank-data") ? route("{$prefix}.lookup-bank-data") : null,
             'lookup_sukuk_return' => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-sukuk-return") ? route("{$prefix}.lookup-sukuk-return") : null,
-            'parse_web_file'  => route("{$prefix}.parse-web-file"),
-            'scrape_web'      => $scrapeWebBase,
+            'parse_web_file'      => route("{$prefix}.parse-web-file"),
+            'import_excel_preview' => route("{$prefix}.import-excel-preview"),
+            'scrape_web'          => $scrapeWebBase,
             'scrape_url'      => $scrapeUrlBase,
         ]);
     }
@@ -352,6 +356,10 @@ class AnalisaController extends Controller
 
     public function downloadTemplate()
     {
+        $path = public_path('storage/import/Format Template.xlsx');
+        if (file_exists($path)) {
+            return response()->download($path, 'Format Template.xlsx');
+        }
         return Excel::download(new AnalisaTemplateExport(), 'template-analisa-reksa-dana.xlsx');
     }
 
@@ -530,13 +538,16 @@ class AnalisaController extends Controller
         if (!empty($data['piutang_bunga_detail'])) $extracted[] = count($data['piutang_bunga_detail']) . ' Piutang Bunga';
         $success = count($extracted) > 0;
 
+        $exportResult = $this->exportAndReimport($data);
+
         return response()->json([
             'success' => $success,
             'message' => $success
                 ? 'Berhasil mengekstrak: ' . implode(', ', $extracted) . '.'
                 : 'Tidak dapat mengekstrak data dari PDF ini. Format mungkin tidak didukung.',
             'warning' => $success ? 'Data hasil ekstraksi AI bisa saja tidak akurat. Mohon periksa dan validasi setiap field sebelum menyimpan.' : null,
-            'data' => $data,
+            'data' => $exportResult['data'],
+            'export_file' => $exportResult['export_file'],
             'pdf_file' => $storedPath,
         ]);
     }
@@ -797,10 +808,13 @@ class AnalisaController extends Controller
             $message .= ' (' . count($pageRanges) . ' partisi halaman)';
         }
 
+        $exportResult = $this->exportAndReimport($data);
+
         return response()->json([
             'success' => $success,
             'message' => $message,
-            'data' => $data,
+            'data' => $exportResult['data'],
+            'export_file' => $exportResult['export_file'],
             'document_label' => $this->getDocumentLabel($document),
         ]);
     }
@@ -871,10 +885,13 @@ class AnalisaController extends Controller
             $message .= ' Peringatan: ' . implode(', ', $validation['warnings']);
         }
 
+        $exportResult = $this->exportAndReimport($data);
+
         return response()->json([
             'success' => $success,
             'message' => $message,
-            'data' => $data,
+            'data' => $exportResult['data'],
+            'export_file' => $exportResult['export_file'],
             'pdf_file' => $storedPath,
             'validation' => $validation,
             'classifications' => $result['classifications'],
@@ -943,12 +960,15 @@ class AnalisaController extends Controller
 
         $success = count($extracted) > 0;
 
+        $exportResult = $this->exportAndReimport($data);
+
         return response()->json([
             'success' => $success,
             'message' => $success
                 ? 'Berhasil mengekstrak Prospektus: ' . implode(', ', $extracted) . '.'
                 : 'Tidak dapat mengekstrak data dari Prospektus PDF ini.',
-            'data' => $data,
+            'data' => $exportResult['data'],
+            'export_file' => $exportResult['export_file'],
             'document_label' => $this->getDocumentLabel($document),
             'validation' => $validation,
         ]);
@@ -970,7 +990,49 @@ class AnalisaController extends Controller
             ], 422);
         }
 
-        return response()->json($this->webFileParseResponse($data));
+        return response()->json($this->webFileParseResponse($data, true));
+    }
+
+    public function importExcelPreview(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls|max:5120',
+        ]);
+
+        try {
+            $tmpPath = $request->file('file')->getPathname();
+            $ext = $request->file('file')->getClientOriginalExtension();
+
+            $data = [];
+
+            try {
+                $import = new AnalisaImportPreview;
+                Excel::import($import, $tmpPath, null, $ext === 'xls' ? \Maatwebsite\Excel\Excel::XLS : \Maatwebsite\Excel\Excel::XLSX);
+                $data = $import->getData();
+            } catch (\Throwable $e) {
+                $data = [];
+            }
+
+            $hasData = collect($data)->flatten()->isNotEmpty();
+
+            if (!$hasData) {
+                $legacy = new LegacyFormatReader;
+                $legacyData = $legacy->read($tmpPath);
+                if (!empty($legacyData)) {
+                    $data = $legacyData;
+                }
+            }
+
+            $hasData = collect($data)->flatten()->isNotEmpty();
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membaca file Excel: ' . $e->getMessage(),
+                'data' => null,
+            ], 422);
+        }
+
+        return response()->json($this->webFileParseResponse($data, true));
     }
 
     public function scrapeWebData(Request $request, DataSourceAutoDownloadService $downloader, WebDataFileParserService $parser)
@@ -995,7 +1057,7 @@ class AnalisaController extends Controller
             ], 422);
         }
 
-        return response()->json($this->webFileParseResponse($data));
+        return response()->json($this->webFileParseResponse($data, true));
     }
 
     public function scrapeUrl(Request $request, WebScraperService $scraper)
@@ -1008,7 +1070,7 @@ class AnalisaController extends Controller
             return response()->json(['success' => false, 'message' => $e->getMessage(), 'data' => null], 422);
         }
 
-        $response = $this->webFileParseResponse($result['data']);
+        $response = $this->webFileParseResponse($result['data'], true);
         $response['message'] = $result['message'];
         $response['type'] = $result['type'];
         if (isset($result['raw_tables'])) {
@@ -1018,8 +1080,15 @@ class AnalisaController extends Controller
         return response()->json($response);
     }
 
-    protected function webFileParseResponse(array $data): array
+    protected function webFileParseResponse(array $data, bool $doExport = false): array
     {
+        $exportFile = null;
+        if ($doExport) {
+            $export = $this->exportAndReimport($data);
+            $data = $export['data'];
+            $exportFile = $export['export_file'] ?? null;
+        }
+
         $extracted = [];
         if (!empty($data['nama_reksa_dana'])) {
             $extracted[] = 'Nama RD';
@@ -1066,7 +1135,39 @@ class AnalisaController extends Controller
                 ? 'Data siap diisi ke form: ' . implode(', ', $extracted) . '.'
                 : 'File terbaca tetapi tidak ada data yang cocok. Pastikan format Excel template analisa atau export situs yang benar.',
             'data' => $data,
+            'export_file' => $exportFile,
         ];
+    }
+
+    private function exportAndReimport(array $data): array
+    {
+        $dir = storage_path('app/public/export');
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $filename = 'analisa-export-' . now()->format('Ymd-His') . '-' . uniqid() . '.xlsx';
+        $path = $dir . '/' . $filename;
+
+        try {
+            $export = new AnalisaExcelExport;
+            $export->export($data, $path);
+
+            $reader = new LegacyFormatReader;
+            $reimported = $reader->read($path);
+
+            $merged = array_merge($data, $reimported);
+
+            return [
+                'data' => $merged,
+                'export_file' => Storage::url('export/' . $filename),
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'data' => $data,
+                'export_file' => null,
+            ];
+        }
     }
 
     public function store(Request $request)
@@ -1458,11 +1559,30 @@ class AnalisaController extends Controller
             }
         });
 
+        $exportUrl = $this->generateExportExcel($request);
+
         if ($isSimpan) {
-            return redirect()->route($this->indexRoute())->with('success', 'Data berhasil disimpan sebagai Input Manual.');
+            return redirect()->route($this->indexRoute())->with('success', 'Data berhasil disimpan sebagai Input Manual.')->with('export_file', $exportUrl);
         }
 
-        return redirect()->route($this->indexRoute())->with('success', 'Data analisa berhasil disubmit. Narasi AI sedang diproses.');
+        return redirect()->route($this->indexRoute())->with('success', 'Data analisa berhasil disubmit. Narasi AI sedang diproses.')->with('export_file', $exportUrl);
+    }
+
+    private function generateExportExcel(Request $request): ?string
+    {
+        $dir = storage_path('app/public/export');
+        if (!is_dir($dir)) mkdir($dir, 0755, true);
+
+        $filename = 'analisa-export-' . now()->format('Ymd-His') . '-' . uniqid() . '.xlsx';
+        $path = $dir . '/' . $filename;
+
+        try {
+            $export = new AnalisaExcelExport;
+            $export->export($request->all(), $path);
+            return Storage::url('export/' . $filename);
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     private function storeFromExcel(Request $request)

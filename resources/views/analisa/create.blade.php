@@ -2689,7 +2689,7 @@
                                 d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <div>
-                            Download template Excel terlebih dahulu, isi data sesuai format, lalu upload kembali.
+                            Download template Excel terlebih dahulu, isi data sesuai format, lalu upload.
                             <a href="{{ $formRoutes['template'] }}" class="font-semibold underline ml-1">Download
                                 Template</a>
                         </div>
@@ -2697,12 +2697,21 @@
 
                     <div>
                         <x-input-label for="file_excel" value="Upload File Excel (.xlsx)" />
-                        <input id="file_excel" name="file_excel" type="file" accept=".xlsx,.xls"
+                        <input id="file_excel" name="file_excel" type="file" accept=".xlsx,.xls" @change="importExcel($event)"
                             class="mt-1 block w-full text-sm text-muted border border-gray-300 rounded-lg px-3 py-2 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-primary file:text-white hover:file:bg-primary/90 cursor-pointer" />
+                        <div x-show="importExcelLoading" class="flex items-center gap-2 mt-2 text-sm text-muted">
+                            <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                            </svg>
+                            Membaca file Excel...
+                        </div>
+                        <div x-show="importExcelMessage" x-cloak
+                            :class="{'text-green-600': importExcelOk, 'text-red-600': !importExcelOk}"
+                            class="mt-2 text-sm" x-html="importExcelMessage"></div>
                         <x-input-error :messages="$errors->get('file_excel')" class="mt-1" />
                         <p class="text-xs text-muted mt-1">Format: .xlsx atau .xls, maks 5MB. Sheet: Sektor, Efek,
-                            Kinerja,
-                            Obligasi, Sukuk, Bank.</p>
+                            Kinerja, Obligasi, Sukuk, Bank.</p>
                     </div>
                 </div>
 
@@ -2933,7 +2942,7 @@
                             <div class="px-3 py-2 rounded-lg"
                                 :class="pdfSuccess ? 'bg-green-50 border border-green-200 text-green-700' :
                                     'bg-red-50 border border-red-200 text-red-700'">
-                                <span x-text="pdfResult"></span>
+                                <span x-html="pdfResult"></span>
                             </div>
                         </div>
                     </div>
@@ -3232,7 +3241,7 @@
                         <div x-show="partitionResult" class="text-sm p-3 rounded-lg border"
                             :class="partitionSuccess ? 'bg-green-50 border-green-200 text-green-700' :
                                 'bg-amber-50 border-amber-200 text-amber-700'">
-                            <span x-text="partitionResult"></span>
+                            <span x-html="partitionResult"></span>
                             <div x-show="partitionSuccess" class="flex gap-2 mt-2">
                                 <button type="button" @click="mode = 'manual'" class="text-xs underline">Lihat di
                                     Input Manual</button>
@@ -3527,7 +3536,7 @@
                         <div
                             :class="pdfSuccess ? 'p-3 bg-green-50 border border-green-200 rounded-lg text-green-700' :
                                 'p-3 bg-red-50 border border-red-200 rounded-lg text-red-700'">
-                            <span x-text="pdfResult"></span>
+                            <span x-html="pdfResult"></span>
                         </div>
                         <p x-show="pdfSuccess" class="text-xs text-muted">Silakan cek tab <strong>Input Manual</strong>
                             untuk melihat dan
@@ -3545,6 +3554,12 @@
                 :value="aiPlusResult ? JSON.stringify(aiPlusResult.parsed || {}) : ''">
 
             <div class="flex items-center gap-3" x-show="mode !== 'link-website'" x-cloak>
+                <template x-if="exportFileUrl">
+                    <a :href="exportFileUrl" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition inline-flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        Download Excel
+                    </a>
+                </template>
                 <button type="submit" name="simpan" value="1"
                     class="px-4 py-2 text-sm font-medium text-white bg-gray-500 rounded-lg hover:bg-gray-600 transition">{{ !empty($isEditMode) ? 'Simpan Draft' : 'Simpan' }}</button>
                 <x-primary-button>{{ !empty($isEditMode) ? 'Simpan Perubahan' : 'Submit Analisa' }}</x-primary-button>
@@ -3592,6 +3607,11 @@
                     webMessage: '',
                     webOk: false,
                     parseWebFileUrl: @json($formRoutes['parse_web_file']),
+                    importExcelPreviewUrl: @json($formRoutes['import_excel_preview']),
+                    importExcelLoading: false,
+                    importExcelMessage: '',
+                    importExcelOk: false,
+                    exportFileUrl: null,
                     scrapeWebUrl: @json($formRoutes['scrape_web']),
                     pdfLoading: false,
                     pdfResult: '',
@@ -5046,14 +5066,54 @@
                                     return;
                                 }
                                 this.applyExtractedData(body.data);
+                                this.exportFileUrl = body.export_file || null;
                                 this.webOk = true;
                                 this.webMessage = body.message +
-                                    ' Data sudah di tab Input Manual — lengkapi Jenis RD jika perlu, lalu Submit Analisa.';
+                                    ' Data sudah di tab Input Manual — lengkapi Jenis RD jika perlu, lalu Submit Analisa.' +
+                                    (body.export_file ? ' <a href="' + body.export_file + '" class="underline font-semibold" download>Download Excel</a>.' : '');
                             })
                             .catch(() => {
                                 this.webLoading = false;
                                 this.webOk = false;
                                 this.webMessage = 'Gagal memproses file.';
+                            });
+                    },
+
+                    importExcel(event) {
+                        const file = event.target.files[0];
+                        if (!file) return;
+                        this.importExcelLoading = true;
+                        this.importExcelMessage = '';
+                        this.importExcelOk = false;
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('_token', this.analisaFormEl().querySelector('input[name="_token"]').value);
+                        fetch(this.importExcelPreviewUrl, {
+                                method: 'POST',
+                                headers: { Accept: 'application/json' },
+                                body: formData,
+                            })
+                            .then(res => res.json().then(body => ({ ok: res.ok, body })))
+                            .then(({ ok, body }) => {
+                                this.importExcelLoading = false;
+                                if (!ok || !body.success) {
+                                    this.importExcelOk = false;
+                                    this.importExcelMessage = body.message || 'Gagal membaca file Excel.';
+                                    return;
+                                }
+                                const extractedData = this.normalizeExtractedData(body.data || {});
+                                this.applyExtractedData(extractedData, this.hasFullInputData(extractedData) ? 'lengkap' : 'manual');
+                                this.exportFileUrl = body.export_file || null;
+                                this.importExcelOk = true;
+                                const tab = this.hasFullInputData(extractedData) ? 'Input Lengkap' : 'Input Manual';
+                                this.importExcelMessage = body.message + ' Cek tab ' + tab + '.' +
+                                    (body.export_file ? ' <a href="' + body.export_file + '" class="underline font-semibold" download>Download Excel</a>.' : '');
+                                event.target.value = '';
+                            })
+                            .catch(() => {
+                                this.importExcelLoading = false;
+                                this.importExcelOk = false;
+                                this.importExcelMessage = 'Gagal mengupload file.';
                             });
                     },
 
@@ -5086,9 +5146,11 @@
                                     return;
                                 }
                                 this.applyExtractedData(body.data);
+                                this.exportFileUrl = body.export_file || null;
                                 this.webOk = true;
                                 this.webMessage = body.message +
-                                    ' Data sudah di tab Input Manual — lengkapi Jenis RD jika perlu, lalu Submit Analisa.';
+                                    ' Data sudah di tab Input Manual — lengkapi Jenis RD jika perlu, lalu Submit Analisa.' +
+                                    (body.export_file ? ' <a href="' + body.export_file + '" class="underline font-semibold" download>Download Excel</a>.' : '');
                             })
                             .catch(() => {
                                 this.webLoading = false;
@@ -5125,9 +5187,11 @@
                                     return;
                                 }
                                 this.applyExtractedData(body.data);
+                                this.exportFileUrl = body.export_file || null;
                                 this.webOk = true;
                                 this.webMessage = body.message +
-                                    ' Data sudah di tab Input Manual — lengkapi Jenis RD jika perlu, lalu Submit Analisa.';
+                                    ' Data sudah di tab Input Manual — lengkapi Jenis RD jika perlu, lalu Submit Analisa.' +
+                                    (body.export_file ? ' <a href="' + body.export_file + '" class="underline font-semibold" download>Download Excel</a>.' : '');
                                 this.mode = 'manual';
                             })
                             .catch(() => {
@@ -5182,10 +5246,12 @@
                                 const extractedData = this.normalizeExtractedData(resp.data || {});
                                 this.pdfData = extractedData;
                                 this.pdfFile = resp.pdf_file || '';
+                                this.exportFileUrl = resp.export_file || null;
                                 this.applyExtractedData(extractedData, this.hasFullInputData(extractedData) ? 'lengkap' :
                                     'manual');
                                 this.pdfSuccess = true;
-                                this.pdfResult = resp.message;
+                                this.pdfResult = resp.message +
+                                    (resp.export_file ? ' <a href="' + resp.export_file + '" class="underline font-semibold" download>Download Excel</a>.' : '');
                             })
                             .catch(err => {
                                 this.pdfLoading = false;
@@ -5429,6 +5495,8 @@
                                 if (fieldCount > 0) {
                                     this.applyExtractedData(extracted, this.hasFullInputData(extracted) ? 'lengkap' : 'manual');
                                 }
+                                this.exportFileUrl = resp.export_file || null;
+                                if (resp.export_file) window.open(resp.export_file, '_blank');
                                 validRanges.forEach(r => {
                                     const range = this.pageRanges[r.idx];
                                     if (range) { range.success = true; range.data = data; range.message = `${fieldCount} field`; }
