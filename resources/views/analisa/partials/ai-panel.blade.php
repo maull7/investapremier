@@ -4,8 +4,8 @@
     $variant = $variant ?? 'standard';
 @endphp
 
-<div class="bg-white rounded-xl border border-line p-6">
-    <div class="flex items-center gap-2 mb-4">
+<div class="space-y-4">
+    <div class="flex items-center gap-2 px-1">
         <span class="text-lg">🤖</span>
         <h3 class="font-semibold text-primary">{{ $title ?? 'Analisa AI' }}</h3>
         <span class="ml-auto text-xs text-muted bg-[#f1f5f9] px-2 py-1 rounded-full">Powered by OpenAI</span>
@@ -35,34 +35,37 @@
                 'rekomendasi_investor' => 'Rekomendasi Investor',
             ] as $key => $label)
                 @if(!empty($ai[$key]))
-                <div class="mb-5">
-                    <h4 class="text-sm font-semibold text-primary mb-2">{{ $label }}</h4>
+                <div class="border rounded-lg p-4 bg-white shadow-sm">
+                    <h4 class="font-semibold text-primary text-sm mb-3">{{ $label }}</h4>
                     <div class="text-sm text-gray-700 leading-relaxed">{{ $ai[$key] }}</div>
                 </div>
                 @endif
             @endforeach
 
             @if(!empty($ai['metrik_saran']) && is_array($ai['metrik_saran']))
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-                @foreach(['sharpe_ratio' => 'Sharpe Ratio', 'rar' => 'RAR', 'liquidity_ratio' => 'Liquidity Ratio', 'durasi_rata_rata' => 'Durasi Rata-rata'] as $mk => $ml)
-                <div class="bg-[#f8fafc] rounded-lg p-3 border border-line">
-                    <p class="text-xs text-muted">{{ $ml }}</p>
-                    <p class="text-lg font-bold text-primary mt-1">{{ $ai['metrik_saran'][$mk] ?? '—' }}</p>
+            <div class="border rounded-lg p-4 bg-white shadow-sm">
+                <h4 class="font-semibold text-primary text-sm mb-3">Metrik Saran</h4>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    @foreach(['sharpe_ratio' => 'Sharpe Ratio', 'rar' => 'RAR', 'liquidity_ratio' => 'Liquidity Ratio', 'durasi_rata_rata' => 'Durasi Rata-rata'] as $mk => $ml)
+                    <div class="bg-[#f8fafc] rounded-lg p-3 border border-line">
+                        <p class="text-xs text-muted">{{ $ml }}</p>
+                        <p class="text-lg font-bold text-primary mt-1">{{ $ai['metrik_saran'][$mk] ?? '—' }}</p>
+                    </div>
+                    @endforeach
                 </div>
-                @endforeach
             </div>
             @endif
         @elseif(!empty($ai))
             @if(!empty($ai['ringkasan_utama']))
-            <div class="mb-6">
-                <h4 class="text-sm font-semibold text-primary mb-2">Ringkasan Utama</h4>
+            <div class="border rounded-lg p-4 bg-white shadow-sm">
+                <h4 class="font-semibold text-primary text-sm mb-3">Ringkasan Utama</h4>
                 <div class="text-sm text-gray-700 leading-relaxed">{{ $ai['ringkasan_utama'] }}</div>
             </div>
             @endif
 
             @if(!empty($ai['alokasi_aset']))
-            <div class="mb-6">
-                <h4 class="text-sm font-semibold text-primary mb-2">Alokasi Aset</h4>
+            <div class="border rounded-lg p-4 bg-white shadow-sm">
+                <h4 class="font-semibold text-primary text-sm mb-3">Alokasi Aset</h4>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead class="bg-[#f8fafc] border-b border-line">
@@ -87,8 +90,8 @@
             @endif
 
             @if(!empty($ai['daftar_efek']))
-            <div class="mb-6">
-                <h4 class="text-sm font-semibold text-primary mb-2">Daftar Efek & Persentase</h4>
+            <div class="border rounded-lg p-4 bg-white shadow-sm">
+                <h4 class="font-semibold text-primary text-sm mb-3">Daftar Efek & Persentase</h4>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead class="bg-[#f8fafc] border-b border-line">
@@ -117,22 +120,26 @@
             @endif
 
             @if(!empty($ai['analisa_risiko']))
-            <div class="mb-6">
-                <h4 class="text-sm font-semibold text-primary mb-2">Analisa Risiko</h4>
+            <div class="border rounded-lg p-4 bg-white shadow-sm">
+                <h4 class="font-semibold text-primary text-sm mb-3">Analisa Risiko</h4>
                 <div class="text-sm text-gray-700 leading-relaxed">{{ $ai['analisa_risiko'] }}</div>
             </div>
             @endif
 
             @if(!empty($ai['rekomendasi_investor']))
             <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 class="text-sm font-semibold text-blue-800 mb-1">Rekomendasi Investor</h4>
+                <h4 class="font-semibold text-blue-800 text-sm mb-2">Rekomendasi Investor</h4>
                 <div class="text-sm text-blue-700">{{ $ai['rekomendasi_investor'] }}</div>
             </div>
             @endif
         @else
-            <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{{ $narasi }}</div>
+            <div class="border rounded-lg p-4 bg-white shadow-sm">
+                <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{{ $narasi }}</div>
+            </div>
         @endif
     @else
-        <div class="text-sm text-muted">{{ $emptyMessage ?? 'Belum ada hasil analisa.' }}</div>
+        <div class="border rounded-lg p-4 bg-white shadow-sm">
+            <div class="text-sm text-muted">{{ $emptyMessage ?? 'Belum ada hasil analisa.' }}</div>
+        </div>
     @endif
 </div>

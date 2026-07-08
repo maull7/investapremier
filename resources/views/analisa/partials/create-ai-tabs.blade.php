@@ -9,15 +9,15 @@
     </button>
     <div x-show="aiError" class="text-sm text-red-600" x-text="aiError"></div>
     <template x-if="aiResult">
-        <div class="bg-white rounded-xl border border-line p-6 space-y-0">
-            <div class="flex items-center gap-2 mb-4">
+        <div class="space-y-4">
+            <div class="flex items-center gap-2 px-1">
                 <span class="text-lg">🤖</span>
                 <h3 class="font-semibold text-primary">Analisa AI</h3>
                 <span class="ml-auto text-xs text-muted bg-[#f1f5f9] px-2 py-1 rounded-full">Powered by OpenAI</span>
             </div>
 
             {{-- Tombol terapkan --}}
-            <div class="mb-5">
+            <div class="border rounded-lg p-4 bg-white shadow-sm">
                 <button type="button" @click="applyAiToManual()"
                     class="px-4 py-2 bg-accent text-white rounded-lg text-sm font-semibold hover:bg-accent/90 transition">
                     ✦ Isi Input Manual
@@ -26,15 +26,18 @@
             </div>
 
             <template x-if="aiResult.parsed?.ringkasan_utama">
-                <div class="mb-6">
-                    <h4 class="text-sm font-semibold text-primary mb-2">Ringkasan Utama</h4>
+                <div class="border rounded-lg p-4 bg-white shadow-sm">
+                    <h4 class="font-semibold text-primary text-sm mb-3">Ringkasan Utama</h4>
                     <div class="text-sm text-gray-700 leading-relaxed" x-text="aiResult.parsed.ringkasan_utama"></div>
                 </div>
             </template>
 
             <template x-if="aiResult.parsed?.alokasi_aset?.length">
-                <div class="mb-6">
-                    <h4 class="text-sm font-semibold text-primary mb-2">Alokasi Aset</h4>
+                <div class="border rounded-lg p-4 bg-white shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-semibold text-primary text-sm">Alokasi Aset</h4>
+                        <button type="button" @click="downloadCsvFromArray(aiResult.parsed.alokasi_aset, 'Alokasi_Aset')" class="text-[10px] text-accent hover:underline font-medium">Download CSV</button>
+                    </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead class="bg-[#f8fafc] border-b border-line">
@@ -59,8 +62,11 @@
             </template>
 
             <template x-if="aiResult.parsed?.daftar_efek?.length">
-                <div class="mb-6">
-                    <h4 class="text-sm font-semibold text-primary mb-2">Daftar Efek & Persentase</h4>
+                <div class="border rounded-lg p-4 bg-white shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-semibold text-primary text-sm">Daftar Efek & Persentase</h4>
+                        <button type="button" @click="downloadCsvFromArray(aiResult.parsed.daftar_efek, 'Daftar_Efek')" class="text-[10px] text-accent hover:underline font-medium">Download CSV</button>
+                    </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead class="bg-[#f8fafc] border-b border-line">
@@ -89,21 +95,23 @@
             </template>
 
             <template x-if="aiResult.parsed?.analisa_risiko">
-                <div class="mb-6">
-                    <h4 class="text-sm font-semibold text-primary mb-2">Analisa Risiko</h4>
+                <div class="border rounded-lg p-4 bg-white shadow-sm">
+                    <h4 class="font-semibold text-primary text-sm mb-3">Analisa Risiko</h4>
                     <div class="text-sm text-gray-700 leading-relaxed" x-text="aiResult.parsed.analisa_risiko"></div>
                 </div>
             </template>
 
             <template x-if="aiResult.parsed?.rekomendasi_investor">
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 class="text-sm font-semibold text-blue-800 mb-1">Rekomendasi Investor</h4>
+                    <h4 class="text-sm font-semibold text-blue-800 mb-2">Rekomendasi Investor</h4>
                     <div class="text-sm text-blue-700" x-text="aiResult.parsed.rekomendasi_investor"></div>
                 </div>
             </template>
 
             <template x-if="!aiResult.parsed || Object.keys(aiResult.parsed).length === 0">
-                <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-line" x-text="aiResult.raw"></div>
+                <div class="border rounded-lg p-4 bg-white shadow-sm">
+                    <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-line" x-text="aiResult.raw"></div>
+                </div>
             </template>
         </div>
     </template>
@@ -133,6 +141,12 @@
 
     <div x-show="aiPlusError" class="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 whitespace-pre-line" x-text="aiPlusError"></div>
     <template x-if="aiPlusResult">
-        <div class="space-y-3 border-t border-line pt-4 text-sm text-gray-700 leading-relaxed whitespace-pre-line" x-text="aiPlusResult.raw"></div>
+        <div class="border rounded-lg p-4 bg-white shadow-sm">
+            <div class="flex items-center gap-2 mb-3">
+                <span class="text-lg">🤖</span>
+                <h4 class="font-semibold text-primary text-sm">Hasil Analisa AI Plus</h4>
+            </div>
+            <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-line" x-text="aiPlusResult.raw"></div>
+        </div>
     </template>
 </div>

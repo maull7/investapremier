@@ -3241,31 +3241,27 @@
                             </div>
                         </div>
 
-                        {{-- Preview Tables grouped by content type --}}
+                        {{-- Preview Tables — Card per Section --}}
                         <div x-show="partitionSuccess && groupedTables.length > 0">
                             <hr class="border-line my-3">
-                            <div class="space-y-3">
-                                <h4 class="text-xs font-semibold text-primary">Hasil Tabel</h4>
-                                <div class="flex flex-wrap gap-1.5 mb-2">
-                                    <template x-for="(grp, gi) in groupedTables" :key="gi">
-                                        <button type="button" @click="activeContentTab = grp.table_name"
-                                            class="px-2.5 py-1 text-[10px] font-medium rounded-lg border transition"
-                                            :class="activeContentTab === grp.table_name ? 'bg-primary text-white border-primary' : 'bg-white text-muted border-line hover:border-primary/40'"
-                                            x-text="grp.table_name + ' (' + grp.tables.length + ')'"></button>
-                                    </template>
-                                </div>
-                                <div class="overflow-x-auto border border-line rounded-xl bg-white">
-                                    <template x-for="(grp, gi) in groupedTables" :key="gi">
-                                        <div x-show="activeContentTab === grp.table_name" class="p-3 space-y-4">
-                                            <template x-for="(tbl, ti) in grp.tables" :key="ti">
-                                                <div>
-                                                    <div x-show="grp.tables.length > 1" class="text-[10px] font-medium text-muted mb-1" x-text="'Tabel ' + (ti + 1)"></div>
+                            <h4 class="text-xs font-semibold text-primary mb-3">Hasil Tabel</h4>
+                            <div class="space-y-4">
+                                <template x-for="(grp, gi) in groupedTables" :key="gi">
+                                    <div class="border rounded-lg p-4 bg-white shadow-sm">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <h5 class="font-semibold text-primary text-sm" x-text="grp.table_name"></h5>
+                                            <button type="button" @click="(() => { const h = grp.tables[0]?.headers || []; const r = grp.tables.flatMap(t => t.rows); downloadCsv(h, r, grp.table_name); })()"
+                                                class="text-[10px] text-accent hover:underline font-medium whitespace-nowrap ml-2">Download CSV</button>
+                                        </div>
+                                        <template x-for="(tbl, ti) in grp.tables" :key="ti">
+                                            <div>
+                                                <div x-show="grp.tables.length > 1" class="text-[10px] font-medium text-muted mb-1" x-text="'Tabel ' + (ti + 1)"></div>
+                                                <div class="overflow-x-auto">
                                                     <table class="w-full text-xs">
                                                         <thead>
                                                             <tr class="bg-gray-50 border-b border-line">
                                                                 <template x-for="(h, hi) in tbl.headers" :key="hi">
-                                                                    <th class="px-3 py-2 text-left font-semibold text-primary whitespace-nowrap"
-                                                                        x-text="h"></th>
+                                                                    <th class="px-3 py-2 text-left font-semibold text-primary whitespace-nowrap" x-text="h"></th>
                                                                 </template>
                                                             </tr>
                                                         </thead>
@@ -3282,186 +3278,195 @@
                                                         </tbody>
                                                     </table>
                                                 </div>
-                                            </template>
-                                        </div>
-                                    </template>
-                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
                             </div>
                         </div>
 
-                        {{-- Portfolio Tables (efek, obligasi, sukuk, bank, sektor) --}}
+                        {{-- Portfolio Tables — Card per Section --}}
                         <div x-show="partitionSuccess && (partitionSektor.length || partitionEfek.length || partitionObligasi.length || partitionSukuk.length || partitionBank.length)">
                             <hr class="border-line my-3">
-                            <div class="space-y-3">
-                                <h4 class="text-xs font-semibold text-primary">📋 Portofolio</h4>
-                                <div class="flex flex-wrap gap-1.5 mb-2">
-                                    <button type="button" @click="activePortfolioTab = 'efek'"
-                                        class="px-2.5 py-1 text-[10px] font-medium rounded-lg border transition"
-                                        :class="activePortfolioTab === 'efek' ? 'bg-primary text-white border-primary' : 'bg-white text-muted border-line hover:border-primary/40'">
-                                        Efek <span x-show="partitionEfek.length" class="ml-1 opacity-70" x-text="'('+partitionEfek.length+')'"></span>
-                                    </button>
-                                    <button type="button" @click="activePortfolioTab = 'obligasi'"
-                                        x-show="partitionObligasi.length"
-                                        class="px-2.5 py-1 text-[10px] font-medium rounded-lg border transition"
-                                        :class="activePortfolioTab === 'obligasi' ? 'bg-primary text-white border-primary' : 'bg-white text-muted border-line hover:border-primary/40'">
-                                        Obligasi <span class="ml-1 opacity-70" x-text="'('+partitionObligasi.length+')'"></span>
-                                    </button>
-                                    <button type="button" @click="activePortfolioTab = 'sukuk'"
-                                        x-show="partitionSukuk.length"
-                                        class="px-2.5 py-1 text-[10px] font-medium rounded-lg border transition"
-                                        :class="activePortfolioTab === 'sukuk' ? 'bg-primary text-white border-primary' : 'bg-white text-muted border-line hover:border-primary/40'">
-                                        Sukuk <span class="ml-1 opacity-70" x-text="'('+partitionSukuk.length+')'"></span>
-                                    </button>
-                                    <button type="button" @click="activePortfolioTab = 'bank'"
-                                        x-show="partitionBank.length"
-                                        class="px-2.5 py-1 text-[10px] font-medium rounded-lg border transition"
-                                        :class="activePortfolioTab === 'bank' ? 'bg-primary text-white border-primary' : 'bg-white text-muted border-line hover:border-primary/40'">
-                                        Bank <span class="ml-1 opacity-70" x-text="'('+partitionBank.length+')'"></span>
-                                    </button>
-                                    <button type="button" @click="activePortfolioTab = 'sektor'"
-                                        x-show="partitionSektor.length"
-                                        class="px-2.5 py-1 text-[10px] font-medium rounded-lg border transition"
-                                        :class="activePortfolioTab === 'sektor' ? 'bg-primary text-white border-primary' : 'bg-white text-muted border-line hover:border-primary/40'">
-                                        Sektor <span class="ml-1 opacity-70" x-text="'('+partitionSektor.length+')'"></span>
-                                    </button>
-                                </div>
+                            <h4 class="text-xs font-semibold text-primary mb-3">📋 Portofolio</h4>
+                            <div class="space-y-4">
 
-                                {{-- Efek Table --}}
-                                <div x-show="activePortfolioTab === 'efek'" class="overflow-x-auto border border-line rounded-xl bg-white p-3">
-                                    <table x-show="partitionEfek.length" class="w-full text-xs">
-                                        <thead><tr class="bg-gray-50 border-b border-line">
-                                            <th class="px-3 py-2 text-left font-semibold text-primary whitespace-nowrap">Kode</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-primary whitespace-nowrap">Nama Efek</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-primary whitespace-nowrap">Sektor</th>
-                                            <th class="px-3 py-2 text-right font-semibold text-primary whitespace-nowrap">Jumlah Lembar</th>
-                                            <th class="px-3 py-2 text-right font-semibold text-primary whitespace-nowrap">Harga Perolehan</th>
-                                            <th class="px-3 py-2 text-right font-semibold text-primary whitespace-nowrap">Bobot %</th>
-                                            <th class="px-3 py-2 text-right font-semibold text-primary whitespace-nowrap">Nilai Pasar</th>
-                                            <th class="px-3 py-2 text-right font-semibold text-primary whitespace-nowrap">% NAB</th>
-                                            <th class="px-3 py-2 text-right font-semibold text-primary whitespace-nowrap">Return 1Y</th>
-                                        </tr></thead>
-                                        <tbody class="divide-y divide-line">
-                                            <template x-for="(row, ri) in partitionEfek" :key="ri">
-                                                <tr class="hover:bg-gray-50/50">
-                                                    <td class="px-3 py-1.5 font-medium text-gray-800 whitespace-nowrap" x-text="row.kode_efek || '-'"></td>
-                                                    <td class="px-3 py-1.5 whitespace-nowrap" x-text="row.nama_efek || '-'"></td>
-                                                    <td class="px-3 py-1.5 whitespace-nowrap" x-text="row.sektor || '-'"></td>
-                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.jumlah_lembar != null ? formatNumber(row.jumlah_lembar) : '-'"></td>
-                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.harga_perolehan != null ? formatNumber(row.harga_perolehan) : '-'"></td>
-                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.bobot != null ? row.bobot.toFixed(2) : '-'"></td>
-                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.nilai_pasar != null ? formatNumber(row.nilai_pasar) : '-'"></td>
-                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.persen_nab != null ? row.persen_nab.toFixed(2) : '-'"></td>
-                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.return_1y != null ? row.return_1y.toFixed(2) : '-'"></td>
-                                                </tr>
-                                            </template>
-                                        </tbody>
-                                    </table>
-                                    <div x-show="!partitionEfek.length" class="text-xs text-muted italic py-4 text-center">Tidak ada data efek</div>
-                                </div>
+                                {{-- Efek Card --}}
+                                <template x-if="partitionEfek.length">
+                                    <div class="border rounded-lg p-4 bg-white shadow-sm">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <h5 class="font-semibold text-primary text-sm">Efek <span class="text-muted font-normal text-xs" x-text="'(' + partitionEfek.length + ')'"></span></h5>
+                                            <button type="button" @click="downloadCsvFromArray(partitionEfek, 'Efek')" class="text-[10px] text-accent hover:underline font-medium">Download CSV</button>
+                                        </div>
+                                        <div class="overflow-x-auto">
+                                            <table class="w-full text-xs">
+                                                <thead><tr class="bg-gray-50 border-b border-line">
+                                                    <th class="px-3 py-2 text-left font-semibold text-primary whitespace-nowrap">Kode</th>
+                                                    <th class="px-3 py-2 text-left font-semibold text-primary whitespace-nowrap">Nama Efek</th>
+                                                    <th class="px-3 py-2 text-left font-semibold text-primary whitespace-nowrap">Sektor</th>
+                                                    <th class="px-3 py-2 text-right font-semibold text-primary whitespace-nowrap">Jumlah Lembar</th>
+                                                    <th class="px-3 py-2 text-right font-semibold text-primary whitespace-nowrap">Harga Perolehan</th>
+                                                    <th class="px-3 py-2 text-right font-semibold text-primary whitespace-nowrap">Bobot %</th>
+                                                    <th class="px-3 py-2 text-right font-semibold text-primary whitespace-nowrap">Nilai Pasar</th>
+                                                    <th class="px-3 py-2 text-right font-semibold text-primary whitespace-nowrap">% NAB</th>
+                                                    <th class="px-3 py-2 text-right font-semibold text-primary whitespace-nowrap">Return 1Y</th>
+                                                </tr></thead>
+                                                <tbody class="divide-y divide-line">
+                                                    <template x-for="(row, ri) in partitionEfek" :key="ri">
+                                                        <tr class="hover:bg-gray-50/50">
+                                                            <td class="px-3 py-1.5 font-medium text-gray-800 whitespace-nowrap" x-text="row.kode_efek || '-'"></td>
+                                                            <td class="px-3 py-1.5 whitespace-nowrap" x-text="row.nama_efek || '-'"></td>
+                                                            <td class="px-3 py-1.5 whitespace-nowrap" x-text="row.sektor || '-'"></td>
+                                                            <td class="px-3 py-1.5 text-right font-mono" x-text="row.jumlah_lembar != null ? formatNumber(row.jumlah_lembar) : '-'"></td>
+                                                            <td class="px-3 py-1.5 text-right font-mono" x-text="row.harga_perolehan != null ? formatNumber(row.harga_perolehan) : '-'"></td>
+                                                            <td class="px-3 py-1.5 text-right font-mono" x-text="row.bobot != null ? row.bobot.toFixed(2) : '-'"></td>
+                                                            <td class="px-3 py-1.5 text-right font-mono" x-text="row.nilai_pasar != null ? formatNumber(row.nilai_pasar) : '-'"></td>
+                                                            <td class="px-3 py-1.5 text-right font-mono" x-text="row.persen_nab != null ? row.persen_nab.toFixed(2) : '-'"></td>
+                                                            <td class="px-3 py-1.5 text-right font-mono" x-text="row.return_1y != null ? row.return_1y.toFixed(2) : '-'"></td>
+                                                        </tr>
+                                                    </template>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </template>
 
-                                {{-- Obligasi Table --}}
-                                <div x-show="activePortfolioTab === 'obligasi'" class="overflow-x-auto border border-line rounded-xl bg-white p-3">
-                                    <table class="w-full text-xs">
-                                        <thead><tr class="bg-gray-50 border-b border-line">
-                                            <th class="px-3 py-2 text-left font-semibold text-primary">Kode</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-primary">Nama</th>
-                                            <th class="px-3 py-2 text-right font-semibold text-primary">Bobot %</th>
-                                            <th class="px-3 py-2 text-right font-semibold text-primary">Nilai Pasar</th>
-                                            <th class="px-3 py-2 text-right font-semibold text-primary">YTM</th>
-                                            <th class="px-3 py-2 text-right font-semibold text-primary">Kupon</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-primary">Jatuh Tempo</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-primary">Penerbit</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-primary">Rating</th>
-                                        </tr></thead>
-                                        <tbody class="divide-y divide-line">
-                                            <template x-for="(row, ri) in partitionObligasi" :key="ri">
-                                                <tr class="hover:bg-gray-50/50">
-                                                    <td class="px-3 py-1.5 font-medium text-gray-800" x-text="row.kode_obligasi || '-'"></td>
-                                                    <td class="px-3 py-1.5" x-text="row.nama_obligasi || '-'"></td>
-                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.bobot != null ? row.bobot.toFixed(2) : '-'"></td>
-                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.nilai_pasar != null ? formatNumber(row.nilai_pasar) : '-'"></td>
-                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.ytm != null ? row.ytm.toFixed(2) : '-'"></td>
-                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.kupon != null ? row.kupon.toFixed(2) : '-'"></td>
-                                                    <td class="px-3 py-1.5 whitespace-nowrap" x-text="row.tanggal_jatuh_tempo || '-'"></td>
-                                                    <td class="px-3 py-1.5" x-text="row.penerbit || '-'"></td>
-                                                    <td class="px-3 py-1.5" x-text="row.rating || '-'"></td>
-                                                </tr>
-                                            </template>
-                                        </tbody>
-                                    </table>
-                                </div>
+                                {{-- Obligasi Card --}}
+                                <template x-if="partitionObligasi.length">
+                                    <div class="border rounded-lg p-4 bg-white shadow-sm">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <h5 class="font-semibold text-primary text-sm">Obligasi <span class="text-muted font-normal text-xs" x-text="'(' + partitionObligasi.length + ')'"></span></h5>
+                                            <button type="button" @click="downloadCsvFromArray(partitionObligasi, 'Obligasi')" class="text-[10px] text-accent hover:underline font-medium">Download CSV</button>
+                                        </div>
+                                        <div class="overflow-x-auto">
+                                            <table class="w-full text-xs">
+                                                <thead><tr class="bg-gray-50 border-b border-line">
+                                                    <th class="px-3 py-2 text-left font-semibold text-primary">Kode</th>
+                                                    <th class="px-3 py-2 text-left font-semibold text-primary">Nama</th>
+                                                    <th class="px-3 py-2 text-right font-semibold text-primary">Bobot %</th>
+                                                    <th class="px-3 py-2 text-right font-semibold text-primary">Nilai Pasar</th>
+                                                    <th class="px-3 py-2 text-right font-semibold text-primary">YTM</th>
+                                                    <th class="px-3 py-2 text-right font-semibold text-primary">Kupon</th>
+                                                    <th class="px-3 py-2 text-left font-semibold text-primary">Jatuh Tempo</th>
+                                                    <th class="px-3 py-2 text-left font-semibold text-primary">Penerbit</th>
+                                                    <th class="px-3 py-2 text-left font-semibold text-primary">Rating</th>
+                                                </tr></thead>
+                                                <tbody class="divide-y divide-line">
+                                                    <template x-for="(row, ri) in partitionObligasi" :key="ri">
+                                                        <tr class="hover:bg-gray-50/50">
+                                                            <td class="px-3 py-1.5 font-medium text-gray-800" x-text="row.kode_obligasi || '-'"></td>
+                                                            <td class="px-3 py-1.5" x-text="row.nama_obligasi || '-'"></td>
+                                                            <td class="px-3 py-1.5 text-right font-mono" x-text="row.bobot != null ? row.bobot.toFixed(2) : '-'"></td>
+                                                            <td class="px-3 py-1.5 text-right font-mono" x-text="row.nilai_pasar != null ? formatNumber(row.nilai_pasar) : '-'"></td>
+                                                            <td class="px-3 py-1.5 text-right font-mono" x-text="row.ytm != null ? row.ytm.toFixed(2) : '-'"></td>
+                                                            <td class="px-3 py-1.5 text-right font-mono" x-text="row.kupon != null ? row.kupon.toFixed(2) : '-'"></td>
+                                                            <td class="px-3 py-1.5 whitespace-nowrap" x-text="row.tanggal_jatuh_tempo || '-'"></td>
+                                                            <td class="px-3 py-1.5" x-text="row.penerbit || '-'"></td>
+                                                            <td class="px-3 py-1.5" x-text="row.rating || '-'"></td>
+                                                        </tr>
+                                                    </template>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </template>
 
-                                {{-- Sukuk Table --}}
-                                <div x-show="activePortfolioTab === 'sukuk'" class="overflow-x-auto border border-line rounded-xl bg-white p-3">
-                                    <table class="w-full text-xs">
-                                        <thead><tr class="bg-gray-50 border-b border-line">
-                                            <th class="px-3 py-2 text-left font-semibold text-primary">Kode</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-primary">Nama</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-primary">Jenis</th>
-                                            <th class="px-3 py-2 text-right font-semibold text-primary">Bobot %</th>
-                                            <th class="px-3 py-2 text-right font-semibold text-primary">Yield</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-primary">Jatuh Tempo</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-primary">Rating</th>
-                                        </tr></thead>
-                                        <tbody class="divide-y divide-line">
-                                            <template x-for="(row, ri) in partitionSukuk" :key="ri">
-                                                <tr class="hover:bg-gray-50/50">
-                                                    <td class="px-3 py-1.5 font-medium text-gray-800" x-text="row.kode_sukuk || '-'"></td>
-                                                    <td class="px-3 py-1.5" x-text="row.nama_sukuk || '-'"></td>
-                                                    <td class="px-3 py-1.5" x-text="row.jenis_sukuk || '-'"></td>
-                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.bobot != null ? row.bobot.toFixed(2) : '-'"></td>
-                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.yield != null ? row.yield.toFixed(2) : '-'"></td>
-                                                    <td class="px-3 py-1.5 whitespace-nowrap" x-text="row.jatuh_tempo || '-'"></td>
-                                                    <td class="px-3 py-1.5" x-text="row.rating || '-'"></td>
-                                                </tr>
-                                            </template>
-                                        </tbody>
-                                    </table>
-                                </div>
+                                {{-- Sukuk Card --}}
+                                <template x-if="partitionSukuk.length">
+                                    <div class="border rounded-lg p-4 bg-white shadow-sm">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <h5 class="font-semibold text-primary text-sm">Sukuk <span class="text-muted font-normal text-xs" x-text="'(' + partitionSukuk.length + ')'"></span></h5>
+                                            <button type="button" @click="downloadCsvFromArray(partitionSukuk, 'Sukuk')" class="text-[10px] text-accent hover:underline font-medium">Download CSV</button>
+                                        </div>
+                                        <div class="overflow-x-auto">
+                                            <table class="w-full text-xs">
+                                                <thead><tr class="bg-gray-50 border-b border-line">
+                                                    <th class="px-3 py-2 text-left font-semibold text-primary">Kode</th>
+                                                    <th class="px-3 py-2 text-left font-semibold text-primary">Nama</th>
+                                                    <th class="px-3 py-2 text-left font-semibold text-primary">Jenis</th>
+                                                    <th class="px-3 py-2 text-right font-semibold text-primary">Bobot %</th>
+                                                    <th class="px-3 py-2 text-right font-semibold text-primary">Yield</th>
+                                                    <th class="px-3 py-2 text-left font-semibold text-primary">Jatuh Tempo</th>
+                                                    <th class="px-3 py-2 text-left font-semibold text-primary">Rating</th>
+                                                </tr></thead>
+                                                <tbody class="divide-y divide-line">
+                                                    <template x-for="(row, ri) in partitionSukuk" :key="ri">
+                                                        <tr class="hover:bg-gray-50/50">
+                                                            <td class="px-3 py-1.5 font-medium text-gray-800" x-text="row.kode_sukuk || '-'"></td>
+                                                            <td class="px-3 py-1.5" x-text="row.nama_sukuk || '-'"></td>
+                                                            <td class="px-3 py-1.5" x-text="row.jenis_sukuk || '-'"></td>
+                                                            <td class="px-3 py-1.5 text-right font-mono" x-text="row.bobot != null ? row.bobot.toFixed(2) : '-'"></td>
+                                                            <td class="px-3 py-1.5 text-right font-mono" x-text="row.yield != null ? row.yield.toFixed(2) : '-'"></td>
+                                                            <td class="px-3 py-1.5 whitespace-nowrap" x-text="row.jatuh_tempo || '-'"></td>
+                                                            <td class="px-3 py-1.5" x-text="row.rating || '-'"></td>
+                                                        </tr>
+                                                    </template>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </template>
 
-                                {{-- Bank Table --}}
-                                <div x-show="activePortfolioTab === 'bank'" class="overflow-x-auto border border-line rounded-xl bg-white p-3">
-                                    <table class="w-full text-xs">
-                                        <thead><tr class="bg-gray-50 border-b border-line">
-                                            <th class="px-3 py-2 text-left font-semibold text-primary">Nama Bank</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-primary">Jenis</th>
-                                            <th class="px-3 py-2 text-right font-semibold text-primary">Bobot %</th>
-                                            <th class="px-3 py-2 text-right font-semibold text-primary">Nilai Pasar</th>
-                                            <th class="px-3 py-2 text-right font-semibold text-primary">Bunga</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-primary">Jangka Waktu</th>
-                                        </tr></thead>
-                                        <tbody class="divide-y divide-line">
-                                            <template x-for="(row, ri) in partitionBank" :key="ri">
-                                                <tr class="hover:bg-gray-50/50">
-                                                    <td class="px-3 py-1.5 font-medium text-gray-800" x-text="row.nama_bank || '-'"></td>
-                                                    <td class="px-3 py-1.5" x-text="row.jenis_bank || '-'"></td>
-                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.bobot != null ? row.bobot.toFixed(2) : '-'"></td>
-                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.nilai_pasar != null ? formatNumber(row.nilai_pasar) : '-'"></td>
-                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.tingkat_bunga != null ? row.tingkat_bunga.toFixed(2) : '-'"></td>
-                                                    <td class="px-3 py-1.5" x-text="row.jangka_waktu || '-'"></td>
-                                                </tr>
-                                            </template>
-                                        </tbody>
-                                    </table>
-                                </div>
+                                {{-- Bank Card --}}
+                                <template x-if="partitionBank.length">
+                                    <div class="border rounded-lg p-4 bg-white shadow-sm">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <h5 class="font-semibold text-primary text-sm">Bank <span class="text-muted font-normal text-xs" x-text="'(' + partitionBank.length + ')'"></span></h5>
+                                            <button type="button" @click="downloadCsvFromArray(partitionBank, 'Bank')" class="text-[10px] text-accent hover:underline font-medium">Download CSV</button>
+                                        </div>
+                                        <div class="overflow-x-auto">
+                                            <table class="w-full text-xs">
+                                                <thead><tr class="bg-gray-50 border-b border-line">
+                                                    <th class="px-3 py-2 text-left font-semibold text-primary">Nama Bank</th>
+                                                    <th class="px-3 py-2 text-left font-semibold text-primary">Jenis</th>
+                                                    <th class="px-3 py-2 text-right font-semibold text-primary">Bobot %</th>
+                                                    <th class="px-3 py-2 text-right font-semibold text-primary">Nilai Pasar</th>
+                                                    <th class="px-3 py-2 text-right font-semibold text-primary">Bunga</th>
+                                                    <th class="px-3 py-2 text-left font-semibold text-primary">Jangka Waktu</th>
+                                                </tr></thead>
+                                                <tbody class="divide-y divide-line">
+                                                    <template x-for="(row, ri) in partitionBank" :key="ri">
+                                                        <tr class="hover:bg-gray-50/50">
+                                                            <td class="px-3 py-1.5 font-medium text-gray-800" x-text="row.nama_bank || '-'"></td>
+                                                            <td class="px-3 py-1.5" x-text="row.jenis_bank || '-'"></td>
+                                                            <td class="px-3 py-1.5 text-right font-mono" x-text="row.bobot != null ? row.bobot.toFixed(2) : '-'"></td>
+                                                            <td class="px-3 py-1.5 text-right font-mono" x-text="row.nilai_pasar != null ? formatNumber(row.nilai_pasar) : '-'"></td>
+                                                            <td class="px-3 py-1.5 text-right font-mono" x-text="row.tingkat_bunga != null ? row.tingkat_bunga.toFixed(2) : '-'"></td>
+                                                            <td class="px-3 py-1.5" x-text="row.jangka_waktu || '-'"></td>
+                                                        </tr>
+                                                    </template>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </template>
 
-                                {{-- Sektor Table --}}
-                                <div x-show="activePortfolioTab === 'sektor'" class="overflow-x-auto border border-line rounded-xl bg-white p-3">
-                                    <table class="w-full text-xs">
-                                        <thead><tr class="bg-gray-50 border-b border-line">
-                                            <th class="px-3 py-2 text-left font-semibold text-primary">Sektor</th>
-                                            <th class="px-3 py-2 text-right font-semibold text-primary">Bobot %</th>
-                                        </tr></thead>
-                                        <tbody class="divide-y divide-line">
-                                            <template x-for="(row, ri) in partitionSektor" :key="ri">
-                                                <tr class="hover:bg-gray-50/50">
-                                                    <td class="px-3 py-1.5 font-medium text-gray-800" x-text="row.nama_sektor || '-'"></td>
-                                                    <td class="px-3 py-1.5 text-right font-mono" x-text="row.bobot != null ? row.bobot.toFixed(2) : '-'"></td>
-                                                </tr>
-                                            </template>
-                                        </tbody>
-                                    </table>
-                                </div>
+                                {{-- Sektor Card --}}
+                                <template x-if="partitionSektor.length">
+                                    <div class="border rounded-lg p-4 bg-white shadow-sm">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <h5 class="font-semibold text-primary text-sm">Sektor <span class="text-muted font-normal text-xs" x-text="'(' + partitionSektor.length + ')'"></span></h5>
+                                            <button type="button" @click="downloadCsvFromArray(partitionSektor, 'Sektor')" class="text-[10px] text-accent hover:underline font-medium">Download CSV</button>
+                                        </div>
+                                        <div class="overflow-x-auto">
+                                            <table class="w-full text-xs">
+                                                <thead><tr class="bg-gray-50 border-b border-line">
+                                                    <th class="px-3 py-2 text-left font-semibold text-primary">Sektor</th>
+                                                    <th class="px-3 py-2 text-right font-semibold text-primary">Bobot %</th>
+                                                </tr></thead>
+                                                <tbody class="divide-y divide-line">
+                                                    <template x-for="(row, ri) in partitionSektor" :key="ri">
+                                                        <tr class="hover:bg-gray-50/50">
+                                                            <td class="px-3 py-1.5 font-medium text-gray-800" x-text="row.nama_sektor || '-'"></td>
+                                                            <td class="px-3 py-1.5 text-right font-mono" x-text="row.bobot != null ? row.bobot.toFixed(2) : '-'"></td>
+                                                        </tr>
+                                                    </template>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </template>
+
                             </div>
                         </div>
 
@@ -5898,6 +5903,27 @@
                     formatNumber(val) {
                         if (val === null || val === undefined || val === '' || isNaN(Number(val))) return '-';
                         return Number(val).toLocaleString('id-ID');
+                    },
+                    downloadCsv(headers, rows, filename) {
+                        if (!rows || !rows.length) return;
+                        const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+                        const csv = [
+                            headers.map(esc).join(','),
+                            ...rows.map(r => r.map(c => esc(c)).join(','))
+                        ].join('\n');
+                        const bom = '\uFEFF';
+                        const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+                        const a = document.createElement('a');
+                        a.href = URL.createObjectURL(blob);
+                        a.download = filename.replace(/[^a-zA-Z0-9\-\_\. ]/g, '_') + '.csv';
+                        a.click();
+                        URL.revokeObjectURL(a.href);
+                    },
+                    downloadCsvFromArray(arr, filename) {
+                        if (!arr || !arr.length) return;
+                        const headers = Object.keys(arr[0]);
+                        const rows = arr.map(obj => headers.map(h => obj[h]));
+                        this.downloadCsv(headers, rows, filename);
                     },
                 };
             }
