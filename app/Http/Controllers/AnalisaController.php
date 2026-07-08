@@ -17,6 +17,7 @@ use App\Services\BondMarketService;
 use App\Services\DataSourceAutoDownloadService;
 use App\Services\FfsParserService;
 use App\Services\IdxMarketService;
+use App\Services\AiTableService;
 use App\Services\PageClassifierService;
 use App\Services\ProspektusPipelineService;
 use App\Services\ProspektusValidator;
@@ -416,7 +417,20 @@ class AnalisaController extends Controller
         }
     }
 
-    public function parsePdf(Request $request, FfsParserService $ffsParser, GroqService $groq)
+    private function mergePartitionFields(array $partitions): array
+    {
+        $fields = [];
+        foreach ($partitions as $part) {
+            foreach ($part['fields'] ?? [] as $key => $value) {
+                if (!array_key_exists($key, $fields) && $value !== null && $value !== '') {
+                    $fields[$key] = $value;
+                }
+            }
+        }
+        return $fields;
+    }
+
+    public function parsePdf(Request $request, FfsParserService $ffsParser, GroqService $groq, AiTableService $aiTable)
     {
         ignore_user_abort(true);
         set_time_limit(600);
@@ -424,14 +438,26 @@ class AnalisaController extends Controller
         $request->validate([
             'file_pdf' => 'required|file|max:10240',
             'document_type' => 'nullable|string|in:ffs,prospektus,laporan_tahunan,laporan_keuangan,informasi_lainnya,portofolio_efek,pengukuran_nilai_wajar,bs_is_cf_pup',
+            'parse_mode' => 'nullable|string|in:ai,table,hybrid',
         ]);
 
         $file = $request->file('file_pdf');
         $path = $file->getPathname();
         $documentType = $request->input('document_type');
+        $parseMode = $request->input('parse_mode', 'ai');
 
         try {
-            $data = $ffsParser->parseWithAi($path, $groq, $documentType);
+            if ($parseMode === 'table') {
+                $partitions = $aiTable->extractTables($path, [['id' => 1, 'start' => 1, 'end' => 999]]);
+                $data = array_merge(
+                    $this->mergePartitionFields($partitions),
+                    ['_raw_tables' => $partitions]
+                );
+            } elseif ($parseMode === 'hybrid') {
+                $data = $ffsParser->parseWithPageRangesHybrid($path, $groq, [['start_page' => 1, 'end_page' => 999, 'section_type' => 'auto']], $aiTable);
+            } else {
+                $data = $ffsParser->parseWithAi($path, $groq, $documentType);
+            }
         } catch (\Throwable $e) {
             if (connection_aborted()) {
                 \Log::warning('[PARSE-PDF] Koneksi terputus oleh klien/proxy sebelum ekstraksi selesai. Data mungkin tidak lengkap.');
@@ -611,7 +637,7 @@ class AnalisaController extends Controller
         };
     }
 
-    public function parseExistingDocument(Request $request, FfsParserService $ffsParser, GroqService $groq)
+    public function parseExistingDocument(Request $request, FfsParserService $ffsParser, GroqService $groq, AiTableService $aiTable)
     {
         ignore_user_abort(true);
         set_time_limit(600);
@@ -630,16 +656,19 @@ class AnalisaController extends Controller
             'page_ranges.*.start_page' => 'required_with:page_ranges|integer|min:1',
             'page_ranges.*.end_page' => 'required_with:page_ranges|integer|min:1',
             'page_ranges.*.section_type' => 'nullable|string|in:auto,informasi_lainnya,portofolio_efek,pengukuran_nilai_wajar,bs_is_cf_pup',
+            'parse_mode' => 'nullable|string|in:ai,table,hybrid',
         ]);
 
         $document = ReksaDanaDocument::findOrFail($request->document_id);
         $documentType = $request->input('document_type');
         $pageRanges = $request->input('page_ranges');
+        $parseMode = $request->input('parse_mode', 'ai');
 
         if (!empty($pageRanges)) {
             \Log::info('[PARSE-EXISTING] Page ranges mode', [
                 'document_id' => $request->document_id,
                 'ranges' => $pageRanges,
+                'parse_mode' => $parseMode,
             ]);
         }
 
@@ -654,7 +683,24 @@ class AnalisaController extends Controller
         $fullPath = Storage::disk('public')->path($document->file_path);
 
         try {
-            if (!empty($pageRanges)) {
+            if ($parseMode === 'table') {
+                $partitions = [];
+                foreach ($pageRanges ?? [['start_page' => 1, 'end_page' => 999]] as $i => $range) {
+                    $partitions[] = [
+                        'id' => $i + 1,
+                        'start' => (int) ($range['start_page'] ?? 1),
+                        'end' => (int) ($range['end_page'] ?? 999),
+                        'section_type' => $range['section_type'] ?? 'auto',
+                    ];
+                }
+                $partitions = $aiTable->extractTables($fullPath, $partitions);
+                $data = array_merge(
+                    $this->mergePartitionFields($partitions),
+                    ['_raw_tables' => $partitions]
+                );
+            } elseif ($parseMode === 'hybrid' && !empty($pageRanges)) {
+                $data = $ffsParser->parseWithPageRangesHybrid($fullPath, $groq, $pageRanges, $aiTable);
+            } elseif (!empty($pageRanges)) {
                 $data = $ffsParser->parseWithPageRanges($fullPath, $groq, $pageRanges);
             } else {
                 $data = $ffsParser->parseWithAi($fullPath, $groq, $documentType);
@@ -734,6 +780,13 @@ class AnalisaController extends Controller
         if (!empty($data['beban_investasi']) || !empty($data['beban_pengelolaan_investasi'])) $extracted[] = 'Beban Detail';
         if (!empty($data['pembelian_efek_ekuitas']) || !empty($data['penjualan_efek_ekuitas']) || !empty($data['penerimaan_bunga_deposito']) || !empty($data['penerimaan_bunga_jasa_giro']) || !empty($data['penerimaan_dividen_kas'])) $extracted[] = 'Penerimaan Detail';
         if (!empty($data['pembayaran_jasa_pengelolaan']) || !empty($data['pembayaran_jasa_kustodian']) || !empty($data['pembayaran_beban_lain_arus']) || !empty($data['kas_bersih_aktivitas_operasi']) || !empty($data['penerimaan_penjualan_unit']) || !empty($data['pembayaran_pembelian_kembali_unit']) || !empty($data['kas_bersih_aktivitas_pendanaan']) || !empty($data['kenaikan_kas_setara_kas'])) $extracted[] = 'Detail Arus Kas';
+
+        if (!empty($data['_raw_tables'])) {
+            $totalTabel = array_sum(array_map(fn($p) => count($p['tables'] ?? []), $data['_raw_tables']));
+            if ($totalTabel > 0) {
+                $extracted[] = "{$totalTabel} tabel";
+            }
+        }
 
         $success = count($extracted) > 0;
         $message = $success
