@@ -150,6 +150,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::delete('daftar-reksa-dana/harga/destroy/{reksaDana}', [DaftarReksaDanaController::class, 'destroyHarga'])->name('daftar-reksa-dana.harga.destroy');
     Route::get('daftar-reksa-dana/parse-kode', [DaftarReksaDanaController::class, 'parseKode'])->name('daftar-reksa-dana.parse-kode');
     Route::post('daftar-reksa-dana/{reksaDana}/export-investment-manager', [DaftarReksaDanaController::class, 'exportInvestmentManager'])->name('daftar-reksa-dana.export-investment-manager');
+    Route::post('daftar-reksa-dana/import-excel', [DaftarReksaDanaController::class, 'importExcel'])->name('daftar-reksa-dana.import-excel');
     Route::post('daftar-reksa-dana/sync-pasardana', [DaftarReksaDanaController::class, 'syncFromPasardana'])->name('daftar-reksa-dana.sync-pasardana');
     Route::get('daftar-reksa-dana/sync-pasardana/status/{run}', [DaftarReksaDanaController::class, 'syncStatus'])->name('daftar-reksa-dana.sync-pasardana.status');
     Route::post('daftar-reksa-dana/sync-all-pasardana', [DaftarReksaDanaController::class, 'syncAllPasardana'])->name('daftar-reksa-dana.sync-all-pasardana');
@@ -397,6 +398,14 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     // Sub Admin Management (admin utama only) Subadmin bisa manage user biasa, tapi tidak bisa manage subadmin lain atau admin utama
     Route::resource('sub-admins', \App\Http\Controllers\Admin\SubAdminController::class)
         ->middleware('role:admin');
+
+    // Notifikasi Admin (reuse user controller)
+    Route::get('notifications', [UserNotificationController::class, 'index'])->name('notifications.index');
+    Route::get('notifications/unread', [UserNotificationController::class, 'unread'])->name('notifications.unread');
+    Route::post('notifications/{id}/read', [UserNotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('notifications/read-all', [UserNotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::delete('notifications/{id}', [UserNotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::delete('notifications', [UserNotificationController::class, 'clearAll'])->name('notifications.clear');
     // tes deploy 3
 });
 

@@ -1,7 +1,11 @@
+@props(['admin' => false])
+
 @auth
     @php
         $unreadCount = auth()->user()->unreadNotifications()->count();
         $latest      = auth()->user()->notifications()->latest()->limit(5)->get();
+        $urlPrefix   = $admin ? 'admin.' : 'user.';
+        $urlPath     = $admin ? '/admin/notifications' : '/user/notifications';
     @endphp
 
     <div
@@ -16,10 +20,10 @@
                 ])
             ),
             urls: {
-                fetch: '{{ route('user.notifications.unread') }}',
-                read:  '{{ url('/user/notifications') }}',
-                readAll: '{{ route('user.notifications.read-all') }}',
-                index: '{{ route('user.notifications.index') }}',
+                fetch: '{{ route($urlPrefix . 'notifications.unread') }}',
+                read:  '{{ url($urlPath) }}',
+                readAll: '{{ route($urlPrefix . 'notifications.read-all') }}',
+                index: '{{ route($urlPrefix . 'notifications.index') }}',
             },
         })"
         x-init="start()"

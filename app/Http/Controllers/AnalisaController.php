@@ -796,6 +796,8 @@ class AnalisaController extends Controller
             $totalTabel = array_sum(array_map(fn($p) => count($p['tables'] ?? []), $data['_raw_tables']));
             if ($totalTabel > 0) {
                 $extracted[] = "{$totalTabel} tabel";
+            } elseif (!empty($data['_raw_tables'])) {
+                $extracted[] = count($data['_raw_tables']) . ' partisi';
             }
         }
 
