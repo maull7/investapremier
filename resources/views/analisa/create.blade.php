@@ -2946,6 +2946,19 @@
                                     'bg-red-50 border border-red-200 text-red-700'">
                                 <span x-html="pdfResult"></span>
                             </div>
+                            <div x-show="pdfSuccess && pdfData" class="pt-1">
+                                <button type="button" @click="parseToForms()"
+                                    class="px-3 py-1.5 text-xs font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 transition">
+                                    Parse ke Input Manual &amp; Input Lengkap
+                                </button>
+                            </div>
+                            <div x-show="importSummary" class="text-xs p-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-700"
+                                x-html="importSummary"></div>
+                        </div>
+
+                        {{-- Hasil Ekstraksi — tabel pratinjau --}}
+                        <div x-show="pdfSuccess && pdfData" class="mt-4 space-y-4">
+                            @include('analisa.partials.create-pdf-preview')
                         </div>
                     </div>
 
@@ -3062,12 +3075,14 @@
                             :class="multiParseSuccess ? 'bg-green-50 border-green-200 text-green-700' :
                                 'bg-amber-50 border-amber-200 text-amber-700'">
                             <span x-text="multiParseResult"></span>
-                            <div x-show="multiParseSuccess" class="flex gap-2 mt-2">
-                                <button type="button" @click="mode = 'manual'" class="text-xs underline">Lihat di
-                                    Input Manual</button>
-                                <button type="button" @click="mode = 'lengkap'" class="text-xs underline">Lihat di
-                                    Input Lengkap</button>
+                            <div x-show="multiParseSuccess" class="mt-2">
+                                <button type="button" @click="parseToForms()"
+                                    class="px-3 py-1 text-xs font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 transition">
+                                    Parse ke Input Manual &amp; Input Lengkap
+                                </button>
                             </div>
+                            <div x-show="importSummary" class="text-xs p-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-700"
+                                x-html="importSummary"></div>
                         </div>
                     </div>
 
@@ -3244,12 +3259,14 @@
                             :class="partitionSuccess ? 'bg-green-50 border-green-200 text-green-700' :
                                 'bg-amber-50 border-amber-200 text-amber-700'">
                             <span x-html="partitionResult"></span>
-                            <div x-show="partitionSuccess" class="flex gap-2 mt-2">
-                                <button type="button" @click="mode = 'manual'" class="text-xs underline">Lihat di
-                                    Input Manual</button>
-                                <button type="button" @click="mode = 'lengkap'" class="text-xs underline">Lihat di
-                                    Input Lengkap</button>
+                            <div x-show="partitionSuccess" class="mt-2">
+                                <button type="button" @click="parseToForms()"
+                                    class="px-3 py-1 text-xs font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 transition">
+                                    Parse ke Input Manual &amp; Input Lengkap
+                                </button>
                             </div>
+                            <div x-show="importSummary" class="text-xs p-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-700"
+                                x-html="importSummary"></div>
                         </div>
 
                         {{-- Preview Tables — Card per Section --}}
@@ -3540,9 +3557,19 @@
                                 'p-3 bg-red-50 border border-red-200 rounded-lg text-red-700'">
                             <span x-html="pdfResult"></span>
                         </div>
-                        <p x-show="pdfSuccess" class="text-xs text-muted">Silakan cek tab <strong>Input Manual</strong>
-                            untuk melihat dan
-                            mengedit data yang telah diekstrak.</p>
+                        <div x-show="pdfSuccess && pdfData">
+                            <button type="button" @click="parseToForms()"
+                                class="px-3 py-1.5 text-xs font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 transition">
+                                Parse ke Input Manual &amp; Input Lengkap
+                            </button>
+                        </div>
+                        <div x-show="importSummary" class="text-xs p-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-700"
+                            x-html="importSummary"></div>
+
+                        {{-- Hasil Ekstraksi — tabel pratinjau --}}
+                        <div x-show="pdfSuccess && pdfData" class="mt-4 space-y-4">
+                            @include('analisa.partials.create-pdf-preview')
+                        </div>
                     </div>
                 </div>
 
@@ -3625,6 +3652,7 @@
                     importExcelMessage: '',
                     importExcelOk: false,
                     exportFileUrl: null,
+                    importSummary: '',
                     scrapeWebUrl: @json($formRoutes['scrape_web']),
                     pdfLoading: false,
                     pdfResult: '',
@@ -5271,13 +5299,11 @@
                                     this.pdfResult = resp.message;
                                     return;
                                 }
-                                // Simpan data PDF dan isi state form sebanyak data yang tersedia.
+                                // Simpan data hasil ekstraksi ke state untuk ditampilkan di tabel pratinjau.
                                 const extractedData = this.normalizeExtractedData(resp.data || {});
                                 this.pdfData = extractedData;
                                 this.pdfFile = resp.pdf_file || '';
                                 this.exportFileUrl = resp.export_file || null;
-                                this.applyExtractedData(extractedData, this.hasFullInputData(extractedData) ? 'lengkap' :
-                                    'manual');
                                 this.pdfSuccess = true;
                                 this.pdfResult = resp.message +
                                     (resp.export_file ? ' <a href="' + resp.export_file + '" class="underline font-semibold" download>Download Excel</a>.' : '');
@@ -5422,7 +5448,7 @@
                         }).length;
 
                         if (totalFields > 0) {
-                            this.applyExtractedData(mergedData, this.hasFullInputData(mergedData) ? 'lengkap' : 'manual');
+                            this.pdfData = mergedData;
                         }
 
                         this.multiParseLoading = false;
@@ -5515,15 +5541,11 @@
                             if (resp?.success) {
                                 const data = resp.data || {};
 
-                                // Auto-fill fields
                                 const extracted = this.normalizeExtractedData(data);
                                 const fieldCount = Object.keys(extracted).filter(k => {
                                     const v = extracted[k];
                                     return v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0);
                                 }).length;
-                                if (fieldCount > 0) {
-                                    this.applyExtractedData(extracted, this.hasFullInputData(extracted) ? 'lengkap' : 'manual');
-                                }
                                 this.exportFileUrl = resp.export_file || null;
                                 if (resp.export_file) window.open(resp.export_file, '_blank');
                                 validRanges.forEach(r => {
@@ -5562,12 +5584,8 @@
                                 // Map tables to portfolio tabs
                                 this.mapPortfolioTables(allTables);
 
-                                // Apply portfolio table data to Input Lengkap form fields
-                                if (this.partitionEfek.length) this.efek = this.partitionEfek;
-                                if (this.partitionSektor.length) this.sektor = this.partitionSektor;
-                                if (this.partitionObligasi.length) this.obligasi = this.partitionObligasi;
-                                if (this.partitionSukuk.length) this.sukuk = this.partitionSukuk;
-                                if (this.partitionBank.length) this.bank = this.partitionBank;
+                                // Simpan data untuk tombol Parse
+                                this.pdfData = { ...this.pdfData, ...extracted };
 
                                 let resultMsg = `${validRanges.length} partisi berhasil.`;
                                 if (allTables.length) resultMsg += ` ${allTables.length} tabel ditemukan.`;
@@ -5815,8 +5833,6 @@
                                 }
                                 const extractedData = this.normalizeExtractedData(resp.data || {});
                                 this.pdfData = extractedData;
-                                this.applyExtractedData(extractedData, this.hasFullInputData(extractedData) ? 'lengkap' :
-                                    'manual');
                                 this.pdfSuccess = true;
                                 this.pdfResult = resp.message + ' (dari: ' + (resp.document_label || 'dokumen tersimpan') +
                                     ')';
@@ -5885,8 +5901,6 @@
                                     }
                                     const extractedData = this.normalizeExtractedData(resp.data || {});
                                     this.pdfData = extractedData;
-                                    this.applyExtractedData(extractedData, this.hasFullInputData(extractedData) ?
-                                        'lengkap' : 'manual');
                                     this.pdfSuccess = true;
                                     this.pdfResult = 'Berhasil parse dokumen ' + this.batchParsedCount + '/' + ids
                                         .length + ' (dari: ' + (resp.document_label || 'dokumen tersimpan') + ')';
@@ -5904,6 +5918,62 @@
                     parseSingleDocument(docId) {
                         this.parseExistingDocument(docId);
                     },
+
+                    parseToForms() {
+                        this.importSummary = '';
+                        const data = this.pdfData;
+                        if (!data) { this.importSummary = 'Tidak ada data hasil ekstraksi.'; return; }
+                        this.applyExtractedData(data);
+                        const mapped = this.countMappedFields(data);
+                        this.importSummary = '✓ ' + mapped.mapped + ' field berhasil dipetakan ke Input Manual &amp; Input Lengkap.' +
+                            (mapped.skipped > 0 ? ' (' + mapped.skipped + ' field tidak dikenal).' : '');
+                    },
+
+                    countMappedFields(data) {
+                        if (!data) return { mapped: 0, skipped: 0 };
+                        const scalarKeys = [
+                            'nama_reksa_dana', 'jenis_reksa_dana', 'manajer_investasi', 'bank_kustodian',
+                            'tanggal_peluncuran', 'mata_uang', 'benchmark', 'tujuan_investasi', 'kebijakan_investasi',
+                            'kode_reksa_dana', 'total_aum', 'total_marcap_10_efek', 'tanggal_data',
+                            'unit_penyertaan', 'nab_per_unit', 'return_ytd', 'return_1y', 'total_return',
+                            'biaya_operasi', 'portfolio_turnover_ratio', 'management_fee', 'custodian_fee',
+                            'total_aset', 'total_liabilitas', 'nilai_aset_bersih', 'kas_dan_bank',
+                            'piutang_bunga', 'piutang_dividen', 'piutang_lain', 'utang_pajak', 'utang_lain',
+                            'pendapatan_bunga', 'pendapatan_dividen', 'gain_realized', 'gain_unrealized',
+                            'beban_mi', 'beban_kustodian', 'beban_lain', 'laba_bersih', 'total_beban',
+                            'laba_sebelum_pajak', 'beban_pajak_penghasilan', 'laba_bersih_tahun_berjalan',
+                            'penghasilan_komprehensif_lain', 'penghasilan_komprehensif_lain_setelah_pajak',
+                            'penghasilan_komprehensif_tahun_berjalan', 'arus_kas_operasi', 'arus_kas_pendanaan',
+                            'kas_awal_tahun', 'kas_akhir_tahun', 'kas', 'portofolio_efek', 'instrumen_pasar_uang',
+                            'piutang_transaksi_efek', 'piutang_bunga_dan_dividen', 'uang_muka_diterima',
+                            'liabilitas_pembelian_kembali', 'beban_akrual', 'liabilitas_atas_biaya',
+                            'pembelian_kembali_unit_penyertaan', 'utang_pajak_lainnya', 'pendapatan_investasi',
+                            'pendapatan_lainnya', 'total_pendapatan', 'beban_investasi', 'beban_pengelolaan_investasi',
+                            'pembelian_efek_ekuitas', 'penjualan_efek_ekuitas', 'penerimaan_bunga_deposito',
+                            'penerimaan_bunga_jasa_giro', 'penerimaan_dividen_kas', 'pembayaran_jasa_pengelolaan',
+                            'pembayaran_jasa_kustodian', 'pembayaran_beban_lain_arus', 'kas_bersih_aktivitas_operasi',
+                            'penerimaan_penjualan_unit', 'pembayaran_pembelian_kembali_unit',
+                            'kas_bersih_aktivitas_pendanaan', 'kenaikan_kas_setara_kas',
+                            'total_hasil_investasi', 'hasil_investasi_setelah_biaya', 'persentase_pph',
+                            'fair_value_level_1', 'fair_value_level_2', 'fair_value_level_3',
+                            'unit_milik_investor', 'unit_milik_mi', 'total_unit_beredar',
+                        ];
+                        let mapped = 0, skipped = 0;
+                        scalarKeys.forEach(k => {
+                            if (data[k] !== null && data[k] !== undefined && data[k] !== '') mapped++;
+                        });
+                        ['sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasi_aset'].forEach(k => {
+                            if (Array.isArray(data[k]) && data[k].length > 0) mapped++;
+                        });
+                        Object.keys(data).forEach(k => {
+                            if (!scalarKeys.includes(k) && !['sektor','efek','kinerja','obligasi','sukuk','bank','alokasi_aset','_raw_tables','data_tahunan','data_tambahan','tahun_tambahan'].includes(k)) {
+                                const v = data[k];
+                                if (v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0)) skipped++;
+                            }
+                        });
+                        return { mapped, skipped };
+                    },
+
                     addTahun() {
                         const t = prompt('Masukkan tahun (contoh: 2025):');
                         if (t && t.match(/^\d{4}$/)) {
