@@ -23,6 +23,9 @@
 /storage/pail
 /vendor
 /documentation
+/.opencode
+/.codex
+/.cursor
 _ide_helper.php
 Homestead.json
 Homestead.yaml
