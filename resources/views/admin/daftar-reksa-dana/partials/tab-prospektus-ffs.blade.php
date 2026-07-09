@@ -15,62 +15,61 @@
     ];
 @endphp
 
-<div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mb-5"
-     x-data="{
-         type: @js(old('document_type', 'prospektus')),
-         rdSelected: @js(old('reksa_dana_id') ? (int) old('reksa_dana_id') : null),
-         rdOptions: @js($reksaDanaOptions->map(fn($rd) => ['id' => $rd->id, 'label' => ($rd->kode_reksa_dana ? $rd->kode_reksa_dana . ' - ' : '') . $rd->nama_reksa_dana])->values()),
-         rdSearch: '',
-         rdOpen: false,
-         months: @js($months),
-         formatMonthYear(dateStr) {
-             if (!dateStr) return '—';
-             const d = new Date(dateStr);
-             return this.months[d.getMonth()] + ' ' + d.getFullYear();
-         },
-         ffsMonth: @js(old('ffs_month') ? (int) old('ffs_month') : ''),
-          ffsYear: @js(old('ffs_year', now()->year)),
-          prospektusMonth: @js(old('prospektus_month', '')),
-          prospektusYear: @js(old('prospektus_year', now()->year)),
-         existingDoc: null,
-         checking: false,
-         checkUrl: @js(route('admin.daftar-reksa-dana.documents.check')),
-         get rdFiltered() {
-             const term = this.rdSearch.toLowerCase();
-             return term === '' ?
-                 this.rdOptions.slice(0, 50) :
-                 this.rdOptions.filter(o => o.label.toLowerCase().includes(term)).slice(0, 50);
-         },
-         rdSelect(id, label) {
-             this.rdSelected = id;
-             this.rdSearch = label;
-             this.rdOpen = false;
-             this.checkExisting();
-         },
-         rdClear() {
-             this.rdSelected = null;
-             this.rdSearch = '';
-             this.rdOpen = true;
-             this.existingDoc = null;
-         },
-         async checkExisting() {
-             if (!this.rdSelected) return;
-             const params = new URLSearchParams({
-                 reksa_dana_id: this.rdSelected,
-                 document_type: this.type,
-                  ffs_month: this.type === 'ffs' ? this.ffsMonth : this.prospektusMonth,
-                 ffs_year: this.type === 'ffs' ? this.ffsYear : this.prospektusYear,
-             });
-             this.checking = true;
-             this.existingDoc = null;
-             try {
-                 const res = await fetch(this.checkUrl + '?' + params.toString());
-                 const json = await res.json();
-                 if (json.exists) this.existingDoc = json.document;
-             } catch (e) {}
-             this.checking = false;
-         }
-     }">
+<div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mb-5" x-data="{
+    type: @js(old('document_type', 'prospektus')),
+    rdSelected: @js(old('reksa_dana_id') ? (int) old('reksa_dana_id') : null),
+    rdOptions: @js($reksaDanaOptions->map(fn($rd) => ['id' => $rd->id, 'label' => ($rd->kode_reksa_dana ? $rd->kode_reksa_dana . ' - ' : '') . $rd->nama_reksa_dana])->values()),
+    rdSearch: '',
+    rdOpen: false,
+    months: @js($months),
+    formatMonthYear(dateStr) {
+        if (!dateStr) return '—';
+        const d = new Date(dateStr);
+        return this.months[d.getMonth()] + ' ' + d.getFullYear();
+    },
+    ffsMonth: @js(old('ffs_month') ? (int) old('ffs_month') : ''),
+    ffsYear: @js(old('ffs_year', now()->year)),
+    prospektusMonth: @js(old('prospektus_month', '')),
+    prospektusYear: @js(old('prospektus_year', now()->year)),
+    existingDoc: null,
+    checking: false,
+    checkUrl: @js(route('admin.daftar-reksa-dana.documents.check')),
+    get rdFiltered() {
+        const term = this.rdSearch.toLowerCase();
+        return term === '' ?
+            this.rdOptions.slice(0, 50) :
+            this.rdOptions.filter(o => o.label.toLowerCase().includes(term)).slice(0, 50);
+    },
+    rdSelect(id, label) {
+        this.rdSelected = id;
+        this.rdSearch = label;
+        this.rdOpen = false;
+        this.checkExisting();
+    },
+    rdClear() {
+        this.rdSelected = null;
+        this.rdSearch = '';
+        this.rdOpen = true;
+        this.existingDoc = null;
+    },
+    async checkExisting() {
+        if (!this.rdSelected) return;
+        const params = new URLSearchParams({
+            reksa_dana_id: this.rdSelected,
+            document_type: this.type,
+            ffs_month: this.type === 'ffs' ? this.ffsMonth : this.prospektusMonth,
+            ffs_year: this.type === 'ffs' ? this.ffsYear : this.prospektusYear,
+        });
+        this.checking = true;
+        this.existingDoc = null;
+        try {
+            const res = await fetch(this.checkUrl + '?' + params.toString());
+            const json = await res.json();
+            if (json.exists) this.existingDoc = json.document;
+        } catch (e) {}
+        this.checking = false;
+    }
+}">
     <div class="px-5 py-4 border-b border-line bg-gradient-to-r from-emerald-700 to-emerald-600">
         <h2 class="font-bold text-white text-sm">Upload Prospektus atau Fund Fact Sheet</h2>
     </div>
@@ -113,8 +112,8 @@
             </div>
             <div x-show="type === 'prospektus'">
                 <label class="block text-xs font-semibold text-muted mb-1">Bulan Prospektus *</label>
-                <select name="prospektus_month" x-model="prospektusMonth" @change="checkExisting()" :required="type === 'prospektus'"
-                    class="w-full text-sm border border-line rounded-lg px-3 py-2">
+                <select name="prospektus_month" x-model="prospektusMonth" @change="checkExisting()"
+                    :required="type === 'prospektus'" class="w-full text-sm border border-line rounded-lg px-3 py-2">
                     <option value="">Pilih Bulan</option>
                     @foreach ($months as $index => $month)
                         <option value="{{ $index + 1 }}">{{ $month }}</option>
@@ -154,8 +153,11 @@
         <template x-if="existingDoc">
             <div class="px-4 py-3 rounded-xl text-sm bg-amber-50 border border-amber-200 text-amber-800">
                 <p class="font-semibold">Dokumen sudah ada!</p>
-                <p class="mt-1" x-text="'Dokumen ' + (existingDoc.document_type === 'prospektus' ? 'Prospektus' : 'FFS') + ' untuk periode tersebut sudah tersedia: ' + existingDoc.original_name"></p>
-                <p class="mt-1 text-xs"><span class="font-semibold">Bulan Pembaruan Terakhir:</span> <span x-text="formatMonthYear(existingDoc.updated_at)"></span></p>
+                <p class="mt-1"
+                    x-text="'Dokumen ' + (existingDoc.document_type === 'prospektus' ? 'Prospektus' : 'FFS') + ' untuk periode tersebut sudah tersedia: ' + existingDoc.original_name">
+                </p>
+                <p class="mt-1 text-xs"><span class="font-semibold">Bulan Pembaruan Terakhir:</span> <span
+                        x-text="formatMonthYear(existingDoc.updated_at)"></span></p>
                 <button @click="openEditModalFromData(existingDoc)"
                     class="mt-2 inline-block text-sm font-semibold text-emerald-700 hover:underline">
                     Edit dokumen yang sudah ada →
@@ -167,9 +169,9 @@
         </template>
 
         <p class="text-[11px] text-muted">Format PDF, maksimal 20 MB. Dokumen wajib memiliki bulan dan tahun.</p>
-        <button :disabled="existingDoc !== null"
-            class="px-5 py-2.5 rounded-lg text-sm font-semibold transition"
-            :class="existingDoc ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-emerald-700 text-white hover:bg-emerald-800'">
+        <button :disabled="existingDoc !== null" class="px-5 py-2.5 rounded-lg text-sm font-semibold transition"
+            :class="existingDoc ? 'bg-gray-300 text-gray-500 cursor-not-allowed' :
+                'bg-emerald-700 text-white hover:bg-emerald-800'">
             Upload Dokumen
         </button>
     </form>
@@ -245,8 +247,9 @@
                         $ffsDocuments = $rd->documents
                             ->where('document_type', 'ffs')
                             ->sortByDesc(fn($d) => sprintf('%04d%02d', $d->ffs_year, $d->ffs_month));
+                        $hasMoreDocs = $prospectuses->count() > 1 || $ffsDocuments->count() > 1;
                     @endphp
-                    <tr class="align-top hover:bg-emerald-50/50 transition-colors">
+                    <tr x-data="{ showAll: false }" class="align-top hover:bg-emerald-50/50 transition-colors">
                         <td class="px-4 py-3 min-w-56">
                             <a href="{{ route('admin.daftar-reksa-dana.show', $rd) }}"
                                 class="font-semibold text-primary hover:underline text-sm">{{ $rd->nama_reksa_dana }}</a>
@@ -256,13 +259,24 @@
                             @if ($rd->nama_manajer_investasi)
                                 <p class="text-xs text-muted">{{ $rd->nama_manajer_investasi }}</p>
                             @endif
+                            @if ($hasMoreDocs)
+                                <button @click="showAll = !showAll"
+                                    class="text-xs text-accent-dark underline hover:underline mt-1.5 block"
+                                    x-text="showAll ? 'Sembunyikan' : 'Melihat Lainnya'"></button>
+                            @endif
                         </td>
                         <td class="px-4 py-3 min-w-72">
-                            @forelse ($prospectuses as $document)
-                                @include('admin.daftar-reksa-dana.partials.document-actions', [
-                                    'document' => $document,
-                                    'label' => $document->ffs_month ? ($months[$document->ffs_month - 1] ?? '-') . ' ' . $document->ffs_year : (string) $document->ffs_year,
-                                ])
+                            @forelse ($prospectuses as $i => $document)
+                                <div @if ($i > 0) x-show="showAll" x-cloak @endif>
+                                    @include('admin.daftar-reksa-dana.partials.document-actions', [
+                                        'document' => $document,
+                                        'label' => $document->ffs_month
+                                            ? ($months[$document->ffs_month - 1] ?? '-') .
+                                                ' ' .
+                                                $document->ffs_year
+                                            : (string) $document->ffs_year,
+                                    ])
+                                </div>
                             @empty
                                 <p class="text-xs text-muted">Prospektus belum tersedia.</p>
                             @endforelse
@@ -280,12 +294,16 @@
                             @endif
                         </td>
                         <td class="px-4 py-3 min-w-80">
-                            @forelse ($ffsDocuments as $document)
-                                @include('admin.daftar-reksa-dana.partials.document-actions', [
-                                    'document' => $document,
-                                    'label' =>
-                                        ($months[$document->ffs_month - 1] ?? '-') . ' ' . $document->ffs_year,
-                                ])
+                            @forelse ($ffsDocuments as $i => $document)
+                                <div @if ($i > 0) x-show="showAll" x-cloak @endif>
+                                    @include('admin.daftar-reksa-dana.partials.document-actions', [
+                                        'document' => $document,
+                                        'label' =>
+                                            ($months[$document->ffs_month - 1] ?? '-') .
+                                            ' ' .
+                                            $document->ffs_year,
+                                    ])
+                                </div>
                             @empty
                                 <span class="text-xs text-muted italic">Belum diupload</span>
                             @endforelse
@@ -377,8 +395,8 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-primary mb-1">Tahun Prospektus *</label>
-                        <input type="number" name="ffs_year" id="edit-doc-prospektus-year" min="2000" max="2100"
-                            :required="docType === 'prospektus'"
+                        <input type="number" name="ffs_year" id="edit-doc-prospektus-year" min="2000"
+                            max="2100" :required="docType === 'prospektus'"
                             class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-emerald-700 focus:ring focus:ring-emerald-700/20">
                     </div>
                 </div>
