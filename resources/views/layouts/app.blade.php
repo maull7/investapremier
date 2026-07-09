@@ -98,6 +98,28 @@
         .alert-success svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
         .alert-error{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;background:#fff0f0;border:1px solid #fecaca;color:#b91c1c;font-size:13.5px;font-weight:500;margin-bottom:18px}
 
+        /* ── Sidebar ── */
+        .sidebar-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;border-left:3px solid transparent;transition:all .15s ease;font-size:13px;color:#4b5563}
+        .sidebar-item:hover{background:#f9fafb;color:#111827;transform:translateX(2px)}
+        .sidebar-item-active,.sidebar-item.router-link-active{background:#f0fdf4;color:#16a34a;font-weight:600;border-left-color:#16a34a}
+        .sidebar-item-active:hover{background:#f0fdf4;color:#16a34a;transform:none}
+        .sidebar-sub{font-size:12.5px;padding:7px 12px 7px 16px}
+        .sidebar-sub:hover{transform:translateX(1px)}
+        .sidebar-separator{height:1px;background:linear-gradient(to right,transparent,#e5e7eb,transparent);margin:6px 12px}
+        .sidebar-connector{position:relative}
+        .sidebar-connector::before{content:'';position:absolute;left:18px;top:0;bottom:0;width:1px;background:#e5e7eb;border-radius:1px}
+        .sidebar-connector > *:last-child::after{display:none}
+
+        /* ── Sidebar Collapsed ── */
+        .sidebar-collapsed .sidebar-label{display:none}
+        .sidebar-collapsed .sidebar-item{justify-content:center;padding:9px 0;gap:0;border-left-width:0}
+        .sidebar-collapsed .sidebar-item-active{border-left-width:3px}
+        .sidebar-collapsed .sidebar-item>svg:last-child{display:none}
+        .sidebar-collapsed .sidebar-connector{display:none}
+        .sidebar-collapsed .sidebar-sub{display:none}
+        .sidebar-collapsed .sidebar-separator{margin:4px 0}
+        .sidebar-collapsed nav{padding:8px 4px}
+
         /* ── Empty state ── */
         .empty-state{padding:56px 24px;text-align:center;color:#94a3b8}
         .empty-state svg{width:44px;height:44px;stroke:currentColor;fill:none;stroke-width:1.2;margin:0 auto 12px}
