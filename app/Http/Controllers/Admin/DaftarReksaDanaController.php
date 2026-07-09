@@ -753,6 +753,32 @@ class DaftarReksaDanaController extends Controller
             ->with('success', 'Data harian berhasil dihapus.');
     }
 
+    public function importExcel(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:5120',
+        ]);
+
+        $import = new \App\Imports\HargaReksaDanaImport;
+        \Maatwebsite\Excel\Facades\Excel::import($import, $request->file('file'));
+
+        $tab = $request->input('tab', 'harga');
+
+        ActivityLogger::log(
+            'Import Excel Harga',
+            "Import Excel selesai: {$import->imported} diimport, {$import->skipped} dilewati",
+            $import->skipped > 0 ? 'warning' : 'success',
+        );
+
+        $msg = "Import selesai. {$import->imported} data berhasil diimport.";
+        if ($import->skipped > 0) {
+            $msg .= " {$import->skipped} baris dilewati.";
+        }
+
+        return redirect()->route('admin.daftar-reksa-dana.index', ['tab' => $tab])
+            ->with('success', $msg);
+    }
+
     private function mergePeopleText(?string $old, string $new, InvestmentPersonService $personService): string
     {
         return collect($personService->parsePeople($old))

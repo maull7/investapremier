@@ -550,7 +550,7 @@
                                     <thead class="bg-[#f8fafc]">
                                         <tr>
                                             <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item</th>
-                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun Berjalan</span></th>
+                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="jenisLaporan === 'kalender_ffs' ? (ffsTahun || 'Tahun Berjalan') : (tahunLaporan || 'Tahun Berjalan')">Tahun Berjalan</span></th>
                                             <template x-for="(t, i) in tahunTambahan" :key="i">
                                                 <th class="text-right px-2 py-2 text-xs font-semibold text-muted">
                                                     <div class="flex items-center gap-1 justify-end">
@@ -656,7 +656,7 @@
                                     <thead class="bg-[#f8fafc]">
                                         <tr>
                                             <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item</th>
-                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun Berjalan</span></th>
+                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="jenisLaporan === 'kalender_ffs' ? (ffsTahun || 'Tahun Berjalan') : (tahunLaporan || 'Tahun Berjalan')">Tahun Berjalan</span></th>
                                             <template x-for="(t, i) in tahunTambahan" :key="i">
                                                 <th class="text-right px-2 py-2 text-xs font-semibold text-muted">
                                                     <div class="flex items-center gap-1 justify-end">
@@ -758,7 +758,7 @@
                                     <thead class="bg-[#f8fafc]">
                                         <tr>
                                             <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item</th>
-                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun Berjalan</span></th>
+                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="jenisLaporan === 'kalender_ffs' ? (ffsTahun || 'Tahun Berjalan') : (tahunLaporan || 'Tahun Berjalan')">Tahun Berjalan</span></th>
                                             <template x-for="(t, i) in tahunTambahan" :key="i">
                                                 <th class="text-right px-2 py-2 text-xs font-semibold text-muted">
                                                     <div class="flex items-center gap-1 justify-end">
@@ -836,7 +836,7 @@
                                     <thead class="bg-[#f8fafc]">
                                         <tr>
                                             <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item</th>
-                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun Berjalan</span></th>
+                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="jenisLaporan === 'kalender_ffs' ? (ffsTahun || 'Tahun Berjalan') : (tahunLaporan || 'Tahun Berjalan')">Tahun Berjalan</span></th>
                                             <template x-for="(t, i) in tahunTambahan" :key="i">
                                                 <th class="text-right px-2 py-2 text-xs font-semibold text-muted">
                                                     <div class="flex items-center gap-1 justify-end">
@@ -926,7 +926,7 @@
                                     <thead class="bg-[#f8fafc]">
                                         <tr>
                                             <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item</th>
-                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun Berjalan</span></th>
+                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="jenisLaporan === 'kalender_ffs' ? (ffsTahun || 'Tahun Berjalan') : (tahunLaporan || 'Tahun Berjalan')">Tahun Berjalan</span></th>
                                             <template x-for="(t, i) in tahunTambahan" :key="i">
                                                 <th class="text-right px-2 py-2 text-xs font-semibold text-muted">
                                                     <div class="flex items-center gap-1 justify-end">
@@ -1032,7 +1032,7 @@
                                     <thead class="bg-[#f8fafc]">
                                         <tr>
                                             <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item</th>
-                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun Berjalan</span></th>
+                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="jenisLaporan === 'kalender_ffs' ? (ffsTahun || 'Tahun Berjalan') : (tahunLaporan || 'Tahun Berjalan')">Tahun Berjalan</span></th>
                                             <template x-for="(t, i) in tahunTambahan" :key="i">
                                                 <th class="text-right px-2 py-2 text-xs font-semibold text-muted">
                                                     <div class="flex items-center gap-1 justify-end">
@@ -1126,7 +1126,7 @@
                                     <thead class="bg-[#f8fafc]">
                                         <tr>
                                             <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item</th>
-                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun Berjalan</span></th>
+                                            <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="jenisLaporan === 'kalender_ffs' ? (ffsTahun || 'Tahun Berjalan') : (tahunLaporan || 'Tahun Berjalan')">Tahun Berjalan</span></th>
                                             <template x-for="(t, i) in tahunTambahan" :key="i">
                                                 <th class="text-right px-2 py-2 text-xs font-semibold text-muted">
                                                     <div class="flex items-center gap-1 justify-end">
@@ -1277,7 +1277,7 @@
                                 <thead class="bg-[#f8fafc]">
                                     <tr>
                                         <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item</th>
-                                        <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun Berjalan</span></th>
+                                        <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="jenisLaporan === 'kalender_ffs' ? (ffsTahun || 'Tahun Berjalan') : (tahunLaporan || 'Tahun Berjalan')">Tahun Berjalan</span></th>
                                         <template x-for="(t, i) in tahunTambahan" :key="i">
                                             <th class="text-right px-2 py-2 text-xs font-semibold text-muted"><span x-text="t"></span></th>
                                         </template>
@@ -1366,7 +1366,7 @@
                                 <thead class="bg-[#f8fafc]">
                                     <tr>
                                         <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item</th>
-                                        <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun Berjalan</span></th>
+                                        <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="jenisLaporan === 'kalender_ffs' ? (ffsTahun || 'Tahun Berjalan') : (tahunLaporan || 'Tahun Berjalan')">Tahun Berjalan</span></th>
                                         <template x-for="(t, i) in tahunTambahan" :key="i">
                                             <th class="text-right px-2 py-2 text-xs font-semibold text-muted"><span x-text="t"></span></th>
                                         </template>
@@ -1452,7 +1452,7 @@
                                 <thead class="bg-[#f8fafc]">
                                     <tr>
                                         <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item</th>
-                                        <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun Berjalan</span></th>
+                                        <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="jenisLaporan === 'kalender_ffs' ? (ffsTahun || 'Tahun Berjalan') : (tahunLaporan || 'Tahun Berjalan')">Tahun Berjalan</span></th>
                                         <template x-for="(t, i) in tahunTambahan" :key="i">
                                             <th class="text-right px-2 py-2 text-xs font-semibold text-muted"><span x-text="t"></span></th>
                                         </template>
@@ -1517,7 +1517,7 @@
                                 <thead class="bg-[#f8fafc]">
                                     <tr>
                                         <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item</th>
-                                        <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun Berjalan</span></th>
+                                        <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="jenisLaporan === 'kalender_ffs' ? (ffsTahun || 'Tahun Berjalan') : (tahunLaporan || 'Tahun Berjalan')">Tahun Berjalan</span></th>
                                         <template x-for="(t, i) in tahunTambahan" :key="i">
                                             <th class="text-right px-2 py-2 text-xs font-semibold text-muted"><span x-text="t"></span></th>
                                         </template>
@@ -1595,7 +1595,7 @@
                                 <thead class="bg-[#f8fafc]">
                                     <tr>
                                         <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item</th>
-                                        <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun Berjalan</span></th>
+                                        <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="jenisLaporan === 'kalender_ffs' ? (ffsTahun || 'Tahun Berjalan') : (tahunLaporan || 'Tahun Berjalan')">Tahun Berjalan</span></th>
                                         <template x-for="(t, i) in tahunTambahan" :key="i">
                                             <th class="text-right px-2 py-2 text-xs font-semibold text-muted"><span x-text="t"></span></th>
                                         </template>
@@ -1684,7 +1684,7 @@
                                 <thead class="bg-[#f8fafc]">
                                     <tr>
                                         <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item</th>
-                                        <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun Berjalan</span></th>
+                                        <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="jenisLaporan === 'kalender_ffs' ? (ffsTahun || 'Tahun Berjalan') : (tahunLaporan || 'Tahun Berjalan')">Tahun Berjalan</span></th>
                                         <template x-for="(t, i) in tahunTambahan" :key="i">
                                             <th class="text-right px-2 py-2 text-xs font-semibold text-muted"><span x-text="t"></span></th>
                                         </template>
@@ -1765,7 +1765,7 @@
                                 <thead class="bg-[#f8fafc]">
                                     <tr>
                                         <th class="text-left px-3 py-2 text-xs font-semibold text-muted w-1/2">Item</th>
-                                        <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="ffsTahun || tahunLaporan || 'Tahun Berjalan'">Tahun Berjalan</span></th>
+                                        <th class="text-right px-3 py-2 text-xs font-semibold text-muted"><span x-text="jenisLaporan === 'kalender_ffs' ? (ffsTahun || 'Tahun Berjalan') : (tahunLaporan || 'Tahun Berjalan')">Tahun Berjalan</span></th>
                                         <template x-for="(t, i) in tahunTambahan" :key="i">
                                             <th class="text-right px-2 py-2 text-xs font-semibold text-muted"><span x-text="t"></span></th>
                                         </template>
@@ -2719,6 +2719,17 @@
 
                 {{-- TAB: PDF FFS --}}
                 <div x-show="mode==='pdf'" class="p-6 space-y-5">
+                    @env('local')
+                    <div x-show="jenisLaporan !== 'kalender_ffs'"
+                        class="border-2 border-dashed border-yellow-400 rounded-lg p-4 bg-yellow-50 space-y-2">
+                        <h4 class="font-semibold text-sm text-yellow-800">🧪 JSON Test Tool (Local Only)</h4>
+                        <input type="file" accept=".json" @change="loadTestJson($event)"
+                            class="block w-full text-xs text-muted border border-yellow-300 rounded-lg px-3 py-2 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-yellow-600 file:text-white hover:file:bg-yellow-700 cursor-pointer" />
+                        <p class="text-xs text-yellow-700">Upload file JSON — tabel akan tampil, file hasil langsung terdownload.</p>
+                        <div x-show="testJsonError" class="text-xs text-red-600" x-text="testJsonError"></div>
+                    </div>
+                    @endenv
+
                     <div
                         class="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-700">
                         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3630,8 +3641,11 @@
                 @endphp
 
                 const resumeDataTahunan = resumeData?.data_tahunan || {};
-                const initialTahunTambahan = resumeDataTahunan.years || [];
+                const allYears = [...(resumeDataTahunan.years || [])].sort((a, b) => Number(b) - Number(a));
                 const snakeToCamel = s => s.replace(/_([a-z])/g, (_, l) => l.toUpperCase());
+                // Latest year (years[0] after desc sort) is already in scalar fields — exclude from tambahan
+                const latestYear = allYears.length > 0 ? String(allYears[0]) : null;
+                const initialTahunTambahan = latestYear ? allYears.filter(y => String(y) !== latestYear) : allYears;
                 const initialDataTambahan = {};
                 initialTahunTambahan.forEach(year => {
                     initialDataTambahan[year] = {};
@@ -3653,6 +3667,7 @@
                     importExcelOk: false,
                     exportFileUrl: null,
                     importSummary: '',
+                    testJsonError: '',
                     scrapeWebUrl: @json($formRoutes['scrape_web']),
                     pdfLoading: false,
                     pdfResult: '',
@@ -3691,7 +3706,7 @@
                     lookupOk: false,
                     tanggalData: @json(old('tanggal_data')),
                     ffsBulan: @json(old('ffs_bulan')),
-                    ffsTahun: @json(old('ffs_tahun', now()->year)),
+                    ffsTahun: @json(old('ffs_tahun')) || resumeData?.ffs_tahun || '',
                     ffsPembandingOptions: @json($ffsPembandingOptions ?? []),
                     ffsPembanding: '',
                     pembandingEfek: {},
@@ -3702,7 +3717,7 @@
                     jenisLaporan: @json(old('jenis_laporan', 'laporan_tahunan')),
                     periodeAwal: @json(old('periode_awal')),
                     periodeAkhir: @json(old('periode_akhir')),
-                    tahunLaporan: @json(old('tahun_laporan', now()->year)),
+                    tahunLaporan: @json(old('tahun_laporan')) || resumeData?.tahun_laporan || '',
                     unitPenyertaan: @json(old('unit_penyertaan')),
                     nabPerUnit: @json(old('nab_per_unit')),
                     totalAum: @json(old('total_aum')),
@@ -4826,13 +4841,63 @@
                         })).filter(row => String(row.nama_aset || '').trim() !== '' || String(row.persentase || '')
                             .trim() !== '');
 
+                        // ponytail: extract data_tahunan from _raw_tables year-columns, overriding backend if wrong
+                        if (!data.data_tambahan && Array.isArray(data._raw_tables)) {
+                            const yearSet = new Set();
+                            const byYear = {};
+                            data._raw_tables.forEach(group => {
+                                if (!Array.isArray(group.tables)) return;
+                                group.tables.forEach(table => {
+                                    if (!Array.isArray(table.headers) || !Array.isArray(table.rows)) return;
+                                    const yearCols = [];
+                                    table.headers.forEach((h, i) => {
+                                        if (i === 0) return;
+                                        const m = String(h).match(/^(\d{4})$/);
+                                        if (m) yearCols.push({ idx: i, year: m[1] });
+                                    });
+                                    if (!yearCols.length) return;
+                                    table.rows.forEach(row => {
+                                        if (!Array.isArray(row) || row.length < 2) return;
+                                        const label = String(row[0] || '').trim().toLowerCase()
+                                            .replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+                                        if (!label) return;
+                                        yearCols.forEach(({ idx, year }) => {
+                                            yearSet.add(year);
+                                            if (!byYear[year]) byYear[year] = {};
+                                            const val = row[idx];
+                                            if (val !== null && val !== undefined && val !== '') {
+                                                byYear[year][label] = val;
+                                            }
+                                        });
+                                    });
+                                });
+                            });
+                            if (yearSet.size > 0) {
+                                const sortedYears = [...yearSet].sort((a, b) => Number(b) - Number(a));
+                                data.data_tahunan = { years: sortedYears };
+                                sortedYears.forEach(year => { data.data_tahunan[year] = byYear[year] || {}; });
+                                data.tahun_laporan = sortedYears[0];
+                                const latest = data.data_tahunan[data.tahun_laporan];
+                                if (latest) {
+                                    Object.entries(latest).forEach(([key, val]) => {
+                                        if (val !== null && val !== undefined && val !== '') {
+                                            data[key] = val;
+                                        }
+                                    });
+                                }
+                            }
+                        }
+
                         // ponytail: convert backend data_tahunan shape to frontend dataTambahan/tahunTambahan
                         if (data.data_tahunan && !data.data_tambahan) {
                             const snakeToCamel = s => s.replace(/_([a-z])/g, (_, l) => l.toUpperCase());
-                            const years = Array.isArray(data.data_tahunan.years) ? data.data_tahunan.years : [];
-                            data.tahun_tambahan = years;
+                            const years = Array.isArray(data.data_tahunan.years) ? [...data.data_tahunan.years].sort((a, b) => Number(b) - Number(a)) : [];
+                            // Backend flattens latest year (years[0] after desc sort) to scalar fields.
+                            // Exclude it from tambahan so it doesn't duplicate in the form.
+                            const latestYear = years.length > 0 ? String(years[0]) : null;
+                            data.tahun_tambahan = latestYear ? years.filter(y => String(y) !== latestYear) : years;
                             data.data_tambahan = {};
-                            years.forEach(year => {
+                            data.tahun_tambahan.forEach(year => {
                                 if (data.data_tahunan[year] && typeof data.data_tahunan[year] === 'object') {
                                     data.data_tambahan[year] = {};
                                     Object.entries(data.data_tahunan[year]).forEach(([key, val]) => {
@@ -4840,6 +4905,18 @@
                                     });
                                 }
                             });
+                            // Flatten latest year to scalar fields (backup jika backend belum flatten)
+                            if (latestYear && data.data_tahunan[latestYear]) {
+                                Object.entries(data.data_tahunan[latestYear]).forEach(([key, val]) => {
+                                    if (val !== null && val !== undefined && val !== '' && data[key] === undefined) {
+                                        data[key] = val;
+                                    }
+                                });
+                            }
+                            // Set tahun_laporan dari latest year jika belum ada
+                            if (latestYear && !data.tahun_laporan) {
+                                data.tahun_laporan = latestYear;
+                            }
                         }
 
                         return data;
@@ -4905,7 +4982,6 @@
                         this.portfolioTurnover = data.portfolio_turnover_ratio ?? this.portfolioTurnover;
                         this.managementFee = data.management_fee ?? this.managementFee;
                         this.custodianFee = data.custodian_fee ?? this.custodianFee;
-                        if (data.tahun_laporan) this.tahunLaporan = data.tahun_laporan;
                         this.totalAset = data.total_aset ?? this.totalAset;
                         this.totalLiabilitas = data.total_liabilitas ?? this.totalLiabilitas;
                         this.nilaiAsetBersih = data.nilai_aset_bersih ?? this.nilaiAsetBersih;
@@ -5565,19 +5641,29 @@
                                 this.partitionTables = allTables;
                                 this.activeTableTab = 0;
 
-                                // Group tables by table_name (keep separate instances)
+                                // Group tables by table_name, merge identical headers, dedup rows by label
                                 const groups = {};
                                 allTables.forEach(t => {
                                     const name = t.table_name || 'Lainnya';
-                                    if (!groups[name]) {
-                                        groups[name] = { table_name: name, tables: [] };
+                                    const hKey = JSON.stringify(t.headers || []);
+                                    if (!groups[name]) groups[name] = {};
+                                    if (!groups[name][hKey]) {
+                                        groups[name][hKey] = { headers: t.headers || [], rows: [] };
                                     }
-                                    groups[name].tables.push({ headers: t.headers || [], rows: t.rows || [] });
+                                    const seen = new Set(groups[name][hKey].rows.map(r => String(r[0] || '')));
+                                    (t.rows || []).forEach(row => {
+                                        const label = String(row[0] || '');
+                                        if (!seen.has(label)) { groups[name][hKey].rows.push(row); seen.add(label); }
+                                    });
                                 });
-                                const grouped = Object.entries(groups).sort((a, b) => {
-                                    const order = ['Aset','Liabilitas','Pendapatan','Beban','Arus Kas Operasi','Arus Kas Pendanaan','Pengukuran Nilai Wajar','Informasi Lainnya','Portofolio Efek','Obligasi','Sektor','Sukuk','Bank'];
-                                    return (order.indexOf(a[0]) - order.indexOf(b[0]));
-                                }).map(([_, v]) => v);
+                                const order = ['Aset','Liabilitas','Pendapatan','Beban','Arus Kas Operasi','Arus Kas Pendanaan','Pengukuran Nilai Wajar','Informasi Lainnya','Portofolio Efek','Obligasi','Sektor','Sukuk','Bank'];
+                                const grouped = [];
+                                Object.entries(groups).forEach(([name, byHeaders]) => {
+                                    Object.values(byHeaders).forEach(({headers, rows}) => {
+                                        grouped.push({ table_name: name, tables: [{ headers, rows }] });
+                                    });
+                                });
+                                grouped.sort((a, b) => order.indexOf(a.table_name) - order.indexOf(b.table_name));
                                 this.groupedTables = grouped;
                                 if (grouped.length) this.activeContentTab = grouped[0].table_name;
 
@@ -6091,6 +6177,98 @@
                         const headers = Object.keys(arr[0]);
                         const rows = arr.map(obj => headers.map(h => obj[h]));
                         this.downloadCsv(headers, rows, filename);
+                    },
+                    loadTestJson(event) {
+                        const file = event.target.files?.[0];
+                        if (!file) return;
+                        this.testJsonError = '';
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            try {
+                                const data = JSON.parse(e.target.result);
+                                if (typeof data !== 'object' || data === null) {
+                                    this.testJsonError = 'JSON harus berupa object.';
+                                    return;
+                                }
+                                this.generateFromTestJson(data);
+                                this.$nextTick(() => this.downloadTestJson());
+                            } catch (err) {
+                                this.testJsonError = 'JSON tidak valid: ' + err.message;
+                            }
+                        };
+                        reader.readAsText(file);
+                        event.target.value = '';
+                    },
+                    generateFromTestJson(data) {
+                        this.testJsonError = '';
+
+                        const allTables = [];
+                        const rawTablesData = data._raw_tables || [];
+                        rawTablesData.forEach(p => {
+                            if (Array.isArray(p.tables)) {
+                                p.tables.forEach(t => allTables.push(t));
+                            }
+                        });
+
+                        // Group tables by table_name, merge identical headers, dedup rows by label
+                        const groups = {};
+                        allTables.forEach(t => {
+                            const name = t.table_name || 'Lainnya';
+                            const hKey = JSON.stringify(t.headers || []);
+                            if (!groups[name]) groups[name] = {};
+                            if (!groups[name][hKey]) {
+                                groups[name][hKey] = { headers: t.headers || [], rows: [] };
+                            }
+                            const seen = new Set(groups[name][hKey].rows.map(r => String(r[0] || '')));
+                            (t.rows || []).forEach(row => {
+                                const label = String(row[0] || '');
+                                if (!seen.has(label)) { groups[name][hKey].rows.push(row); seen.add(label); }
+                            });
+                        });
+                        const order = ['Aset','Liabilitas','Pendapatan','Beban','Arus Kas Operasi','Arus Kas Pendanaan','Pengukuran Nilai Wajar','Informasi Lainnya','Portofolio Efek','Obligasi','Sektor','Sukuk','Bank'];
+                        const grouped = [];
+                        Object.entries(groups).forEach(([name, byHeaders]) => {
+                            Object.values(byHeaders).forEach(({headers, rows}) => {
+                                grouped.push({ table_name: name, tables: [{ headers, rows }] });
+                            });
+                        });
+                        grouped.sort((a, b) => order.indexOf(a.table_name) - order.indexOf(b.table_name));
+                        this.groupedTables = grouped;
+                        if (grouped.length) this.activeContentTab = grouped[0].table_name;
+
+                        // Map portfolio tables
+                        this.mapPortfolioTables(allTables);
+
+                        // Set partition state
+                        this.partitionSuccess = true;
+                        this.partitionTables = allTables;
+                        this.activeTableTab = 0;
+                        this.partitionResult = allTables.length ? `${allTables.length} tabel berhasil di-generate dari JSON.` : 'JSON berhasil di-load (tidak ada tabel).';
+
+                        // Normalize, set pdfData + component state for form
+                        const extracted = this.normalizeExtractedData(data);
+                        this.pdfData = { ...this.pdfData, ...extracted };
+                        if (extracted.tahun_tambahan?.length) this.tahunTambahan = extracted.tahun_tambahan;
+                        if (extracted.data_tambahan) this.dataTambahan = { ...this.dataTambahan, ...extracted.data_tambahan };
+                        this.pdfSuccess = true;
+                        this.mode = 'pdf';
+                    },
+                    downloadTestJson() {
+                        try {
+                            if (!this.pdfData) {
+                                this.testJsonError = 'Tidak ada data untuk di-download.';
+                                return;
+                            }
+                            const json = JSON.stringify(this.pdfData, null, 2);
+                            const blob = new Blob([json], { type: 'application/json' });
+                            const a = document.createElement('a');
+                            a.href = URL.createObjectURL(blob);
+                            a.download = 'test-ekstraksi.json';
+                            a.click();
+                            URL.revokeObjectURL(a.href);
+                        } catch (e) {
+                            this.testJsonError = 'Gagal download: ' + e.message;
+                        }
                     },
                 };
             }
