@@ -195,7 +195,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('analisa-rd/lookup-sukuk-return', [AdminAnalisaRdController::class, 'lookupSukukReturn'])->name('analisa-rd.lookup-sukuk-return');
     Route::get('analisa-rd/lookup-bank-data', [AdminAnalisaRdController::class, 'lookupBankData'])->name('analisa-rd.lookup-bank-data');
 
-    // Daftar & Analisa Saham // && cek analisa saham
+    // Daftar & Analisa Saham // && cek analisa sahamm
     Route::resource('saham', StockController::class)->except(['show']);
     Route::post('saham/extraction-batches', [ExtractionBatchController::class, 'storeStock'])->name('saham.extraction-batches.store');
     Route::post('saham/extraction-batches/{extractionBatch}/retry', [ExtractionBatchController::class, 'retry'])->name('saham.extraction-batches.retry');
