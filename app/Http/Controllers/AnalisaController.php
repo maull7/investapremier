@@ -356,10 +356,23 @@ class AnalisaController extends Controller
 
     public function downloadTemplate()
     {
-        $path = public_path('storage/import/Format Template.xlsx');
-        if (file_exists($path)) {
-            return response()->download($path, 'Format Template.xlsx');
+        $publicPath = public_path('storage/import/format template.xlsx');
+        $resourcePath = resource_path('templates/format template.xlsx');
+
+        // Pastikan file tersedia di public/storage/import (production safe).
+        // File asli disimpan di resources/templates agar ikut terdeploy via git.
+        if (!file_exists($publicPath) && file_exists($resourcePath)) {
+            $dir = dirname($publicPath);
+            if (!is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
+            copy($resourcePath, $publicPath);
         }
+
+        if (file_exists($publicPath)) {
+            return response()->download($publicPath, 'format template.xlsx');
+        }
+
         return Excel::download(new AnalisaTemplateExport(), 'template-analisa-reksa-dana.xlsx');
     }
 
@@ -1007,6 +1020,7 @@ class AnalisaController extends Controller
 
             $data = [];
 
+            // 1. Baca sheet portfolio (Sektor, Efek, Kinerja, Obligasi, Sukuk, Bank)
             try {
                 $import = new AnalisaImportPreview;
                 Excel::import($import, $tmpPath, null, $ext === 'xls' ? \Maatwebsite\Excel\Excel::XLS : \Maatwebsite\Excel\Excel::XLSX);
@@ -1015,14 +1029,16 @@ class AnalisaController extends Controller
                 $data = [];
             }
 
-            $hasData = collect($data)->flatten()->isNotEmpty();
-
-            if (!$hasData) {
+            // 2. Selalu baca juga sheet laporan keuangan (Posisi Keuangan, Laba Rugi, Arus Kas, Ringkasan)
+            // dan merge ke data agar laporan tahunan ikut terisi.
+            try {
                 $legacy = new LegacyFormatReader;
                 $legacyData = $legacy->read($tmpPath);
                 if (!empty($legacyData)) {
-                    $data = $legacyData;
+                    $data = array_merge($legacyData, $data);
                 }
+            } catch (\Throwable $e) {
+                // legacy reader gagal = abaikan, tetap pakai data dari preview
             }
 
             $hasData = collect($data)->flatten()->isNotEmpty();

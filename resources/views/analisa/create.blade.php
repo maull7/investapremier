@@ -4832,16 +4832,6 @@
                     normalizeExtractedData(data) {
                         data = data || {};
 
-                        if (!data.__logged) {
-                            console.log('=== DEBUG normalizeExtractedData IN ===');
-                            console.log('has _raw_tables:', Array.isArray(data._raw_tables), '_raw_tables count:', Array.isArray(data._raw_tables) ? data._raw_tables.length : 0);
-                            console.log('has data_tahunan:', !!data.data_tahunan, 'data_tahunan years:', data.data_tahunan?.years || []);
-                            console.log('has data_tambahan:', !!data.data_tambahan);
-                            const cekFields = ['portofolio_efek','instrumen_pasar_uang','kas_dan_bank','piutang_bunga','piutang_dividen','piutang_lain','total_aset','total_liabilitas','pendapatan_bunga','beban_mi','laba_bersih','arus_kas_operasi','arus_kas_pendanaan','total_aum','fair_value_level_1','unit_milik_investor'];
-                            cekFields.forEach(f => console.log(f + ':', data[f]));
-                            data.__logged = true;
-                        }
-
                         if (!Array.isArray(data.alokasi_aset)) {
                             data.alokasi_aset = [];
                         }
@@ -4904,11 +4894,6 @@
                                             data[key] = val;
                                         }
                                     });
-                                    console.log('=== DEBUG _raw_tables flatten ===');
-                                    console.log('years:', sortedYears, 'latest:', data.tahun_laporan);
-                                    const cekF = ['portofolio_efek','instrumen_pasar_uang','kas_dan_bank','piutang_bunga','piutang_dividen','piutang_lain','total_aset','total_liabilitas','pendapatan_bunga','beban_mi','laba_bersih','arus_kas_operasi','arus_kas_pendanaan','total_aum','fair_value_level_1','unit_milik_investor'];
-                                    cekF.forEach(f => console.log(f + ':', data[f], '(from _raw_tables:', f in latest ? latest[f] : 'N/A)'));
-                                    console.log('===============================');
                                 }
                             }
                         }
@@ -4944,14 +4929,6 @@
                             }
                         }
 
-                        console.log('=== DEBUG normalizeExtractedData OUT ===');
-                        const cekOutFields = ['portofolio_efek','instrumen_pasar_uang','kas_dan_bank','piutang_bunga','piutang_dividen','piutang_lain','total_aset','total_liabilitas','pendapatan_bunga','beban_mi','laba_bersih','arus_kas_operasi','arus_kas_pendanaan','total_aum','fair_value_level_1','unit_milik_investor'];
-                        cekOutFields.forEach(f => console.log(f + ':', data[f]));
-                        console.log('tahun_laporan:', data.tahun_laporan, 'tahun_tambahan:', data.tahun_tambahan);
-                        console.log('data_tambahan years:', data.data_tambahan ? Object.keys(data.data_tambahan) : 'NONE');
-                        console.log('data_tahunan years:', data.data_tahunan ? Object.keys(data.data_tahunan).filter(k => k !== 'years') : 'NONE');
-                        if (data.__logged) delete data.__logged;
-
                         return data;
                     },
 
@@ -4979,13 +4956,6 @@
 
                     applyExtractedData(data, preferredMode = 'manual') {
                         data = this.normalizeExtractedData(data);
-                        console.log('=== DEBUG applyExtractedData ===');
-                        console.log('after normalize, keys:', Object.keys(data));
-                        const cekFields = ['portofolio_efek','instrumen_pasar_uang','kas_dan_bank','piutang_bunga','piutang_dividen','piutang_lain','total_aset','total_liabilitas','pendapatan_bunga','beban_mi','laba_bersih','arus_kas_operasi','arus_kas_pendanaan','total_aum','fair_value_level_1','unit_milik_investor'];
-                        cekFields.forEach(f => console.log(f + ':', data[f]));
-                        console.log('tahun_laporan:', data.tahun_laporan, 'tahun_tambahan:', data.tahun_tambahan);
-                        console.log('data_tambahan years:', data.data_tambahan ? Object.keys(data.data_tambahan) : 'NONE');
-                        console.log('==============================');
                         const fields = {
                             nama_reksa_dana: 'nama_reksa_dana',
                             jenis_reksa_dana: 'jenis_reksa_dana',
@@ -5279,6 +5249,7 @@
                                     return;
                                 }
                                 const extractedData = this.normalizeExtractedData(body.data || {});
+                                this.pdfData = extractedData;
                                 this.applyExtractedData(extractedData, this.hasFullInputData(extractedData) ? 'lengkap' : 'manual');
                                 this.exportFileUrl = body.export_file || null;
                                 this.importExcelOk = true;
@@ -5711,15 +5682,6 @@
                                 this.groupedTables = grouped;
                                 if (grouped.length) this.activeContentTab = grouped[0].table_name;
 
-                                console.log('=== DEBUG groupedTables ===');
-                                grouped.forEach(g => console.log('Table:', g.table_name, 'headers:', g.tables.map(t => t.headers), 'rows count:', g.tables.reduce((s, t) => s + t.rows.length, 0)));
-                                console.log('=== DEBUG extracted (merge ke pdfData) ===');
-                                const cekFields = ['portofolio_efek','instrumen_pasar_uang','kas_dan_bank','piutang_bunga','piutang_dividen','piutang_lain','total_aset','total_liabilitas','pendapatan_bunga','beban_mi','laba_bersih','arus_kas_operasi','arus_kas_pendanaan','total_aum','fair_value_level_1','unit_milik_investor'];
-                                cekFields.forEach(f => console.log(f + ':', extracted[f]));
-                                console.log('tahun_laporan:', extracted.tahun_laporan, 'tahun_tambahan:', extracted.tahun_tambahan);
-                                console.log('data_tambahan years:', extracted.data_tambahan ? Object.keys(extracted.data_tambahan) : 'NONE');
-                                console.log('========================');
-
                                 // Map tables to portfolio tabs
                                 this.mapPortfolioTables(allTables);
 
@@ -6062,13 +6024,6 @@
                         this.importSummary = '';
                         const data = this.pdfData;
                         if (!data) { this.importSummary = 'Tidak ada data hasil ekstraksi.'; return; }
-                        console.log('=== DEBUG parseToForms ===');
-                        console.log('pdfData keys:', Object.keys(data));
-                        const cekFields = ['portofolio_efek','instrumen_pasar_uang','kas_dan_bank','piutang_bunga','piutang_dividen','piutang_lain','total_aset','total_liabilitas','pendapatan_bunga','beban_mi','laba_bersih','arus_kas_operasi','arus_kas_pendanaan','total_aum','fair_value_level_1','unit_milik_investor'];
-                        cekFields.forEach(f => console.log(f + ':', data[f]));
-                        console.log('tahun_laporan:', data.tahun_laporan, 'tahun_tambahan:', data.tahun_tambahan);
-                        console.log('data_tambahan years:', data.data_tambahan ? Object.keys(data.data_tambahan) : 'NONE');
-                        console.log('===========================');
                         this.applyExtractedData(data);
                         const mapped = this.countMappedFields(data);
                         this.importSummary = '✓ ' + mapped.mapped + ' field berhasil dipetakan ke Input Manual &amp; Input Lengkap.' +
