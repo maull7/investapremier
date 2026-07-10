@@ -1075,6 +1075,18 @@ class DaftarReksaDanaController extends Controller
                 auth()->id(),
             );
 
+            $extractedMsg = '';
+            $extracted = $result['extracted_data'] ?? [];
+            if (!empty($extracted)) {
+                $reksaDana = $document->reksaDana;
+                if ($reksaDana) {
+                    $saved = $this->saveExtractedToReksaDana($reksaDana, $extracted);
+                    if (!empty($saved)) {
+                        $extractedMsg = ' Data tersimpan: ' . implode(', ', $saved) . '.';
+                    }
+                }
+            }
+
             $partitionMsg = $result['partitions_created'] > 0
                 ? " {$result['partitions_created']} partisi dibuat dari daftar isi."
                 : '';
@@ -1086,14 +1098,14 @@ class DaftarReksaDanaController extends Controller
 
             ActivityLogger::log(
                 'Parse Dokumen',
-                "Dokumen {$document->original_name} berhasil diparse ({$result['parsed_count']} halaman dari {$result['total_pages']} halaman). TOC: halaman {$result['toc_start']}-{$result['toc_end']}.{$partitionMsg}",
+                "Dokumen {$document->original_name} berhasil diparse ({$result['parsed_count']} halaman dari {$result['total_pages']} halaman). TOC: halaman {$result['toc_start']}-{$result['toc_end']}.{$partitionMsg}{$extractedMsg}",
                 'success',
                 $document,
             );
 
             return response()->json([
                 'success' => true,
-                'message' => "Dokumen berhasil diparse. {$result['parsed_count']} halaman teks tersimpan.{$partitionMsg}{$warningMsg}",
+                'message' => "Dokumen berhasil diparse. {$result['parsed_count']} halaman teks tersimpan.{$partitionMsg}{$extractedMsg}{$warningMsg}",
                 'data'    => $result,
             ]);
         } catch (\Throwable $e) {
@@ -1244,6 +1256,64 @@ class DaftarReksaDanaController extends Controller
             ]);
         } catch (\Throwable $e) {
             return response()->json(['error' => 'Gagal parse FFS: ' . $e->getMessage()], 500);
+        }
+    }
+
+    private function saveExtractedToReksaDana(ReksaDana $reksaDana, array $data): array
+    {
+        $mapping = [
+            'launch_date'         => ['tanggal_efektif', 'tanggal_peluncuran', 'launch_date'],
+            'custodian_bank'      => ['bank_kustodian', 'custodian_bank'],
+            'benchmark'           => ['benchmark'],
+            'mata_uang'           => ['mata_uang'],
+            'tujuan_investasi'    => ['tujuan_investasi'],
+            'kebijakan_investasi' => ['kebijakan_investasi'],
+            'jenis'               => ['jenis_reksa_dana', 'jenis'],
+            'management_fee'      => ['management_fee'],
+            'custodian_fee'       => ['custodian_fee'],
+            'total_aum'           => ['total_aum'],
+            'unit_penyertaan'     => ['unit_penyertaan'],
+            'nab_per_unit'        => ['nab_per_unit'],
+        ];
+
+        $updates = [];
+        foreach ($mapping as $dbField => $apiKeys) {
+            if (!empty($reksaDana->{$dbField})) continue;
+            foreach ($apiKeys as $key) {
+                $value = $data[$key] ?? null;
+                if ($value === null || $value === '' || $value === []) continue;
+
+                if (in_array($dbField, ['management_fee', 'custodian_fee'])) {
+                    $value = is_numeric($value) ? (float) $value : (float) str_replace(['%', ' '], '', $value);
+                    if ($value <= 0) continue;
+                }
+
+                if ($dbField === 'launch_date' && !$this->isValidDate($value)) continue;
+
+                $updates[$dbField] = $value;
+                break;
+            }
+        }
+
+        if (!empty($updates)) {
+            $reksaDana->update($updates);
+        }
+
+        return array_keys($updates);
+    }
+
+    private function isValidDate(mixed $value): bool
+    {
+        if (!is_string($value) && !is_numeric($value)) return false;
+        $value = (string) $value;
+        if (preg_match('/^\d{4}$/', $value)) return true;
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) return true;
+        if (preg_match('/^\d{2}[-\/]\d{2}[-\/]\d{4}$/', $value)) return true;
+        try {
+            \Carbon\Carbon::parse($value);
+            return true;
+        } catch (\Throwable) {
+            return false;
         }
     }
 

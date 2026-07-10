@@ -89,6 +89,12 @@ return [
         'timeout' => (int) env('BACKEND_SYNC_TIMEOUT', 600),
     ],
 
+    'parse_api_python' => [
+        'enabled' => (bool) env('PARSE_API_PYTHON_ENABLED', false),
+        'url' => env('PARSE_API_PYTHON_URL', 'http://localhost:5000'),
+        'timeout' => (int) env('PARSE_API_PYTHON_TIMEOUT', 300),
+    ],
+
     'groq' => [
         'key'   => env('GROQ_API_KEY'),
         'model' => env('GROQ_MODEL', 'llama-3.3-70b-versatile'),
