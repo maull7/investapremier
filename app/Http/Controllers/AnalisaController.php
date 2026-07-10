@@ -1866,7 +1866,7 @@ class AnalisaController extends Controller
         if ($excludeMonth && $excludeYear) {
             $docQuery->where(function ($q) use ($excludeMonth, $excludeYear) {
                 $q->where('ffs_month', '!=', $excludeMonth)
-                  ->orWhere('ffs_year', '!=', $excludeYear);
+                    ->orWhere('ffs_year', '!=', $excludeYear);
             });
         }
 
