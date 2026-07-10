@@ -12,6 +12,7 @@ class ProspektusParserService
 {
     public function __construct(
         private GroqService $groqService,
+        private ParserClient $parserClient,
     ) {}
 
     public function parseDocument(
@@ -33,7 +34,6 @@ class ProspektusParserService
 
         DocumentParsedPage::where('reksa_dana_document_id', $document->id)->delete();
 
-        // Parse semua halaman dulu (sekali ekstrak, simpan ke DB)
         $parseNumber = 0;
         $parsedCount = 0;
 
@@ -61,7 +61,6 @@ class ProspektusParserService
             $parsedCount++;
         }
 
-        // Bikin partisi dari teks yang sudah tersimpan di DB (tanpa ekstrak ulang dari PDF)
         $warnings = [];
         $partitionsCreated = 0;
         if ($generatePartitions && $tocEndPage > 0 && $tocStartPage <= $tocEndPage && $tocStartPage <= $totalPages) {
@@ -73,6 +72,21 @@ class ProspektusParserService
             $warnings = $partitionResult['warnings'];
         }
 
+        $extractedData = [];
+        if ($partitionsCreated > 0 && $this->parserClient->enabled()) {
+            $partitions = DocumentPartition::where('reksa_dana_document_id', $document->id)
+                ->where('source', 'toc_ai')
+                ->get();
+
+            $pageGroups = $this->buildPageGroupsFromPartitions($partitions);
+
+            if (!empty($pageGroups)) {
+                $pdfPath = Storage::disk('public')->path($document->file_path);
+                $apiResult = $this->parserClient->extractAllSections($pdfPath, $pageGroups);
+                $extractedData = $this->flattenApiResult($apiResult);
+            }
+        }
+
         return [
             'total_pages'        => $totalPages,
             'parsed_count'       => $parsedCount,
@@ -80,7 +94,52 @@ class ProspektusParserService
             'toc_end'            => $tocEndPage,
             'partitions_created' => $partitionsCreated,
             'warnings'           => $warnings,
+            'extracted_data'     => $extractedData,
         ];
+    }
+
+    private function buildPageGroupsFromPartitions($partitions): array
+    {
+        $sectionMap = [
+            'cover' => ['bab i', 'definisi', 'sampul', 'pendahuluan'],
+            'fund_info' => ['bab ii', 'tujuan investasi', 'kebijakan investasi', 'informasi reksa dana'],
+            'financial_statements' => ['laporan keuangan', 'neraca', 'laba rugi', 'laporan posisi keuangan'],
+            'portfolio' => ['portofolio', 'efek', 'holding', 'komposisi portofolio'],
+            'performance' => ['kinerja', 'imbal hasil', 'return', 'performa'],
+        ];
+
+        $groups = [];
+        foreach ($partitions as $p) {
+            $name = strtolower($p->nama_partisi);
+            $matched = null;
+            foreach ($sectionMap as $section => $keywords) {
+                foreach ($keywords as $kw) {
+                    if (str_contains($name, $kw)) {
+                        $matched = $section;
+                        break 2;
+                    }
+                }
+            }
+            if ($matched && $p->start_page_pdf && $p->end_page_pdf) {
+                $groups[$matched] = range($p->start_page_pdf - 1, $p->end_page_pdf - 1);
+            }
+        }
+
+        unset($groups['mi_profile']);
+        return $groups;
+    }
+
+    private function flattenApiResult(array $apiResult): array
+    {
+        $merged = [];
+        foreach ($apiResult as $sectionData) {
+            foreach ($sectionData as $field => $value) {
+                if ($value !== null && $value !== '' && $value !== []) {
+                    $merged[$field] = $value;
+                }
+            }
+        }
+        return $merged;
     }
 
     private function extractTocText(array $pages, int $tocStartPage, int $tocEndPage): string

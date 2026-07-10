@@ -8,17 +8,20 @@ class ProspektusPipelineService
     private GroqService $groq;
     private ProspektusValidator $validator;
     private FfsParserService $ffsParser;
+    private ParserClient $parserClient;
 
     public function __construct(
         PageClassifierService $classifier,
         GroqService $groq,
         ProspektusValidator $validator,
-        FfsParserService $ffsParser
+        FfsParserService $ffsParser,
+        ParserClient $parserClient
     ) {
         $this->classifier = $classifier;
         $this->groq = $groq;
         $this->validator = $validator;
         $this->ffsParser = $ffsParser;
+        $this->parserClient = $parserClient;
     }
 
     public function process(string $pdfPath, string $documentType = 'prospektus'): array
@@ -84,10 +87,34 @@ class ProspektusPipelineService
 
         $extracted = [];
 
-        foreach ($sectionOrder as $section) {
-            if ($section === PageClassifierService::SECTION_FINANCIAL_STATEMENTS) {
-                $pages = $pageGroups[$section] ?? [];
+        $parserEnabled = $this->parserClient->enabled();
+        $parserSections = ['cover', 'fund_info', 'portfolio', 'performance', 'financial_statements'];
+        $parserResults = [];
 
+        if ($parserEnabled) {
+            $parserResults = $this->parserClient->extractAllSections($pdfPath, $pageGroups);
+        }
+
+        foreach ($sectionOrder as $section) {
+            $pages = $pageGroups[$section] ?? [];
+
+            if ($parserEnabled && in_array($section, $parserSections)) {
+                $result = $parserResults[$section] ?? [];
+                if (!empty($result)) {
+                    $extracted[$section] = $result;
+                    \Log::info('[PROSPEKTUS] Parser result for: ' . $section, [
+                        'fields' => array_keys($result),
+                    ]);
+
+                    if ($section === PageClassifierService::SECTION_FINANCIAL_STATEMENTS) {
+                        $extracted[$section] = $this->applyFinancialFallback($extracted[$section] ?? [], $pageTexts, $pages, $pdfPath);
+                    }
+                    continue;
+                }
+                \Log::info('[PROSPEKTUS] Parser empty for: ' . $section . ', fallback ke Groq');
+            }
+
+            if ($section === PageClassifierService::SECTION_FINANCIAL_STATEMENTS) {
                 $combinedText = '';
                 foreach ($pages as $pageNum) {
                     if (isset($pageTexts[$pageNum])) {
@@ -100,22 +127,19 @@ class ProspektusPipelineService
                     try {
                         $result = $this->groq->parseProspektusSection($section, $combinedText);
                         $extracted[$section] = $result;
-                        \Log::info('[PROSPEKTUS] Extracted financial: ' . count($pages) . ' halaman, fields: ' . count(array_keys($result)));
+                        \Log::info('[PROSPEKTUS] Groq financial: ' . count($pages) . ' halaman, fields: ' . count(array_keys($result)));
                     } catch (\Throwable $e) {
-                        \Log::warning('[PROSPEKTUS] Gagal ekstrak financial: ' . $e->getMessage());
+                        \Log::warning('[PROSPEKTUS] Groq financial error: ' . $e->getMessage());
                         $extracted[$section] = [];
                     }
                 } else {
                     $extracted[$section] = [];
-                    \Log::info('[PROSPEKTUS] Tidak ada teks untuk financial, fallback vision langsung');
+                    \Log::info('[PROSPEKTUS] Tidak ada teks financial, vision fallback');
                 }
 
                 $extracted[$section] = $this->applyFinancialFallback($extracted[$section] ?? [], $pageTexts, $pages, $pdfPath);
                 continue;
             }
-
-            $pages = $pageGroups[$section] ?? [];
-            if (empty($pages)) continue;
 
             $combinedText = '';
             foreach ($pages as $pageNum) {
@@ -123,19 +147,17 @@ class ProspektusPipelineService
                     $combinedText .= $pageTexts[$pageNum] . "\n\n";
                 }
             }
-
             $combinedText = trim($combinedText);
             if (empty($combinedText)) continue;
 
             try {
                 $result = $this->groq->parseProspektusSection($section, $combinedText);
                 $extracted[$section] = $result;
-                \Log::info('[PROSPEKTUS] Extracted section: ' . $section, [
-                    'pages' => count($pages),
+                \Log::info('[PROSPEKTUS] Groq section: ' . $section, [
                     'fields' => array_keys($result),
                 ]);
             } catch (\Throwable $e) {
-                \Log::warning('[PROSPEKTUS] Gagal ekstrak section: ' . $section . ' - ' . $e->getMessage());
+                \Log::warning('[PROSPEKTUS] Groq section error: ' . $section . ' - ' . $e->getMessage());
                 $extracted[$section] = [];
             }
         }
