@@ -158,6 +158,102 @@
             </div>
         </div>
 
+        {{-- SECTION: Harga Layanan --}}
+        @php
+            $pricingPlans = [
+                ['name' => 'Review Produk Investasi', 'price' => '100rb', 'popular' => false, 'features' => [
+                    ['label' => 'Kinerja', 'on' => true],
+                    ['label' => 'Benchmark (All Funds)', 'on' => true],
+                    ['label' => 'Analisa Pengelolaan Investasi', 'on' => false],
+                    ['label' => 'Analisa Efek Portofolio (Selected Funds)', 'on' => false],
+                    ['label' => 'Pilihan produk berdasarkan profil risiko', 'on' => false],
+                    ['label' => 'Kriteria underlying', 'on' => false],
+                    ['label' => 'Kriteria return-risk (Recomended Funds)', 'on' => false],
+                    ['label' => 'Monitoring Bulanan (Recommended Funds)', 'on' => false],
+                    ['label' => 'untuk mencapai Tujuan Investasi', 'on' => false],
+                ]],
+                ['name' => 'Analisa Produk Investasi', 'price' => '250rb', 'popular' => true, 'features' => [
+                    ['label' => 'Kinerja', 'on' => true],
+                    ['label' => 'Benchmark (All Funds)', 'on' => true],
+                    ['label' => 'Analisa Pengelolaan Investasi', 'on' => true],
+                    ['label' => 'Analisa Efek Portofolio (Selected Funds)', 'on' => true],
+                    ['label' => 'Pilihan produk berdasarkan profil risiko', 'on' => false],
+                    ['label' => 'Kriteria underlying', 'on' => false],
+                    ['label' => 'Kriteria return-risk (Recomended Funds)', 'on' => false],
+                    ['label' => 'Monitoring Bulanan (Recommended Funds)', 'on' => false],
+                    ['label' => 'untuk mencapai Tujuan Investasi', 'on' => false],
+                ]],
+                ['name' => 'Rekomendasi Produk Investasi', 'price' => '350rb', 'popular' => false, 'features' => [
+                    ['label' => 'Kinerja', 'on' => true],
+                    ['label' => 'Benchmark (All Funds)', 'on' => true],
+                    ['label' => 'Analisa Pengelolaan Investasi', 'on' => true],
+                    ['label' => 'Analisa Efek Portofolio (Selected Funds)', 'on' => true],
+                    ['label' => 'Pilihan produk berdasarkan profil risiko', 'on' => true],
+                    ['label' => 'Kriteria underlying', 'on' => true],
+                    ['label' => 'Kriteria return-risk (Recomended Funds)', 'on' => true],
+                    ['label' => 'Monitoring Bulanan (Recommended Funds)', 'on' => false],
+                    ['label' => 'untuk mencapai Tujuan Investasi', 'on' => false],
+                ]],
+                ['name' => 'Penasihat Investasi Komprehensif', 'price' => '1jt', 'popular' => true, 'features' => [
+                    ['label' => 'Kinerja', 'on' => true],
+                    ['label' => 'Benchmark (All Funds)', 'on' => true],
+                    ['label' => 'Analisa Pengelolaan Investasi', 'on' => true],
+                    ['label' => 'Analisa Efek Portofolio (Selected Funds)', 'on' => true],
+                    ['label' => 'Pilihan produk berdasarkan profil risiko', 'on' => true],
+                    ['label' => 'Kriteria underlying', 'on' => true],
+                    ['label' => 'Kriteria return-risk (Recomended Funds)', 'on' => true],
+                    ['label' => 'Monitoring Bulanan (Recommended Funds)', 'on' => true],
+                    ['label' => 'untuk mencapai Tujuan Investasi', 'on' => true],
+                ]],
+            ];
+        @endphp
+        <div class="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/60 shadow-lg p-6 mb-5">
+            <h2 class="font-bold text-primary mb-5 flex items-center gap-2">
+                <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Harga Layanan
+            </h2>
+            <p class="text-sm text-muted mb-5">Pilih layanan investasi yang sesuai dengan kebutuhan Anda.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                @foreach ($pricingPlans as $plan)
+                    <div class="relative rounded-xl p-5 transition-all duration-300 flex flex-col hover:-translate-y-1
+                        {{ $plan['popular']
+                            ? 'bg-white/90 backdrop-blur-xl border-2 border-accent/40 shadow-xl shadow-accent/5'
+                            : 'bg-white/70 backdrop-blur-sm border border-white/60 shadow-sm hover:shadow-lg hover:border-accent/30' }}">
+                        @if ($plan['popular'])
+                            <span class="absolute top-3 right-3 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-white uppercase tracking-wider"
+                                style="background:linear-gradient(135deg,#16a34a,#22c55e)">Populer</span>
+                        @endif
+                        <div class="font-semibold text-primary text-sm">{{ $plan['name'] }}</div>
+                        <div class="text-2xl font-bold mt-1" style="color:#16a34a">{{ $plan['price'] }} <span class="text-xs font-normal text-muted">/bln</span></div>
+                        <hr class="my-3" style="border-color:#e2e8f0">
+                        <ul class="space-y-2 text-xs flex-1">
+                            @foreach ($plan['features'] as $f)
+                                <li class="flex items-start gap-2">
+                                    @if ($f['on'])
+                                        <span class="w-4 h-4 rounded-full bg-green-100 text-green-600 grid place-items-center shrink-0 mt-0.5">
+                                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M20 6 9 17l-5-5"/></svg>
+                                        </span>
+                                    @else
+                                        <span class="w-4 h-4 rounded-full bg-red-50 text-red-400 grid place-items-center shrink-0 mt-0.5">
+                                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                        </span>
+                                    @endif
+                                    <span class="{{ $f['on'] ? 'text-gray-700' : 'text-gray-400' }}">{{ $f['label'] }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                        <div class="mt-auto pt-3">
+                            <button type="button" onclick="openPricingModal('{{ $plan['name'] }}')"
+                                class="w-full py-2 rounded-lg text-xs font-semibold transition"
+                                style="{{ $plan['popular'] ? 'background:#16a34a;color:#fff' : 'background:#f1f5f9;color:#334155' }}">
+                                Langganan Sekarang
+                            </button>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
         {{-- SECTION 3: Portofolio --}}
         <div class="bg-white rounded-2xl border border-line shadow-sm p-6 mb-5">
             <div class="flex items-center justify-between mb-5">
@@ -296,5 +392,36 @@
                 }
             }
         }
+    </script>
+
+    {{-- Modal Segera Hadir --}}
+    <div id="pricingModalMember" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+        style="display:none" onclick="if(event.target===this)closePricingModalMember()">
+        <div class="bg-white/90 backdrop-blur-2xl rounded-2xl border border-white/80 shadow-2xl p-8 text-center max-w-sm w-full" style="transform:translateY(0)">
+            <div class="w-16 h-16 rounded-full bg-green-50 mx-auto mb-4 flex items-center justify-center">
+                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                    <circle cx="12" cy="12" r="4"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-primary mb-1">Segera Hadir</h3>
+            <p class="text-sm text-muted mb-5">Fitur langganan <strong id="modal-plan-label-member"></strong> masih dalam tahap pengembangan. Kami akan memberitahu Anda begitu tersedia!</p>
+            <button onclick="closePricingModalMember()"
+                class="px-6 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition shadow-lg shadow-green-600/20">
+                Saya Mengerti
+            </button>
+        </div>
+    </div>
+    <script>
+    function openPricingModal(planName){
+        document.getElementById('modal-plan-label-member').textContent = planName;
+        document.getElementById('pricingModalMember').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+    function closePricingModalMember(){
+        document.getElementById('pricingModalMember').style.display = 'none';
+        document.body.style.overflow = '';
+    }
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closePricingModalMember(); });
     </script>
 @endsection
