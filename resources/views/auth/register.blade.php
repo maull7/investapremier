@@ -189,7 +189,16 @@ body{margin:0;font-family:'Poppins',sans-serif}
           @error('password_confirmation')<div class="field-error">{{ $message }}</div>@enderror
         </div>
 
-        <div style="margin-top:16px">
+        <div class="field" style="margin-top:8px">
+          <label class="flex items-center gap-2.5 cursor-pointer">
+            <input type="checkbox" name="is_advisor" value="1" {{ old('is_advisor') ? 'checked' : '' }}
+              class="w-4 h-4 rounded border-gray-300 text-[#16a34a] focus:ring-[#16a34a]">
+            <span class="text-sm font-medium text-[#334155]">Daftar sebagai <strong class="text-[#16a34a]">Advisor</strong></span>
+          </label>
+          <p class="text-xs text-[#94a3b8] mt-1 ml-6">Advisor dapat mengelola klien dan melihat portofolio mereka.</p>
+        </div>
+
+        <div style="margin-top:8px">
           {!! NoCaptcha::display() !!}
           @error('g-recaptcha-response')<div class="field-error">{{ $message }}</div>@enderror
         </div>

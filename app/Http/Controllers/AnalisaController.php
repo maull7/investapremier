@@ -108,6 +108,11 @@ class AnalisaController extends Controller
 
     public function index()
     {
+        $publishedAnalisas = AnalisaReksaDana::where('is_published', true)
+            ->where('product_type', $this->productType)
+            ->with('user')
+            ->latest('published_at')->paginate(20);
+
         $analisas = AnalisaReksaDana::where('user_id', auth()->id())
             ->where('product_type', $this->productType)
             ->latest()->get();
@@ -116,7 +121,10 @@ class AnalisaController extends Controller
             ? route('user.unit-link-analisa.create')
             : route('user.analisa.create');
 
-        return view('analisa.index', compact('analisas'))
+        $pageTitle = 'Monitor Reksa Dana';
+        $pageSub = 'Hasil analisa reksa dana yang telah dipublikasikan';
+
+        return view('analisa.index', compact('publishedAnalisas', 'analisas', 'pageTitle', 'pageSub'))
             ->with('productLabel', $this->productLabel)
             ->with('createRoute', $createRoute);
     }
@@ -1143,6 +1151,11 @@ class AnalisaController extends Controller
         }
         if (!empty($data['bank'])) {
             $extracted[] = count($data['bank']) . ' Bank';
+        }
+        // ponytail: also accept financial-statement-only files (LegacyFormatReader)
+        $tahunanYears = $data['data_tahunan']['years'] ?? [];
+        if (empty($extracted) && !empty($tahunanYears)) {
+            $extracted[] = count($tahunanYears) . ' tahun data laporan keuangan';
         }
 
         $success = count($extracted) > 0;

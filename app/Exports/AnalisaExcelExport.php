@@ -54,7 +54,7 @@ class AnalisaExcelExport
         return $header;
     }
 
-    private function row(string $category, string $uraian, string $key, array $data): array
+    private function row(?string $category, string $uraian, string $key, array $data): array
     {
         $row = [$category, $uraian, null];
         foreach ($this->getYears($data) as $year) {

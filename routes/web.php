@@ -122,6 +122,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('analisa/{analisa}/pdf', [AdminAnalisaController::class, 'exportPdf'])->name('analisa.pdf');
     Route::get('analisa/{analisa}/download-ffs', [AdminAnalisaController::class, 'downloadPdf'])->name('analisa.download-ffs');
     Route::post('analisa/{analisa}/review', [AdminAnalisaController::class, 'review'])->name('analisa.review');
+    Route::post('analisa/{analisa}/publish', [AdminAnalisaController::class, 'publish'])->name('analisa.publish');
     Route::delete('analisa/{analisa}', [AdminAnalisaController::class, 'destroy'])->name('analisa.destroy');
 
     // Daftar Reksa Dana
@@ -395,9 +396,20 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index')
         ->middleware('role:admin');
 
-    // Sub Admin Management (admin utama only) Subadmin bisa manage user biasa, tapi tidak bisa manage subadmin lain atau admin utama
+    // Sub Admin Management (admin utama only)
     Route::resource('sub-admins', \App\Http\Controllers\Admin\SubAdminController::class)
         ->middleware('role:admin');
+
+    // Advisor Management (admin utama only)
+    Route::prefix('advisors')->name('advisors.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\AdvisorController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\AdvisorController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\AdvisorController::class, 'store'])->name('store');
+        Route::get('/{advisor}/edit', [\App\Http\Controllers\Admin\AdvisorController::class, 'edit'])->name('edit');
+        Route::put('/{advisor}', [\App\Http\Controllers\Admin\AdvisorController::class, 'update'])->name('update');
+        Route::delete('/{advisor}', [\App\Http\Controllers\Admin\AdvisorController::class, 'destroy'])->name('destroy');
+        Route::get('/{advisor}/clients', [\App\Http\Controllers\Admin\AdvisorController::class, 'clients'])->name('clients');
+    })->middleware('role:admin');
 
     // Notifikasi Admin (reuse user controller)
     Route::get('notifications', [UserNotificationController::class, 'index'])->name('notifications.index');
@@ -413,6 +425,22 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/dashboard', function () {
         return view('dashboard.user');
     })->name('dashboard');
+
+    // Advisor: Daftar Klien
+    Route::prefix('klien')->name('clients.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Advisor\ClientController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Advisor\ClientController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Advisor\ClientController::class, 'store'])->name('store');
+        Route::get('/{client}', [\App\Http\Controllers\Advisor\ClientController::class, 'show'])->name('show');
+        Route::delete('/{client}', [\App\Http\Controllers\Advisor\ClientController::class, 'destroy'])->name('destroy');
+    });
+
+    // Client: Approval Koneksi Advisor
+    Route::prefix('koneksi-advisor')->name('clients.requests.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\User\AdvisorRequestController::class, 'index'])->name('index');
+        Route::post('/{request}/approve', [\App\Http\Controllers\User\AdvisorRequestController::class, 'approve'])->name('approve');
+        Route::post('/{request}/reject', [\App\Http\Controllers\User\AdvisorRequestController::class, 'reject'])->name('reject');
+    });
 
     // Upload & lihat hasil analisa
     Route::get('/analisa', [AnalisaController::class, 'index'])->name('analisa.index');
@@ -549,6 +577,8 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/portofolio/harga', [PerencanaanInvestasiController::class, 'getHarga'])->name('portofolio.harga');
     Route::get('/portofolio/grafik', [PerencanaanInvestasiController::class, 'getGrafik'])->name('portofolio.grafik');
     Route::get('/portofolio/rekomendasi', [PerencanaanInvestasiController::class, 'getRekomendasi'])->name('portofolio.rekomendasi');
+    Route::post('/portofolio/store', [\App\Http\Controllers\MemberController::class, 'storePortfolio'])->name('portofolio.store');
+    Route::post('/portofolio/harga-efek', [\App\Http\Controllers\MemberController::class, 'hargaEfek'])->name('portofolio.harga-efek');
 
     // Notifikasi (in-app, polling)
     Route::get('/notifications', [UserNotificationController::class, 'index'])->name('notifications.index');

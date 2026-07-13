@@ -26,6 +26,31 @@ class MemberController extends Controller
         return view('member.form', compact('profile', 'portfolios'));
     }
 
+    public function storePortfolio(Request $request)
+    {
+        $validated = $request->validate([
+            'jenis'             => 'required|in:Kas/Deposito,Reksadana,Saham,Obligasi',
+            'nama_efek'         => 'required|string|max:255',
+            'jumlah'            => 'nullable|numeric|min:0',
+            'harga_saat_ini'    => 'nullable|numeric|min:0',
+        ]);
+
+        $jumlah = $validated['jumlah'] ? (float) $validated['jumlah'] : null;
+        $harga  = $validated['harga_saat_ini'] ? (float) $validated['harga_saat_ini'] : null;
+
+        MemberPortfolio::create([
+            'user_id'        => Auth::id(),
+            'jenis'          => $validated['jenis'],
+            'nama_efek'      => $validated['nama_efek'],
+            'mulai_kepemilikan' => now(),
+            'jumlah'         => $jumlah,
+            'harga_saat_ini' => $harga,
+            'total_nilai'    => ($harga && $jumlah) ? $harga * $jumlah : null,
+        ]);
+
+        return back()->with('success', 'Portofolio berhasil ditambahkan.');
+    }
+
     public function hargaEfek(Request $request)
     {
         $kode = strtoupper(trim($request->query('kode', '')));
