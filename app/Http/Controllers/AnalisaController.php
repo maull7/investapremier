@@ -112,11 +112,17 @@ class AnalisaController extends Controller
             ->where('product_type', $this->productType)
             ->latest()->get();
 
+        $publishedAnalisas = AnalisaReksaDana::where('is_published', true)
+            ->where('product_type', $this->productType)
+            ->where('user_id', '!=', auth()->id())
+            ->with('user')
+            ->latest('published_at')->get();
+
         $createRoute = $this->productType === 'unit_link'
             ? route('user.unit-link-analisa.create')
             : route('user.analisa.create');
 
-        return view('analisa.index', compact('analisas'))
+        return view('analisa.index', compact('analisas', 'publishedAnalisas'))
             ->with('productLabel', $this->productLabel)
             ->with('createRoute', $createRoute);
     }

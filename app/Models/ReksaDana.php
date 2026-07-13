@@ -142,6 +142,11 @@ class ReksaDana extends Model
         return $this->hasMany(ReksaDanaDocument::class, 'reksa_dana_id')->latest();
     }
 
+    public function analisa(): HasMany
+    {
+        return $this->hasMany(AnalisaReksaDana::class, 'reksa_dana_id');
+    }
+
     public function assetAllocations(): HasMany
     {
         return $this->hasMany(MutualFundAssetAllocation::class, 'reksa_dana_id');

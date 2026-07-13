@@ -122,6 +122,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('analisa/{analisa}/pdf', [AdminAnalisaController::class, 'exportPdf'])->name('analisa.pdf');
     Route::get('analisa/{analisa}/download-ffs', [AdminAnalisaController::class, 'downloadPdf'])->name('analisa.download-ffs');
     Route::post('analisa/{analisa}/review', [AdminAnalisaController::class, 'review'])->name('analisa.review');
+    Route::post('analisa/{analisa}/publish', [AdminAnalisaController::class, 'publish'])->name('analisa.publish');
     Route::delete('analisa/{analisa}', [AdminAnalisaController::class, 'destroy'])->name('analisa.destroy');
 
     // Daftar Reksa Dana

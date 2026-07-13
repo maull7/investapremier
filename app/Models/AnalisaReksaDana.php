@@ -126,6 +126,8 @@ class AnalisaReksaDana extends Model
         'pengelolaan_investasi_terhadap_pendapatan',
         'transaction_profit_terhadap_nab',
         'status',
+        'is_published',
+        'published_at',
         'mode',
         'catatan_admin',
         'ai_narasi',
@@ -144,6 +146,8 @@ class AnalisaReksaDana extends Model
         'tanggal_data'     => 'date',
         'tanggal_peluncuran' => 'date',
         'nab_per_unit'     => 'decimal:6',
+        'is_published'     => 'boolean',
+        'published_at'     => 'datetime',
     ];
 
     public function user(): BelongsTo

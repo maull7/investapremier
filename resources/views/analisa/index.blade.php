@@ -34,6 +34,28 @@
             </div>
         @endif
 
+        @if ($publishedAnalisas->isNotEmpty())
+            <div class="bg-white rounded-xl border border-line overflow-hidden">
+                <div class="px-5 py-3 bg-gradient-to-r from-emerald-700 to-emerald-600">
+                    <h2 class="font-semibold text-white text-sm">Analisa yang Dipublikasikan</h2>
+                </div>
+                <div class="divide-y divide-line">
+                    @foreach ($publishedAnalisas as $pa)
+                        <div class="px-5 py-3.5 flex items-center justify-between hover:bg-emerald-50/50 transition">
+                            <div>
+                                <p class="font-medium text-primary text-sm">{{ $pa->nama_reksa_dana }}</p>
+                                <p class="text-xs text-muted">{{ $pa->jenis_reksa_dana }} &bull; Dipublikasikan {{ $pa->published_at->format('d M Y') }}</p>
+                            </div>
+                            <a href="{{ route('user.analisa.show', $pa) }}"
+                                class="px-3 py-1.5 text-xs font-medium text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition">
+                                Lihat Hasil
+                            </a>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         @if ($analisas->isEmpty())
             <div class="bg-white rounded-xl border border-line p-12 text-center">
                 <svg class="w-12 h-12 text-muted mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
