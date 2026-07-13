@@ -77,9 +77,35 @@ class LegacyFormatReader
             $str = ltrim($str, '-');
         }
 
-        // Indonesian format: 1.234.567,89
-        $str = str_replace('.', '', $str);
-        $str = str_replace(',', '.', $str);
+        // Detect number format by checking last separator position
+        $lastDot = strrpos($str, '.');
+        $lastComma = strrpos($str, ',');
+
+        if ($lastComma !== false && $lastDot !== false) {
+            // Both separators present — the last one is the decimal separator
+            if ($lastComma > $lastDot) {
+                // Comma is decimal (Indonesian): 1.234.567,89
+                $str = str_replace('.', '', $str);
+                $str = str_replace(',', '.', $str);
+            } else {
+                // Dot is decimal (US/Excel format): 1,234,567.89
+                $str = str_replace(',', '', $str);
+            }
+        } elseif ($lastComma !== false) {
+            // Only commas — if last group is 2 digits, it's Indonesian decimal
+            $afterLastComma = substr($str, $lastComma + 1);
+            if (preg_match('/^\d{2}$/', $afterLastComma)) {
+                // 2 digits after comma → decimal separator (Indonesian)
+                $str = str_replace('.', '', $str);
+                $str = str_replace(',', '.', $str);
+            } else {
+                // Otherwise treat as thousands separator (US/Excel)
+                $str = str_replace(',', '', $str);
+            }
+        } elseif ($lastDot !== false) {
+            // Only dots — remove all thousands dots
+            $str = str_replace('.', '', $str);
+        }
 
         if (!is_numeric($str)) return null;
 

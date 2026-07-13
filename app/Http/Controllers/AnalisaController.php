@@ -1152,6 +1152,11 @@ class AnalisaController extends Controller
         if (!empty($data['bank'])) {
             $extracted[] = count($data['bank']) . ' Bank';
         }
+        // ponytail: also accept financial-statement-only files (LegacyFormatReader)
+        $tahunanYears = $data['data_tahunan']['years'] ?? [];
+        if (empty($extracted) && !empty($tahunanYears)) {
+            $extracted[] = count($tahunanYears) . ' tahun data laporan keuangan';
+        }
 
         $success = count($extracted) > 0;
 
