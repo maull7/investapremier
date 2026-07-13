@@ -9,8 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class MemberProfile extends Model
 {
     protected $fillable = [
-        'user_id', 'no_telepon', 'jenis_kelamin', 'kewarganegaraan',
-        'agama', 'pekerjaan',
+        'user_id', 'no_telepon', 'tanggal_lahir', 'jenis_kelamin', 'kewarganegaraan',
+        'agama', 'pekerjaan', 'profil_risiko',
         'jenis_investasi', 'sumber_dana', 'tujuan_investasi', 'maksud_tujuan_lain',
         'rata_rata_penghasilan', 'pembukaan_rekening_efek', 'status',
     ];
@@ -19,6 +19,7 @@ class MemberProfile extends Model
         'jenis_investasi'  => 'array',
         'sumber_dana'      => 'array',
         'tujuan_investasi' => 'array',
+        'tanggal_lahir'    => 'date',
     ];
 
     public function user(): BelongsTo

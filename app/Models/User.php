@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'role', 'is_member', 'phone', 'avatar', 'google_id', 'permissions', 'is_active'])]
+#[Fillable(['name', 'email', 'password', 'role', 'is_member', 'phone', 'avatar', 'google_id', 'permissions', 'is_active', 'advisor_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -43,6 +44,11 @@ class User extends Authenticatable
         return $this->role === 'user';
     }
 
+    public function isAdvisor(): bool
+    {
+        return $this->role === 'advisor';
+    }
+
     public function isMember(): bool
     {
         return $this->is_member;
@@ -51,6 +57,26 @@ class User extends Authenticatable
     public function stockPriceAlerts(): HasMany
     {
         return $this->hasMany(StockPriceAlert::class);
+    }
+
+    public function advisor(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'advisor_id');
+    }
+
+    public function clients(): HasMany
+    {
+        return $this->hasMany(User::class, 'advisor_id');
+    }
+
+    public function memberProfile(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(MemberProfile::class, 'user_id');
+    }
+
+    public function perencanaanInvestasi(): HasMany
+    {
+        return $this->hasMany(PerencanaanInvestasi::class, 'user_id');
     }
 
     /**

@@ -12,25 +12,48 @@ use App\Models\ObligasiHargaReferensi;
 use App\Models\HargaReksaDana;
 use App\Models\StockPrice;
 use App\Models\ProgressCheckin;
+use App\Models\MemberPortfolio;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
 class PerencanaanInvestasiController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $plans = PerencanaanInvestasi::where('user_id', auth()->id())
             ->latest()
             ->paginate(10);
 
-        return view('perencanaan-investasi.index', compact('plans'));
+        $jenisFilter = $request->get('jenis_portfolio');
+
+        $portfolioQuery = \App\Models\MemberPortfolio::where('user_id', auth()->id());
+
+        if ($jenisFilter) {
+            $portfolioQuery->where('jenis', $jenisFilter);
+        }
+
+        $portfolioItems = $portfolioQuery->latest()->get();
+
+        $portfolioItems->each(function ($item) {
+            $item->penerbit = match ($item->jenis) {
+                'Saham' => \App\Models\Stock::where('kode', $item->nama_efek)->value('nama'),
+                'Reksa Dana', 'Reksadana' => \App\Models\ReksaDana::where('nama_reksa_dana', $item->nama_efek)->value('nama_manajer_investasi'),
+                'Obligasi' => \App\Models\ObligasiHargaReferensi::where('nama', $item->nama_efek)->value('nama'),
+                default => null,
+            } ?? '-';
+        });
+
+        return view('perencanaan-investasi.index', compact('plans', 'portfolioItems', 'jenisFilter'));
     }
 
     public function create()
     {
+        $memberPortfolios = MemberPortfolio::where('user_id', auth()->id())->latest()->get();
+
         return view('perencanaan-investasi.form', [
             'portofolioItems' => collect(),
+            'memberPortfolios' => $memberPortfolios,
         ]);
     }
 
@@ -82,7 +105,8 @@ class PerencanaanInvestasiController extends Controller
 
     public function show(PerencanaanInvestasi $perencanaanInvestasi)
     {
-        if ($perencanaanInvestasi->user_id !== auth()->id()) abort(403);
+        $owner = $perencanaanInvestasi->user;
+        if ($owner->id !== auth()->id() && $owner->advisor_id !== auth()->id()) abort(403);
         $plan = $perencanaanInvestasi;
         $plan->load('portofolioItems', 'progressCheckins');
         $checkins = $plan->progressCheckins()->latest()->get();

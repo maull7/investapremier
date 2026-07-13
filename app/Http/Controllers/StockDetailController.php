@@ -98,6 +98,8 @@ class StockDetailController extends Controller
                 ->toArray();
         }
 
+        $stocks = \App\Models\Stock::orderBy('nama')->get(['id', 'kode', 'nama']);
+
         return view('saham.detail', [
             'layout' => $request->routeIs('admin.*') ? 'layouts.admin' : 'layouts.user',
             'routePrefix' => $request->routeIs('admin.*') ? 'admin' : 'user',
@@ -108,6 +110,7 @@ class StockDetailController extends Controller
             'timeframe' => $request->input('timeframe', '1M'),
             'reksaDanaHoldings' => $reksaDanaHoldings,
             'prospektusDates' => $prospektusDates,
+            'stocks' => $stocks,
         ]);
     }
 
