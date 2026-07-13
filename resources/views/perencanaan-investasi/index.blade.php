@@ -3,7 +3,7 @@
 @section('title', 'Perencanaan Investasi - InvestaPremier')
 
 @section('content')
-    <div x-data="{ deleteId: null, deleteText: '' }">
+    <div x-data="{ deleteId: null, deleteText: '', showForm: false }">
 
         <div class="mb-6 flex items-center justify-between">
             <div>
@@ -153,6 +153,192 @@
             @endif
         </div>
 
+        {{-- Daftar Portofolio --}}
+        <div class="table-card mt-6">
+            <div class="table-head">
+                <h2 class="th-title">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    Daftar Portofolio
+                </h2>
+                <button type="button" @click="showForm = !showForm"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    <span x-text="showForm ? 'Tutup' : 'Tambah Portofolio'"></span>
+                </button>
+            </div>
+
+            {{-- Form Tambah Portofolio (inline) --}}
+            <div x-show="showForm" x-cloak class="px-5 py-4 border-b border-line bg-green-50/50"
+                 x-data="{
+                     jenis: '',
+                     produkList: [],
+                     produkLoading: false,
+                     produkSelected: '',
+                     harga: '',
+                     produkUrl: '{{ route('user.portofolio.produk') }}',
+                     bankList: [
+                         'Bank Mandiri', 'Bank BCA', 'Bank BNI', 'Bank BRI', 'Bank CIMB Niaga',
+                         'Bank Danamon', 'Bank Panin', 'Bank Permata', 'Bank Maybank',
+                         'Bank BJB', 'Bank Jatim', 'Bank Jateng', 'Bank DIY', 'Bank BPD Bali',
+                         'Bank Sumut', 'Bank Sumsel Babel', 'Bank Sultra', 'Bank Sulteng',
+                         'Bank Kalbar', 'Bank Kaltim', 'Bank Kalteng', 'Bank Kalsel',
+                         'Bank Lampung', 'Bank Aceh', 'Bank NTB', 'Bank NTT',
+                         'Bank Sulselbar', 'Bank Maluku', 'Bank Papua', 'Bank Bengkulu',
+                         'Bank Babel', 'Bank Riau Kepri', 'Lainnya',
+                     ],
+                     async loadProduk() {
+                         if (!this.jenis) { this.produkList = []; return; }
+                         const mappedJenis = this.jenis === 'Reksadana' ? 'Reksa Dana' : this.jenis;
+                         if (this.jenis === 'Kas/Deposito') {
+                             this.produkList = this.bankList.map(b => ({ id: b, nama: b }));
+                             this.produkLoading = false;
+                             this.produkSelected = '';
+                             this.harga = '';
+                             return;
+                         }
+                         this.produkLoading = true;
+                         try {
+                             const res = await fetch(this.produkUrl + '?jenis=' + encodeURIComponent(mappedJenis));
+                             const data = await res.json();
+                             this.produkList = data;
+                         } catch(e) { this.produkList = []; }
+                         this.produkLoading = false;
+                         this.produkSelected = '';
+                         this.harga = '';
+                     },
+                     onProdukChange() {
+                         const found = this.produkList.find(p => p.id == this.produkSelected || p.nama === this.produkSelected);
+                         if (found && found.harga) {
+                             this.harga = found.harga;
+                         }
+                     }
+                 }">
+                <form method="POST" action="{{ route('user.portofolio.store') }}" class="grid grid-cols-1 sm:grid-cols-6 gap-3 items-end">
+                    @csrf
+                    <div>
+                        <label class="block text-xs font-semibold text-muted mb-1">Jenis Efek *</label>
+                        <select name="jenis" x-model="jenis" @change="loadProduk()" required
+                            class="w-full text-sm border border-line rounded-lg px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20">
+                            <option value="">Pilih</option>
+                            <option value="Kas/Deposito">Kas/Deposito</option>
+                            <option value="Reksadana">Reksadana</option>
+                            <option value="Saham">Saham</option>
+                            <option value="Obligasi">Obligasi</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-muted mb-1">Nama Efek *</label>
+                        <template x-if="produkList.length > 0">
+                            <select name="nama_efek" x-model="produkSelected" @change="onProdukChange()" required
+                                class="w-full text-sm border border-line rounded-lg px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20">
+                                <option value="">Pilih</option>
+                                <template x-for="p in produkList" :key="p.id">
+                                    <option :value="p.nama" x-text="p.nama"></option>
+                                </template>
+                            </select>
+                        </template>
+                        <template x-if="produkList.length === 0">
+                            <input type="text" name="nama_efek" x-model="produkSelected" required
+                                placeholder="Ketik manual..."
+                                class="w-full text-sm border border-line rounded-lg px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20">
+                        </template>
+                        <div x-show="produkLoading" class="text-xs text-muted mt-1">Memuat...</div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-muted mb-1">Jumlah UP/Lembar</label>
+                        <input type="number" name="jumlah" step="0.01" min="0" placeholder="0"
+                            class="w-full text-sm border border-line rounded-lg px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-muted mb-1">Harga Saat Ini</label>
+                        <input type="number" name="harga_saat_ini" step="0.01" min="0" placeholder="0"
+                            class="w-full text-sm border border-line rounded-lg px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20">
+                    </div>
+                    <div>
+                        <button type="submit"
+                            class="w-full px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition">
+                            Simpan
+                        </button>
+                    </div>
+                    <div class="text-xs text-muted flex items-end pb-2">
+                        Harga otomatis terisi jika pilih dari daftar
+                    </div>
+                </form>
+            </div>
+
+            <div class="px-5 py-3 border-b border-line bg-[#f8fafc]">
+                <form method="GET" action="{{ route('user.perencanaan-investasi.index') }}" class="flex items-center gap-3">
+                    <label class="text-xs font-semibold text-muted">Jenis Efek:</label>
+                    <select name="jenis_portfolio" onchange="this.form.submit()"
+                        class="text-xs border border-line rounded-lg px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20">
+                        <option value="">Semua</option>
+                        @foreach (['Kas/Deposito', 'Reksadana', 'Saham', 'Obligasi'] as $j)
+                            <option value="{{ $j }}" {{ $jenisFilter === $j ? 'selected' : '' }}>{{ $j }}</option>
+                        @endforeach
+                    </select>
+                    @if ($jenisFilter)
+                        <a href="{{ route('user.perencanaan-investasi.index') }}" class="text-xs text-muted hover:text-primary underline">Reset</a>
+                    @endif
+                </form>
+            </div>
+
+            @if ($portfolioItems->isEmpty())
+                <div class="py-12 text-center text-muted">
+                    <p class="font-medium">Belum ada portofolio</p>
+                    <p class="text-sm mt-1">Tambahkan portofolio Anda melalui menu <a href="{{ route('member.create') }}" class="text-accent underline">Pendaftaran Member</a></p>
+                </div>
+            @else
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide">
+                                <th class="px-4 py-3.5 font-semibold">Jenis Efek</th>
+                                <th class="px-4 py-3.5 font-semibold">Nama Efek</th>
+                                <th class="px-4 py-3.5 font-semibold">Penerbit</th>
+                                <th class="px-4 py-3.5 font-semibold text-right">Jumlah UP/Lembar</th>
+                                <th class="px-4 py-3.5 font-semibold text-right">Nilai Pasar</th>
+                                <th class="px-4 py-3.5 font-semibold text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-line">
+                            @foreach ($portfolioItems as $item)
+                                <tr class="hover:bg-[#f8fafc] transition-colors">
+                                    <td class="px-4 py-3">
+                                        <span class="px-2 py-0.5 rounded-full text-xs font-semibold
+                                            {{ match($item->jenis) {
+                                                'Saham' => 'bg-blue-100 text-blue-700',
+                                                'Obligasi' => 'bg-amber-100 text-amber-700',
+                                                'Reksa Dana' => 'bg-purple-100 text-purple-700',
+                                                default => 'bg-green-100 text-green-700',
+                                            } }}">
+                                            {{ $item->jenis }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 font-medium text-primary">{{ $item->nama_efek }}</td>
+                                    <td class="px-4 py-3 text-muted text-xs">{{ $item->penerbit ?? '—' }}</td>
+                                    <td class="px-4 py-3 text-right font-mono text-xs">{{ $item->jumlah ? number_format((float) $item->jumlah, 2, ',', '.') : '—' }}</td>
+                                    <td class="px-4 py-3 text-right font-semibold text-primary text-xs">{{ $item->total_nilai ? 'Rp' . number_format((float) $item->total_nilai, 0, ',', '.') : '—' }}</td>
+                                    <td class="px-4 py-3 text-right">
+                                        <button type="button"
+                                            class="p-2 rounded-lg text-muted hover:text-accent hover:bg-[#f1f5f9] transition"
+                                            title="Detail"
+                                            onclick="alert('Nama: {{ addslashes($item->nama_efek) }}\nJenis: {{ $item->jenis }}\nJumlah: {{ $item->jumlah }}\nNilai Pasar: Rp{{ number_format((float) ($item->total_nilai ?? 0), 0, ',', '.') }}\nHarga/Unit: Rp{{ number_format((float) ($item->harga_saat_ini ?? 0), 0, ',', '.') }}')">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="px-6 py-4 border-t border-line text-xs text-muted">
+                    Total portofolio: <strong class="text-primary">{{ $portfolioItems->count() }} item</strong>
+                </div>
+            @endif
+        </div>
+
+        {{-- Modal Hapus --}}
         <div x-show="deleteId !== null" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4"
              x-transition:enter="transition duration-200" x-transition:enter-start="opacity-0"
              x-transition:enter-end="opacity-100" x-transition:leave="transition duration-150"

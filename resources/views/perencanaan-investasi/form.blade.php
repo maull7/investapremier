@@ -282,6 +282,35 @@
                 </div>
             </div>
 
+            {{-- PORTOFOLIO YANG SUDAH DIMILIKI --}}
+            @if (isset($memberPortfolios) && $memberPortfolios->isNotEmpty())
+            <div class="bg-white rounded-2xl border border-line shadow-sm p-6 mb-5">
+                <h3 class="font-bold text-primary text-sm mb-3">Portofolio yang Sudah Dimiliki</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide">
+                                <th class="px-4 py-2.5 font-semibold">Jenis</th>
+                                <th class="px-4 py-2.5 font-semibold">Nama Efek</th>
+                                <th class="px-4 py-2.5 font-semibold text-right">Jumlah</th>
+                                <th class="px-4 py-2.5 font-semibold text-right">Nilai Pasar</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-line">
+                            @foreach ($portofolioItems as $item)
+                                <tr>
+                                    <td class="px-4 py-2 text-xs">{{ $item->jenis }}</td>
+                                    <td class="px-4 py-2 font-medium text-primary text-xs">{{ $item->nama_efek }}</td>
+                                    <td class="px-4 py-2 text-right text-xs">{{ $item->jumlah ? number_format($item->jumlah, 2, ',', '.') : '—' }}</td>
+                                    <td class="px-4 py-2 text-right text-xs font-semibold">{{ $item->total_nilai ? 'Rp' . number_format($item->total_nilai, 0, ',', '.') : '—' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
+
             {{-- PORTOFOLIO SECTION --}}
             <div id="portofolioSection" class="bg-white rounded-2xl border border-line shadow-sm p-6" style="display:none;">
                 <div class="flex items-center justify-between mb-4">

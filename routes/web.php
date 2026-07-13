@@ -577,6 +577,8 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/portofolio/harga', [PerencanaanInvestasiController::class, 'getHarga'])->name('portofolio.harga');
     Route::get('/portofolio/grafik', [PerencanaanInvestasiController::class, 'getGrafik'])->name('portofolio.grafik');
     Route::get('/portofolio/rekomendasi', [PerencanaanInvestasiController::class, 'getRekomendasi'])->name('portofolio.rekomendasi');
+    Route::post('/portofolio/store', [\App\Http\Controllers\MemberController::class, 'storePortfolio'])->name('portofolio.store');
+    Route::post('/portofolio/harga-efek', [\App\Http\Controllers\MemberController::class, 'hargaEfek'])->name('portofolio.harga-efek');
 
     // Notifikasi (in-app, polling)
     Route::get('/notifications', [UserNotificationController::class, 'index'])->name('notifications.index');
