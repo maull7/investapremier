@@ -5,7 +5,7 @@
 @section('content')
 <div class="mb-6">
     <h1 class="page-title">Daftar Reksa Dana</h1>
-    <p class="page-sub">Informasi dan analisa reksa dana yang tersedia</p>
+    <p class="page-sub">Informasi dan harga reksa dana yang tersedia</p>
 </div>
 
 @if(session('success'))
@@ -15,11 +15,25 @@
 @endif
 
 <form method="GET" action="{{ route('user.reksa-dana.index') }}" class="mb-5 space-y-3">
-    {{-- Filter Jenis --}}
+    <div class="flex flex-wrap items-end gap-3">
+        <div class="flex-1 min-w-56">
+            <label class="block text-xs font-semibold text-muted mb-1">Cari Reksa Dana</label>
+            <input type="text" name="search" value="{{ request('search') }}"
+                placeholder="Nama atau kode reksa dana..."
+                class="w-full text-sm border border-line rounded-lg px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20">
+        </div>
+        <button type="submit"
+            class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition">Cari</button>
+        @if (request('search') || request('jenis') || request('kategori'))
+            <a href="{{ route('user.reksa-dana.index') }}"
+                class="px-4 py-2 border border-line text-muted rounded-lg text-sm font-semibold hover:text-primary transition">Reset</a>
+        @endif
+    </div>
+
     <div>
         <div class="flex items-center gap-2 text-xs mb-2">
             <span class="font-semibold text-muted">Jenis:</span>
-            <a href="{{ route('user.reksa-dana.index') }}"
+            <a href="{{ route('user.reksa-dana.index', array_merge(request()->except('jenis'), ['search' => request('search')])) }}"
                class="px-3 py-1.5 rounded-lg border transition {{ !request('jenis') ? 'bg-primary text-white border-primary' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
                Semua
             </a>
@@ -37,11 +51,10 @@
         </div>
     </div>
 
-    {{-- Filter Kategori --}}
     <div>
         <div class="flex items-center gap-2 text-xs mb-2">
             <span class="font-semibold text-muted">Kategori:</span>
-            <a href="{{ route('user.reksa-dana.index') }}"
+            <a href="{{ route('user.reksa-dana.index', array_merge(request()->except('kategori'), ['search' => request('search')])) }}"
                class="px-3 py-1.5 rounded-lg border transition {{ !request('kategori') ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
                Semua
             </a>
@@ -65,88 +78,55 @@
         <table class="w-full text-sm">
             <thead>
                 <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide border-b border-line">
-                    <th class="px-5 py-3.5 font-semibold w-10">No</th>
-                    <th class="px-5 py-3.5 font-semibold">Nama Reksa Dana</th>
-                    <th class="px-5 py-3.5 font-semibold">Jenis</th>
-                    <th class="px-5 py-3.5 font-semibold">Kategori</th>
-                    <th class="px-5 py-3.5 font-semibold">Mata Uang</th>
-                    <th class="px-5 py-3.5 font-semibold">Tanggal Data</th>
-                    <th class="px-5 py-3.5 font-semibold text-right">AUM</th>
-                    <th class="px-5 py-3.5 font-semibold text-right">UP</th>
-                    <th class="px-5 py-3.5 font-semibold text-right">
-                        <span class="flex items-center justify-end gap-1">
-                            Return 1M
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-                        </span>
-                    </th>
-                    <th class="px-5 py-3.5 font-semibold"></th>
+                    <th class="px-4 py-3.5 font-semibold">Kode</th>
+                    <th class="px-4 py-3.5 font-semibold">Nama Reksa Dana</th>
+                    <th class="px-4 py-3.5 font-semibold">Manajer Investasi</th>
+                    <th class="px-4 py-3.5 font-semibold">Jenis</th>
+                    <th class="px-4 py-3.5 font-semibold">Kategori</th>
+                    <th class="px-4 py-3.5 font-semibold">Mata Uang</th>
+                    <th class="px-4 py-3.5 font-semibold text-right">NAB/UP</th>
+                    <th class="px-4 py-3.5 font-semibold">Tanggal NAB</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-line">
                 @forelse($reksaDanas as $rd)
                 <tr class="hover:bg-[#f8fafc] transition-colors">
-                    <td class="px-5 py-3.5 text-muted text-xs">{{ $reksaDanas->firstItem() + $loop->index }}</td>
-                    <td class="px-5 py-3.5">
-                        <div class="font-semibold text-primary">{{ $rd->nama_reksa_dana }}</div>
-                    </td>
-                    <td class="px-5 py-3.5">
+                    <td class="px-4 py-3.5 font-mono text-xs text-muted">{{ $rd->kode_reksa_dana ?? '—' }}</td>
+                    <td class="px-4 py-3.5 font-semibold text-primary">{{ $rd->nama_reksa_dana }}</td>
+                    <td class="px-4 py-3.5 text-muted text-xs">{{ $rd->nama_manajer_investasi ?? '—' }}</td>
+                    <td class="px-4 py-3.5">
                         @php
-                            $jenisColor = match($rd->jenis_reksa_dana) {
+                            $jenisColor = match($rd->jenis) {
                                 'Saham' => 'bg-blue-100 text-blue-700',
                                 'Pendapatan Tetap' => 'bg-amber-100 text-amber-700',
                                 'Campuran' => 'bg-purple-100 text-purple-700',
                                 default => 'bg-green-100 text-green-700',
                             };
                         @endphp
-                        <span class="px-2 py-0.5 rounded-full text-xs font-semibold {{ $jenisColor }}">{{ $rd->jenis_reksa_dana }}</span>
+                        <span class="px-2 py-0.5 rounded-full text-xs font-semibold {{ $jenisColor }}">{{ $rd->jenis ?? '—' }}</span>
                     </td>
-                    <td class="px-5 py-3.5 text-muted text-xs">
-                        @if($rd->kategori)
+                    <td class="px-4 py-3.5 text-xs text-muted">
+                        @if (is_array($rd->kategori) && count($rd->kategori))
                             <div class="flex flex-wrap gap-1">
-                                @foreach((array)$rd->kategori as $kat)
-                                    <span class="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{{ $kat }}</span>
+                                @foreach ($rd->kategori as $kat)
+                                    <span class="px-1.5 py-0.5 bg-[#f1f5f9] rounded text-[11px]">{{ $kat }}</span>
                                 @endforeach
                             </div>
                         @else
                             —
                         @endif
                     </td>
-                    <td class="px-5 py-3.5 text-muted text-xs">{{ $rd->display_mata_uang }}</td>
-                    <td class="px-5 py-3.5 text-muted text-xs">{{ $rd->tanggal_data ? $rd->tanggal_data->format('d/m/Y') : '—' }}</td>
-                    <td class="px-5 py-3.5 text-right text-xs text-muted">
-                        {{ $rd->total_aum ? 'Rp ' . number_format($rd->total_aum, 0, ',', '.') : '—' }}
+                    <td class="px-4 py-3.5 text-xs text-muted">{{ $rd->display_mata_uang }}</td>
+                    <td class="px-4 py-3.5 text-right text-xs font-semibold text-primary">
+                        {{ $rd->nab_per_unit ? number_format($rd->nab_per_unit, 4, ',', '.') : '—' }}
                     </td>
-                    <td class="px-5 py-3.5 text-right text-xs text-muted">
-                        {{ $rd->unit_penyertaan ? number_format($rd->unit_penyertaan, 2, ',', '.') : '—' }}
-                    </td>
-                    <td class="px-5 py-3.5 text-right text-xs font-semibold">
-                        @if($rd->return_1m !== null)
-                            <span class="{{ $rd->return_1m >= 0 ? 'text-green-600' : 'text-red-500' }}">
-                                {{ $rd->return_1m >= 0 ? '+' : '' }}{{ number_format($rd->return_1m, 2) }}%
-                            </span>
-                        @else
-                            <span class="text-muted">—</span>
-                        @endif
-                    </td>
-                    <td class="px-5 py-3.5">
-                        <div class="flex items-center gap-1">
-                            <a href="{{ route('user.reksa-dana.edit', $rd) }}"
-                               class="p-1.5 rounded-lg text-muted hover:text-blue-600 hover:bg-blue-50 transition" title="Edit">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                            </a>
-                            <form method="POST" action="{{ route('user.reksa-dana.destroy', $rd) }}"
-                                  onsubmit="return confirm('Hapus data reksa dana ini?')">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="p-1.5 rounded-lg text-muted hover:text-red-600 hover:bg-red-50 transition" title="Hapus">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                </button>
-                            </form>
-                        </div>
+                    <td class="px-4 py-3.5 text-xs text-muted">
+                        {{ $rd->tanggal_nab ? $rd->tanggal_nab->format('d M Y') : '—' }}
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="10" class="px-6 py-12 text-center text-muted">
+                    <td colspan="8" class="px-6 py-12 text-center text-muted">
                         <p class="font-medium">Belum ada data reksa dana</p>
                     </td>
                 </tr>

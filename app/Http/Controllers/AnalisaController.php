@@ -108,21 +108,23 @@ class AnalisaController extends Controller
 
     public function index()
     {
+        $publishedAnalisas = AnalisaReksaDana::where('is_published', true)
+            ->where('product_type', $this->productType)
+            ->with('user')
+            ->latest('published_at')->paginate(20);
+
         $analisas = AnalisaReksaDana::where('user_id', auth()->id())
             ->where('product_type', $this->productType)
             ->latest()->get();
-
-        $publishedAnalisas = AnalisaReksaDana::where('is_published', true)
-            ->where('product_type', $this->productType)
-            ->where('user_id', '!=', auth()->id())
-            ->with('user')
-            ->latest('published_at')->get();
 
         $createRoute = $this->productType === 'unit_link'
             ? route('user.unit-link-analisa.create')
             : route('user.analisa.create');
 
-        return view('analisa.index', compact('analisas', 'publishedAnalisas'))
+        $pageTitle = 'Monitor Reksa Dana';
+        $pageSub = 'Hasil analisa reksa dana yang telah dipublikasikan';
+
+        return view('analisa.index', compact('publishedAnalisas', 'analisas', 'pageTitle', 'pageSub'))
             ->with('productLabel', $this->productLabel)
             ->with('createRoute', $createRoute);
     }

@@ -23,12 +23,16 @@
         @js(route($routePrefix . '.saham.fetch-summary', $stock)),
         @js(route($routePrefix . '.saham.search-stock')),
         @js(route($routePrefix . '.saham.compare-chart')),
-        @js($stock->corporateActions->map(fn($a) => [
+        @js(
+    $stock->corporateActions->map(
+        fn($a) => [
             'action_type' => $a->action_type,
             'action_date' => $a->action_date->format('Y-m-d'),
             'description' => $a->description,
             'value' => $a->value,
-        ]))
+        ],
+    ),
+)
     )" x-init="init()" class="space-y-6">
         <div class="flex items-start justify-between gap-4">
             <div>
@@ -115,7 +119,7 @@
                 @if ($stock->yahoo_synced_at)
                     <div class="flex items-center gap-2 text-xs text-muted">
                         <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-                    Sinkronisasi Yahoo: {{ $stock->yahoo_synced_at->format('d/m/Y H:i') }}
+                        Sinkronisasi Yahoo: {{ $stock->yahoo_synced_at->format('d/m/Y H:i') }}
                     </div>
                 @endif
 
@@ -239,19 +243,25 @@
                         <h3 class="font-semibold text-primary mb-3">Laporan Keuangan (untuk Analisa FFS)</h3>
                         @foreach ($stock->financialReports as $report)
                             <div class="border border-line rounded-xl p-4 mb-4">
-                                <h4 class="font-semibold text-primary text-sm">{{ $report->report_year }} · {{ $report->report_period }}</h4>
+                                <h4 class="font-semibold text-primary text-sm">{{ $report->report_year }} ·
+                                    {{ $report->report_period }}</h4>
                                 <div class="grid md:grid-cols-3 gap-4 mt-3 text-sm">
                                     <div>
                                         <p class="font-semibold mb-2 text-xs uppercase text-muted">Neraca</p>
-                                        <p>Total Aset: <span class="font-medium">{{ $fmt($report->total_asset) }}</span></p>
-                                        <p>Total Liabilitas: <span class="font-medium">{{ $fmt($report->total_liabilities) }}</span></p>
-                                        <p>Total Ekuitas: <span class="font-medium">{{ $fmt($report->total_equity) }}</span></p>
+                                        <p>Total Aset: <span class="font-medium">{{ $fmt($report->total_asset) }}</span>
+                                        </p>
+                                        <p>Total Liabilitas: <span
+                                                class="font-medium">{{ $fmt($report->total_liabilities) }}</span></p>
+                                        <p>Total Ekuitas: <span
+                                                class="font-medium">{{ $fmt($report->total_equity) }}</span></p>
                                     </div>
                                     <div>
                                         <p class="font-semibold mb-2 text-xs uppercase text-muted">Laba Rugi</p>
                                         <p>Pendapatan: <span class="font-medium">{{ $fmt($report->revenue) }}</span></p>
-                                        <p>Laba Operasional: <span class="font-medium">{{ $fmt($report->operating_income) }}</span></p>
-                                        <p>Laba Bersih: <span class="font-medium">{{ $fmt($report->net_income) }}</span></p>
+                                        <p>Laba Operasional: <span
+                                                class="font-medium">{{ $fmt($report->operating_income) }}</span></p>
+                                        <p>Laba Bersih: <span class="font-medium">{{ $fmt($report->net_income) }}</span>
+                                        </p>
                                     </div>
                                     <div>
                                         <p class="font-semibold mb-2 text-xs uppercase text-muted">Arus Kas</p>
@@ -277,6 +287,39 @@
                         @endforeach
                     </div>
                     <div class="flex items-center gap-2 flex-wrap">
+                        <div class="relative" x-data="{ open: false, search: '' }" @click.outside="open = false">
+                            <button type="button" @click="open = !open"
+                                class="flex items-center gap-2 w-44 text-xs border border-line rounded-lg px-3 py-1.5 text-left text-muted hover:text-primary hover:border-primary transition">
+                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                <span class="flex-1 truncate" x-text="search || 'Cari Saham...'"></span>
+                                <svg class="w-3 h-3 shrink-0" :class="open ? 'rotate-180' : ''" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <template x-if="open">
+                                <div
+                                    class="absolute top-full left-0 mt-1 w-72 bg-white border border-line rounded-xl shadow-lg z-50 overflow-hidden">
+                                    <input type="text" x-model="search" placeholder="Filter nama saham..."
+                                        class="w-full text-xs border-b border-line px-3 py-2 focus:outline-none">
+                                    <div class="max-h-60 overflow-y-auto">
+                                        @foreach ($stocks as $s)
+                                            <a href="{{ route($routePrefix . '.saham.show', $s->id) }}"
+                                                x-show="!search || '{{ strtolower($s->kode) }} {{ strtolower($s->nama) }}'.includes(search.toLowerCase())"
+                                                class="block w-full text-left px-3 py-2 hover:bg-indigo-50 text-xs border-b border-line last:border-0">
+                                                <span class="font-semibold">{{ $s->kode }}</span>
+                                                <span class="text-muted"> - {{ $s->nama }}</span>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
                         <div class="flex gap-1 p-0.5 border border-line rounded-lg">
                             <button type="button" @click="chartType = 'candle'"
                                 :class="chartType === 'candle' ? 'bg-primary text-white' : 'text-muted hover:text-primary'"
@@ -286,19 +329,24 @@
                                 class="px-2.5 py-1 rounded-md text-xs font-semibold transition">Line</button>
                         </div>
                         <div class="flex gap-1 p-0.5 border border-line rounded-lg">
-                            <template x-for="[key, label] of Object.entries({ sma: 'SMA', ema: 'EMA', bb: 'BB', rsi: 'RSI', macd: 'MACD' })" :key="key">
+                            <template
+                                x-for="[key, label] of Object.entries({ sma: 'SMA', ema: 'EMA', bb: 'BB', rsi: 'RSI', macd: 'MACD' })"
+                                :key="key">
                                 <button type="button" @click="toggleIndicator(key)"
                                     :class="indicators[key] ? 'bg-indigo-600 text-white' : 'text-muted hover:text-primary'"
                                     class="px-2 py-1 rounded-md text-xs font-semibold transition" x-text="label"></button>
                             </template>
                         </div>
                         <div class="relative" x-data="{ open: false, search: '', results: [] }" @click.outside="open = false">
-                            <input type="text" x-model="search" @input.debounce="open = true; searchStock(search, results)"
+                            <input type="text" x-model="search"
+                                @input.debounce="open = true; searchStock(search, results)"
                                 placeholder="Cari saham pembanding..."
                                 class="w-36 text-xs border border-line rounded-lg px-2 py-1.5">
-                            <div x-show="open && results.length > 0" class="absolute top-full right-0 mt-1 w-64 bg-white border border-line rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto">
+                            <div x-show="open && results.length > 0"
+                                class="absolute top-full right-0 mt-1 w-64 bg-white border border-line rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto">
                                 <template x-for="s in results" :key="s.kode">
-                                    <button type="button" @click="addComparison(s); search = ''; results = []; open = false"
+                                    <button type="button"
+                                        @click="addComparison(s); search = ''; results = []; open = false"
                                         class="w-full text-left px-3 py-2 hover:bg-indigo-50 text-xs border-b border-line last:border-0">
                                         <span class="font-semibold" x-text="s.kode"></span>
                                         <span class="text-muted" x-text="' - ' + s.nama"></span>
@@ -311,18 +359,21 @@
                                 class="inline-block w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
                             Memuat data...
                         </span>
-                        <form method="POST" action="{{ route($routePrefix . '.saham.sync-yahoo-prices', $stock) }}"
-                            class="flex items-center gap-2">
-                            @csrf
-                            <select name="range" class="border-line rounded-lg text-xs py-1.5 px-2">
-                                @foreach (['1mo' => '1 Bulan', '3mo' => '3 Bulan', '6mo' => '6 Bulan', '1y' => '1 Tahun', '2y' => '2 Tahun', '5y' => '5 Tahun'] as $v => $l)
-                                    <option value="{{ $v }}" {{ $v === '1y' ? 'selected' : '' }}>
-                                        {{ $l }}</option>
-                                @endforeach
-                            </select>
-                            <button class="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-semibold">Simpan ke
-                                DB</button>
-                        </form>
+                        @if ($routePrefix === 'admin')
+                            <form method="POST" action="{{ route($routePrefix . '.saham.sync-yahoo-prices', $stock) }}"
+                                class="flex items-center gap-2">
+                                @csrf
+                                <select name="range" class="border-line rounded-lg text-xs py-1.5 px-2">
+                                    @foreach (['1mo' => '1 Bulan', '3mo' => '3 Bulan', '6mo' => '6 Bulan', '1y' => '1 Tahun', '2y' => '2 Tahun', '5y' => '5 Tahun'] as $v => $l)
+                                        <option value="{{ $v }}" {{ $v === '1y' ? 'selected' : '' }}>
+                                            {{ $l }}</option>
+                                    @endforeach
+                                </select>
+                                <button class="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-semibold">Simpan
+                                    ke
+                                    DB</button>
+                            </form>
+                        @endif
                     </div>
                 </div>
 
@@ -356,7 +407,8 @@
                 <div x-show="comparisons.length > 0" class="flex flex-wrap gap-2">
                     <template x-for="(cmp, i) in comparisons" :key="cmp.kode">
                         <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
-                            :style="'background-color: ' + cmp.color + '18; color: ' + cmp.color + '; border: 1px solid ' + cmp.color + '40'">
+                            :style="'background-color: ' + cmp.color + '18; color: ' + cmp.color + '; border: 1px solid ' + cmp
+                                .color + '40'">
                             <span x-text="cmp.kode"></span>
                             <button type="button" @click="removeComparison(i)" class="hover:opacity-60">✕</button>
                         </div>
@@ -478,7 +530,8 @@
                         <template x-for="news in (summary?.news ?? [])" :key="news.url || news.title">
                             <article
                                 class="group relative overflow-hidden border border-line rounded-2xl bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition duration-200">
-                                <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary to-emerald-400"></div>
+                                <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary to-emerald-400">
+                                </div>
                                 <div class="p-5">
                                     <div class="flex items-center justify-between gap-3">
                                         <div class="flex items-center gap-2 min-w-0">
@@ -488,21 +541,25 @@
                                             <div class="min-w-0">
                                                 <p class="text-xs font-semibold text-primary truncate"
                                                     x-text="news.source || 'Sumber berita'"></p>
-                                                <p class="text-[11px] text-muted" x-text="formatDate(news.publishedAt)"></p>
+                                                <p class="text-[11px] text-muted" x-text="formatDate(news.publishedAt)">
+                                                </p>
                                             </div>
                                         </div>
                                         <span class="shrink-0 px-2 py-1 rounded-full text-[10px] font-bold uppercase"
-                                            :class="news.sourceType === 'google' ? 'bg-orange-50 text-orange-700' : 'bg-blue-50 text-blue-700'"
+                                            :class="news.sourceType === 'google' ? 'bg-orange-50 text-orange-700' :
+                                                'bg-blue-50 text-blue-700'"
                                             x-text="news.sourceType === 'google' ? 'Google News' : 'Yahoo Finance'"></span>
                                     </div>
                                     <h3 class="mt-4 text-base leading-snug font-bold text-primary">
-                                        <a x-show="news.url" :href="news.url" target="_blank" rel="noopener noreferrer"
-                                            class="group-hover:text-accent transition" x-text="news.title"></a>
+                                        <a x-show="news.url" :href="news.url" target="_blank"
+                                            rel="noopener noreferrer" class="group-hover:text-accent transition"
+                                            x-text="news.title"></a>
                                         <span x-show="!news.url" x-text="news.title"></span>
                                     </h3>
                                     <div class="mt-5 pt-4 border-t border-line flex items-center justify-between">
                                         <span class="text-xs text-muted">Artikel eksternal</span>
-                                        <a x-show="news.url" :href="news.url" target="_blank" rel="noopener noreferrer"
+                                        <a x-show="news.url" :href="news.url" target="_blank"
+                                            rel="noopener noreferrer"
                                             class="inline-flex items-center gap-1.5 text-xs text-primary font-bold hover:text-accent transition">
                                             Baca selengkapnya <span aria-hidden="true">→</span>
                                         </a>
@@ -530,8 +587,10 @@
                 @endif
                 @php
                     $newsSources = $stock->news
-                        ->filter(fn($news) => filter_var($news->url, FILTER_VALIDATE_URL)
-                            && in_array(parse_url($news->url, PHP_URL_SCHEME), ['http', 'https'], true))
+                        ->filter(
+                            fn($news) => filter_var($news->url, FILTER_VALIDATE_URL) &&
+                                in_array(parse_url($news->url, PHP_URL_SCHEME), ['http', 'https'], true),
+                        )
                         ->unique('url');
                 @endphp
                 @if ($newsSources->isNotEmpty())
@@ -549,15 +608,18 @@
                 @endif
                 @forelse ($stock->news as $news)
                     @php
-                        $newsUrl = filter_var($news->url, FILTER_VALIDATE_URL)
-                            && in_array(parse_url($news->url, PHP_URL_SCHEME), ['http', 'https'], true)
-                            ? $news->url
-                            : null;
+                        $newsUrl =
+                            filter_var($news->url, FILTER_VALIDATE_URL) &&
+                            in_array(parse_url($news->url, PHP_URL_SCHEME), ['http', 'https'], true)
+                                ? $news->url
+                                : null;
                         $isAiGeneratedNews = str_contains($news->summary ?? '', 'Konten dibuat oleh AI.');
                     @endphp
                     <article
                         class="relative overflow-hidden border border-line rounded-2xl bg-white shadow-sm hover:shadow-md transition duration-200">
-                        <div class="absolute inset-y-0 left-0 w-1 {{ $isAiGeneratedNews ? 'bg-amber-400' : 'bg-primary' }}"></div>
+                        <div
+                            class="absolute inset-y-0 left-0 w-1 {{ $isAiGeneratedNews ? 'bg-amber-400' : 'bg-primary' }}">
+                        </div>
                         <div class="p-5 pl-6">
                             <div class="flex flex-wrap items-center justify-between gap-3">
                                 <div class="flex items-center gap-2">
@@ -566,7 +628,8 @@
                                         {{ strtoupper(mb_substr($news->source ?: 'S', 0, 1)) }}
                                     </span>
                                     <div>
-                                        <p class="text-xs font-bold text-primary">{{ $news->source ?: 'Sumber berita' }}</p>
+                                        <p class="text-xs font-bold text-primary">{{ $news->source ?: 'Sumber berita' }}
+                                        </p>
                                         <p class="text-[11px] text-muted">
                                             {{ optional($news->published_at)->format('d M Y') ?: 'Tanggal tidak tersedia' }}
                                         </p>
@@ -585,15 +648,18 @@
                                     {{ $news->title }}
                                 @endif
                             </h3>
-                            <p class="mt-3 text-sm text-gray-600 leading-relaxed whitespace-pre-line">{{ $news->summary ?: '-' }}</p>
+                            <p class="mt-3 text-sm text-gray-600 leading-relaxed whitespace-pre-line">
+                                {{ $news->summary ?: '-' }}</p>
                             @if ($news->ai_summary)
                                 <div class="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-800">
-                                    <p class="text-[10px] uppercase font-bold tracking-wide text-blue-600 mb-1">AI Summary</p>
+                                    <p class="text-[10px] uppercase font-bold tracking-wide text-blue-600 mb-1">AI Summary
+                                    </p>
                                     <p>{{ $news->ai_summary }}</p>
                                 </div>
                             @endif
                             <div class="mt-5 pt-4 border-t border-line flex items-center justify-between gap-3">
-                                <span class="text-xs text-muted">{{ $isAiGeneratedNews ? 'Referensi media' : 'Sumber artikel' }}</span>
+                                <span
+                                    class="text-xs text-muted">{{ $isAiGeneratedNews ? 'Referensi media' : 'Sumber artikel' }}</span>
                                 @if ($newsUrl)
                                     <a href="{{ $newsUrl }}" target="_blank" rel="noopener noreferrer"
                                         class="inline-flex items-center gap-1.5 text-xs text-primary font-bold hover:text-accent transition">
@@ -749,59 +815,74 @@
                 @if ($routePrefix === 'admin')
                     <div class="border border-line rounded-xl p-5">
                         <h3 class="font-semibold text-primary mb-4">Upload Dokumen Broker</h3>
-                        <form method="POST" action="{{ route('admin.saham.broker-documents.store', $stock) }}" enctype="multipart/form-data" class="space-y-4">
+                        <form method="POST" action="{{ route('admin.saham.broker-documents.store', $stock) }}"
+                            enctype="multipart/form-data" class="space-y-4">
                             @csrf
                             <div class="grid md:grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-xs text-muted mb-1">Nama Broker <span class="text-red-500">*</span></label>
+                                    <label class="block text-xs text-muted mb-1">Nama Broker <span
+                                            class="text-red-500">*</span></label>
                                     <input type="text" name="broker_name" value="{{ old('broker_name') }}" required
                                         class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
                                 </div>
                                 <div>
-                                    <label class="block text-xs text-muted mb-1">Judul <span class="text-red-500">*</span></label>
+                                    <label class="block text-xs text-muted mb-1">Judul <span
+                                            class="text-red-500">*</span></label>
                                     <input type="text" name="judul" value="{{ old('judul') }}" required
                                         class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
                                 </div>
                                 <div>
-                                    <label class="block text-xs text-muted mb-1">Tanggal <span class="text-red-500">*</span></label>
+                                    <label class="block text-xs text-muted mb-1">Tanggal <span
+                                            class="text-red-500">*</span></label>
                                     <input type="date" name="tanggal" value="{{ old('tanggal') }}" required
                                         class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
                                 </div>
                                 <div>
-                                    <label class="block text-xs text-muted mb-1">Upload Dokumen <span class="text-red-500">*</span></label>
-                                    <input type="file" name="dokumen" required accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                                    <label class="block text-xs text-muted mb-1">Upload Dokumen <span
+                                            class="text-red-500">*</span></label>
+                                    <input type="file" name="dokumen" required
+                                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
                                         class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
                                     <p class="text-xs text-muted mt-1">PDF, Word, Excel, PPT · Maks. 20MB</p>
                                 </div>
                             </div>
-                            <button type="submit" class="px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold">Upload Dokumen</button>
+                            <button type="submit"
+                                class="px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold">Upload
+                                Dokumen</button>
                         </form>
                     </div>
                 @endif
 
                 @forelse ($stock->brokerDocuments as $doc)
-                    <div class="border border-line rounded-xl p-4 text-sm flex flex-wrap items-start justify-between gap-3">
+                    <div
+                        class="border border-line rounded-xl p-4 text-sm flex flex-wrap items-start justify-between gap-3">
                         <div>
                             <p class="font-semibold text-primary">{{ $doc->broker_name }}</p>
-                            <p class="text-muted text-xs mt-0.5">{{ $doc->judul }} · {{ $doc->tanggal->format('d/m/Y') }}</p>
+                            <p class="text-muted text-xs mt-0.5">{{ $doc->judul }} ·
+                                {{ $doc->tanggal->format('d/m/Y') }}</p>
                             <p class="text-xs text-muted mt-0.5">{{ $doc->original_name }}</p>
                         </div>
                         <div class="flex items-center gap-2">
-                            <a href="{{ route($routePrefix . '.saham.broker-documents.view', [$stock, $doc]) }}" target="_blank"
+                            <a href="{{ route($routePrefix . '.saham.broker-documents.view', [$stock, $doc]) }}"
+                                target="_blank"
                                 class="px-3 py-1.5 border border-line rounded-lg text-xs hover:border-primary transition">Lihat</a>
-                            <a href="{{ route($routePrefix . '.saham.broker-documents.view', [$stock, $doc]) }}" download="{{ $doc->original_name }}"
+                            <a href="{{ route($routePrefix . '.saham.broker-documents.view', [$stock, $doc]) }}"
+                                download="{{ $doc->original_name }}"
                                 class="px-3 py-1.5 border border-line rounded-lg text-xs hover:border-primary transition">Download</a>
                             @if ($routePrefix === 'admin')
-                                <form method="POST" action="{{ route('admin.saham.broker-documents.destroy', [$stock, $doc]) }}"
+                                <form method="POST"
+                                    action="{{ route('admin.saham.broker-documents.destroy', [$stock, $doc]) }}"
                                     onsubmit="return confirm('Hapus dokumen ini?')">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="px-3 py-1.5 border border-red-200 text-red-600 rounded-lg text-xs hover:bg-red-50 transition">Hapus</button>
+                                    <button type="submit"
+                                        class="px-3 py-1.5 border border-red-200 text-red-600 rounded-lg text-xs hover:bg-red-50 transition">Hapus</button>
                                 </form>
                             @endif
                         </div>
                     </div>
                 @empty
-                    <div class="p-12 text-center text-muted border border-line rounded-xl">Belum ada dokumen broker tersedia.</div>
+                    <div class="p-12 text-center text-muted border border-line rounded-xl">Belum ada dokumen broker
+                        tersedia.</div>
                 @endforelse
             </div>
 
@@ -815,11 +896,12 @@
                                     <th class="px-3 py-2 text-left whitespace-nowrap">Kode RD</th>
                                     <th class="px-3 py-2 text-left whitespace-nowrap">Nama Reksa Dana</th>
                                     <th class="px-3 py-2 text-left whitespace-nowrap">Kode Efek</th>
-                                    <th class="px-3 py-2 text-right whitespace-nowrap">Bobot (%)</th>
-                                    <th class="px-3 py-2 text-right whitespace-nowrap">Nilai Pasar</th>
-                                    <th class="px-3 py-2 text-right whitespace-nowrap">% NAB</th>
+                                    <th class="px-3 py-2 text-right whitespace-nowrap">%NAB</th>
+                                    <th class="px-3 py-2 text-right whitespace-nowrap">Nilai Pasar Saat Tanggal Data</th>
+                                    <th class="px-3 py-2 text-right whitespace-nowrap">Harga Saat Tanggal Data</th>
                                     <th class="px-3 py-2 text-right whitespace-nowrap">Tanggal Data</th>
                                     <th class="px-3 py-2 text-right whitespace-nowrap">Jumlah Lembar</th>
+                                    <th class="px-3 py-2 text-right whitespace-nowrap">Nilai Pasar Saat ini</th>
                                     <th class="px-3 py-2 text-right whitespace-nowrap">% Mkt Kap</th>
                                     <th class="px-3 py-2 text-right whitespace-nowrap">Prospektus/FFS</th>
                                 </tr>
@@ -830,20 +912,29 @@
                                         $analisa = $efek->analisa;
                                         $rd = $analisa?->reksaDana;
                                         $rdId = $rd?->id;
+                                        $hargaSaatTanggalData = $efek->nilai_pasar && $efek->jumlah_lembar
+                                            ? round($efek->nilai_pasar / $efek->jumlah_lembar, 2)
+                                            : null;
+                                        $nilaiPasarSaatIni = $efek->jumlah_lembar && $stock->harga_terbaru
+                                            ? $efek->jumlah_lembar * $stock->harga_terbaru
+                                            : null;
                                         $marketCapPct = $stock->market_capital && $efek->nilai_pasar
                                             ? round(($efek->nilai_pasar / $stock->market_capital) * 100, 2)
                                             : null;
-                                        $prospektusDate = isset($prospektusDates[$rdId]) ? \Illuminate\Support\Carbon::parse($prospektusDates[$rdId]) : null;
+                                        $prospektusDate = isset($prospektusDates[$rdId])
+                                            ? \Illuminate\Support\Carbon::parse($prospektusDates[$rdId])
+                                            : null;
                                     @endphp
                                     <tr class="border-t border-line hover:bg-gray-50">
                                         <td class="px-3 py-2 font-semibold text-primary whitespace-nowrap">{{ $rd?->kode_reksa_dana ?? '-' }}</td>
-                                        <td class="px-3 py-2 whitespace-nowrap">{{ $rd?->nama_reksa_dana ?? $analisa?->nama_reksa_dana ?? '-' }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap">{{ $rd?->nama_reksa_dana ?? ($analisa?->nama_reksa_dana ?? '-') }}</td>
                                         <td class="px-3 py-2 whitespace-nowrap">{{ $efek->kode_efek }}</td>
-                                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ $efek->bobot ? number_format((float) $efek->bobot, 2) . '%' : '-' }}</td>
+                                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ ($efek->persen_nab ?? $efek->bobot) ? number_format((float) ($efek->persen_nab ?? $efek->bobot), 2) . '%' : '-' }}</td>
                                         <td class="px-3 py-2 text-right whitespace-nowrap">{{ $efek->nilai_pasar ? 'Rp' . number_format((float) $efek->nilai_pasar, 0, ',', '.') : '-' }}</td>
-                                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ $efek->persen_nab ? number_format((float) $efek->persen_nab, 2) . '%' : '-' }}</td>
+                                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ $hargaSaatTanggalData ? 'Rp' . number_format($hargaSaatTanggalData, 2, ',', '.') : '-' }}</td>
                                         <td class="px-3 py-2 text-right whitespace-nowrap">{{ $analisa?->tanggal_data?->format('d/m/Y') ?: '-' }}</td>
                                         <td class="px-3 py-2 text-right whitespace-nowrap">{{ $efek->jumlah_lembar ? number_format((float) $efek->jumlah_lembar, 0, ',', '.') : '-' }}</td>
+                                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ $nilaiPasarSaatIni ? 'Rp' . number_format($nilaiPasarSaatIni, 0, ',', '.') : '-' }}</td>
                                         <td class="px-3 py-2 text-right whitespace-nowrap">{{ $marketCapPct !== null ? $marketCapPct . '%' : '-' }}</td>
                                         <td class="px-3 py-2 text-right whitespace-nowrap">{{ $prospektusDate?->format('d/m/Y') ?: '-' }}</td>
                                     </tr>
@@ -879,7 +970,13 @@
                 summaryError: null,
                 corporateEvents: corporateEvents || [],
                 comparisons: [],
-                indicators: { sma: false, ema: false, bb: false, rsi: false, macd: false },
+                indicators: {
+                    sma: false,
+                    ema: false,
+                    bb: false,
+                    rsi: false,
+                    macd: false
+                },
                 indicatorSeries: {},
                 COMPARE_COLORS: ['#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'],
 
@@ -924,7 +1021,10 @@
                     this.summaryError = null;
                     try {
                         const res = await fetch(summaryUrl, {
-                            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            }
                         });
                         const json = await res.json();
                         if (!json.success) throw new Error(json.message || 'Gagal mengambil ringkasan saham.');
@@ -941,7 +1041,10 @@
                     this.chartError = null;
                     try {
                         const res = await fetch(fetchUrl + '?range=' + this.range, {
-                            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            }
                         });
                         const json = await res.json();
                         if (!json.success) throw new Error(json.message || 'Gagal mengambil data.');
@@ -972,17 +1075,27 @@
                     const inst = this.chartInstance;
                     if (!inst || !inst.candleSeries) return;
                     const showCandle = type === 'candle';
-                    inst.candleSeries.applyOptions({ visible: showCandle });
-                    inst.lineSeries.applyOptions({ visible: !showCandle });
+                    inst.candleSeries.applyOptions({
+                        visible: showCandle
+                    });
+                    inst.lineSeries.applyOptions({
+                        visible: !showCandle
+                    });
                 },
 
                 // ─── Comparison ───────────────────────────────────────
 
                 async searchStock(query, results) {
-                    if (!query || query.length < 1) { results.length = 0; return; }
+                    if (!query || query.length < 1) {
+                        results.length = 0;
+                        return;
+                    }
                     try {
                         const res = await fetch(searchUrl + '?q=' + encodeURIComponent(query), {
-                            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            }
                         });
                         const data = await res.json();
                         results.splice(0, results.length, ...data);
@@ -994,13 +1107,22 @@
                 async addComparison(stock) {
                     if (this.comparisons.some(c => c.kode === stock.kode)) return;
                     const color = this.COMPARE_COLORS[this.comparisons.length % this.COMPARE_COLORS.length];
-                    const cmp = { ...stock, color, data: null, series: null };
+                    const cmp = {
+                        ...stock,
+                        color,
+                        data: null,
+                        series: null
+                    };
                     this.comparisons.push(cmp);
                     const idx = this.comparisons.length - 1;
                     try {
-                        const res = await fetch(compareUrl + '?code=' + encodeURIComponent(stock.kode) + '&range=' + this.range, {
-                            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
-                        });
+                        const res = await fetch(compareUrl + '?code=' + encodeURIComponent(stock.kode) + '&range=' +
+                            this.range, {
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                }
+                            });
                         const json = await res.json();
                         if (json.success && json.data.chart) {
                             this.comparisons[idx].data = json.data.chart;
@@ -1028,7 +1150,10 @@
                         lastValueVisible: true,
                         priceLineVisible: false,
                     });
-                    series.setData(cmp.data.filter(d => d.time != null && d.close != null).map(d => ({ time: d.time, value: d.close })));
+                    series.setData(cmp.data.filter(d => d.time != null && d.close != null).map(d => ({
+                        time: d.time,
+                        value: d.close
+                    })));
                     cmp.series = series;
                 },
 
@@ -1044,10 +1169,16 @@
                 calcSMA(data, period) {
                     const result = [];
                     for (let i = 0; i < data.length; i++) {
-                        if (i < period - 1) { result.push(null); continue; }
+                        if (i < period - 1) {
+                            result.push(null);
+                            continue;
+                        }
                         let sum = 0;
                         for (let j = i - period + 1; j <= i; j++) sum += data[j].close;
-                        result.push({ time: data[i].time, value: sum / period });
+                        result.push({
+                            time: data[i].time,
+                            value: sum / period
+                        });
                     }
                     return result;
                 },
@@ -1055,10 +1186,16 @@
                 calcEMA(data, period) {
                     const multiplier = 2 / (period + 1);
                     let ema = data[0].close;
-                    const result = [{ time: data[0].time, value: ema }];
+                    const result = [{
+                        time: data[0].time,
+                        value: ema
+                    }];
                     for (let i = 1; i < data.length; i++) {
                         ema = (data[i].close - ema) * multiplier + ema;
-                        result.push({ time: data[i].time, value: ema });
+                        result.push({
+                            time: data[i].time,
+                            value: ema
+                        });
                     }
                     return result;
                 },
@@ -1067,14 +1204,22 @@
                     const sma = this.calcSMA(data, period);
                     const result = [];
                     for (let i = 0; i < data.length; i++) {
-                        if (i < period - 1) { result.push(null); continue; }
+                        if (i < period - 1) {
+                            result.push(null);
+                            continue;
+                        }
                         let sum = 0;
                         for (let j = i - period + 1; j <= i; j++) sum += data[j].close;
                         const mean = sum / period;
                         let sqSum = 0;
                         for (let j = i - period + 1; j <= i; j++) sqSum += (data[j].close - mean) ** 2;
                         const sd = Math.sqrt(sqSum / period);
-                        result.push({ time: data[i].time, upper: mean + stddev * sd, middle: mean, lower: mean - stddev * sd });
+                        result.push({
+                            time: data[i].time,
+                            upper: mean + stddev * sd,
+                            middle: mean,
+                            lower: mean - stddev * sd
+                        });
                     }
                     return result;
                 },
@@ -1082,16 +1227,24 @@
                 calcRSI(data, period) {
                     const result = [];
                     for (let i = 0; i < data.length; i++) {
-                        if (i < period) { result.push(null); continue; }
-                        let gain = 0, loss = 0;
+                        if (i < period) {
+                            result.push(null);
+                            continue;
+                        }
+                        let gain = 0,
+                            loss = 0;
                         for (let j = i - period + 1; j <= i; j++) {
                             const diff = data[j].close - data[j - 1].close;
-                            if (diff >= 0) gain += diff; else loss -= diff;
+                            if (diff >= 0) gain += diff;
+                            else loss -= diff;
                         }
                         const avgGain = gain / period;
                         const avgLoss = loss / period;
                         const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
-                        result.push({ time: data[i].time, value: 100 - 100 / (1 + rs) });
+                        result.push({
+                            time: data[i].time,
+                            value: 100 - 100 / (1 + rs)
+                        });
                     }
                     return result;
                 },
@@ -1104,14 +1257,21 @@
                         value: v.value - emaSlow[i].value,
                     }));
                     const signalLine = this.calcEMA(
-                        macdLine.filter(v => v.value != null).map(v => ({ time: v.time, close: v.value })),
+                        macdLine.filter(v => v.value != null).map(v => ({
+                            time: v.time,
+                            close: v.value
+                        })),
                         signal
                     );
                     const histogram = macdLine.map((v, i) => ({
                         time: v.time,
                         value: v.value - (signalLine.find(s => s.time === v.time)?.value ?? 0),
                     }));
-                    return { macdLine, signalLine, histogram };
+                    return {
+                        macdLine,
+                        signalLine,
+                        histogram
+                    };
                 },
 
                 updateIndicators() {
@@ -1127,17 +1287,37 @@
                     this.indicatorSeries = {};
 
                     if (this.indicators.sma) {
-                        const sma20 = inst.chart.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
+                        const sma20 = inst.chart.addLineSeries({
+                            color: '#f59e0b',
+                            lineWidth: 1.5,
+                            priceLineVisible: false,
+                            lastValueVisible: false
+                        });
                         sma20.setData(this.calcSMA(data, 20).filter(v => v.value != null));
-                        const sma50 = inst.chart.addLineSeries({ color: '#ef4444', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
+                        const sma50 = inst.chart.addLineSeries({
+                            color: '#ef4444',
+                            lineWidth: 1.5,
+                            priceLineVisible: false,
+                            lastValueVisible: false
+                        });
                         sma50.setData(this.calcSMA(data, 50).filter(v => v.value != null));
                         this.indicatorSeries.sma = [sma20, sma50];
                     }
 
                     if (this.indicators.ema) {
-                        const ema20 = inst.chart.addLineSeries({ color: '#8b5cf6', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
+                        const ema20 = inst.chart.addLineSeries({
+                            color: '#8b5cf6',
+                            lineWidth: 1.5,
+                            priceLineVisible: false,
+                            lastValueVisible: false
+                        });
                         ema20.setData(this.calcEMA(data, 20).filter(v => v.value != null));
-                        const ema50 = inst.chart.addLineSeries({ color: '#ec4899', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
+                        const ema50 = inst.chart.addLineSeries({
+                            color: '#ec4899',
+                            lineWidth: 1.5,
+                            priceLineVisible: false,
+                            lastValueVisible: false
+                        });
                         ema50.setData(this.calcEMA(data, 50).filter(v => v.value != null));
                         this.indicatorSeries.ema = [ema20, ema50];
                     }
@@ -1145,19 +1325,46 @@
                     if (this.indicators.bb) {
                         const bb = this.calcBB(data, 20, 2);
                         const valid = bb.filter(v => v != null);
-                        const upper = inst.chart.addLineSeries({ color: '#14b8a6', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
-                        upper.setData(valid.map(v => ({ time: v.time, value: v.upper })));
-                        const middle = inst.chart.addLineSeries({ color: '#14b8a6', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
-                        middle.setData(valid.map(v => ({ time: v.time, value: v.middle })));
-                        const lower = inst.chart.addLineSeries({ color: '#14b8a6', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
-                        lower.setData(valid.map(v => ({ time: v.time, value: v.lower })));
+                        const upper = inst.chart.addLineSeries({
+                            color: '#14b8a6',
+                            lineWidth: 1,
+                            priceLineVisible: false,
+                            lastValueVisible: false
+                        });
+                        upper.setData(valid.map(v => ({
+                            time: v.time,
+                            value: v.upper
+                        })));
+                        const middle = inst.chart.addLineSeries({
+                            color: '#14b8a6',
+                            lineWidth: 1,
+                            priceLineVisible: false,
+                            lastValueVisible: false
+                        });
+                        middle.setData(valid.map(v => ({
+                            time: v.time,
+                            value: v.middle
+                        })));
+                        const lower = inst.chart.addLineSeries({
+                            color: '#14b8a6',
+                            lineWidth: 1,
+                            priceLineVisible: false,
+                            lastValueVisible: false
+                        });
+                        lower.setData(valid.map(v => ({
+                            time: v.time,
+                            value: v.lower
+                        })));
                         this.indicatorSeries.bb = [upper, middle, lower];
                     }
 
                     if (this.indicators.rsi) {
                         const rsiScale = inst.chart.priceScale('rsi');
                         rsiScale.applyOptions({
-                            scaleMargins: { top: 0.52, bottom: 0.35 },
+                            scaleMargins: {
+                                top: 0.52,
+                                bottom: 0.35
+                            },
                             visible: true,
                         });
                         const rsiData = this.calcRSI(data, 14).filter(v => v.value != null && v.time != null);
@@ -1178,7 +1385,10 @@
                             priceLineVisible: false,
                             lastValueVisible: false,
                         });
-                        obLine.setData(rsiData.map(d => ({ time: d.time, value: 70 })));
+                        obLine.setData(rsiData.map(d => ({
+                            time: d.time,
+                            value: 70
+                        })));
                         const osLine = inst.chart.addLineSeries({
                             priceScaleId: 'rsi',
                             color: '#22c55e',
@@ -1187,19 +1397,31 @@
                             priceLineVisible: false,
                             lastValueVisible: false,
                         });
-                        osLine.setData(rsiData.map(d => ({ time: d.time, value: 30 })));
+                        osLine.setData(rsiData.map(d => ({
+                            time: d.time,
+                            value: 30
+                        })));
                         this.indicatorSeries.rsi = [rsiLine, obLine, osLine];
                     } else {
-                        inst.chart.priceScale('rsi').applyOptions({ visible: false });
+                        inst.chart.priceScale('rsi').applyOptions({
+                            visible: false
+                        });
                     }
 
                     if (this.indicators.macd) {
                         const macdScale = inst.chart.priceScale('macd');
                         macdScale.applyOptions({
-                            scaleMargins: { top: 0.70, bottom: 0 },
+                            scaleMargins: {
+                                top: 0.70,
+                                bottom: 0
+                            },
                             visible: true,
                         });
-                        const { macdLine, signalLine, histogram } = this.calcMACD(data, 12, 26, 9);
+                        const {
+                            macdLine,
+                            signalLine,
+                            histogram
+                        } = this.calcMACD(data, 12, 26, 9);
                         const macdSeries = inst.chart.addLineSeries({
                             priceScaleId: 'macd',
                             color: '#2563eb',
@@ -1218,7 +1440,9 @@
                         signal.setData(signalLine.filter(v => v.value != null));
                         const hist = inst.chart.addHistogramSeries({
                             priceScaleId: 'macd',
-                            priceFormat: { type: 'volume' },
+                            priceFormat: {
+                                type: 'volume'
+                            },
                         });
                         const histData = histogram.filter(v => v.value != null);
                         hist.setData(histData.map(d => ({
@@ -1228,7 +1452,9 @@
                         })));
                         this.indicatorSeries.macd = [macdSeries, signal, hist];
                     } else {
-                        inst.chart.priceScale('macd').applyOptions({ visible: false });
+                        inst.chart.priceScale('macd').applyOptions({
+                            visible: false
+                        });
                     }
                 },
 
@@ -1236,14 +1462,42 @@
 
                 getEventConfig(type) {
                     const map = {
-                        dividen: { color: '#22c55e', shape: 'circle', position: 'aboveBar' },
-                        stock_split: { color: '#3b82f6', shape: 'arrowDown', position: 'belowBar' },
-                        rights_issue: { color: '#f59e0b', shape: 'square', position: 'aboveBar' },
-                        buyback: { color: '#8b5cf6', shape: 'arrowUp', position: 'belowBar' },
-                        private_placement: { color: '#6b7280', shape: 'diamond', position: 'aboveBar' },
-                        merger_akuisisi: { color: '#ef4444', shape: 'cross', position: 'belowBar' },
+                        dividen: {
+                            color: '#22c55e',
+                            shape: 'circle',
+                            position: 'aboveBar'
+                        },
+                        stock_split: {
+                            color: '#3b82f6',
+                            shape: 'arrowDown',
+                            position: 'belowBar'
+                        },
+                        rights_issue: {
+                            color: '#f59e0b',
+                            shape: 'square',
+                            position: 'aboveBar'
+                        },
+                        buyback: {
+                            color: '#8b5cf6',
+                            shape: 'arrowUp',
+                            position: 'belowBar'
+                        },
+                        private_placement: {
+                            color: '#6b7280',
+                            shape: 'diamond',
+                            position: 'aboveBar'
+                        },
+                        merger_akuisisi: {
+                            color: '#ef4444',
+                            shape: 'cross',
+                            position: 'belowBar'
+                        },
                     };
-                    return map[type] || { color: '#6b7280', shape: 'circle', position: 'aboveBar' };
+                    return map[type] || {
+                        color: '#6b7280',
+                        shape: 'circle',
+                        position: 'aboveBar'
+                    };
                 },
 
                 // ─── Render Chart ─────────────────────────────────────
@@ -1266,12 +1520,18 @@
 
                     const chart = LightweightCharts.createChart(container, {
                         layout: {
-                            background: { color: '#ffffff' },
+                            background: {
+                                color: '#ffffff'
+                            },
                             textColor: '#6b7280',
                         },
                         grid: {
-                            vertLines: { color: '#f1f5f9' },
-                            horzLines: { color: '#f1f5f9' },
+                            vertLines: {
+                                color: '#f1f5f9'
+                            },
+                            horzLines: {
+                                color: '#f1f5f9'
+                            },
                         },
                         timeScale: {
                             timeVisible: isIntraday,
@@ -1280,10 +1540,17 @@
                         },
                         rightPriceScale: {
                             borderColor: '#e2e8f0',
-                            scaleMargins: { top: 0.02, bottom: 0.32 },
+                            scaleMargins: {
+                                top: 0.02,
+                                bottom: 0.32
+                            },
                         },
-                        handleScroll: { vertTouchDrag: true },
-                        handleScale: { axisPressedMouseMove: true },
+                        handleScroll: {
+                            vertTouchDrag: true
+                        },
+                        handleScale: {
+                            axisPressedMouseMove: true
+                        },
                         autoSize: true,
                         height: 480,
                     });
@@ -1305,10 +1572,18 @@
                         borderDownColor: '#ef4444',
                         wickUpColor: '#22c55e',
                         wickDownColor: '#ef4444',
-                        priceFormat: { type: 'price', precision: 0, minMove: 1 },
+                        priceFormat: {
+                            type: 'price',
+                            precision: 0,
+                            minMove: 1
+                        },
                     });
                     candleSeries.setData(chartData.map(d => ({
-                        time: d.time, open: d.open, high: d.high, low: d.low, close: d.close,
+                        time: d.time,
+                        open: d.open,
+                        high: d.high,
+                        low: d.low,
+                        close: d.close,
                     })));
 
                     // Line series (hidden by default, shown when chartType is 'line')
@@ -1317,18 +1592,30 @@
                         lineWidth: 2,
                         crosshairMarkerVisible: true,
                         lastValueVisible: true,
-                        priceFormat: { type: 'price', precision: 0, minMove: 1 },
+                        priceFormat: {
+                            type: 'price',
+                            precision: 0,
+                            minMove: 1
+                        },
                         visible: false,
                     });
-                    lineSeries.setData(chartData.map(d => ({ time: d.time, value: d.close })));
+                    lineSeries.setData(chartData.map(d => ({
+                        time: d.time,
+                        value: d.close
+                    })));
 
                     // Volume
                     const volumeSeries = chart.addHistogramSeries({
                         priceScaleId: 'volume',
-                        priceFormat: { type: 'volume' },
+                        priceFormat: {
+                            type: 'volume'
+                        },
                     });
                     chart.priceScale('volume').applyOptions({
-                        scaleMargins: { top: 0.65, bottom: 0 },
+                        scaleMargins: {
+                            top: 0.65,
+                            bottom: 0
+                        },
                     });
                     volumeSeries.setData(chartData.map(d => ({
                         time: d.time,
@@ -1361,7 +1648,10 @@
 
                     // Store reference
                     this.chartInstance = {
-                        chart, candleSeries, lineSeries, volumeSeries,
+                        chart,
+                        candleSeries,
+                        lineSeries,
+                        volumeSeries,
                         _chartData: chartData,
                     };
                     this.applyChartType(this.chartType);
