@@ -220,6 +220,11 @@
                 <span class="text-xs font-semibold text-center leading-tight">Analisa Saham</span>
             </a>
         </div>
+        <a href="{{ route('user.laporan-portfolio.pdf') }}"
+           class="mt-3 flex items-center justify-center gap-2 w-full p-3 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 transition text-sm font-semibold">
+            <svg style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download Laporan PDF
+        </a>
     </div>
 </div>
 @endsection

@@ -429,6 +429,9 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/chatbot', [\App\Http\Controllers\User\ChatbotController::class, 'index'])->name('chatbot.index');
     Route::post('/chatbot/ask', [\App\Http\Controllers\User\ChatbotController::class, 'ask'])->name('chatbot.ask');
 
+    // Laporan Portfolio PDF
+    Route::get('/laporan-portfolio/pdf', [\App\Http\Controllers\User\LaporanPortfolioController::class, 'exportPdf'])->name('laporan-portfolio.pdf');
+
     // Advisor: Daftar Klien
     Route::prefix('klien')->name('clients.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Advisor\ClientController::class, 'index'])->name('index');
