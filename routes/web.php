@@ -425,6 +425,10 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/dashboard', [\App\Http\Controllers\User\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/advisor-dashboard', [\App\Http\Controllers\Advisor\DashboardController::class, 'index'])->name('advisor.dashboard');
 
+    // AI Chatbot
+    Route::get('/chatbot', [\App\Http\Controllers\User\ChatbotController::class, 'index'])->name('chatbot.index');
+    Route::post('/chatbot/ask', [\App\Http\Controllers\User\ChatbotController::class, 'ask'])->name('chatbot.ask');
+
     // Advisor: Daftar Klien
     Route::prefix('klien')->name('clients.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Advisor\ClientController::class, 'index'])->name('index');
