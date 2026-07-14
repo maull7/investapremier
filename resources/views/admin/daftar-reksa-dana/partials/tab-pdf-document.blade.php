@@ -1,6 +1,6 @@
 <div class="space-y-6">
     @php
-        $documents = $fund->documents->where('document_type', $docType)->sortByDesc('created_at');
+        $documents = $fund->documents->where('document_type', $docType)->sortByDesc('created_at')->take(1);
     @endphp
 
     @if ($documents->isEmpty())

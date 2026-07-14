@@ -399,6 +399,9 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     // Sub Admin Management (admin utama only)
     Route::resource('sub-admins', \App\Http\Controllers\Admin\SubAdminController::class)
         ->middleware('role:admin');
+    Route::post('sub-admins/{subAdmin}/toggle-status', [\App\Http\Controllers\Admin\SubAdminController::class, 'toggleStatus'])
+        ->name('sub-admins.toggle-status')
+        ->middleware('role:admin');
 
     // Advisor Management (admin utama only)
     Route::prefix('advisors')->name('advisors.')->group(function () {
@@ -452,6 +455,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/analisa', [AnalisaController::class, 'index'])->name('analisa.index');
     Route::get('/analisa/template', [AnalisaController::class, 'downloadTemplate'])->name('analisa.template');
     Route::get('/reksa-dana', [ReksaDanaController::class, 'index'])->name('reksa-dana.index');
+    Route::get('/reksa-dana/{reksaDana}', [ReksaDanaController::class, 'show'])->name('reksa-dana.show');
     Route::get('/reksa-dana/{reksaDana}/edit', [ReksaDanaController::class, 'edit'])->name('reksa-dana.edit');
     Route::put('/reksa-dana/{reksaDana}', [ReksaDanaController::class, 'update'])->name('reksa-dana.update');
     Route::delete('/reksa-dana/{reksaDana}', [ReksaDanaController::class, 'destroy'])->name('reksa-dana.destroy');

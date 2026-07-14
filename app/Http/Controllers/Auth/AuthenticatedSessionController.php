@@ -28,11 +28,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        $route = Auth::user()->isAdvisor()
-            ? 'user.advisor.dashboard'
-            : 'user.dashboard';
-
-        return redirect()->intended(route($route, absolute: false));
+        return redirect()->intended(route('dashboard', absolute: false));
     }
 
     /**

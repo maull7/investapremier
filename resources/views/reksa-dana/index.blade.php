@@ -92,7 +92,9 @@
                 @forelse($reksaDanas as $rd)
                 <tr class="hover:bg-[#f8fafc] transition-colors">
                     <td class="px-4 py-3.5 font-mono text-xs text-muted">{{ $rd->kode_reksa_dana ?? '—' }}</td>
-                    <td class="px-4 py-3.5 font-semibold text-primary">{{ $rd->nama_reksa_dana }}</td>
+                    <td class="px-4 py-3.5 font-semibold text-primary">
+                        <a href="{{ route('user.reksa-dana.show', $rd) }}" class="hover:underline">{{ $rd->nama_reksa_dana }}</a>
+                    </td>
                     <td class="px-4 py-3.5 text-muted text-xs">{{ $rd->nama_manajer_investasi ?? '—' }}</td>
                     <td class="px-4 py-3.5">
                         @php
