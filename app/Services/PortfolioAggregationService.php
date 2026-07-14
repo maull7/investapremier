@@ -9,6 +9,7 @@ use App\Models\ProgressCheckin;
 use App\Models\QuizResult;
 use App\Models\StockPriceAlert;
 use App\Models\User;
+use App\Models\AdvisorClientRequest;
 
 class PortfolioAggregationService
 {
@@ -47,6 +48,43 @@ class PortfolioAggregationService
                 'name' => $user->advisor->name,
                 'initial' => strtoupper(substr($user->advisor->name, 0, 2)),
             ] : null,
+        ];
+    }
+
+    public function aggregateAdvisorClients(User $advisor): array
+    {
+        $clientIds = User::where('advisor_id', $advisor->id)->pluck('id');
+        $totalAum = MemberPortfolio::whereIn('user_id', $clientIds)->sum('total_nilai')
+            + PortofolioItem::whereIn('user_id', $clientIds)->sum('nilai');
+
+        $clientAumList = User::whereIn('id', $clientIds)->get()->map(function ($client) {
+            $mp = MemberPortfolio::where('user_id', $client->id)->sum('total_nilai');
+            $pi = PortofolioItem::where('user_id', $client->id)->sum('nilai');
+            $total = $mp + $pi;
+            return [
+                'id' => $client->id,
+                'name' => $client->name,
+                'email' => $client->email,
+                'totalAum' => $total,
+                'totalAumFormatted' => $this->formatRupiahShort($total),
+                'riskProfile' => $client->memberProfile?->profil_risiko,
+            ];
+        })->sortByDesc('totalAum')->values();
+
+        $pendingCount = AdvisorClientRequest::where('advisor_id', $advisor->id)
+            ->where('status', 'pending')->count();
+
+        $recentClients = $clientAumList->take(5);
+
+        return [
+            'totalClients' => $clientIds->count(),
+            'totalAum' => $totalAum,
+            'totalAumFormatted' => $this->formatRupiahShort($totalAum),
+            'pendingCount' => $pendingCount,
+            'averageAum' => $clientIds->count() > 0 ? $totalAum / $clientIds->count() : 0,
+            'averageAumFormatted' => $this->formatRupiahShort($clientIds->count() > 0 ? $totalAum / $clientIds->count() : 0),
+            'clientAumList' => $clientAumList,
+            'recentClients' => $recentClients,
         ];
     }
 

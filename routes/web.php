@@ -423,6 +423,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
 
 Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\User\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/advisor-dashboard', [\App\Http\Controllers\Advisor\DashboardController::class, 'index'])->name('advisor.dashboard');
 
     // Advisor: Daftar Klien
     Route::prefix('klien')->name('clients.')->group(function () {
