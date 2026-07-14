@@ -47,7 +47,37 @@
                     {{ $stock->harga_terbaru ? 'Rp' . $fmt($stock->harga_terbaru) : '-' }}</p>
             </div>
         </div>
-
+        <div class="relative" x-data="{ open: false, search: '' }" @click.outside="open = false">
+            <button type="button" @click="open = !open"
+                class="flex items-center gap-2 w-44 text-xs border border-line rounded-lg px-3 py-1.5 text-left text-muted hover:text-primary hover:border-primary transition">
+                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <span class="flex-1 truncate" x-text="search || 'Cari Saham...'"></span>
+                <svg class="w-3 h-3 shrink-0" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+            <template x-if="open">
+                <div
+                    class="absolute top-full left-0 mt-1 w-72 bg-white border border-line rounded-xl shadow-lg z-50 overflow-hidden">
+                    <input type="text" x-model="search" placeholder="Filter nama saham..."
+                        class="w-full text-xs border-b border-line px-3 py-2 focus:outline-none">
+                    <div class="max-h-60 overflow-y-auto">
+                        @foreach ($stocks as $s)
+                            <a href="{{ route($routePrefix . '.saham.show', $s->id) }}"
+                                x-show="!search || '{{ strtolower($s->kode) }} {{ strtolower($s->nama) }}'.includes(search.toLowerCase())"
+                                class="block w-full text-left px-3 py-2 hover:bg-indigo-50 text-xs border-b border-line last:border-0">
+                                <span class="font-semibold">{{ $s->kode }}</span>
+                                <span class="text-muted"> - {{ $s->nama }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            </template>
+        </div>
         @foreach (['success' => 'green', 'error' => 'red'] as $key => $color)
             @if (session($key))
                 <div
@@ -164,7 +194,8 @@
                         <div class="border border-line rounded-xl p-3">
                             <p class="text-xs text-muted">P/E Ratio</p>
                             <p class="font-bold text-primary"
-                                x-text="summary?.stats?.trailingPE ? Number(summary.stats.trailingPE).toFixed(2) : '-'"></p>
+                                x-text="summary?.stats?.trailingPE ? Number(summary.stats.trailingPE).toFixed(2) : '-'">
+                            </p>
                         </div>
                         <div class="border border-line rounded-xl p-3">
                             <p class="text-xs text-muted">P/B Ratio</p>
@@ -287,7 +318,7 @@
                         @endforeach
                     </div>
                     <div class="flex items-center gap-2 flex-wrap">
-                        <div class="relative" x-data="{ open: false, search: '' }" @click.outside="open = false">
+                        {{-- <div class="relative" x-data="{ open: false, search: '' }" @click.outside="open = false">
                             <button type="button" @click="open = !open"
                                 class="flex items-center gap-2 w-44 text-xs border border-line rounded-lg px-3 py-1.5 text-left text-muted hover:text-primary hover:border-primary transition">
                                 <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor"
@@ -319,7 +350,7 @@
                                     </div>
                                 </div>
                             </template>
-                        </div>
+                        </div> --}}
                         <div class="flex gap-1 p-0.5 border border-line rounded-lg">
                             <button type="button" @click="chartType = 'candle'"
                                 :class="chartType === 'candle' ? 'bg-primary text-white' : 'text-muted hover:text-primary'"
@@ -912,31 +943,49 @@
                                         $analisa = $efek->analisa;
                                         $rd = $analisa?->reksaDana;
                                         $rdId = $rd?->id;
-                                        $hargaSaatTanggalData = $efek->nilai_pasar && $efek->jumlah_lembar
-                                            ? round($efek->nilai_pasar / $efek->jumlah_lembar, 2)
-                                            : null;
-                                        $nilaiPasarSaatIni = $efek->jumlah_lembar && $stock->harga_terbaru
-                                            ? $efek->jumlah_lembar * $stock->harga_terbaru
-                                            : null;
-                                        $marketCapPct = $stock->market_capital && $efek->nilai_pasar
-                                            ? round(($efek->nilai_pasar / $stock->market_capital) * 100, 2)
-                                            : null;
+                                        $hargaSaatTanggalData =
+                                            $efek->nilai_pasar && $efek->jumlah_lembar
+                                                ? round($efek->nilai_pasar / $efek->jumlah_lembar, 2)
+                                                : null;
+                                        $nilaiPasarSaatIni =
+                                            $efek->jumlah_lembar && $stock->harga_terbaru
+                                                ? $efek->jumlah_lembar * $stock->harga_terbaru
+                                                : null;
+                                        $marketCapPct =
+                                            $stock->market_capital && $efek->nilai_pasar
+                                                ? round(($efek->nilai_pasar / $stock->market_capital) * 100, 2)
+                                                : null;
                                         $prospektusDate = isset($prospektusDates[$rdId])
                                             ? \Illuminate\Support\Carbon::parse($prospektusDates[$rdId])
                                             : null;
                                     @endphp
                                     <tr class="border-t border-line hover:bg-gray-50">
-                                        <td class="px-3 py-2 font-semibold text-primary whitespace-nowrap">{{ $rd?->kode_reksa_dana ?? '-' }}</td>
-                                        <td class="px-3 py-2 whitespace-nowrap">{{ $rd?->nama_reksa_dana ?? ($analisa?->nama_reksa_dana ?? '-') }}</td>
+                                        <td class="px-3 py-2 font-semibold text-primary whitespace-nowrap">
+                                            {{ $rd?->kode_reksa_dana ?? '-' }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap">
+                                            {{ $rd?->nama_reksa_dana ?? ($analisa?->nama_reksa_dana ?? '-') }}</td>
                                         <td class="px-3 py-2 whitespace-nowrap">{{ $efek->kode_efek }}</td>
-                                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ ($efek->persen_nab ?? $efek->bobot) ? number_format((float) ($efek->persen_nab ?? $efek->bobot), 2) . '%' : '-' }}</td>
-                                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ $efek->nilai_pasar ? 'Rp' . number_format((float) $efek->nilai_pasar, 0, ',', '.') : '-' }}</td>
-                                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ $hargaSaatTanggalData ? 'Rp' . number_format($hargaSaatTanggalData, 2, ',', '.') : '-' }}</td>
-                                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ $analisa?->tanggal_data?->format('d/m/Y') ?: '-' }}</td>
-                                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ $efek->jumlah_lembar ? number_format((float) $efek->jumlah_lembar, 0, ',', '.') : '-' }}</td>
-                                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ $nilaiPasarSaatIni ? 'Rp' . number_format($nilaiPasarSaatIni, 0, ',', '.') : '-' }}</td>
-                                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ $marketCapPct !== null ? $marketCapPct . '%' : '-' }}</td>
-                                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ $prospektusDate?->format('d/m/Y') ?: '-' }}</td>
+                                        <td class="px-3 py-2 text-right whitespace-nowrap">
+                                            {{ $efek->persen_nab ?? $efek->bobot ? number_format((float) ($efek->persen_nab ?? $efek->bobot), 2) . '%' : '-' }}
+                                        </td>
+                                        <td class="px-3 py-2 text-right whitespace-nowrap">
+                                            {{ $efek->nilai_pasar ? 'Rp' . number_format((float) $efek->nilai_pasar, 0, ',', '.') : '-' }}
+                                        </td>
+                                        <td class="px-3 py-2 text-right whitespace-nowrap">
+                                            {{ $hargaSaatTanggalData ? 'Rp' . number_format($hargaSaatTanggalData, 2, ',', '.') : '-' }}
+                                        </td>
+                                        <td class="px-3 py-2 text-right whitespace-nowrap">
+                                            {{ $analisa?->tanggal_data?->format('d/m/Y') ?: '-' }}</td>
+                                        <td class="px-3 py-2 text-right whitespace-nowrap">
+                                            {{ $efek->jumlah_lembar ? number_format((float) $efek->jumlah_lembar, 0, ',', '.') : '-' }}
+                                        </td>
+                                        <td class="px-3 py-2 text-right whitespace-nowrap">
+                                            {{ $nilaiPasarSaatIni ? 'Rp' . number_format($nilaiPasarSaatIni, 0, ',', '.') : '-' }}
+                                        </td>
+                                        <td class="px-3 py-2 text-right whitespace-nowrap">
+                                            {{ $marketCapPct !== null ? $marketCapPct . '%' : '-' }}</td>
+                                        <td class="px-3 py-2 text-right whitespace-nowrap">
+                                            {{ $prospektusDate?->format('d/m/Y') ?: '-' }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

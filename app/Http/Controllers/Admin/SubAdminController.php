@@ -217,6 +217,23 @@ class SubAdminController extends Controller
         return $result;
     }
 
+    public function toggleStatus(User $subAdmin)
+    {
+        abort_if($subAdmin->role !== 'sub_admin', 404);
+
+        $newStatus = !$subAdmin->is_active;
+        $subAdmin->update(['is_active' => $newStatus]);
+
+        ActivityLogger::log(
+            $newStatus ? 'Mengaktifkan Sub Admin' : 'Menonaktifkan Sub Admin',
+            "Sub Admin {$subAdmin->name} ({$subAdmin->email}) " . ($newStatus ? 'diaktifkan' : 'dinonaktifkan'),
+            'success',
+            $subAdmin,
+        );
+
+        return back()->with('success', "Sub Admin berhasil " . ($newStatus ? 'diaktifkan' : 'dinonaktifkan') . ".");
+    }
+
     public function destroy(User $subAdmin)
     {
         abort_if($subAdmin->role !== 'sub_admin', 404);

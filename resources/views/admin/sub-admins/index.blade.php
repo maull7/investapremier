@@ -49,8 +49,14 @@
                             <div class="flex items-center justify-end gap-2">
                                 <a href="{{ route('admin.activity-logs.index', ['user_id' => $sa->id]) }}" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Logs</a>
                                 <a href="{{ route('admin.sub-admins.show', $sa) }}" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Detail</a>
+                                <form method="POST" action="{{ route('admin.sub-admins.toggle-status', $sa) }}" class="inline">
+                                    @csrf
+                                    <button type="submit" class="px-2.5 py-1.5 rounded-lg text-xs font-medium {{ $sa->is_active ? 'bg-orange-50 text-orange-700 hover:bg-orange-100' : 'bg-green-50 text-green-700 hover:bg-green-100' }}">
+                                        {{ $sa->is_active ? 'Nonaktifkan' : 'Aktifkan' }}
+                                    </button>
+                                </form>
                                 <a href="{{ route('admin.sub-admins.edit', $sa) }}" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100">Edit</a>
-                                <form method="POST" action="{{ route('admin.sub-admins.destroy', $sa) }}" onsubmit="return confirm('Hapus sub admin ini?')">
+                                <form method="POST" action="{{ route('admin.sub-admins.destroy', $sa) }}" onsubmit="return confirm('Hapus sub admin ini?')" class="inline">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100">Hapus</button>
                                 </form>

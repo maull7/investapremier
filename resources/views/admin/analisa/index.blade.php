@@ -32,13 +32,36 @@
 
         @if ($tab === 'analisa')
             {{-- Filter Status --}}
-            <div class="flex gap-2 text-sm flex-wrap">
+            <div class="flex gap-2 text-sm flex-wrap items-center">
+                <span class="text-xs font-semibold text-muted">Status:</span>
                 @foreach (['', 'original', 'submitted', 'reviewed', 'input_manual'] as $s)
                     <a href="{{ route('admin.analisa.index', array_filter(['tab' => 'analisa', 'status' => $s ?: null, 'kategori' => request('kategori'), 'ffs_bulan' => request('ffs_bulan'), 'ffs_tahun' => request('ffs_tahun')])) }}"
                         class="px-3 py-1.5 rounded-lg border transition {{ request('status') === $s || (!request('status') && $s === '') ? 'bg-primary text-white border-primary' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
                         {{ match ($s) {'' => 'Semua','original' => 'Original','submitted' => 'Menunggu Review','reviewed' => 'Sudah Direview','input_manual' => 'Input Manual'} }}
                     </a>
                 @endforeach
+                
+                {{-- Search by Status Dropdown --}}
+                <form method="GET" action="{{ route('admin.analisa.index') }}" class="inline-flex items-center gap-2 ml-4">
+                    <input type="hidden" name="tab" value="analisa">
+                    @if (request('kategori'))
+                        <input type="hidden" name="kategori" value="{{ request('kategori') }}">
+                    @endif
+                    @if (request('ffs_bulan'))
+                        <input type="hidden" name="ffs_bulan" value="{{ request('ffs_bulan') }}">
+                    @endif
+                    @if (request('ffs_tahun'))
+                        <input type="hidden" name="ffs_tahun" value="{{ request('ffs_tahun') }}">
+                    @endif
+                    <select name="status" onchange="this.form.submit()"
+                        class="text-xs border-gray-300 rounded-lg px-3 py-1.5 focus:border-primary focus:ring focus:ring-primary/20">
+                        <option value="">Pilih Status...</option>
+                        <option value="original" {{ request('status') === 'original' ? 'selected' : '' }}>Original</option>
+                        <option value="submitted" {{ request('status') === 'submitted' ? 'selected' : '' }}>Menunggu Review</option>
+                        <option value="reviewed" {{ request('status') === 'reviewed' ? 'selected' : '' }}>Sudah Direview</option>
+                        <option value="input_manual" {{ request('status') === 'input_manual' ? 'selected' : '' }}>Input Manual</option>
+                    </select>
+                </form>
             </div>
 
             {{-- Filter Kategori + Kalender FFS --}}
@@ -139,8 +162,22 @@
                     <table class="w-full text-sm min-w-[900px]">
                         <thead class="bg-[#f8fafc] border-b border-line">
                             <tr>
-                                <th class="text-left px-5 py-3 font-semibold text-primary">Reksa Dana</th>
-                                <th class="text-left px-5 py-3 font-semibold text-primary">Jenis</th>
+                                <th class="text-left px-5 py-3 font-semibold text-primary">
+                                    <a href="{{ route('admin.analisa.index', array_merge(request()->all(), ['sort' => 'nama_reksa_dana', 'direction' => request('sort') === 'nama_reksa_dana' && request('direction') === 'asc' ? 'desc' : 'asc'])) }}" class="flex items-center gap-1 hover:text-accent">
+                                        Reksa Dana
+                                        @if(request('sort') === 'nama_reksa_dana')
+                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="{{ request('direction') === 'asc' ? 'M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z' : 'M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z' }}" clip-rule="evenodd"/></svg>
+                                        @endif
+                                    </a>
+                                </th>
+                                <th class="text-left px-5 py-3 font-semibold text-primary">
+                                    <a href="{{ route('admin.analisa.index', array_merge(request()->all(), ['sort' => 'jenis', 'direction' => request('sort') === 'jenis' && request('direction') === 'asc' ? 'desc' : 'asc'])) }}" class="flex items-center gap-1 hover:text-accent">
+                                        Jenis
+                                        @if(request('sort') === 'jenis')
+                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="{{ request('direction') === 'asc' ? 'M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z' : 'M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z' }}" clip-rule="evenodd"/></svg>
+                                        @endif
+                                    </a>
+                                </th>
                                 <th class="text-left px-5 py-3 font-semibold text-primary">Kategori</th>
                                 <th class="text-left px-5 py-3 font-semibold text-primary">Kalender FFS</th>
                                 <th class="text-left px-5 py-3 font-semibold text-primary">Status</th>

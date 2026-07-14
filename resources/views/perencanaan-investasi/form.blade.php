@@ -15,6 +15,19 @@
     $currentCategory = old('kategori_perencanaan', $plan->kategori_perencanaan ?? '');
     $isCustomCategory = $currentCategory && !in_array($currentCategory, $predefinedCategories);
     $portofolioItems = $portofolioItems ?? collect();
+    $pfRows = $portofolioItems->map(fn($item) => [
+        'jenis' => $item->jenis ?? '',
+        'nama_produk' => $item->nama_produk ?? '',
+        'produk_id' => $item->produk_id ?? '',
+        'produk_type' => $item->produk_type ?? '',
+        'nominal' => $item->nominal ?? '',
+        'harga_akuisisi' => $item->harga_akuisisi ?? '',
+        'loading' => false,
+        'products' => [],
+        'manual_produk' => false,
+        'total_nilai' => 0,
+        'total_nilai_formatted' => 'Rp 0',
+    ]);
 @endphp
 
 @section('content')
@@ -76,7 +89,7 @@
 
     <form method="POST"
         action="{{ isset($plan) ? route('user.perencanaan-investasi.update', $plan) : route('user.perencanaan-investasi.store') }}"
-        class="max-w-5xl" x-data="kategoriSelect()" x-on:submit.prevent="beforeSubmit($event)" novalidate>
+        class="max-w-5xl" x-data="formPage()" x-on:submit.prevent="beforeSubmit($event)" novalidate>
         @csrf
         @if (isset($plan))
             @method('PUT')
@@ -118,8 +131,9 @@
                     <div>
                         <x-input-label value="Kebutuhan Dana (Rp)" class="text-sm font-semibold mb-1.5" />
                         <input type="text" inputmode="decimal" name="kebutuhan_dana"
+                            oninput="formatRupiahInput(this)"
                             class="w-full px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent @error('kebutuhan_dana') border-red-400 @enderror"
-                            placeholder="500000000" value="{{ old('kebutuhan_dana', $plan->kebutuhan_dana ?? '') }}">
+                            placeholder="500.000.000" value="{{ old('kebutuhan_dana', isset($plan->kebutuhan_dana) ? number_format($plan->kebutuhan_dana, 0, ',', '.') : '') }}">
                         <x-input-error :messages="$errors->get('kebutuhan_dana')" class="mt-1 text-xs" />
                     </div>
                     <div>
@@ -144,15 +158,17 @@
                             </button>
                         </div>
                         <input type="text" inputmode="decimal" name="dana_tersedia" id="dana_tersedia"
+                            oninput="formatRupiahInput(this)"
                             class="w-full px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
-                            placeholder="100000000" value="{{ old('dana_tersedia', $plan->dana_tersedia ?? '') }}">
+                            placeholder="100.000.000" value="{{ old('dana_tersedia', isset($plan->dana_tersedia) ? number_format($plan->dana_tersedia, 0, ',', '.') : '') }}">
                     </div>
                     <div>
                         <x-input-label value="Rencana Investasi per Bulan (Rp)" class="text-sm font-semibold mb-1.5" />
                         <input type="text" inputmode="decimal" name="investasi_per_bulan"
+                            oninput="formatRupiahInput(this)"
                             class="w-full px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
-                            placeholder="5000000"
-                            value="{{ old('investasi_per_bulan', $plan->investasi_per_bulan ?? '') }}">
+                            placeholder="5.000.000"
+                            value="{{ old('investasi_per_bulan', isset($plan->investasi_per_bulan) ? number_format($plan->investasi_per_bulan, 0, ',', '.') : '') }}">
                     </div>
                     <div>
                         <x-input-label value="Sumber Dana" class="text-sm font-semibold mb-1.5" />
@@ -269,15 +285,17 @@
                     <div>
                         <x-input-label value="Estimasi Biaya Saat Ini (Rp)" class="text-sm font-semibold mb-1.5" />
                         <input type="text" inputmode="decimal" name="estimasi_biaya_saat_ini"
+                            oninput="formatRupiahInput(this)"
                             class="w-full px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
-                            placeholder="25000000"
-                            value="{{ old('estimasi_biaya_saat_ini', $plan->estimasi_biaya_saat_ini ?? '') }}">
+                            placeholder="25.000.000"
+                            value="{{ old('estimasi_biaya_saat_ini', isset($plan->estimasi_biaya_saat_ini) ? number_format($plan->estimasi_biaya_saat_ini, 0, ',', '.') : '') }}">
                     </div>
                     <div>
                         <x-input-label value="Pemenuhan Dana Saat Ini (Rp)" class="text-sm font-semibold mb-1.5" />
                         <input type="text" inputmode="decimal" name="pemenuhan_dana"
+                            oninput="formatRupiahInput(this)"
                             class="w-full px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
-                            placeholder="5000000" value="{{ old('pemenuhan_dana', $plan->pemenuhan_dana ?? '') }}">
+                            placeholder="5.000.000" value="{{ old('pemenuhan_dana', isset($plan->pemenuhan_dana) ? number_format($plan->pemenuhan_dana, 0, ',', '.') : '') }}">
                     </div>
                 </div>
             </div>
@@ -285,7 +303,19 @@
             {{-- PORTOFOLIO YANG SUDAH DIMILIKI --}}
             @if (isset($memberPortfolios) && $memberPortfolios->isNotEmpty())
             <div class="bg-white rounded-2xl border border-line shadow-sm p-6 mb-5">
-                <h3 class="font-bold text-primary text-sm mb-3">Portofolio yang Sudah Dimiliki</h3>
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <h3 class="font-bold text-primary text-sm">Portofolio yang Sudah Dimiliki</h3>
+                        <p class="text-xs text-muted mt-0.5">Data dari Daftar Portfolio Anda</p>
+                    </div>
+                    <button type="button" onclick="importMemberPortfolio()"
+                        class="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        Import ke Portofolio
+                    </button>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead>
@@ -296,13 +326,13 @@
                                 <th class="px-4 py-2.5 font-semibold text-right">Nilai Pasar</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-line">
-                            @foreach ($portofolioItems as $item)
-                                <tr>
+                        <tbody class="divide-y divide-line" id="memberPortfolioTable">
+                            @foreach ($memberPortfolios as $item)
+                                <tr data-jenis="{{ $item->jenis }}" data-nama="{{ $item->nama_efek }}" data-jumlah="{{ (int) $item->jumlah }}" data-harga="{{ (int) $item->harga_saat_ini }}" data-nilai="{{ (int) $item->total_nilai }}">
                                     <td class="px-4 py-2 text-xs">{{ $item->jenis }}</td>
                                     <td class="px-4 py-2 font-medium text-primary text-xs">{{ $item->nama_efek }}</td>
-                                    <td class="px-4 py-2 text-right text-xs">{{ $item->jumlah ? number_format($item->jumlah, 2, ',', '.') : '—' }}</td>
-                                    <td class="px-4 py-2 text-right text-xs font-semibold">{{ $item->total_nilai ? 'Rp' . number_format($item->total_nilai, 0, ',', '.') : '—' }}</td>
+                                    <td class="px-4 py-2 text-right text-xs">{{ $item->jumlah ? number_format($item->jumlah, 0, ',', '.') : '—' }}</td>
+                                    <td class="px-4 py-2 text-right text-xs font-semibold">{{ $item->total_nilai ? 'Rp ' . number_format($item->total_nilai, 0, ',', '.') : '—' }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -326,136 +356,93 @@
                     </button>
                 </div>
 
-                {{-- Table --}}
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm" id="portofolioTable">
                         <thead>
                             <tr class="border-b border-line">
                                 <th class="text-left py-2 pr-2 font-semibold text-primary w-36">Jenis</th>
                                 <th class="text-left py-2 px-2 font-semibold text-primary">Produk</th>
-                                <th class="text-right py-2 px-2 font-semibold text-primary w-40">Nominal</th>
-                                <th class="text-right py-2 px-2 font-semibold text-primary w-40">Harga Akuisisi</th>
-                                <th class="text-right py-2 px-2 font-semibold text-primary w-44">Nilai</th>
+                                <th class="text-right py-2 px-2 font-semibold text-primary w-40">Jumlah (Unit/Lembar/Satuan)</th>
+                                <th class="text-right py-2 px-2 font-semibold text-primary w-40">Harga Saat Ini (T-1)</th>
+                                <th class="text-right py-2 px-2 font-semibold text-primary w-44">Total Nilai</th>
                                 <th class="text-center py-2 pl-2 w-10"></th>
                             </tr>
                         </thead>
-                        <tbody id="portofolioBody">
-                            @forelse ($portofolioItems as $item)
-                            <tr class="border-b border-line/50 portofolio-row">
-                                <td class="py-1.5 pr-2">
-                                    <select name="portofolio_items[{{ $loop->index }}][jenis]" onchange="rowJenisChanged(this)"
-                                        class="w-full px-2 py-1.5 border border-line rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent jenis-select">
-                                        <option value="">Pilih...</option>
-                                        <option value="Kas/Deposito" {{ $item->jenis == 'Kas/Deposito' ? 'selected' : '' }}>Kas/Deposito</option>
-                                        <option value="Reksa Dana" {{ $item->jenis == 'Reksa Dana' ? 'selected' : '' }}>Reksa Dana</option>
-                                        <option value="Saham" {{ $item->jenis == 'Saham' ? 'selected' : '' }}>Saham</option>
-                                        <option value="Obligasi" {{ $item->jenis == 'Obligasi' ? 'selected' : '' }}>Obligasi</option>
-                                    </select>
-                                </td>
-                                <td class="py-1.5 px-2">
-                                    <div class="produk-wrapper">
-                                        <select name="portofolio_items[{{ $loop->index }}][nama_produk]" onchange="rowProdukChanged(this)"
-                                            class="w-full px-2 py-1.5 border border-line rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent produk-select"
-                                            data-nama="{{ $item->nama_produk }}">
-                                            <option value="">{{ $item->jenis ? 'Memuat...' : 'Pilih jenis dulu' }}</option>
+                        <tbody>
+                            <template x-for="(row, i) in pfRows" :key="i">
+                                <tr class="border-b border-line/50">
+                                    <td class="py-1.5 pr-2">
+                                        <select x-init="onPfRowTypeInit(row, $el)" 
+                                            x-model="row.jenis"
+                                            x-on:change="onPfRowTypeChanged(row, $el)"
+                                            :name="`portofolio_items[${i}][jenis]`"
+                                            class="w-full px-2 py-1.5 border border-line rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                                            x-ref="selJenis_${i}">
+                                            <option value="">Pilih...</option>
+                                            <option value="Kas/Deposito">Kas/Deposito</option>
+                                            <option value="Reksa Dana">Reksa Dana</option>
+                                            <option value="Reksadana">Reksadana</option>
+                                            <option value="Saham">Saham</option>
+                                            <option value="Obligasi">Obligasi</option>
                                         </select>
-                                        <input type="hidden" name="portofolio_items[{{ $loop->index }}][produk_id]" class="produk-id" value="{{ $item->produk_id }}">
-                                        <input type="hidden" name="portofolio_items[{{ $loop->index }}][produk_type]" class="produk-type" value="{{ $item->produk_type }}">
-                                    </div>
-                                </td>
-                                <td class="py-1.5 px-2">
-                                    <input type="text" name="portofolio_items[{{ $loop->index }}][nominal]" value="{{ number_format($item->nominal, 0, ',', '.') }}"
-                                        oninput="formatRupiahInput(this); rowHitung(this)"
-                                        class="w-full px-2 py-1.5 border border-line rounded-lg text-xs text-right focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent nominal-input"
-                                        placeholder="0">
-                                </td>
-                                <td class="py-1.5 px-2">
-                                    <input type="text" name="portofolio_items[{{ $loop->index }}][harga_akuisisi]" value="{{ number_format($item->harga_akuisisi, 0, ',', '.') }}"
-                                        readonly
-                                        class="w-full px-2 py-1.5 border border-line rounded-lg text-xs text-right bg-gray-50 focus:outline-none harga-input"
-                                        placeholder="Otomatis">
-                                </td>
-                                <td class="py-1.5 px-2">
-                                    <input type="text" readonly
-                                        class="w-full px-2 py-1.5 border border-transparent rounded-lg text-xs text-right font-semibold text-primary nilai-display"
-                                        value="Rp {{ number_format($item->nilai, 0, ',', '.') }}">
-                                </td>
-                                <td class="py-1.5 pl-2 text-center">
-                                    <button type="button" onclick="hapusRow(this)"
-                                        class="text-red-400 hover:text-red-600 transition p-1">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
+                                    </td>
+                                    <td class="py-1.5 px-2">
+                                        <div class="produk-dynamic" :id="'produk-dynamic-'+i" x-html="renderProdukInput(i, row)">
+
+                                        </div>
+                                        <input type="hidden" :name="`portofolio_items[${i}][produk_id]`" x-model="row.produk_id" class="produk-id">
+                                        <input type="hidden" :name="`portofolio_items[${i}][produk_type]`" x-model="row.produk_type">
+                                    </td>
+                                    <td class="py-1.5 px-2">
+                                        <input type="number" :name="`portofolio_items[${i}][nominal]`" x-model="row.nominal"
+                                            x-on:input="pfUpdateTotal(row); pfHitungAll()"
+                                            placeholder="0" min="0" step="0.01"
+                                            class="w-full px-2 py-1.5 border border-line rounded-lg text-xs text-right focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
+                                    </td>
+                                    <td class="py-1.5 px-2">
+                                        <input type="text" x-model="row.harga_akuisisi" disabled
+                                            x-on:pfSetPrice="row.harga_akuisisi = $event.detail"
+                                            class="w-full px-2 py-1.5 border border-line rounded-lg text-xs bg-gray-50 text-right text-muted cursor-not-allowed"
+                                            placeholder="Otomatis">
+                                        <span x-show="row.loading" class="text-xs text-muted animate-pulse">memuat...</span>
+                                    </td>
+                                    <td class="py-1.5 px-2">
+                                        <input type="text" x-model="row.total_nilai_formatted" disabled
+                                            class="w-full border border-transparent rounded-lg text-xs text-right font-semibold cursor-not-allowed text-primary"
+                                            placeholder="—">
+                                    </td>
+                                    <td class="py-1.5 pl-2 text-center">
+                                        <button type="button" @click="pfRows.splice(i, 1); pfHitungAll()"
+                                            class="text-red-400 hover:text-red-600 transition p-1">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                            <tr x-show="pfRows.length === 0">
+                                <td colspan="6" class="px-4 py-6 text-center text-muted text-sm">
+                                    Belum ada portofolio. Klik "Tambah Baris" untuk menambahkan.
                                 </td>
                             </tr>
-                            @empty
-                            <tr class="border-b border-line/50 portofolio-row">
-                                <td class="py-1.5 pr-2">
-                                    <select name="portofolio_items[0][jenis]" onchange="rowJenisChanged(this)"
-                                        class="w-full px-2 py-1.5 border border-line rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent jenis-select">
-                                        <option value="">Pilih...</option>
-                                        <option value="Kas/Deposito">Kas/Deposito</option>
-                                        <option value="Reksa Dana">Reksa Dana</option>
-                                        <option value="Saham">Saham</option>
-                                        <option value="Obligasi">Obligasi</option>
-                                    </select>
-                                </td>
-                                <td class="py-1.5 px-2">
-                                    <div class="produk-wrapper">
-                                        <select name="portofolio_items[0][nama_produk]" onchange="rowProdukChanged(this)"
-                                            class="w-full px-2 py-1.5 border border-line rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent produk-select">
-                                            <option value="">Pilih jenis dulu</option>
-                                        </select>
-                                        <input type="hidden" name="portofolio_items[0][produk_id]" class="produk-id">
-                                        <input type="hidden" name="portofolio_items[0][produk_type]" class="produk-type">
-                                    </div>
-                                </td>
-                                <td class="py-1.5 px-2">
-                                    <input type="text" name="portofolio_items[0][nominal]"
-                                        oninput="formatRupiahInput(this); rowHitung(this)"
-                                        class="w-full px-2 py-1.5 border border-line rounded-lg text-xs text-right focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent nominal-input"
-                                        placeholder="0">
-                                </td>
-                                <td class="py-1.5 px-2">
-                                    <input type="text" name="portofolio_items[0][harga_akuisisi]" readonly
-                                        class="w-full px-2 py-1.5 border border-line rounded-lg text-xs text-right bg-gray-50 focus:outline-none harga-input"
-                                        placeholder="Otomatis">
-                                </td>
-                                <td class="py-1.5 px-2">
-                                    <input type="text" readonly
-                                        class="w-full px-2 py-1.5 border border-transparent rounded-lg text-xs text-right font-semibold text-primary nilai-display"
-                                        value="Rp 0">
-                                </td>
-                                <td class="py-1.5 pl-2 text-center">
-                                    <button type="button" onclick="hapusRow(this)"
-                                        class="text-red-400 hover:text-red-600 transition p-1">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
-                                </td>
-                            </tr>
-                            @endforelse
                         </tbody>
                     </table>
                 </div>
 
                 <div class="flex items-center justify-between mt-4 pt-4 border-t border-line">
-                    <button type="button" onclick="tambahRow()"
+                    <button type="button" x-on:click="pfRows.push({jenis:'', nama_produk:'', produk_id:'', produk_type:'', nominal:'', harga_akuisisi:'', loading:false, numberinput:0, total_nilai:0})"
                         class="inline-flex items-center gap-1.5 px-4 py-2 bg-accent/10 text-accent rounded-xl text-xs font-semibold hover:bg-accent/20 transition">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 23 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         Tambah Baris
                     </button>
                     <div class="text-right">
                         <span class="text-xs text-muted">Total Portofolio:</span>
                         <span class="text-lg font-bold text-primary ml-2" id="totalPortofolio">Rp 0</span>
+                        <div x-text="$root.ptotalFormatted" style="display:none"></div>
                     </div>
                 </div>
             </div>
-
 
         </div>
 
@@ -505,14 +492,21 @@
 @push('scripts')
 <script>
     document.addEventListener('alpine:init', () => {
-        Alpine.data('kategoriSelect', () => ({
+        Alpine.data('formPage', () => ({
             selected: '{{ $isCustomCategory ? 'Lainnya' : $currentCategory }}',
             customVal: '{{ $isCustomCategory ? addslashes($currentCategory) : '' }}',
             showCustom: {{ $isCustomCategory ? 'true' : 'false' }},
+            ptotalFormatted: 'Rp 0',
+            pfTotal: 0,
+            pfRows: @json($pfRows),
+
+            init() { this.pfHitungAll(); },
+
             onChange(val) {
                 this.showCustom = val === 'Lainnya';
                 if (val !== 'Lainnya') this.customVal = '';
             },
+
             beforeSubmit(evt) {
                 if (this.selected === 'Lainnya' && this.customVal.trim()) {
                     this.$refs.kategoriSelect.value = this.customVal.trim();
@@ -522,13 +516,134 @@
                     if (el) el.value = el.value.replace(/\./g, '');
                 });
                 evt.target.submit();
+            },
+
+            onPfRowTypeInit(row, $el) {
+                if (!row.jenis) return;
+
+                row.produk_type = row.jenis === 'Kas/Deposito' ? 'bank' :
+                    (row.jenis === 'Reksa Dana' || row.jenis === 'Reksadana' ? 'reksadana' :
+                    row.jenis === 'Saham' ? 'saham' : 'obligasi');
+
+                if (row.jenis === 'Kas/Deposito') {
+                    if (!row.harga_akuisisi) row.harga_akuisisi = '1';
+                    this.pfUpdateTotal(row);
+                    return;
+                }
+
+                fetch(`{{ route('user.portofolio.produk') }}?jenis=${encodeURIComponent(row.jenis)}`)
+                    .then(r => r.json())
+                    .then(data => { row.products = data; })
+                    .catch(() => { row.products = []; });
+            },
+
+            onPfRowTypeChanged(row, $el) {
+                row.produk_id = '';
+                row.nama_produk = '';
+                row.harga_akuisisi = '';
+                row.products = [];
+                row.manual_produk = false;
+
+                if (!row.jenis) {
+                    row.produk_type = '';
+                    this.pfHitungAll();
+                    return;
+                }
+
+                row.produk_type = row.jenis === 'Kas/Deposito' ? 'bank' :
+                    (row.jenis === 'Reksa Dana' || row.jenis === 'Reksadana' ? 'reksadana' :
+                    row.jenis === 'Saham' ? 'saham' : 'obligasi');
+
+                if (row.jenis === 'Kas/Deposito') {
+                    row.harga_akuisisi = '1';
+                    this.pfUpdateTotal(row);
+                    this.pfHitungAll();
+                    return;
+                }
+
+                fetch(`{{ route('user.portofolio.produk') }}?jenis=${encodeURIComponent(row.jenis)}`)
+                    .then(r => r.json())
+                    .then(data => { row.products = data; })
+                    .catch(() => { row.products = []; });
+            },
+
+            renderProdukInput(i, row) {
+                const cls = 'w-full px-2 py-1.5 border border-line rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent';
+
+                if (!row.jenis) {
+                    return `<input type="text" disabled placeholder="Pilih jenis dulu" class="${cls}">`;
+                }
+
+                if (row.jenis === 'Kas/Deposito') {
+                    const opts = BANK_LIST.map(b => `<option value="${b}">${b}</option>`).join('');
+                    return `<input type="text" list="bank-dl-${i}" value="${row.nama_produk || ''}"
+                        onchange="pfProdukChanged(${i}, this.value)"
+                        placeholder="Pilih atau ketik nama bank..."
+                        class="${cls}">
+                        <datalist id="bank-dl-${i}">${opts}</datalist>`;
+                }
+
+                if (row.manual_produk) {
+                    return `<input type="text" value="${row.nama_produk || ''}"
+                        onchange="pfProdukChanged(${i}, this.value)"
+                        placeholder="Ketik nama produk..."
+                        class="${cls}">`;
+                }
+
+                const products = row.products || [];
+                const opts = products.map(p =>
+                    `<option value="${p.nama}" data-id="${p.id}" ${p.nama === row.nama_produk ? 'selected' : ''}>${p.nama}</option>`
+                ).join('');
+
+                return `<select onchange="pfProdukChanged(${i}, this)" class="${cls}">
+                    <option value="">${products.length ? 'Pilih produk...' : 'Memuat...'}</option>
+                    ${opts}
+                    <option value="__manual__">— Ketik manual —</option>
+                </select>`;
+            },
+
+            pfUpdateTotal(row) {
+                const nominal = parseFloat(cleanRupiah(row.nominal)) || 0;
+                const harga = parseFloat(cleanRupiah(row.harga_akuisisi)) || 0;
+                row.total_nilai = nominal * harga;
+                row.total_nilai_formatted = 'Rp ' + formatNumber(Math.floor(row.total_nilai));
+            },
+
+            pfHitungAll() {
+                let total = 0;
+                this.pfRows.forEach(row => { total += row.total_nilai || 0; });
+                this.pfTotal = total;
+                this.ptotalFormatted = 'Rp ' + formatNumber(Math.floor(total));
+                document.getElementById('totalPortofolio').textContent = this.ptotalFormatted;
+                const danaInput = document.getElementById('dana_tersedia');
+                if (danaInput) danaInput.value = formatNumber(Math.floor(total));
+            },
+
+            pfFetchHarga(row) {
+                row.loading = true;
+                const params = new URLSearchParams({
+                    jenis: row.jenis, produk_id: row.produk_id, produk_type: row.produk_type
+                });
+                fetch(`{{ route('user.portofolio.harga') }}?${params}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        row.harga_akuisisi = (data.harga !== null && data.harga !== undefined) ? data.harga : '';
+                        row.loading = false;
+                        this.pfUpdateTotal(row);
+                        this.pfHitungAll();
+                    })
+                    .catch(() => {
+                        row.harga_akuisisi = '';
+                        row.loading = false;
+                        this.pfUpdateTotal(row);
+                        this.pfHitungAll();
+                    });
             }
         }));
     });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-    let portofolioRowIndex = {{ $portofolioItems->count() > 0 ? $portofolioItems->count() : 1 }};
     let grafikChart = null;
 
     const BANK_LIST = [
@@ -542,72 +657,33 @@
         'Bank Babel', 'Bank Riau Kepri',
     ];
 
-    // Template Cepat
     const TEMPLATES = {
         pendidikan: {
-            kategori: 'Pendidikan Anak',
-            kebutuhan: 250000000,
-            target: 15,
-            investasi: 1000000,
-            sumber: 'Gaji',
-            risiko: 'Moderat',
-            usia_anak: '3 tahun',
-            target_pendidikan: 'S1',
-            tipe_pendidikan: 'Swasta',
-            lokasi_pendidikan: 'Dalam Negeri',
-            estimasi_biaya: 250000000,
+            kategori: 'Pendidikan Anak', kebutuhan: 250000000, target: 15,
+            investasi: 1000000, sumber: 'Gaji', risiko: 'Moderat',
+            usia_anak: '3 tahun', target_pendidikan: 'S1',
+            tipe_pendidikan: 'Swasta', lokasi_pendidikan: 'Dalam Negeri', estimasi_biaya: 250000000,
         },
-        pensiun: {
-            kategori: 'Dana Pensiun',
-            kebutuhan: 2000000000,
-            target: 20,
-            investasi: 5000000,
-            sumber: 'Gaji',
-            risiko: 'Moderat',
-        },
-        rumah: {
-            kategori: 'Pembelian Rumah',
-            kebutuhan: 500000000,
-            target: 5,
-            investasi: 7000000,
-            sumber: 'Gaji',
-            risiko: 'Agresif',
-        },
-        darurat: {
-            kategori: 'Dana Darurat',
-            kebutuhan: 60000000,
-            target: 1,
-            investasi: 5000000,
-            sumber: 'Tabungan',
-            risiko: 'Konservatif',
-        },
+        pensiun: { kategori: 'Dana Pensiun', kebutuhan: 2000000000, target: 20, investasi: 5000000, sumber: 'Gaji', risiko: 'Moderat' },
+        rumah: { kategori: 'Pembelian Rumah', kebutuhan: 500000000, target: 5, investasi: 7000000, sumber: 'Gaji', risiko: 'Agresif' },
+        darurat: { kategori: 'Dana Darurat', kebutuhan: 60000000, target: 1, investasi: 5000000, sumber: 'Tabungan', risiko: 'Konservatif' },
     };
 
     function isiTemplate(nama) {
         const t = TEMPLATES[nama];
         if (!t) return;
-
-        // Set kategori
-        const kategoriSelect = document.querySelector('[name="kategori_perencanaan"]');
-        const alpine = document.querySelector('[x-data]');
-        if (kategoriSelect) {
-            kategoriSelect.value = t.kategori;
-            kategoriSelect.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-
-        // Set fields
         setVal('kebutuhan_dana', t.kebutuhan);
         setVal('target_waktu_tahun', t.target);
         setVal('investasi_per_bulan', t.investasi);
         setVal('sumber_dana', t.sumber);
         setVal('profil_risiko', t.risiko);
-
         if (t.usia_anak) setVal('usia_anak', t.usia_anak);
         if (t.target_pendidikan) setVal('target_pendidikan', t.target_pendidikan);
         if (t.tipe_pendidikan) setVal('tipe_pendidikan', t.tipe_pendidikan);
         if (t.lokasi_pendidikan) setVal('lokasi_pendidikan', t.lokasi_pendidikan);
         if (t.estimasi_biaya) setVal('estimasi_biaya_saat_ini', t.estimasi_biaya);
-
+        const alpine = document.querySelector('form[x-data]');
+        if (alpine) { Alpine.$data(alpine).selected = t.kategori; }
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -622,286 +698,129 @@
 
     function togglePortofolio() {
         const section = document.getElementById('portofolioSection');
-        const isOpen = section.style.display !== 'none';
-        section.style.display = isOpen ? 'none' : 'block';
+        section.style.display = section.style.display === 'none' ? 'block' : 'none';
     }
 
-    function tambahRow() {
-        const tbody = document.getElementById('portofolioBody');
-        const idx = portofolioRowIndex++;
-        const tr = document.createElement('tr');
-        tr.className = 'border-b border-line/50 portofolio-row';
-        tr.innerHTML = `
-            <td class="py-1.5 pr-2">
-                <select name="portofolio_items[${idx}][jenis]" onchange="rowJenisChanged(this)"
-                    class="w-full px-2 py-1.5 border border-line rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent jenis-select">
-                    <option value="">Pilih...</option>
-                    <option value="Kas/Deposito">Kas/Deposito</option>
-                    <option value="Reksa Dana">Reksa Dana</option>
-                    <option value="Saham">Saham</option>
-                    <option value="Obligasi">Obligasi</option>
-                </select>
-            </td>
-            <td class="py-1.5 px-2">
-                <div class="produk-wrapper">
-                    <select name="portofolio_items[${idx}][nama_produk]" onchange="rowProdukChanged(this)"
-                        class="w-full px-2 py-1.5 border border-line rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent produk-select">
-                        <option value="">Pilih jenis dulu</option>
-                    </select>
-                    <input type="hidden" name="portofolio_items[${idx}][produk_id]" class="produk-id">
-                    <input type="hidden" name="portofolio_items[${idx}][produk_type]" class="produk-type">
-                </div>
-            </td>
-            <td class="py-1.5 px-2">
-                <input type="text" name="portofolio_items[${idx}][nominal]"
-                    oninput="formatRupiahInput(this); rowHitung(this)"
-                    class="w-full px-2 py-1.5 border border-line rounded-lg text-xs text-right focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent nominal-input"
-                    placeholder="0">
-            </td>
-            <td class="py-1.5 px-2">
-                <input type="text" name="portofolio_items[${idx}][harga_akuisisi]" readonly
-                    class="w-full px-2 py-1.5 border border-line rounded-lg text-xs text-right bg-gray-50 focus:outline-none harga-input"
-                    placeholder="Otomatis">
-            </td>
-            <td class="py-1.5 px-2">
-                <input type="text" readonly
-                    class="w-full px-2 py-1.5 border border-transparent rounded-lg text-xs text-right font-semibold text-primary nilai-display"
-                    value="Rp 0">
-            </td>
-            <td class="py-1.5 pl-2 text-center">
-                <button type="button" onclick="hapusRow(this)"
-                    class="text-red-400 hover:text-red-600 transition p-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                </button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-        tr.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        hitungTotal();
-    }
+    function importMemberPortfolio() {
+        const tbody = document.getElementById('memberPortfolioTable');
+        const rows = tbody.querySelectorAll('tr');
+        console.log('importMemberPortfolio clicked, rows:', rows.length);
+        if (rows.length === 0) { alert('Tidak ada data portofolio untuk diimport.'); return; }
 
-    function hapusRow(btn) {
-        const tr = btn.closest('tr');
-        if (document.querySelectorAll('.portofolio-row').length <= 1) {
-            const inputs = tr.querySelectorAll('input');
-            inputs.forEach(inp => { if (!inp.readOnly) inp.value = ''; });
-            const selects = tr.querySelectorAll('select');
-            selects.forEach(sel => sel.selectedIndex = 0);
-            const displays = tr.querySelectorAll('.nilai-display');
-            displays.forEach(d => d.value = 'Rp 0');
-            const hargaInputs = tr.querySelectorAll('.harga-input');
-            hargaInputs.forEach(h => h.value = '');
-            hitungTotal();
-            return;
-        }
-        tr.remove();
-        hitungTotal();
-    }
+        const section = document.getElementById('portofolioSection');
+        section.style.display = 'block';
+        console.log('portofolioSection display set to block');
 
-    function rowJenisChanged(select) {
-        const tr = select.closest('tr');
-        const wrapper = tr.querySelector('.produk-wrapper');
-        const produkSelect = wrapper.querySelector('.produk-select');
-        const produkId = wrapper.querySelector('.produk-id');
-        const produkType = wrapper.querySelector('.produk-type');
-        const hargaInput = tr.querySelector('.harga-input');
-        const nilaiDisplay = tr.querySelector('.nilai-display');
-        const nominalInput = tr.querySelector('.nominal-input');
-        const jenis = select.value;
-        const existingNama = produkSelect.dataset.nama || '';
+        const form = document.querySelector('form[x-data]');
+        const comp = form ? Alpine.$data(form) : null;
+        console.log('Alpine comp:', comp, 'pfRows:', comp?.pfRows);
+        if (!comp) { console.error('Alpine formPage tidak ditemukan'); return; }
 
-        produkId.value = '';
-        produkType.value = '';
-        hargaInput.value = '';
-        nilaiDisplay.value = 'Rp 0';
-        if (!nominalInput.dataset.keep) nominalInput.value = '';
+        const normalizeJenis = j => {
+            if (!j) return '';
+            const lower = String(j).toLowerCase();
+            if (lower.includes('kas') || lower.includes('deposito')) return 'Kas/Deposito';
+            if (lower.includes('reksa') || lower.includes('reksadana')) return 'Reksa Dana';
+            if (lower.includes('saham')) return 'Saham';
+            if (lower.includes('obligasi')) return 'Obligasi';
+            return j;
+        };
 
-        if (!jenis) {
-            produkSelect.innerHTML = '<option value="">Pilih jenis dulu</option>';
-            hitungTotal();
-            return;
-        }
+        const imported = [];
+        rows.forEach(row => {
+            const jenis = normalizeJenis(row.dataset.jenis || '');
+            const nama = row.dataset.nama || '';
+            const jumlah = Math.floor(parseFloat(row.dataset.jumlah) || 0);
+            const harga = Math.floor(parseFloat(row.dataset.harga) || 0);
+            const produk_type = jenis === 'Kas/Deposito' ? 'bank' :
+                (jenis === 'Reksa Dana' ? 'reksadana' :
+                (jenis === 'Saham' ? 'saham' : 'obligasi'));
 
-        if (jenis === 'Kas/Deposito') {
-            produkSelect.innerHTML = '';
-            const opt = document.createElement('option');
-            opt.value = 'Lainnya';
-            opt.textContent = 'Lainnya (ketik manual)';
-            produkSelect.appendChild(opt);
-            BANK_LIST.forEach(b => {
-                const o = document.createElement('option');
-                o.value = b;
-                o.textContent = b;
-                produkSelect.appendChild(o);
+            imported.push({
+                jenis, nama_produk: nama, produk_id: '', produk_type,
+                nominal: jumlah, harga_akuisisi: jenis === 'Kas/Deposito' ? '1' : harga,
+                loading: false, products: [], manual_produk: false,
+                total_nilai: 0, total_nilai_formatted: 'Rp 0',
             });
-
-            const restoreNama = existingNama || produkSelect.dataset.nama || '';
-            const isCustomBank = restoreNama && !BANK_LIST.includes(restoreNama) && restoreNama !== 'Lainnya';
-
-            if (isCustomBank) {
-                produkSelect.outerHTML = `<input type="text" name="${produkSelect.name}" class="w-full px-2 py-1.5 border border-line rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent produk-select" placeholder="Ketik nama bank..." value="${restoreNama}" onchange="rowProdukChanged(this)">`;
-            } else {
-                if (restoreNama && BANK_LIST.includes(restoreNama)) {
-                    produkSelect.value = restoreNama;
-                } else {
-                    produkSelect.value = 'Lainnya';
-                }
-                produkSelect.onchange = function() {
-                    if (this.value === 'Lainnya') {
-                        const name = this.name;
-                        this.outerHTML = `<input type="text" name="${name}" class="w-full px-2 py-1.5 border border-line rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent produk-select" placeholder="Ketik nama bank..." onchange="rowProdukChanged(this)">`;
-                        const newInput = tr.querySelector('.produk-select');
-                        if (newInput) rowProdukChanged(newInput);
-                    } else {
-                        rowProdukChanged(this);
-                    }
-                };
-            }
-
-            produkType.value = 'bank';
-            hargaInput.value = '1';
-            rowHitung(nominalInput);
-            hitungTotal();
-            return;
-        }
-
-        produkType.value = jenis === 'Reksa Dana' ? 'reksadana' : jenis === 'Saham' ? 'saham' : 'obligasi';
-
-        produkSelect.innerHTML = '<option value="">Memuat...</option>';
-        produkSelect.disabled = true;
-
-        fetch(`{{ route('user.portofolio.produk') }}?jenis=${encodeURIComponent(jenis)}`)
-            .then(r => r.json())
-            .then(data => {
-                produkSelect.innerHTML = '<option value="">Pilih produk...</option>';
-                data.forEach(item => {
-                    const o = document.createElement('option');
-                    o.value = item.nama;
-                    o.dataset.id = item.id;
-                    o.dataset.harga = item.harga || 0;
-                    o.textContent = item.nama;
-                    produkSelect.appendChild(o);
-                });
-
-                // Tambah opsi ketik manual
-                const optManual = document.createElement('option');
-                optManual.value = '__manual__';
-                optManual.textContent = '— Ketik manual —';
-                produkSelect.appendChild(optManual);
-
-                produkSelect.disabled = false;
-
-                if (existingNama) {
-                    const match = Array.from(produkSelect.options).find(o => o.value === existingNama);
-                    if (match) {
-                        produkSelect.value = existingNama;
-                        rowProdukChanged(produkSelect);
-                    } else {
-                        // Nama tidak ada di list, tampilkan sebagai input manual
-                        const name = produkSelect.name;
-                        produkSelect.outerHTML = `<input type="text" name="${name}" class="w-full px-2 py-1.5 border border-line rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent produk-select" placeholder="Ketik nama produk..." value="${existingNama}" onchange="rowProdukChanged(this)">`;
-                    }
-                }
-
-                produkSelect.onchange = function() {
-                    if (this.value === '__manual__') {
-                        const name = this.name;
-                        this.outerHTML = `<input type="text" name="${name}" class="w-full px-2 py-1.5 border border-line rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent produk-select" placeholder="Ketik nama produk..." onchange="rowProdukChanged(this)">`;
-                        tr.querySelector('.produk-id').value = '';
-                        tr.querySelector('.harga-input').value = '';
-                        rowHitung(tr.querySelector('.nominal-input'));
-                        hitungTotal();
-                    } else {
-                        rowProdukChanged(this);
-                    }
-                };
-            })
-            .catch(() => {
-                produkSelect.innerHTML = '<option value="">Gagal memuat data</option>';
-                produkSelect.disabled = false;
-            });
-    }
-
-    function rowProdukChanged(el) {
-        const tr = el.closest('tr');
-        const wrapper = tr.querySelector('.produk-wrapper');
-        const produkId = wrapper.querySelector('.produk-id');
-        const produkType = wrapper.querySelector('.produk-type');
-        const hargaInput = tr.querySelector('.harga-input');
-        const nominalInput = tr.querySelector('.nominal-input');
-        const jenis = tr.querySelector('.jenis-select').value;
-        const selectedValue = el.value || '';
-        const isSelect = el.tagName === 'SELECT';
-        const selectedId = isSelect ? (el.options[el.selectedIndex]?.dataset?.id || '') : '';
-
-        if (jenis === 'Kas/Deposito') {
-            produkId.value = '';
-            produkType.value = 'bank';
-            hargaInput.value = '1';
-            rowHitung(nominalInput);
-            hitungTotal();
-            return;
-        }
-
-        if (!selectedValue) {
-            hargaInput.value = '';
-            rowHitung(nominalInput);
-            hitungTotal();
-            return;
-        }
-
-        if (jenis === 'Saham') {
-            produkId.value = selectedValue;
-            produkType.value = 'saham';
-        } else {
-            produkId.value = selectedId;
-            produkType.value = jenis === 'Reksa Dana' ? 'reksadana' : 'obligasi';
-        }
-
-        const params = new URLSearchParams({ jenis, produk_id: produkId.value, produk_type: produkType.value });
-
-        fetch(`{{ route('user.portofolio.harga') }}?${params}`)
-            .then(r => r.json())
-            .then(data => {
-                if (data.harga !== null && data.harga !== undefined) {
-                    hargaInput.value = data.harga;
-                } else {
-                    hargaInput.value = '';
-                }
-                rowHitung(nominalInput);
-                hitungTotal();
-            })
-            .catch(() => {
-                hargaInput.value = '';
-                rowHitung(nominalInput);
-                hitungTotal();
-            });
-    }
-
-    function rowHitung(el) {
-        const tr = el.closest('tr');
-        const nominalInput = tr.querySelector('.nominal-input');
-        const hargaInput = tr.querySelector('.harga-input');
-        const nilaiDisplay = tr.querySelector('.nilai-display');
-
-        const nominal = parseFloat(cleanRupiah(nominalInput.value)) || 0;
-        const harga = parseFloat(cleanRupiah(hargaInput.value)) || 0;
-        const nilai = nominal * harga;
-
-        nilaiDisplay.value = 'Rp ' + formatNumber(nilai);
-        hitungTotal();
-    }
-
-    function hitungTotal() {
-        let total = 0;
-        document.querySelectorAll('.nilai-display').forEach(el => {
-            const val = cleanRupiah(el.value.replace('Rp ', ''));
-            total += parseFloat(val) || 0;
         });
-        document.getElementById('totalPortofolio').textContent = 'Rp ' + formatNumber(total);
-        document.getElementById('dana_tersedia').value = formatNumber(total);
+        console.log('imported:', imported);
+
+        // Ganti seluruh array agar Alpine pasti re-render
+        comp.pfRows = imported.map(row => {
+            comp.pfUpdateTotal(row);
+            return row;
+        });
+        comp.pfHitungAll();
+        console.log('pfRows after import:', comp.pfRows);
+
+        // Untuk baris non-kas, muat daftar produk dan cocokkan dengan nama efek
+        imported.forEach(async (row, idx) => {
+            if (row.jenis === 'Kas/Deposito' || !row.nama_produk) return;
+
+            try {
+                const res = await fetch(`{{ route('user.portofolio.produk') }}?jenis=${encodeURIComponent(row.jenis)}`);
+                const data = await res.json();
+                const target = comp.pfRows[idx];
+                if (!target) return;
+                target.products = data;
+
+                const match = data.find(p => p.nama && p.nama.toLowerCase() === row.nama_produk.toLowerCase());
+                if (match) {
+                    target.nama_produk = match.nama;
+                    target.produk_id = match.id;
+                    comp.pfFetchHarga(target);
+                } else {
+                    target.manual_produk = true;
+                    target.produk_id = row.nama_produk;
+                    comp.pfUpdateTotal(target);
+                    comp.pfHitungAll();
+                }
+            } catch (e) {
+                console.error('Gagal muat produk import:', e);
+            }
+        });
+
+        section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function pfProdukChanged(i, valueOrEl) {
+        const form = document.querySelector('form[x-data]');
+        const comp = form ? Alpine.$data(form) : null;
+        if (!comp) return;
+        const row = comp.pfRows[i];
+
+        if (row.jenis === 'Kas/Deposito') {
+            row.nama_produk = valueOrEl;
+            row.produk_id = '';
+            row.produk_type = 'bank';
+            row.harga_akuisisi = '1';
+            comp.pfUpdateTotal(row);
+            comp.pfHitungAll();
+            return;
+        }
+
+        if (typeof valueOrEl === 'string') {
+            row.nama_produk = valueOrEl;
+            row.produk_id = valueOrEl;
+            comp.pfFetchHarga(row);
+            return;
+        }
+
+        const sel = valueOrEl;
+        if (sel.value === '__manual__') {
+            row.manual_produk = true;
+            row.nama_produk = '';
+            row.produk_id = '';
+            row.harga_akuisisi = '';
+            comp.pfUpdateTotal(row);
+            comp.pfHitungAll();
+            return;
+        }
+
+        const opt = sel.options[sel.selectedIndex];
+        row.nama_produk = sel.value;
+        row.produk_id = opt?.dataset?.id || sel.value;
+        comp.pfFetchHarga(row);
     }
 
     function formatRupiahInput(input) {
@@ -911,11 +830,11 @@
     }
 
     function cleanRupiah(val) {
-        return val.replace(/\./g, '').replace(/,/g, '');
+        return String(val).replace(/\./g, '').replace(/,/g, '.');
     }
 
     function formatNumber(num) {
-        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        return Math.floor(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     }
 
     function bukaGrafik(jenis, nama) {
@@ -929,7 +848,6 @@
 
         let produkId = jenis === 'Saham' ? nama : '';
         let produkType = jenis === 'Kas/Deposito' ? 'bank' : (jenis === 'Reksa Dana' ? 'reksadana' : (jenis === 'Saham' ? 'saham' : 'obligasi'));
-
         const params = new URLSearchParams({ jenis, produk_id: produkId, produk_type: produkType });
 
         fetch(`{{ route('user.portofolio.grafik') }}?${params}`)
@@ -948,40 +866,20 @@
                     data: {
                         labels: data.labels,
                         datasets: [{
-                            label: data.label || 'Nilai',
-                            data: data.values,
-                            borderColor: '#3b82f6',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            fill: true,
-                            tension: 0.3,
-                            pointRadius: 2,
-                            pointHoverRadius: 5,
-                            borderWidth: 2,
+                            label: data.label || 'Nilai', data: data.values,
+                            borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            fill: true, tension: 0.3, pointRadius: 2, pointHoverRadius: 5, borderWidth: 2,
                         }]
                     },
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
+                        responsive: true, maintainAspectRatio: true,
                         plugins: {
                             legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: ctx => 'Rp ' + formatNumber(Math.round(ctx.parsed.y))
-                                }
-                            }
+                            tooltip: { callbacks: { label: ctx => 'Rp ' + formatNumber(Math.round(ctx.parsed.y)) } }
                         },
                         scales: {
-                            x: {
-                                grid: { display: false },
-                                ticks: { maxTicksLimit: 8, font: { size: 10 } }
-                            },
-                            y: {
-                                grid: { color: '#f1f5f9' },
-                                ticks: {
-                                    font: { size: 10 },
-                                    callback: v => 'Rp ' + formatNumber(Math.round(v))
-                                }
-                            }
+                            x: { grid: { display: false }, ticks: { maxTicksLimit: 8, font: { size: 10 } } },
+                            y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 }, callback: v => 'Rp ' + formatNumber(Math.round(v)) } }
                         }
                     }
                 });
@@ -995,17 +893,7 @@
     function tutupGrafik() {
         document.getElementById('grafikModal').style.display = 'none';
         document.body.style.overflow = '';
-        if (grafikChart) {
-            grafikChart.destroy();
-            grafikChart = null;
-        }
+        if (grafikChart) { grafikChart.destroy(); grafikChart = null; }
     }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        hitungTotal();
-        document.querySelectorAll('.jenis-select').forEach(sel => {
-            if (sel.value) rowJenisChanged(sel);
-        });
-    });
 </script>
 @endpush
