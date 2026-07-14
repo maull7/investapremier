@@ -79,6 +79,16 @@ class User extends Authenticatable
         return $this->hasMany(PerencanaanInvestasi::class, 'user_id');
     }
 
+    public function memberPortfolios(): HasMany
+    {
+        return $this->hasMany(MemberPortfolio::class, 'user_id');
+    }
+
+    public function portofolioItems(): HasMany
+    {
+        return $this->hasMany(PortofolioItem::class, 'user_id');
+    }
+
     /**
      * Check if user has a specific permission.
      * Format: 'menu', 'menu.submenu', 'menu.submenu.tab'

@@ -227,8 +227,107 @@
     </div>
 </div>
 
+{{-- Portfolio Summary Section --}}
+<div class="flex items-center justify-between mb-5 mt-8">
+    <div class="sec-hd">
+        <svg viewBox="0 0 24 24"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        Portfolio Summary
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl flex-shrink-0 grid place-items-center" style="background:#f0fdf4">
+            <svg style="width:22px;height:22px;stroke:#16a34a;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div>
+            <div class="text-2xl font-extrabold text-gray-900">{{ $totalAum > 0 ? 'Rp ' . number_format($totalAum / 1000000, 1) . 'M' : 'Rp 0' }}</div>
+            <div class="text-xs text-gray-400 mt-0.5 uppercase tracking-wide font-semibold">Total AUM</div>
+        </div>
+    </div>
+    <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl flex-shrink-0 grid place-items-center" style="background:#f0fdf4">
+            <svg style="width:22px;height:22px;stroke:#16a34a;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10"/></svg>
+        </div>
+        <div>
+            <div class="text-2xl font-extrabold text-gray-900">{{ $totalPortfolioItems }}</div>
+            <div class="text-xs text-gray-400 mt-0.5 uppercase tracking-wide font-semibold">Total Portfolio Items</div>
+        </div>
+    </div>
+    <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl flex-shrink-0 grid place-items-center" style="background:#f0fdf4">
+            <svg style="width:22px;height:22px;stroke:#16a34a;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </div>
+        <div>
+            <div class="text-2xl font-extrabold text-gray-900">{{ $usersWithPortfolio }}</div>
+            <div class="text-xs text-gray-400 mt-0.5 uppercase tracking-wide font-semibold">Users with Portfolio</div>
+        </div>
+    </div>
+</div>
+
+{{-- Portfolio Distribution & Top Portfolios --}}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+    <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <div class="sec-hd">
+                <svg viewBox="0 0 24 24"><path d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+                Distribusi Aset Portfolio
+            </div>
+            <p class="text-xs text-gray-400 mt-1 ml-7">Seluruh portfolio user</p>
+        </div>
+        <div class="p-6 space-y-4">
+            @forelse($allJenis as $jenis => $total)
+            @php $pct = $totalAum > 0 ? round(($total / $totalAum) * 100) : 0; @endphp
+            <div>
+                <div class="flex items-center justify-between text-sm mb-1.5">
+                    <span class="font-medium text-gray-700">{{ $jenis }}</span>
+                    <span class="text-gray-500 text-xs">Rp {{ number_format($total / 1000000, 1) }}M ({{ $pct }}%)</span>
+                </div>
+                <div class="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full" style="background:linear-gradient(90deg,#16a34a,#22c55e);width:{{ $pct }}%"></div>
+                </div>
+            </div>
+            @empty
+            <div class="text-center py-6 text-sm text-gray-400">Belum ada data portfolio.</div>
+            @endforelse
+        </div>
+    </div>
+
+    {{-- Top Portfolios --}}
+    <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <div class="sec-hd">
+                <svg viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Top Portfolios
+            </div>
+            <p class="text-xs text-gray-400 mt-1 ml-7">5 portfolio terbesar</p>
+        </div>
+        <div class="divide-y divide-gray-50">
+            @forelse($topPortfolios as $i => $p)
+            <div class="px-6 py-4 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full text-white text-xs font-bold grid place-items-center flex-shrink-0"
+                         style="background:linear-gradient(135deg,#16a34a,#22c55e)">
+                        {{ substr($p['name'], 0, 2) }}
+                    </div>
+                    <div>
+                        <div class="font-semibold text-gray-900 text-sm">{{ $p['name'] }}</div>
+                        <div class="text-xs text-gray-400">Portfolio #{{ $i + 1 }}</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="font-bold text-gray-900">Rp {{ number_format($p['total'] / 1000000, 1) }}M</div>
+                </div>
+            </div>
+            @empty
+            <div class="px-6 py-10 text-center text-sm text-gray-400">Belum ada data portfolio.</div>
+            @endforelse
+        </div>
+    </div>
+</div>
+
 {{-- Analisa Section --}}
-<div class="flex items-center justify-between mb-5">
+<div class="flex items-center justify-between mb-5 mt-8">
     <div class="sec-hd">
         <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
         Analisa Reksa Dana

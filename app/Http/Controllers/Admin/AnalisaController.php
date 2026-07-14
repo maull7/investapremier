@@ -58,7 +58,10 @@ class AnalisaController extends Controller
             $query->whereHas('analisa', fn($q) => $q->where('product_type', 'reksa_dana')->where('ffs_tahun', $request->ffs_tahun));
         }
 
-        $reksaDanas = $query->orderBy('nama_reksa_dana')->paginate(20);
+        $sort = $request->get('sort', 'nama_reksa_dana');
+        $direction = $request->get('direction', 'asc');
+
+        $reksaDanas = $query->orderBy($sort, $direction)->paginate(20);
 
         $tahunList = AnalisaReksaDana::where('product_type', 'reksa_dana')
             ->whereNotNull('ffs_tahun')
@@ -72,7 +75,7 @@ class AnalisaController extends Controller
     protected function indexProspektus(Request $request)
     {
         $query = ReksaDana::with([
-            'documents' => fn($q) => $q->where('document_type', 'prospektus')->orderBy('ffs_year', 'desc')->orderBy('ffs_month', 'desc'),
+            'documents' => fn($q) => $q->where('document_type', 'prospektus')->orderBy('ffs_year', 'desc')->orderBy('ffs_month', 'desc')->take(1),
         ])->whereHas('documents', fn($q) => $q->where('document_type', 'prospektus'));
 
         if ($request->search) {
@@ -93,7 +96,7 @@ class AnalisaController extends Controller
     protected function indexFfs(Request $request)
     {
         $query = ReksaDana::with([
-            'documents' => fn($q) => $q->where('document_type', 'ffs')->orderBy('ffs_year', 'desc')->orderBy('ffs_month', 'desc'),
+            'documents' => fn($q) => $q->where('document_type', 'ffs')->orderBy('ffs_year', 'desc')->orderBy('ffs_month', 'desc')->take(1),
         ])->whereHas('documents', fn($q) => $q->where('document_type', 'ffs'));
 
         if ($request->search) {

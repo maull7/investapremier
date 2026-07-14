@@ -7,6 +7,7 @@ use App\Models\AdvisorClientRequest;
 use App\Models\PerencanaanInvestasi;
 use App\Models\User;
 use App\Notifications\AdvisorConnectionRequest;
+use App\Services\PortfolioAggregationService;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -104,7 +105,9 @@ class ClientController extends Controller
             ->latest()
             ->paginate(10);
 
-        return view('advisor.client.show', compact('client', 'perencanaan'));
+        $portfolioSummary = app(PortfolioAggregationService::class)->aggregate($client);
+
+        return view('advisor.client.show', compact('client', 'perencanaan', 'portfolioSummary'));
     }
 
     public function destroy(User $client)

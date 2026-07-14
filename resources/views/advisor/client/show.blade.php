@@ -15,7 +15,7 @@
     @endif
 
     {{-- Info Klien --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         @php $profile = $client->memberProfile; @endphp
         <div class="bg-white rounded-xl border border-line p-5">
             <p class="text-xs text-muted">Usia</p>
@@ -33,7 +33,57 @@
             <p class="text-xs text-muted">Telepon</p>
             <p class="text-lg font-bold text-primary mt-1">{{ $profile?->no_telepon ?? '—' }}</p>
         </div>
+        <div class="bg-white rounded-xl border border-line p-5">
+            <p class="text-xs text-muted">Total Portfolio</p>
+            <p class="text-lg font-bold text-accent mt-1">{{ $portfolioSummary['totalKekayaanFormatted'] ?? 'Rp 0' }}</p>
+        </div>
     </div>
+
+    {{-- Portfolio Summary --}}
+    @if(count($portfolioSummary['alokasiAset'] ?? []) > 0 || count($portfolioSummary['goals'] ?? []) > 0)
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        @if(count($portfolioSummary['alokasiAset'] ?? []) > 0)
+        <div class="bg-white rounded-xl border border-line p-5">
+            <h3 class="font-bold text-primary text-sm mb-4">Alokasi Aset</h3>
+            <div class="space-y-3">
+                @foreach($portfolioSummary['alokasiAset'] as $item)
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-gray-700">{{ $item['label'] }}</span>
+                        <span class="font-bold text-gray-900">{{ $item['pct'] }}%</span>
+                    </div>
+                    <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full bg-gradient-to-r {{ $item['warna'] }}" style="width:{{ $item['pct'] }}%"></div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+        @if(count($portfolioSummary['goals'] ?? []) > 0)
+        <div class="bg-white rounded-xl border border-line p-5">
+            <h3 class="font-bold text-primary text-sm mb-4">Progress Goal</h3>
+            <div class="space-y-4">
+                @foreach($portfolioSummary['goals'] as $goal)
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-gray-700 font-medium">{{ $goal['nama'] }}</span>
+                        <span class="font-bold text-green-600">{{ $goal['pct'] }}%</span>
+                    </div>
+                    <div class="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full bg-gradient-to-r from-green-600 to-green-400" style="width:{{ $goal['pct'] }}%"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>Target: {{ $goal['targetFormatted'] }}</span>
+                        <span>Terkumpul: {{ $goal['terkumpulFormatted'] }}</span>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+    </div>
+    @endif
 
     {{-- Perencanaan Investasi --}}
     <div class="bg-white rounded-xl border border-line overflow-hidden">
