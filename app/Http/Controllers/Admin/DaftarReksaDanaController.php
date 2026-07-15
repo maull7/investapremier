@@ -367,8 +367,13 @@ class DaftarReksaDanaController extends Controller
             'portfolioCompositions' => fn($q) => $q->orderBy('period_date'),
             'managementTeams',
             'investmentManager',
-            'documents' => fn($q) => $q->with(['parsedPages', 'partitions']),
+            'documents' => fn($q) => $q->with(['parsedPages', 'partitions', 'ffsExtractionResults']),
         ])->findOrFail($id);
+
+        $month = request('month') ? (int) request('month') : null;
+        $year = request('year') ? (int) request('year') : null;
+        $periodMonth = $month && $year ? $month : null;
+        $periodYear = $month && $year ? $year : null;
 
         $range = request('range', '1y');
         $chartData = $chartDataService->forFund(
@@ -445,8 +450,6 @@ class DaftarReksaDanaController extends Controller
             $returnYearly = (float) $fund->return_1y * 100;
         }
 
-
-
         // — Pasardana risk metrics —
         $riskMetrics = [
             'sharpe_ratio_1y' => $fund->sharpe_ratio_1y,
@@ -462,6 +465,34 @@ class DaftarReksaDanaController extends Controller
             'max_drawdown_3y' => $fund->max_drawdown_3y,
             'max_drawdown_5y' => $fund->max_drawdown_5y,
         ];
+
+        // — Period-filtered portfolio data —
+        $periodAa = null;
+        $periodTopHoldings = collect();
+        $periodHasData = false;
+        $ffsDocument = null;
+
+        if ($periodMonth && $periodYear) {
+            $periodAa = $fund->assetAllocations()
+                ->whereMonth('period_date', $periodMonth)
+                ->whereYear('period_date', $periodYear)
+                ->first();
+
+            $periodTopHoldings = $fund->portfolioCompositions()
+                ->whereMonth('period_date', $periodMonth)
+                ->whereYear('period_date', $periodYear)
+                ->orderByDesc('weight_percent')
+                ->get();
+
+            $periodHasData = $periodAa !== null || $periodTopHoldings->isNotEmpty();
+
+            $ffsDocument = $fund->documents()
+                ->where('document_type', 'ffs')
+                ->where('ffs_month', $periodMonth)
+                ->where('ffs_year', $periodYear)
+                ->with(['parsedPages' => fn($q) => $q->orderBy('page_parse'), 'ffsExtractionResults'])
+                ->first();
+        }
 
         if ($period = request('period')) {
             $aa = $fund->assetAllocations()->where('period_date', $period)->first();
@@ -500,6 +531,12 @@ class DaftarReksaDanaController extends Controller
             'range',
             'chartData',
             'riskMetrics',
+            'periodMonth',
+            'periodYear',
+            'periodAa',
+            'periodTopHoldings',
+            'periodHasData',
+            'ffsDocument',
         ));
     }
 

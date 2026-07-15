@@ -81,47 +81,25 @@
             this.personModal.loading = false;
         }
     },
-    portfolioMonth: '',
-    portfolioYear: '',
+    portfolioMonth: {{ Js::from(request('month', '')) }},
+    portfolioYear: {{ Js::from(request('year', '')) }},
     portfolioSaving: false,
-    portfolioSaham: 0,
-    portfolioObligasi: 0,
-    portfolioPasarUang: 0,
-    portfolioKas: 0,
-    portfolioTopHoldings: '',
-    portfolioNabPerUnit: null,
-    portfolioTanggalNab: '',
-    portfolioAum: null,
-    portfolioTotalUnit: null,
-    portfolioReturnYtd: null,
-    portfolioReturn1y: null,
-    portfolioReturn1m: null,
-    portfolioReturnInception: null,
+    portfolioSaham: {{ Js::from($periodAa?->equity_percent ?? 0) }},
+    portfolioObligasi: {{ Js::from($periodAa?->bond_percent ?? 0) }},
+    portfolioPasarUang: {{ Js::from($periodAa?->money_market_percent ?? 0) }},
+    portfolioKas: {{ Js::from($periodAa?->cash_percent ?? 0) }},
+    portfolioTopHoldings: @js($periodTopHoldings->map(fn($h) => trim("{$h->security_name}:{$h->weight_percent}:{$h->security_type}"))->implode("\n")),
+    portfolioNabPerUnit: {{ Js::from($fund->nab_per_unit) }},
+    portfolioTanggalNab: {{ Js::from($fund->tanggal_nab?->format('Y-m-d')) }},
+    portfolioAum: {{ Js::from($fund->aum) }},
+    portfolioTotalUnit: {{ Js::from($fund->total_unit) }},
+    portfolioReturnYtd: {{ Js::from($fund->return_ytd) }},
+    portfolioReturn1y: {{ Js::from($fund->return_1y) }},
+    portfolioReturn1m: {{ Js::from($fund->return_1m) }},
+    portfolioReturnInception: {{ Js::from($fund->return_inception) }},
     portfolioSuccess: null,
     portfolioError: null,
-    loadPortfolioData() {
-        if (!this.portfolioMonth || !this.portfolioYear) return;
-        const period = `${this.portfolioYear}-${String(this.portfolioMonth).padStart(2,'0')}-01`;
-        fetch('{{ route('admin.daftar-reksa-dana.show', $fund) }}?tab=portofolio&period=' + period, {
-            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-        }).then(r => r.json()).then(data => {
-            if (data.aa) {
-                this.portfolioSaham = data.aa.equity_percent;
-                this.portfolioObligasi = data.aa.bond_percent;
-                this.portfolioPasarUang = data.aa.money_market_percent;
-                this.portfolioKas = data.aa.cash_percent;
-            }
-            this.portfolioTopHoldings = data.top_holdings_text || '';
-            this.portfolioNabPerUnit = data.nab_per_unit;
-            this.portfolioTanggalNab = data.tanggal_nab;
-            this.portfolioAum = data.aum;
-            this.portfolioTotalUnit = data.total_unit;
-            this.portfolioReturnYtd = data.return_ytd;
-            this.portfolioReturn1y = data.return_1y;
-            this.portfolioReturn1m = data.return_1m;
-            this.portfolioReturnInception = data.return_inception;
-        }).catch(() => {});
-    },
+    loadPortfolioData() {},
     async savePortfolio() {
         if (this.portfolioSaving) return;
         this.portfolioSaving = true;
@@ -185,18 +163,30 @@
     </div>
     <div class="flex items-center gap-3 mt-3 flex-wrap">
         <span class="text-xs font-semibold text-muted">Data Portfolio:</span>
-        <select x-model="portfolioMonth" @change="loadPortfolioData" class="border border-line rounded-lg px-3 py-1.5 text-xs text-muted">
-            <option value="">Bulan</option>
-            @foreach(range(1, 12) as $m)
-            <option value="{{ $m }}">{{ \Carbon\Carbon::create()->month($m)->format('F') }}</option>
-            @endforeach
-        </select>
-        <select x-model="portfolioYear" @change="loadPortfolioData" class="border border-line rounded-lg px-3 py-1.5 text-xs text-muted">
-            <option value="">Tahun</option>
-            @foreach(range(now()->year, now()->year - 10) as $y)
-            <option value="{{ $y }}">{{ $y }}</option>
-            @endforeach
-        </select>
+        <form method="GET" id="period-filter" class="flex items-center gap-2 flex-wrap">
+            <input type="hidden" name="tab" value="{{ request('tab', 'snapshot') }}">
+            <select name="month" onchange="this.form.submit()" class="border border-line rounded-lg px-3 py-1.5 text-xs text-muted">
+                <option value="">Bulan</option>
+                @foreach(range(1, 12) as $m)
+                <option value="{{ $m }}" {{ request('month') == $m ? 'selected' : '' }}>{{ \Carbon\Carbon::create()->month($m)->format('F') }}</option>
+                @endforeach
+            </select>
+            <select name="year" onchange="this.form.submit()" class="border border-line rounded-lg px-3 py-1.5 text-xs text-muted">
+                <option value="">Tahun</option>
+                @foreach(range(now()->year, now()->year - 10) as $y)
+                <option value="{{ $y }}" {{ request('year') == $y ? 'selected' : '' }}>{{ $y }}</option>
+                @endforeach
+            </select>
+        </form>
+        @if(request('month') && request('year'))
+            @php
+                $monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+            @endphp
+            <span class="px-2.5 py-1 bg-accent/10 text-accent rounded-full text-[11px] font-semibold">
+                {{ $monthNames[request('month') - 1] ?? '-' }} {{ request('year') }}
+            </span>
+            <a href="{{ route('admin.daftar-reksa-dana.show', $fund) }}" class="px-2.5 py-1 text-[11px] text-muted hover:text-primary border border-line rounded-lg transition">Reset</a>
+        @endif
         <button @click="savePortfolio" :disabled="portfolioSaving"
             class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
@@ -755,11 +745,21 @@
 </div>
 
 {{-- TAB: PORTOFOLIO --}}
-<div x-show="tab === 'portofolio'" x-cloak x-init="portfolioMonth = portfolioMonth || new Date().getMonth() + 1; portfolioYear = portfolioYear || new Date().getFullYear(); loadPortfolioData()">
-    @if($aaTimeline->isEmpty() && $topHoldings->isEmpty())
+<div x-show="tab === 'portofolio'" x-cloak>
+    @php
+        $showAa = $periodMonth && $periodYear ? $periodAa : $aaTimeline->last();
+        $showTopHoldings = $periodMonth && $periodYear ? $periodTopHoldings : $topHoldings;
+        $hasAnyData = $periodMonth && $periodYear ? $periodHasData : ($aaTimeline->isNotEmpty() || $topHoldings->isNotEmpty());
+    @endphp
+    @if(!$hasAnyData)
     <div class="py-12 text-center text-muted bg-white rounded-2xl border border-line">
         <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-        <p class="font-medium">Data portofolio belum tersedia.</p>
+        @if($periodMonth && $periodYear)
+            @php $monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']; @endphp
+            <p class="font-medium">Data portofolio belum tersedia untuk periode {{ $monthNames[$periodMonth - 1] ?? '-' }} {{ $periodYear }}.</p>
+        @else
+            <p class="font-medium">Data portofolio belum tersedia.</p>
+        @endif
     </div>
     @else
     <div class="space-y-6">
@@ -776,7 +776,7 @@
                 </div>
             </div>
             @php
-                $latestAa = $aaTimeline->last();
+                $latestAa = $showAa;
             @endphp
             @if($latestAa)
             <div class="divide-y divide-line">
@@ -806,20 +806,20 @@
         </div>
 
         {{-- Asset Allocation Pie --}}
-        @if($latestAa = $aaTimeline->last())
+        @if($showAa)
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="bg-white rounded-2xl border border-line shadow-sm p-5">
-                <h3 class="font-bold text-primary text-sm mb-4">Asset Allocation ({{ $latestAa->period_date->format('M Y') }})</h3>
+                <h3 class="font-bold text-primary text-sm mb-4">Asset Allocation ({{ $showAa->period_date->format('M Y') }})</h3>
                 <div style="height: 280px;"><canvas id="chartAaPie"></canvas></div>
             </div>
             <div class="bg-white rounded-2xl border border-line shadow-sm p-5">
                 <h3 class="font-bold text-primary text-sm mb-4">Top Holdings</h3>
-                @if($topHoldings->isNotEmpty())
+                @if($showTopHoldings->isNotEmpty())
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead><tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide"><th class="px-3 py-2 font-semibold">Efek</th><th class="px-3 py-2 font-semibold">Jenis</th><th class="px-3 py-2 font-semibold text-right">Bobot</th></tr></thead>
                         <tbody class="divide-y divide-line">
-                            @foreach($topHoldings as $th)
+                            @foreach($showTopHoldings as $th)
                             <tr class="hover:bg-[#f8fafc]"><td class="px-3 py-2 text-xs font-semibold">{{ $th->security_name }}</td><td class="px-3 py-2 text-xs text-muted">{{ $th->security_type ?? '—' }}</td><td class="px-3 py-2 text-xs text-right font-semibold">{{ number_format($th->weight_percent, 2, ',', '.') }}%</td></tr>
                             @endforeach
                         </tbody>
@@ -858,13 +858,13 @@
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         {{-- Asset Allocation Pie --}}
-        @if($latestAa = $aaTimeline->last())
+        @if($showAa)
         new Chart(document.getElementById('chartAaPie'), {
             type: 'pie',
             data: {
                 labels: ['Saham', 'Obligasi', 'Pasar Uang', 'Kas'],
                 datasets: [{
-                    data: [{{ $latestAa->equity_percent ?? 0 }}, {{ $latestAa->bond_percent ?? 0 }}, {{ $latestAa->money_market_percent ?? 0 }}, {{ $latestAa->cash_percent ?? 0 }}],
+                    data: [{{ $showAa->equity_percent ?? 0 }}, {{ $showAa->bond_percent ?? 0 }}, {{ $showAa->money_market_percent ?? 0 }}, {{ $showAa->cash_percent ?? 0 }}],
                     backgroundColor: ['#2563eb', '#059669', '#d97706', '#6b7280'],
                     borderWidth: 1,
                 }]
@@ -940,7 +940,156 @@
 
 {{-- TAB: PDF FFS --}}
 <div x-show="tab === 'pdf-ffs'" x-cloak x-data="documentTabData('ffs')">
-    @include('admin.daftar-reksa-dana.partials.tab-pdf-document', ['fund' => $fund, 'docType' => 'ffs'])
+    @if(!$periodMonth || !$periodYear)
+        <div class="py-12 text-center text-muted bg-white rounded-2xl border border-line">
+            <svg class="w-10 h-10 mx-auto mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <p class="font-medium">Pilih Bulan dan Tahun pada "Data Portfolio" untuk menampilkan data FFS.</p>
+        </div>
+    @elseif(!$ffsDocument)
+        @php $monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']; @endphp
+        <div class="py-12 text-center text-muted bg-white rounded-2xl border border-line">
+            <svg class="w-10 h-10 mx-auto mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <p class="font-medium">Belum ada dokumen FFS untuk periode {{ $monthNames[$periodMonth - 1] ?? '-' }} {{ $periodYear }}.</p>
+            <div class="mt-4 max-w-sm mx-auto">
+                <div class="bg-[#f8fafc] border border-line rounded-xl p-4 text-left space-y-3">
+                    <p class="text-xs font-semibold text-primary">Upload FFS Periode Ini</p>
+                    <input type="file" accept="application/pdf" @change="uploadFfsFile = $event.target.files[0]"
+                        class="w-full text-xs border border-line rounded-lg px-3 py-2 file:mr-2 file:rounded file:border-0 file:bg-emerald-50 file:px-2 file:py-1 file:text-emerald-700">
+                    <div class="grid grid-cols-2 gap-2">
+                        <select x-model="uploadFfsMonth" class="w-full text-xs border border-line rounded-lg px-3 py-2">
+                            <option value="">Bulan</option>
+                            @foreach (['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'] as $i => $m)
+                                <option value="{{ $i + 1 }}" {{ $periodMonth == ($i + 1) ? 'selected' : '' }}>{{ $m }}</option>
+                            @endforeach
+                        </select>
+                        <input type="number" x-model="uploadFfsYear" placeholder="Tahun" min="2000" max="2100" value="{{ $periodYear }}"
+                            class="w-full text-xs border border-line rounded-lg px-3 py-2">
+                    </div>
+                    <button @click="uploadFfs()" :disabled="uploadFfsLoading || !uploadFfsFile || !uploadFfsMonth || !uploadFfsYear"
+                        class="w-full px-3 py-2 bg-emerald-700 text-white rounded-lg text-xs font-semibold hover:bg-emerald-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                        <span x-show="uploadFfsLoading" class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        <span x-text="uploadFfsLoading ? 'Mengupload...' : 'Upload FFS'"></span>
+                    </button>
+                    <div x-show="uploadFfsError" x-text="uploadFfsError" class="px-3 py-2 rounded-lg text-xs bg-red-50 border border-red-200 text-red-700"></div>
+                    <div x-show="uploadFfsSuccess" x-text="uploadFfsSuccess" class="px-3 py-2 rounded-lg text-xs bg-green-50 border border-green-200 text-green-700"></div>
+                </div>
+            </div>
+        </div>
+    @else
+        @php
+            $doc = $ffsDocument;
+            $ffsMonths = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        @endphp
+        <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light flex items-center justify-between">
+                <h2 class="font-bold text-white text-sm">
+                    FFS {{ $ffsMonths[$doc->ffs_month - 1] ?? '-' }} {{ $doc->ffs_year }}
+                    @if ($doc->parsedPages->isNotEmpty())
+                        <span class="text-[10px] font-normal opacity-75 ml-2">({{ $doc->parsedPages->count() }} hlm diparse)</span>
+                    @endif
+                </h2>
+                <div class="flex items-center gap-2">
+                    <a target="_blank" href="{{ route('admin.daftar-reksa-dana.documents.view', $doc) }}"
+                        class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition">Preview PDF</a>
+                    <a href="{{ route('admin.daftar-reksa-dana.documents.download', $doc) }}"
+                        class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition">Download</a>
+                </div>
+            </div>
+
+            @if ($doc->parsedPages->isEmpty())
+                <div class="p-6 text-center text-muted">
+                    <p class="text-sm">Dokumen belum diparse.</p>
+                    <p class="text-xs mt-1">Gunakan tombol <strong>Parse FFS & Simpan</strong> untuk mengekstrak teks.</p>
+                </div>
+            @endif
+
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-0 lg:gap-0 divide-y lg:divide-y-0 lg:divide-x divide-line">
+                <div class="p-4 lg:col-span-1">
+                    <div class="space-y-3">
+                        <button @click="uploadFfsOpen = !uploadFfsOpen"
+                            class="w-full px-3 py-2 border-2 border-dashed border-emerald-300 text-emerald-700 rounded-lg text-xs font-semibold hover:bg-emerald-50 transition flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            <span x-text="uploadFfsOpen ? 'Tutup' : 'Upload FFS Baru'"></span>
+                        </button>
+
+                        <div x-show="uploadFfsOpen" class="bg-[#f8fafc] border border-line rounded-xl p-4 space-y-3">
+                            <p class="text-xs font-semibold text-primary">Upload FFS Baru</p>
+                            <input type="file" accept="application/pdf" @change="uploadFfsFile = $event.target.files[0]"
+                                class="w-full text-xs border border-line rounded-lg px-3 py-2 file:mr-2 file:rounded file:border-0 file:bg-emerald-50 file:px-2 file:py-1 file:text-emerald-700">
+                            <div class="grid grid-cols-2 gap-2">
+                                <select x-model="uploadFfsMonth" class="w-full text-xs border border-line rounded-lg px-3 py-2">
+                                    <option value="">Bulan</option>
+                                    @foreach (['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'] as $i => $m)
+                                        <option value="{{ $i + 1 }}">{{ $m }}</option>
+                                    @endforeach
+                                </select>
+                                <input type="number" x-model="uploadFfsYear" placeholder="Tahun" min="2000" max="2100"
+                                    class="w-full text-xs border border-line rounded-lg px-3 py-2">
+                            </div>
+                            <button @click="uploadFfs()" :disabled="uploadFfsLoading || !uploadFfsFile || !uploadFfsMonth || !uploadFfsYear"
+                                class="w-full px-3 py-2 bg-emerald-700 text-white rounded-lg text-xs font-semibold hover:bg-emerald-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                                <span x-show="uploadFfsLoading" class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                <span x-text="uploadFfsLoading ? 'Mengupload...' : 'Upload'"></span>
+                            </button>
+                            <div x-show="uploadFfsError" x-text="uploadFfsError" class="px-3 py-2 rounded-lg text-xs bg-red-50 border border-red-200 text-red-700"></div>
+                            <div x-show="uploadFfsSuccess" x-text="uploadFfsSuccess" class="px-3 py-2 rounded-lg text-xs bg-green-50 border border-green-200 text-green-700"></div>
+                        </div>
+
+                        <div>
+                            <h3 class="font-bold text-primary text-xs mb-1">Ekstrak Data FFS</h3>
+                            <p class="text-[10px] text-muted">Untuk dokumen FFS, data langsung diparse dari seluruh halaman tanpa perlu partisi.</p>
+                        </div>
+
+                        @php $latestFfs = $doc->ffsExtractionResults->first(); @endphp
+                        @if ($latestFfs)
+                            <div class="px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                <p class="text-[10px] font-semibold text-emerald-700">Sudah diekstrak</p>
+                                <p class="text-[10px] text-muted mt-0.5">Periode: {{ $latestFfs->ffs_month ? str_pad($latestFfs->ffs_month, 2, '0', STR_PAD_LEFT) : '-' }}/{{ $latestFfs->ffs_year ?: '-' }}</p>
+                                <p class="text-[10px] text-muted">Tanggal data: {{ $latestFfs->tanggal_data?->format('d M Y') ?: '-' }}</p>
+                            </div>
+                        @endif
+
+                        <button @click='handleParseFfs({{ $doc->id }})'
+                            :disabled="loadingFfs[{{ $doc->id }}]"
+                            class="w-full px-3 py-2 bg-emerald-700 text-white rounded-lg text-xs font-semibold hover:bg-emerald-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                            <span x-show="loadingFfs[{{ $doc->id }}]" class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            <span x-text="loadingFfs[{{ $doc->id }}] ? 'Memproses...' : 'Parse FFS & Simpan'"></span>
+                        </button>
+
+                        <div x-show="ffsSuccess[{{ $doc->id }}]" x-text="ffsSuccess[{{ $doc->id }}]" class="px-3 py-2 rounded-lg text-xs bg-green-50 border border-green-200 text-green-700"></div>
+                        <div x-show="ffsError[{{ $doc->id }}]" x-text="ffsError[{{ $doc->id }}]" class="px-3 py-2 rounded-lg text-xs bg-red-50 border border-red-200 text-red-700"></div>
+                    </div>
+                </div>
+
+                @if ($doc->parsedPages->isNotEmpty())
+                <div class="p-4 lg:col-span-1">
+                    <h3 class="font-bold text-primary text-xs mb-3">Halaman Hasil Parsing</h3>
+                    <p class="text-[10px] text-muted mb-2">Gunakan nomor <strong>Parsing</strong> (bukan PDF asli) saat membuat partisi.</p>
+                    <div class="space-y-1 max-h-96 overflow-y-auto">
+                        @foreach ($doc->parsedPages as $page)
+                            <div @click='showPageContent({{ $doc->id }}, {{ $page->id }})'
+                                :class="isPageInSelectedPartition({{ $doc->id }}, {{ $page->page_parse }}) ? 'bg-accent/10 border border-accent/30' : 'border border-line hover:border-accent/30 hover:bg-[#f8fafc]'"
+                                class="px-3 py-2 rounded-lg cursor-pointer transition text-xs flex items-center gap-2">
+                                <span class="text-[10px] text-muted font-mono w-10 shrink-0">PDF {{ $page->page_pdf }}</span>
+                                <span class="text-[10px] text-muted">&rarr; Parsing {{ $page->page_parse }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="p-4 lg:col-span-2">
+                    <h3 class="font-bold text-primary text-xs mb-3">Isi Teks</h3>
+                    <div x-show="!selectedPageContent" class="text-xs text-muted italic py-8 text-center">
+                        Klik nomor halaman di sebelah kiri untuk melihat isi teks.
+                    </div>
+                    <div x-show="selectedPageContent" x-html="selectedPageContent"
+                        class="text-xs whitespace-pre-wrap bg-[#f8fafc] rounded-xl p-4 border border-line max-h-96 overflow-y-auto font-mono leading-relaxed">
+                    </div>
+                </div>
+                @endif
+            </div>
+        </div>
+    @endif
 </div>
 
 <div x-show="personModal.open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
