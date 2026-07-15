@@ -33,6 +33,7 @@ class ReksaDana extends Model
         'launch_date',
         'mata_uang',
         'risk_category',
+        'risk_description',
         'subscription_fee',
         'redemption_fee',
         'switching_fee',

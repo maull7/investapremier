@@ -221,7 +221,18 @@
     </div>
     <div class="bg-white rounded-xl border border-line p-4">
         <p class="text-xs text-muted mb-1">AUM</p>
-        <p class="text-sm font-bold text-primary">{{ $latestNav && $latestNav->aum ? 'Rp' . number_format($latestNav->aum, 0, ',', '.') : ($fund->aum ? 'Rp' . number_format($fund->aum, 0, ',', '.') : '—') }}</p>
+        @php
+            $aumVal = $latestNav && $latestNav->aum ? $latestNav->aum : ($fund->aum ?? null);
+            if ($aumVal !== null) {
+                if ($aumVal >= 1_000_000_000_000) $aumDisplay = 'Rp' . number_format($aumVal / 1_000_000_000_000, 2, ',', '.') . 'T';
+                elseif ($aumVal >= 1_000_000_000) $aumDisplay = 'Rp' . number_format($aumVal / 1_000_000_000, 1, ',', '.') . 'M';
+                elseif ($aumVal >= 1_000_000) $aumDisplay = 'Rp' . number_format($aumVal / 1_000_000, 1, ',', '.') . 'jt';
+                else $aumDisplay = 'Rp' . number_format($aumVal, 0, ',', '.');
+            } else {
+                $aumDisplay = '—';
+            }
+        @endphp
+        <p class="text-sm font-bold text-primary">{{ $aumDisplay }}</p>
     </div>
     <div class="bg-white rounded-xl border border-line p-4">
         <p class="text-xs text-muted mb-1">Unit Penyertaan</p>
@@ -275,6 +286,7 @@
             <div class="divide-y divide-line">
                 <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Nama Reksa Dana</span><span class="text-sm">{{ $fund->nama_reksa_dana }}</span></div>
                 @if($fund->kode_reksa_dana)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Kode Reksa Dana</span><span class="text-sm font-mono">{{ $fund->kode_reksa_dana }}</span></div>@endif
+                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Kode ISIN</span><span class="text-sm font-mono">{{ $fund->isin_code ?: '-' }}</span></div>
                 @if($fund->investmentManager || $fund->nama_manajer_investasi)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Manajer Investasi</span><span class="text-sm">@if($fund->investmentManager)<a href="{{ route('admin.investment-managers.show', $fund->investmentManager) }}" class="text-accent hover:underline">{{ $fund->nama_manajer_investasi }}</a>@else{{ $fund->nama_manajer_investasi }}@endif</span></div>@endif
                 @if($fund->custodian_bank)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Bank Kustodian</span><span class="text-sm">{{ $fund->custodian_bank }}</span></div>@endif
                 <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Tanggal Efektif</span><span class="text-sm">{{ $fund->launch_date?->format('d M Y') ?: '-' }}</span></div>
@@ -286,7 +298,6 @@
                 @if($fund->jenis)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Jenis Reksa Dana</span><span class="text-sm">{{ $fund->jenis }}</span></div>@endif
                 @if($fund->kategori_produk)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Kategori Produk</span><span class="text-sm">{{ $fund->kategori_produk }}</span></div>@endif
                 @if($fund->display_kelas)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Kelas</span><span class="text-sm">{{ $fund->display_kelas }}</span></div>@endif
-                @if($fund->isin_code)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">ISIN Code</span><span class="text-sm font-mono">{{ $fund->isin_code }}</span></div>@endif
                 @if($fund->is_etf !== null)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">ETF</span><span class="text-sm">{{ $fund->is_etf ? 'Ya' : 'Tidak' }}</span></div>@endif
                 @if($fund->is_index !== null)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Index Fund</span><span class="text-sm">{{ $fund->is_index ? 'Ya' : 'Tidak' }}</span></div>@endif
                 @if($fund->conservative_category)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Kategori Konservatif</span><span class="text-sm">{{ $fund->conservative_category }}</span></div>@endif
@@ -312,7 +323,21 @@
                 <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Return Harian</span><span class="text-sm font-bold {{ $returnDaily !== null ? ($returnDaily >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $returnDaily !== null ? number_format($returnDaily, 2, ',', '.') . '%' : '—' }}</span></div>
                 <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Return Bulanan</span><span class="text-sm font-bold {{ $returnMonthly !== null ? ($returnMonthly >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $returnMonthly !== null ? number_format($returnMonthly, 2, ',', '.') . '%' : '—' }}</span></div>
                 <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Return Tahunan</span><span class="text-sm font-bold {{ $returnYearly !== null ? ($returnYearly >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $returnYearly !== null ? number_format($returnYearly, 2, ',', '.') . '%' : '—' }}</span></div>
-                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">AUM</span><span class="text-sm font-bold text-primary">{{ $latestNav && $latestNav->aum ? 'Rp' . number_format($latestNav->aum, 0, ',', '.') : ($fund->aum ? 'Rp' . number_format($fund->aum, 0, ',', '.') : '—') }}</span></div>
+                <div class="px-6 py-3.5 flex items-start gap-4">
+                    <span class="text-xs font-semibold text-muted w-36 shrink-0">AUM</span>
+                    @php
+                        $aumInfo = $latestNav && $latestNav->aum ? $latestNav->aum : ($fund->aum ?? null);
+                        if ($aumInfo !== null) {
+                            if ($aumInfo >= 1_000_000_000_000) $aumInfoDisplay = 'Rp' . number_format($aumInfo / 1_000_000_000_000, 2, ',', '.') . 'T';
+                            elseif ($aumInfo >= 1_000_000_000) $aumInfoDisplay = 'Rp' . number_format($aumInfo / 1_000_000_000, 1, ',', '.') . 'M';
+                            elseif ($aumInfo >= 1_000_000) $aumInfoDisplay = 'Rp' . number_format($aumInfo / 1_000_000, 1, ',', '.') . 'jt';
+                            else $aumInfoDisplay = 'Rp' . number_format($aumInfo, 0, ',', '.');
+                        } else {
+                            $aumInfoDisplay = '—';
+                        }
+                    @endphp
+                    <span class="text-sm font-bold text-primary">{{ $aumInfoDisplay }}</span>
+                </div>
                 <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Unit Penyertaan</span><span class="text-sm font-bold text-primary">{{ $latestNav && $latestNav->unit_participation ? number_format($latestNav->unit_participation, 0, ',', '.') : ($fund->total_unit ? number_format($fund->total_unit, 0, ',', '.') : '—') }}</span></div>
             </div>
         </div>

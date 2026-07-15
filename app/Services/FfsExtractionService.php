@@ -82,20 +82,34 @@ class FfsExtractionService
             if (isset($data['return_1y'])) $updates['return_1y'] = $this->toDecimal($data['return_1y']);
             if (isset($data['return_1m'])) $updates['return_1m'] = $this->toDecimal($data['return_1m']);
             if (isset($data['total_return'])) $updates['return_inception'] = $this->toDecimal($data['total_return']);
+            if (isset($data['return_5y'])) $updates['return_5y'] = $this->toDecimal($data['return_5y']);
         }
 
         if (!$lockedBiaya) {
             if (isset($data['management_fee'])) $updates['management_fee'] = $data['management_fee'];
             if (isset($data['custodian_fee'])) $updates['custodian_fee'] = $data['custodian_fee'];
+            if (isset($data['subscription_fee'])) $updates['subscription_fee'] = $data['subscription_fee'];
+            if (isset($data['redemption_fee'])) $updates['redemption_fee'] = $data['redemption_fee'];
+            if (isset($data['switching_fee'])) $updates['switching_fee'] = $data['switching_fee'];
+            if (isset($data['expense_ratio'])) $updates['expense_ratio'] = $data['expense_ratio'];
         }
 
         if (!$lockedInfo) {
             if (isset($data['benchmark'])) $updates['benchmark'] = $data['benchmark'];
+            if (!empty($data['isin_code'])) $updates['isin_code'] = $data['isin_code'];
             if (isset($data['tujuan_investasi'])) $updates['tujuan_investasi'] = $data['tujuan_investasi'];
             if (isset($data['kebijakan_investasi'])) $updates['kebijakan_investasi'] = $data['kebijakan_investasi'];
             if (isset($data['bank_kustodian'])) $updates['custodian_bank'] = $data['bank_kustodian'];
             if (isset($data['tanggal_peluncuran'])) $updates['launch_date'] = $data['tanggal_peluncuran'];
             if (isset($data['mata_uang'])) $updates['mata_uang'] = $data['mata_uang'];
+            if (isset($data['risk_category'])) $updates['risk_category'] = $data['risk_category'];
+            if (isset($data['risk_descriptions']) && is_array($data['risk_descriptions'])) {
+                $updates['risk_description'] = implode("\n", $data['risk_descriptions']);
+            }
+            if (isset($data['sharpe_ratio'])) $updates['sharpe_ratio_1y'] = $data['sharpe_ratio'];
+            if (isset($data['standard_deviation'])) $updates['stdev_1y'] = $data['standard_deviation'];
+            if (isset($data['beta'])) $updates['beta_1y'] = $data['beta'];
+            if (isset($data['max_drawdown'])) $updates['max_drawdown_1y'] = $this->toDecimal($data['max_drawdown']);
         }
 
         if (!$lockedRingkasan) {
