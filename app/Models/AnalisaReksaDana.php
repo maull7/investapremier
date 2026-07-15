@@ -130,6 +130,7 @@ class AnalisaReksaDana extends Model
         'published_at',
         'mode',
         'catatan_admin',
+        'catatan',
         'ai_narasi',
         'ai_output',
         'ai_narasi_plus',

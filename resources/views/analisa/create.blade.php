@@ -1270,7 +1270,7 @@
 
                     {{-- Read-only Financial Statement Cards (Lengkap tab) --}}
 
-                    <div x-show="jenisLaporan === 'kalender_ffs' || jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
+                    <div x-show="jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
                         <h4 class="font-semibold text-primary text-sm mb-3">Aset</h4>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
@@ -1359,7 +1359,7 @@
                         </div>
                     </div>
 
-                    <div x-show="jenisLaporan === 'kalender_ffs' || jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
+                    <div x-show="jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
                         <h4 class="font-semibold text-primary text-sm mb-3">Liabilitas</h4>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
@@ -1445,7 +1445,7 @@
                         </div>
                     </div>
 
-                    <div x-show="jenisLaporan === 'kalender_ffs' || jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
+                    <div x-show="jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
                         <h4 class="font-semibold text-primary text-sm mb-3">Pendapatan</h4>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
@@ -1510,7 +1510,7 @@
                         </div>
                     </div>
 
-                    <div x-show="jenisLaporan === 'kalender_ffs' || jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
+                    <div x-show="jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
                         <h4 class="font-semibold text-primary text-sm mb-3">Beban</h4>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
@@ -1588,7 +1588,7 @@
                         </div>
                     </div>
 
-                    <div x-show="jenisLaporan === 'kalender_ffs' || jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
+                    <div x-show="jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
                         <h4 class="font-semibold text-primary text-sm mb-3">Arus Kas Operasi</h4>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
@@ -1677,7 +1677,7 @@
                         </div>
                     </div>
 
-                    <div x-show="jenisLaporan === 'kalender_ffs' || jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
+                    <div x-show="jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
                         <h4 class="font-semibold text-primary text-sm mb-3">Arus Kas Pendanaan</h4>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
@@ -1758,7 +1758,7 @@
                     </div>
 
                     {{-- Ringkasan (Informasi Reksa Dana & Laba Rugi) --}}
-                    <div x-show="jenisLaporan === 'kalender_ffs' || jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
+                    <div x-show="jenisLaporan === 'laporan_tahunan'" class="border rounded-lg p-4 bg-white shadow-sm">
                         <h4 class="font-semibold text-primary text-sm mb-3">Ringkasan</h4>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
@@ -3587,6 +3587,53 @@
                 @include('analisa.partials.create-ai-tabs')
             </div>
 
+                    {{-- Info Keuangan --}}
+                    <div class="bg-white rounded-xl border border-line p-6 space-y-4" x-show="mode !== 'link-website'" x-cloak>
+                        <h3 class="font-semibold text-primary">Info Keuangan</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <span class="text-muted text-xs block">Total AUM</span>
+                                <span class="font-medium text-primary" x-text="totalAum ? 'Rp ' + Number(totalAum).toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '—'"></span>
+                            </div>
+                            <div>
+                                <span class="text-muted text-xs block">Total MarCap 10 Saham Terbesar</span>
+                                <span class="font-medium text-primary" x-text="totalMarcap10Efek ? 'Rp ' + Number(totalMarcap10Efek).toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '—'"></span>
+                            </div>
+                            <div>
+                                <span class="text-muted text-xs block">NAB/UP</span>
+                                <span class="font-medium text-primary" x-text="nabPerUnit ? Number(nabPerUnit).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 6}) : '—'"></span>
+                            </div>
+                            <div>
+                                <span class="text-muted text-xs block">Unit Penyertaan</span>
+                                <span class="font-medium text-primary" x-text="unitPenyertaan ? Number(unitPenyertaan).toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '—'"></span>
+                            </div>
+                            <div>
+                                <span class="text-muted text-xs block">Kalender FFS</span>
+                                <span class="font-medium text-primary" x-text="(ffsBulan && ffsTahun) ? ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][ffsBulan-1] + ' ' + ffsTahun : (jenisLaporan === 'laporan_tahunan' && tahunLaporan ? 'Laporan Tahunan ' + tahunLaporan : '—')"></span>
+                            </div>
+                            <div>
+                                <span class="text-muted text-xs block">Tanggal Data</span>
+                                <span class="font-medium text-primary" x-text="tanggalData || '—'"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Catatan Analisa --}}
+                    <div class="bg-white rounded-xl border border-line p-6 space-y-4" x-show="mode !== 'link-website'" x-cloak>
+                        <h3 class="font-semibold text-primary">Catatan Analisa</h3>
+                        <div class="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-lg text-xs">
+                            <strong>Hanya Untuk Prospektus jenis (Laporan Keuangan).</strong> Catatan ini bersifat opsional untuk keperluan dokumentasi analisa.
+                        </div>
+                        <div>
+                            <x-input-label for="catatan_analisa" value="Catatan / Keterangan" />
+                            <textarea id="catatan_analisa" name="catatan" rows="4"
+                                class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm"
+                                placeholder="Tulis catatan atau keterangan mengenai analisa ini..."
+                                x-model="catatanAnalisa">{{ old('catatan') }}</textarea>
+                            <x-input-error :messages="$errors->get('catatan')" class="mt-1" />
+                        </div>
+                    </div>
+
             <input type="hidden" name="ai_narasi" :value="aiResult?.raw || ''">
             <input type="hidden" name="ai_output" :value="aiResult ? JSON.stringify(aiResult.parsed || {}) : ''">
             <input type="hidden" name="ai_narasi_plus" :value="aiPlusResult?.raw || ''">
@@ -3679,6 +3726,7 @@
                     aiPlusLoading: false,
                     aiError: '',
                     aiPlusError: '',
+                    catatanAnalisa: @json(old('catatan')),
                     aiResult: null,
                     aiPlusResult: null,
                     previewAiUrl: @json($formRoutes['preview_ai']),
@@ -3896,6 +3944,10 @@
                         data: null
                     }],
 
+                    analisaFormEl() {
+                        return document.getElementById('analisa-form');
+                    },
+
                     init() {
                         if (resumeData) {
                             const el = document.getElementById('kode_reksa_dana');
@@ -4081,6 +4133,7 @@
                         const aum = this.totalAumValue();
                         const bobot = parseFloat(this.efek[i]?.bobot) || 0;
                         this.efek[i].nilai_pasar = (aum > 0 && bobot > 0) ? (bobot / 100 * aum).toFixed(2) : '';
+                        this.hitungSektorFromEfek();
                     },
 
                     hitungNilaiPasarObligasi(i) {
@@ -4095,431 +4148,108 @@
                         this.bank[i].nilai_pasar = (aum > 0 && bobot > 0) ? (bobot / 100 * aum).toFixed(2) : '';
                     },
 
-                    hitungTotalMarcap10() {
-                        const total = this.efek
-                            .filter(e => !e.effect_type || e.effect_type === '' || e.effect_type === 'Saham')
-                            .reduce((sum, e) => sum + (parseFloat(e.kontribusi_kinerja) || 0), 0);
-                        this.totalMarcap10Efek = total > 0 ? total.toFixed(4) : '';
+                    hitungSektorFromEfek() {
+                        if (this.sektor.length > 0) return;
+                        const sectorMap = {};
+                        this.efek.forEach(e => {
+                            const s = (e.sektor || '').trim();
+                            const b = parseFloat(e.bobot) || 0;
+                            if (!s || b <= 0) return;
+                            sectorMap[s] = (sectorMap[s] || 0) + b;
+                        });
+                        this.sektor = Object.entries(sectorMap)
+                            .map(([nama_sektor, bobot]) => ({ nama_sektor, bobot: parseFloat(bobot.toFixed(2)) }))
+                            .sort((a, b) => b.bobot - a.bobot);
                     },
 
-                    lookupEfekData(i) {
-                        const kode = String(this.efek[i]?.kode_efek || '').trim().toUpperCase();
-                        const tanggal = this.tanggalDataValue();
-                        if (!kode || kode.length < 2) return;
-
-                        this.efek[i].effect_type = 'Saham';
-
-                        if (this.lookupSektorUrl) {
-                            fetch(this.lookupSektorUrl + '?kode_efek=' + encodeURIComponent(kode) + '&tanggal=' +
-                                    encodeURIComponent(tanggal), {
-                                        headers: {
-                                            Accept: 'application/json'
-                                        }
-                                    })
-                                .then(r => r.json())
-                                .then(resp => {
-                                    if (resp.found) this.efek[i].sektor = resp.sektor;
-                                })
-                                .catch(() => {});
-                        }
-
-                        if (tanggal && this.lookupIhsgUrl) {
-                            fetch(this.lookupIhsgUrl + '?kode_efek=' + encodeURIComponent(kode) + '&tanggal=' +
-                                    encodeURIComponent(tanggal), {
-                                        headers: {
-                                            Accept: 'application/json'
-                                        }
-                                    })
-                                .then(r => r.json())
-                                .then(resp => {
-                                    if (resp.found) {
-                                        this.efek[i].kontribusi_kinerja = resp.kontribusi;
-                                        this.hitungTotalMarcap10();
-                                    }
-                                })
-                                .catch(() => {});
-                        }
-
-                        if (tanggal && this.lookupReturnUrl) {
-                            fetch(this.lookupReturnUrl + '?kode_efek=' + encodeURIComponent(kode) + '&tanggal=' +
-                                    encodeURIComponent(tanggal), {
-                                        headers: {
-                                            Accept: 'application/json'
-                                        }
-                                    })
-                                .then(r => r.json())
-                                .then(resp => {
-                                    if (resp.found) {
-                                        this.efek[i].return_1m = resp.return_1m ?? '';
-                                        this.efek[i].return_3m = resp.return_3m ?? '';
-                                        this.efek[i].return_6m = resp.return_6m ?? '';
-                                        this.efek[i].return_1y = resp.return_1y ?? '';
-                                    }
-                                })
-                                .catch(() => {});
-                        }
-                    },
-
-                    lookupObligasiData(i) {
-                        const kode = String(this.obligasi[i]?.kode_obligasi || '').trim().toUpperCase();
-                        const tanggal = this.tanggalDataValue();
-                        if (!kode || kode.length < 2 || !tanggal || !this.lookupBondReturnUrl) return;
-
-                        fetch(this.lookupBondReturnUrl + '?kode_obligasi=' + encodeURIComponent(kode) + '&tanggal=' +
-                                encodeURIComponent(tanggal), {
-                                    headers: {
-                                        Accept: 'application/json'
-                                    }
-                                })
-                            .then(r => r.json())
-                            .then(resp => {
-                                if (resp.found) {
-                                    this.obligasi[i].return_1m = resp.return_1m ?? '';
-                                    this.obligasi[i].return_3m = resp.return_3m ?? '';
-                                    this.obligasi[i].return_6m = resp.return_6m ?? '';
-                                    this.obligasi[i].return_1y = resp.return_1y ?? '';
-                                }
-                            })
-                            .catch(() => {});
-                    },
-
-                    lookupBankData(i) {
-                        const nama = String(this.bank[i]?.nama_bank || '').trim();
-                        const tanggal = this.tanggalDataValue();
-                        if (!nama || !tanggal || !this.lookupBankDataUrl) return;
-
-                        fetch(this.lookupBankDataUrl + '?nama_bank=' + encodeURIComponent(nama) + '&tanggal=' +
-                                encodeURIComponent(tanggal), {
-                                    headers: {
-                                        Accept: 'application/json'
-                                    }
-                                })
-                            .then(r => r.json())
-                            .then(resp => {
-                                if (resp.found) {
-                                    if (resp.car !== null && resp.car !== undefined) this.bank[i].car = resp.car;
-                                    if (resp.npl !== null && resp.npl !== undefined) this.bank[i].npl = resp.npl;
-                                    if (resp.klasifikasi_risiko) this.bank[i].klasifikasi_risiko = resp.klasifikasi_risiko;
-                                }
-                            })
-                            .catch(() => {});
-                    },
-
-                    analisaFormEl() {
-                        return this.$root.querySelector('#analisa-form') || this.$root.querySelector('form');
-                    },
-
-                    buildFormPayload() {
-                        const fd = new FormData(this.analisaFormEl());
-                        const payload = new FormData();
-                        ['kode_reksa_dana', 'nama_reksa_dana', 'jenis_reksa_dana', 'benchmark', 'tujuan_investasi',
-                            'kebijakan_investasi', 'total_aum', 'unit_penyertaan', 'nab_per_unit',
-                            'total_marcap_10_efek', 'tanggal_data', 'ffs_bulan', 'ffs_tahun'
-                        ].forEach(
-                            k => {
-                                const val = fd.get(k) ?? '';
-                                // Fallback ke pdfData jika form kosong
-                                payload.append(k, val || (this.pdfData?.[k] ?? ''));
-                            });
-                        for (const [key, val] of fd.entries()) {
-                            if (key === 'kategori[]' || key.startsWith('kategori[') || key.startsWith('sektor[') || key
-                                .startsWith('efek[') || key.startsWith('kinerja[') || key.startsWith('obligasi[') || key
-                                .startsWith('sukuk[') || key.startsWith('alokasi_aset[') || key
-                                .startsWith('bank[')) {
-                                payload.append(key, val);
+                    syncLikuiditasFromEfek() {
+                        const existing = {};
+                        this.likuiditas.forEach(r => { existing[r.kode_efek] = r; });
+                        const next = [];
+                        this.efek.forEach(e => {
+                            const kode = (e.kode_efek || '').trim();
+                            if (!kode) return;
+                            if (existing[kode]) {
+                                next.push(existing[kode]);
+                            } else {
+                                next.push({
+                                    kategori: 'Saham', kode_efek: kode, nama_efek: e.nama_efek || '',
+                                    rata_volume_transaksi_harian: '', volume_terendah: '', volume_saham: '',
+                                    skenario_20_persen_reds: '', skenario_reds_closing_10: '',
+                                    rasio_likuiditas_harian: '', rasio_likuiditas: '',
+                                });
                             }
-                        }
-                        if (![...payload.keys()].some(k => k === 'kategori[]' || k.startsWith('kategori[')) && this.pdfData
-                            ?.kategori?.length) {
-                            this.pdfData.kategori.forEach(v => payload.append('kategori[]', v));
-                        }
-                        // Inject pdfData untuk field yang kosong (cek nilai, bukan hanya key)
-                        if (this.pdfData) {
-                            const arrayFields = ['sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasi_aset'];
-                            arrayFields.forEach(field => {
-                                const hasRealData = [...payload.entries()]
-                                    .some(([k, v]) => k.startsWith(field + '[') && String(v).trim() !== '');
-                                if (!hasRealData && this.pdfData[field]?.length) {
-                                    this.pdfData[field].forEach((row, i) => {
-                                        Object.entries(row).forEach(([k, v]) => {
-                                            if (v !== null && v !== undefined && String(v).trim() !==
-                                                '') {
-                                                payload.append(`${field}[${i}][${k}]`, v);
-                                            }
-                                        });
-                                    });
-                                }
-                            });
-                        }
-                        payload.append('_token', fd.get('_token'));
-                        return payload;
+                        });
+                        this.likuiditas = next;
                     },
 
-                    validateAiBasics(fd) {
-                        const nama = String(fd.get('nama_reksa_dana') || '').trim();
-                        // Lolos jika ada nama di form ATAU ada pdfData
-                        if (!nama && !this.pdfData) {
-                            return 'Isi Nama Reksa Dana di bagian Informasi Reksa Dana (atas form) terlebih dahulu, atau upload PDF FFS.';
-                        }
-                        return null;
-                    },
+                    syncKeuanganFromData() {
+                        const existing = {};
+                        this.keuangan.forEach(r => { existing[r.kode_efek] = r; });
+                        const next = [];
+                        const seen = new Set();
 
-                    parseJsonError(resp) {
-                        if (resp.errors) {
-                            return Object.values(resp.errors).flat().join(' ');
-                        }
-                        return resp.message || 'Gagal memproses';
-                    },
-
-                    lookupReksaDana(kode) {
-                        kode = String(kode || '').trim();
-                        if (!this.lookupKodeUrl || kode.length < 2) {
-                            if (this.currentKode) {
-                                this.currentKode = '';
-                                this.fetchExistingDocuments();
+                        this.efek.forEach(e => {
+                            const kode = (e.kode_efek || '').trim();
+                            if (!kode || seen.has(kode)) return;
+                            seen.add(kode);
+                            if (existing[kode]) {
+                                next.push(existing[kode]);
+                            } else {
+                                next.push({
+                                    kategori: 'Saham', kode_efek: kode, nama_efek: e.nama_efek || '',
+                                    per: '', pbv: '', roe: '', roa: '', npm: '', ev_ebitda: '', der: '',
+                                    current_ratio: '', aktivitas_lancar: '', gross_profit_margin: '', operating_profit_margin: '',
+                                });
                             }
-                            this.lookupMessage = '';
-                            this.lookupOk = false;
-                            return;
-                        }
+                        });
 
-                        // Sudah di-lookup, jangan fetch ulang (cegah infinite loop dari setFieldValue)
-                        if (this.currentKode === kode) return;
-
-                        fetch(`${this.lookupKodeUrl}?kode_reksa_dana=${encodeURIComponent(kode)}`, {
-                                headers: {
-                                    Accept: 'application/json'
-                                }
-                            })
-                            .then(res => res.json())
-                            .then(resp => {
-                                if (!resp.found) {
-                                    this.currentKode = '';
-                                    this.lookupOk = false;
-                                    this.lookupMessage = 'Kode tidak ditemukan.';
-                                    return;
-                                }
-
-                                this.currentKode = kode;
-                                const data = {
-                                    ...(resp.master || {}),
-                                    ...(resp.last_analisa || {}),
-                                };
-                                this.ffsPembandingOptions = resp.ffs_pembanding_options || [];
-                                this.ffsPembanding = '';
-                                this.pembandingEfek = {};
-                                this.applyLookupData(data);
-                                this.lookupOk = true;
-                                this.lookupMessage = resp.last_analisa ?
-                                    'Data analisa terakhir berhasil dimuat.' :
-                                    'Data master reksa dana berhasil dimuat.';
-                                this.fetchExistingDocuments();
-                            })
-                            .catch(() => {
-                                this.lookupOk = false;
-                                this.lookupMessage = 'Gagal mencari data kode reksa dana.';
-                            });
-                    },
-
-                    applyLookupData(data) {
-                        this.resumeId = data.id || this.resumeId;
-                        this.setFieldValue('nama_reksa_dana', data.nama_reksa_dana);
-                        this.setFieldValue('jenis_reksa_dana', data.jenis_reksa_dana);
-                        this.setFieldValue('benchmark', data.benchmark);
-                        this.setFieldValue('tujuan_investasi', data.tujuan_investasi);
-                        this.setFieldValue('kebijakan_investasi', data.kebijakan_investasi);
-                        this.kodeReksaDana = data.kode_reksa_dana ?? this.kodeReksaDana;
-                        this.namaReksaDana = data.nama_reksa_dana ?? this.namaReksaDana;
-                        this.jenisReksaDana = data.jenis_reksa_dana ?? this.jenisReksaDana;
-                        this.benchmark = data.benchmark ?? this.benchmark;
-                        this.tujuanInvestasi = data.tujuan_investasi ?? this.tujuanInvestasi;
-                        this.kebijakanInvestasi = data.kebijakan_investasi ?? this.kebijakanInvestasi;
-                        this.portfolioTurnover = data.portfolio_turnover_ratio ?? this.portfolioTurnover;
-                        this.manajerInvestasi = data.manajer_investasi ?? this.manajerInvestasi;
-                        this.bankKustodian = data.bank_kustodian ?? this.bankKustodian;
-                        if (data.tanggal_peluncuran) this.tanggalPeluncuran = data.tanggal_peluncuran;
-                        this.mataUang = data.mata_uang ?? this.mataUang;
-                        this.totalAum = data.total_aum ?? this.totalAum;
-                        this.totalMarcap10Efek = data.total_marcap_10_efek ?? this.totalMarcap10Efek;
-                        this.unitPenyertaan = data.unit_penyertaan ?? this.unitPenyertaan;
-                        this.nabPerUnit = data.nab_per_unit ?? this.nabPerUnit;
-                        this.tanggalData = data.tanggal_data ?? this.tanggalData;
-                        this.managementFee = data.management_fee ?? this.managementFee;
-                        this.custodianFee = data.custodian_fee ?? this.custodianFee;
-                        this.returnYtd = data.return_ytd ?? this.returnYtd;
-                        this.return1y = data.return_1y ?? this.return1y;
-                        this.biayaOperasi = data.expense_ratio ?? this.biayaOperasi;
-                        this.applyKategori(data.kategori || []);
-                        if (data.sektor?.length) this.sektor = data.sektor;
-                        if (data.efek?.length) {
-                            this.efek = data.efek.map(e => ({
-                                kode_efek: e.kode_efek || '',
-                                nama_efek: e.nama_efek || '',
-                                sektor: e.sektor || '',
-                                bobot: e.bobot ?? '',
-                                bobot_seharusnya: e.bobot_seharusnya ?? '',
-                                kontribusi_kinerja: e.kontribusi_kinerja ?? '',
-                                market_cap: e.market_cap ?? '',
-                                nilai_pasar: e.nilai_pasar ?? '',
-                                return_1m: e.return_1m ?? '',
-                                return_3m: e.return_3m ?? '',
-                                return_6m: e.return_6m ?? '',
-                                return_1y: e.return_1y ?? '',
-                                ihsg_contribution: e.ihsg_contribution ?? '',
-                                kontribusi_return: e.kontribusi_return ?? '',
-                                effect_type: e.effect_type || 'Saham',
-                                top_10: e.top_10 === true || e.top_10 === 'Ya',
-                            }));
-                            this.$nextTick(() => {
-                                this.efek.forEach((_, i) => {
-                                    this.hitungNilaiPasarEfek(i);
-                                    setTimeout(() => this.lookupEfekData(i), i * 600);
+                        this.obligasi.forEach(e => {
+                            const kode = (e.kode_obligasi || '').trim();
+                            if (!kode || seen.has(kode)) return;
+                            seen.add(kode);
+                            if (existing[kode]) {
+                                next.push(existing[kode]);
+                            } else {
+                                next.push({
+                                    kategori: 'Obligasi', kode_efek: kode, nama_efek: e.nama_obligasi || '',
+                                    ytm: '', rating: '', kupon: '', tenor: '', durasi: '', shadow_rating: '',
+                                    der: '', current_ratio: '', aktivitas_lancar: '', gross_profit_margin: '', operating_profit_margin: '',
                                 });
-                            });
-                        }
-                        if (data.kinerja?.length) this.kinerja = data.kinerja;
-                        if (data.obligasi?.length) {
-                            this.obligasi = data.obligasi.map(o => ({
-                                kode_obligasi: o.kode_obligasi || '',
-                                nama_obligasi: o.nama_obligasi || '',
-                                bobot: o.bobot ?? '',
-                                nilai_pasar: o.nilai_pasar ?? '',
-                                ytm: o.ytm ?? '',
-                                kupon: o.kupon ?? '',
-                                tanggal_jatuh_tempo: o.tanggal_jatuh_tempo || '',
-                                penerbit: o.penerbit || '',
-                                persen_nab: o.persen_nab ?? '',
-                                return_1m: o.return_1m ?? '',
-                                return_3m: o.return_3m ?? '',
-                                return_6m: o.return_6m ?? '',
-                                return_1y: o.return_1y ?? '',
-                                durasi: o.durasi ?? '',
-                                rating: o.rating || '',
-                            }));
-                            this.$nextTick(() => {
-                                this.obligasi.forEach((_, i) => {
-                                    this.hitungNilaiPasarObligasi(i);
-                                    setTimeout(() => this.lookupObligasiData(i), i * 600);
+                            }
+                        });
+
+                        this.sukuk.forEach(e => {
+                            const kode = (e.kode_sukuk || '').trim();
+                            if (!kode || seen.has(kode)) return;
+                            seen.add(kode);
+                            if (existing[kode]) {
+                                next.push(existing[kode]);
+                            } else {
+                                next.push({
+                                    kategori: 'Sukuk', kode_efek: kode, nama_efek: e.nama_sukuk || '',
+                                    ytm: e.yield_sukuk || '', rating: '', kupon: '', tenor: '', durasi: '', shadow_rating: '',
+                                    der: '', current_ratio: '', aktivitas_lancar: '', gross_profit_margin: '', operating_profit_margin: '',
                                 });
-                            });
-                        }
-                        if (data.sukuk?.length) {
-                            this.sukuk = data.sukuk.map(s => ({
-                                kode_sukuk: s.kode_sukuk || '',
-                                nama_sukuk: s.nama_sukuk || '',
-                                jenis_sukuk: s.jenis_sukuk || '',
-                                bobot: s.bobot ?? '',
-                                yield: s.yield ?? '',
-                                jatuh_tempo: s.jatuh_tempo || '',
-                                persen_nab: s.persen_nab ?? '',
-                                rating: s.rating || '',
-                            }));
-                        }
-                        if (data.bank?.length) {
-                            this.bank = data.bank.map(b => ({
-                                nama_bank: b.nama_bank || '',
-                                jenis_bank: b.jenis_bank || '',
-                                bobot: b.bobot ?? '',
-                                nilai_pasar: b.nilai_pasar ?? '',
-                                tingkat_bunga: b.tingkat_bunga ?? '',
-                                jangka_waktu: b.jangka_waktu ?? '',
-                                persen_nab: b.persen_nab ?? '',
-                                return_1m: b.return_1m ?? '',
-                                return_3m: b.return_3m ?? '',
-                                return_6m: b.return_6m ?? '',
-                                return_1y: b.return_1y ?? '',
-                                car: b.car ?? '',
-                                npl: b.npl ?? '',
-                                klasifikasi_risiko: b.klasifikasi_risiko || '',
-                            }));
-                            this.$nextTick(() => {
-                                this.bank.forEach((_, i) => {
-                                    this.hitungNilaiPasarBank(i);
-                                    setTimeout(() => this.lookupBankData(i), i * 600);
+                            }
+                        });
+
+                        this.bank.forEach(e => {
+                            const kode = (e.nama_bank || '').trim();
+                            if (!kode || seen.has(kode)) return;
+                            seen.add(kode);
+                            if (existing[kode]) {
+                                next.push(existing[kode]);
+                            } else {
+                                next.push({
+                                    kategori: 'Bank', kode_efek: kode, nama_efek: e.nama_bank || '',
+                                    npl: '', car: '', roe: '', roa: '', ldr: '', nim: '', cir: '',
+                                    aktivitas_lancar: '',
                                 });
-                            });
-                        }
-                        if (data.alokasi_aset?.length) this.alokasi_aset = data.alokasi_aset;
-                        // Laporan Tahunan fields
-                        this.totalAset = data.total_aset ?? this.totalAset;
-                        this.totalLiabilitas = data.total_liabilitas ?? this.totalLiabilitas;
-                        this.nilaiAsetBersih = data.nilai_aset_bersih ?? this.nilaiAsetBersih;
-                        this.kasDanBank = data.kas_dan_bank ?? this.kasDanBank;
-                        this.piutangBunga = data.piutang_bunga ?? this.piutangBunga;
-                        this.piutangDividen = data.piutang_dividen ?? this.piutangDividen;
-                        this.piutangLain = data.piutang_lain ?? this.piutangLain;
-                        this.utangPajak = data.utang_pajak ?? this.utangPajak;
-                        this.utangLain = data.utang_lain ?? this.utangLain;
-                        this.pendapatanBunga = data.pendapatan_bunga ?? this.pendapatanBunga;
-                        this.pendapatanDividen = data.pendapatan_dividen ?? this.pendapatanDividen;
-                        this.gainRealized = data.gain_realized ?? this.gainRealized;
-                        this.gainUnrealized = data.gain_unrealized ?? this.gainUnrealized;
-                        this.bebanMi = data.beban_mi ?? this.bebanMi;
-                        this.bebanKustodian = data.beban_kustodian ?? this.bebanKustodian;
-                        this.bebanLain = data.beban_lain ?? this.bebanLain;
-                        this.labaBersih = data.laba_bersih ?? this.labaBersih;
-                        this.totalBeban = data.total_beban ?? this.totalBeban;
-                        this.labaSebelumPajak = data.laba_sebelum_pajak ?? this.labaSebelumPajak;
-                        this.bebanPajakPenghasilan = data.beban_pajak_penghasilan ?? this.bebanPajakPenghasilan;
-                        this.labaBersihTahunBerjalan = data.laba_bersih_tahun_berjalan ?? this.labaBersihTahunBerjalan;
-                        this.penghasilanKomprehensifLain = data.penghasilan_komprehensif_lain ?? this
-                            .penghasilanKomprehensifLain;
-                        this.penghasilanKomprehensifLainSetelahPajak = data.penghasilan_komprehensif_lain_setelah_pajak ?? this
-                            .penghasilanKomprehensifLainSetelahPajak;
-                        this.penghasilanKomprehensifTahunBerjalan = data.penghasilan_komprehensif_tahun_berjalan ?? this
-                            .penghasilanKomprehensifTahunBerjalan;
-                        this.arusKasOperasi = data.arus_kas_operasi ?? this.arusKasOperasi;
-                        this.arusKasPendanaan = data.arus_kas_pendanaan ?? this.arusKasPendanaan;
-                        this.kasAwalTahun = data.kas_awal_tahun ?? this.kasAwalTahun;
-                        this.kasAkhirTahun = data.kas_akhir_tahun ?? this.kasAkhirTahun;
-                        this.kas = data.kas ?? this.kas;
-                        this.portofolioEfek = data.portofolio_efek ?? this.portofolioEfek;
-                        this.instrumenPasarUang = data.instrumen_pasar_uang ?? this.instrumenPasarUang;
-                        this.piutangTransaksiEfek = data.piutang_transaksi_efek ?? this.piutangTransaksiEfek;
-                        this.piutangBungaDanDividen = data.piutang_bunga_dan_dividen ?? this.piutangBungaDanDividen;
-                        this.uangMukaDiterima = data.uang_muka_diterima ?? this.uangMukaDiterima;
-                        this.liabilitasPembelianKembali = data.liabilitas_pembelian_kembali ?? this.liabilitasPembelianKembali;
-                        this.bebanAkrual = data.beban_akrual ?? this.bebanAkrual;
-                        this.liabilitasAtasBiaya = data.liabilitas_atas_biaya ?? this.liabilitasAtasBiaya;
-                        this.pembelianKembaliUnit = data.pembelian_kembali_unit_penyertaan ?? this.pembelianKembaliUnit;
-                        this.utangPajakLainnya = data.utang_pajak_lainnya ?? this.utangPajakLainnya;
-                        this.pendapatanInvestasi = data.pendapatan_investasi ?? this.pendapatanInvestasi;
-                        this.pendapatanLainnya = data.pendapatan_lainnya ?? this.pendapatanLainnya;
-                        this.totalPendapatan = data.total_pendapatan ?? this.totalPendapatan;
-                        this.bebanInvestasi = data.beban_investasi ?? this.bebanInvestasi;
-                        this.bebanPengelolaanInvestasi = data.beban_pengelolaan_investasi ?? this.bebanPengelolaanInvestasi;
-                        this.pembelianEfekEkuitas = data.pembelian_efek_ekuitas ?? this.pembelianEfekEkuitas;
-                        this.penjualanEfekEkuitas = data.penjualan_efek_ekuitas ?? this.penjualanEfekEkuitas;
-                        this.penerimaanBungaDeposito = data.penerimaan_bunga_deposito ?? this.penerimaanBungaDeposito;
-                        this.penerimaanBungaJasaGiro = data.penerimaan_bunga_jasa_giro ?? this.penerimaanBungaJasaGiro;
-                        this.penerimaanDividenKas = data.penerimaan_dividen_kas ?? this.penerimaanDividenKas;
-                        this.pembayaranJasaPengelolaan = data.pembayaran_jasa_pengelolaan ?? this.pembayaranJasaPengelolaan;
-                        this.pembayaranJasaKustodian = data.pembayaran_jasa_kustodian ?? this.pembayaranJasaKustodian;
-                        this.pembayaranBebanLainArus = data.pembayaran_beban_lain_arus ?? this.pembayaranBebanLainArus;
-                        this.kasBersihAktivitasOperasi = data.kas_bersih_aktivitas_operasi ?? this.kasBersihAktivitasOperasi;
-                        this.penerimaanPenjualanUnit = data.penerimaan_penjualan_unit ?? this.penerimaanPenjualanUnit;
-                        this.pembayaranPembelianKembaliUnit = data.pembayaran_pembelian_kembali_unit ?? this.pembayaranPembelianKembaliUnit;
-                        this.kasBersihAktivitasPendanaan = data.kas_bersih_aktivitas_pendanaan ?? this.kasBersihAktivitasPendanaan;
-                        this.kenaikanKasSetaraKas = data.kenaikan_kas_setara_kas ?? this.kenaikanKasSetaraKas;
-                        this.totalHasilInvestasi = data.total_hasil_investasi ?? this.totalHasilInvestasi;
-                        this.hasilInvestasiSetelahBiaya = data.hasil_investasi_setelah_biaya ?? this.hasilInvestasiSetelahBiaya;
-                        this.persentasePph = data.persentase_pph ?? this.persentasePph;
-                        this.fairValueLevel1 = data.fair_value_level_1 ?? this.fairValueLevel1;
-                        this.fairValueLevel2 = data.fair_value_level_2 ?? this.fairValueLevel2;
-                        this.fairValueLevel3 = data.fair_value_level_3 ?? this.fairValueLevel3;
-                        this.unitMilikInvestor = data.unit_milik_investor ?? this.unitMilikInvestor;
-                        this.unitMilikMi = data.unit_milik_mi ?? this.unitMilikMi;
-                        this.totalUnitBeredar = data.total_unit_beredar ?? this.totalUnitBeredar;
-                        this.feeCostToPerformance = data.fee_cost_to_performance ?? this.feeCostToPerformance;
-                        this.pendapatanTerhadapNab = data.pendapatan_terhadap_nab ?? this.pendapatanTerhadapNab;
-                        this.bebanTerhadapPendapatan = data.beban_terhadap_pendapatan ?? this.bebanTerhadapPendapatan;
-                        this.pengelolaanInvestasiTerhadapPendapatan = data.pengelolaan_investasi_terhadap_pendapatan ?? this.pengelolaanInvestasiTerhadapPendapatan;
-                        this.transactionProfitTerhadapNab = data.transaction_profit_terhadap_nab ?? this.transactionProfitTerhadapNab;
-                        if (data.tahun_tambahan?.length) this.tahunTambahan = data.tahun_tambahan;
-                        if (data.data_tambahan) this.dataTambahan = {
-                            ...this.dataTambahan,
-                            ...data.data_tambahan
-                        };
+                            }
+                        });
+
+                        this.keuangan = next;
                     },
 
                     applyPembanding(id) {
@@ -4768,6 +4498,10 @@
                             }));
                         }
 
+                        this.hitungSektorFromEfek();
+                        this.syncLikuiditasFromEfek();
+                        this.syncKeuanganFromData();
+
                         // Kinerja — dari PDF (AI tidak generate ini)
                         if (pdf.kinerja?.length >= 2) {
                             this.kinerja = pdf.kinerja;
@@ -4782,6 +4516,7 @@
                         if (pdf.obligasi?.length) this.obligasi = pdf.obligasi;
                         if (pdf.sukuk?.length) this.sukuk = pdf.sukuk;
                         if (pdf.bank?.length) this.bank = pdf.bank;
+                        this.syncKeuanganFromData();
 
                         const lkFields = [
                             'total_aset', 'total_liabilitas', 'nilai_aset_bersih', 'kas_dan_bank',
@@ -5098,6 +4833,9 @@
                                 });
                             });
                         }
+                        this.hitungSektorFromEfek();
+                        this.syncLikuiditasFromEfek();
+                        this.syncKeuanganFromData();
                         if (data.kinerja?.length >= 2) {
                             this.kinerja = data.kinerja;
                         } else if (data.kinerja?.length === 1) {
@@ -5167,6 +4905,7 @@
                                 });
                             });
                         }
+                        this.syncKeuanganFromData();
                         if (data.alokasi_aset?.length) this.alokasi_aset = data.alokasi_aset;
                         this.applyKategori(data.kategori || []);
                         this.mode = preferredMode;
@@ -5860,6 +5599,14 @@
 
                     fetchExistingDocuments() {
                         if (!this.existingDocsUrl) return;
+                        const kode = (document.getElementById('kode_reksa_dana')?.value || '').trim();
+                        if (!kode) {
+                            this.existingDocsLoading = false;
+                            this.existingDocsLoaded = true;
+                            this.existingDocs = [];
+                            this.selectedDocIds = [];
+                            return;
+                        }
                         this.existingDocsLoading = true;
                         this.existingDocsLoaded = false;
                         this.existingDocs = [];
@@ -5867,11 +5614,7 @@
 
                         const params = new URLSearchParams();
 
-                        if (this.jenisLaporan !== 'kalender_ffs') {
-                            const kode = (document.getElementById('kode_reksa_dana')?.value || '').trim();
-                            if (kode) params.append('kode_reksa_dana', kode);
-                        }
-
+                        params.append('kode_reksa_dana', kode);
                         params.append('jenis_laporan', this.jenisLaporan);
                         if (this.jenisLaporan === 'kalender_ffs') {
                             if (this.ffsBulan) params.append('ffs_bulan', this.ffsBulan);

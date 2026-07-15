@@ -58,6 +58,15 @@ class AnalisaController extends Controller
             $query->whereHas('analisa', fn($q) => $q->where('product_type', 'reksa_dana')->where('ffs_tahun', $request->ffs_tahun));
         }
 
+        if ($request->filled('mode')) {
+            $query->whereHas('analisa', fn($q) => $q->where('product_type', 'reksa_dana')->where('mode', $request->mode));
+        }
+
+        if ($request->filled('is_published')) {
+            $pub = $request->is_published === '1';
+            $query->whereHas('analisa', fn($q) => $q->where('product_type', 'reksa_dana')->where('is_published', $pub));
+        }
+
         $sort = $request->get('sort', 'nama_reksa_dana');
         $direction = $request->get('direction', 'asc');
 
