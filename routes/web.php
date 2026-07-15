@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\QuestionController;
 use App\Http\Controllers\Admin\MemberController as AdminMemberController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\AnalisaController as AdminAnalisaController;
 use App\Http\Controllers\Admin\ScoreClassificationController;
 use App\Http\Controllers\QuizController;
@@ -115,6 +116,10 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('members/{member}', [AdminMemberController::class, 'show'])->name('members.show');
     Route::post('members/{member}/approve', [AdminMemberController::class, 'approve'])->name('members.approve');
     Route::post('members/{member}/reject', [AdminMemberController::class, 'reject'])->name('members.reject');
+
+    // Manajemen Pengguna
+    Route::get('users', [AdminUserController::class, 'index'])->name('users.index');
+    Route::get('users/{user}', [AdminUserController::class, 'show'])->name('users.show');
 
     // Monitor analisa yang diupload userr
     Route::get('analisa', [AdminAnalisaController::class, 'index'])->name('analisa.index');
@@ -410,6 +415,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
         Route::post('/', [\App\Http\Controllers\Admin\AdvisorController::class, 'store'])->name('store');
         Route::get('/{advisor}/edit', [\App\Http\Controllers\Admin\AdvisorController::class, 'edit'])->name('edit');
         Route::put('/{advisor}', [\App\Http\Controllers\Admin\AdvisorController::class, 'update'])->name('update');
+        Route::post('/{advisor}/approve', [\App\Http\Controllers\Admin\AdvisorController::class, 'approve'])->name('approve');
         Route::delete('/{advisor}', [\App\Http\Controllers\Admin\AdvisorController::class, 'destroy'])->name('destroy');
         Route::get('/{advisor}/clients', [\App\Http\Controllers\Admin\AdvisorController::class, 'clients'])->name('clients');
     })->middleware('role:admin');
@@ -435,20 +441,21 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     // Laporan Portfolio PDF
     Route::get('/laporan-portfolio/pdf', [\App\Http\Controllers\User\LaporanPortfolioController::class, 'exportPdf'])->name('laporan-portfolio.pdf');
 
-    // Advisor: Daftar Klien
+    // Advisor: Daftar Klien + approve/reject incoming requests from users
     Route::prefix('klien')->name('clients.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Advisor\ClientController::class, 'index'])->name('index');
-        Route::get('/create', [\App\Http\Controllers\Advisor\ClientController::class, 'create'])->name('create');
-        Route::post('/', [\App\Http\Controllers\Advisor\ClientController::class, 'store'])->name('store');
+        Route::post('/{request}/approve', [\App\Http\Controllers\Advisor\ClientController::class, 'approve'])->name('approve');
+        Route::post('/{request}/reject', [\App\Http\Controllers\Advisor\ClientController::class, 'reject'])->name('reject');
         Route::get('/{client}', [\App\Http\Controllers\Advisor\ClientController::class, 'show'])->name('show');
         Route::delete('/{client}', [\App\Http\Controllers\Advisor\ClientController::class, 'destroy'])->name('destroy');
     });
 
-    // Client: Approval Koneksi Advisor
+    // User: Kirim/Cancel permintaan koneksi ke advisor
     Route::prefix('koneksi-advisor')->name('clients.requests.')->group(function () {
         Route::get('/', [\App\Http\Controllers\User\AdvisorRequestController::class, 'index'])->name('index');
-        Route::post('/{request}/approve', [\App\Http\Controllers\User\AdvisorRequestController::class, 'approve'])->name('approve');
-        Route::post('/{request}/reject', [\App\Http\Controllers\User\AdvisorRequestController::class, 'reject'])->name('reject');
+        Route::get('/tambah', [\App\Http\Controllers\User\AdvisorRequestController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\User\AdvisorRequestController::class, 'store'])->name('store');
+        Route::post('/{request}/cancel', [\App\Http\Controllers\User\AdvisorRequestController::class, 'cancel'])->name('cancel');
     });
 
     // Upload & lihat hasil analisa

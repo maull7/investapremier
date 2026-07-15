@@ -75,13 +75,24 @@ class AdvisorController extends Controller
         }
 
         $advisor->update($data);
-
-        ActivityLogger::log('Update Advisor', "Advisor {$advisor->name} telah diupdate", 'success');
-
-        return redirect()->route('admin.advisors.index')->with('success', 'Advisor berhasil diupdate.');
-    }
-
-    public function clients(User $advisor)
+ 
+         ActivityLogger::log('Update Advisor', "Advisor {$advisor->name} telah diupdate", 'success');
+ 
+         return redirect()->route('admin.advisors.index')->with('success', 'Advisor berhasil diupdate.');
+     }
+ 
+     public function approve(User $advisor)
+     {
+         if ($advisor->role !== 'advisor') abort(404);
+ 
+         $advisor->update(['is_active' => true]);
+ 
+         ActivityLogger::log('Approve Advisor', "Pendaftaran advisor {$advisor->name} telah disetujui", 'success');
+ 
+         return redirect()->route('admin.advisors.index')->with('success', "Advisor {$advisor->name} berhasil disetujui.");
+     }
+ 
+     public function clients(User $advisor)
     {
         if ($advisor->role !== 'advisor') abort(404);
 

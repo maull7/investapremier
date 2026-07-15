@@ -2467,7 +2467,10 @@ class AnalisaController extends Controller
 
     public function show(AnalisaReksaDana $analisa)
     {
-        abort_if($analisa->user_id !== auth()->id(), 403);
+        abort_if(
+            $analisa->user_id !== auth()->id() && !$analisa->is_published,
+            403
+        );
         $analisa->load(['sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasiAset', 'likuiditas', 'keuangan']);
 
         return view('analisa.show', compact('analisa'));
@@ -2475,7 +2478,10 @@ class AnalisaController extends Controller
 
     public function exportPdf(AnalisaReksaDana $analisa)
     {
-        abort_if($analisa->user_id !== auth()->id(), 403);
+        abort_if(
+            $analisa->user_id !== auth()->id() && !$analisa->is_published,
+            403
+        );
         $analisa->load(['user', 'sektor', 'efek', 'kinerja', 'obligasi', 'sukuk', 'bank', 'alokasiAset', 'likuiditas', 'keuangan']);
 
         $pdf = Pdf::loadView('analisa.pdf', compact('analisa'))
@@ -2488,7 +2494,10 @@ class AnalisaController extends Controller
 
     public function downloadPdf(AnalisaReksaDana $analisa)
     {
-        abort_if($analisa->user_id !== auth()->id(), 403);
+        abort_if(
+            $analisa->user_id !== auth()->id() && !$analisa->is_published,
+            403
+        );
 
         if (!$analisa->pdf_path || !Storage::disk('public')->exists($analisa->pdf_path)) {
             abort(404, 'File PDF tidak ditemukan.');

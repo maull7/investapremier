@@ -53,6 +53,12 @@
                     @if (request('ffs_tahun'))
                         <input type="hidden" name="ffs_tahun" value="{{ request('ffs_tahun') }}">
                     @endif
+                    @if (request('mode'))
+                        <input type="hidden" name="mode" value="{{ request('mode') }}">
+                    @endif
+                    @if (request('is_published'))
+                        <input type="hidden" name="is_published" value="{{ request('is_published') }}">
+                    @endif
                     <select name="status" onchange="this.form.submit()"
                         class="text-xs border-gray-300 rounded-lg px-3 py-1.5 focus:border-primary focus:ring focus:ring-primary/20">
                         <option value="">Pilih Status...</option>
@@ -67,12 +73,12 @@
             {{-- Filter Kategori + Kalender FFS --}}
             <div class="flex flex-wrap items-center gap-3">
                 <div class="flex gap-2 text-xs flex-wrap">
-                    <a href="{{ route('admin.analisa.index', array_filter(['tab' => 'analisa', 'status' => request('status'), 'ffs_bulan' => request('ffs_bulan'), 'ffs_tahun' => request('ffs_tahun')])) }}"
+                    <a href="{{ route('admin.analisa.index', array_filter(['tab' => 'analisa', 'status' => request('status'), 'ffs_bulan' => request('ffs_bulan'), 'ffs_tahun' => request('ffs_tahun'), 'mode' => request('mode'), 'is_published' => request('is_published')])) }}"
                         class="px-3 py-1.5 rounded-lg border transition {{ !request('kategori') ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
                         Semua Kategori
                     </a>
                     @foreach (['Konvensional', 'Syariah', 'index', 'ETF'] as $k)
-                        <a href="{{ route('admin.analisa.index', array_filter(['tab' => 'analisa', 'status' => request('status'), 'kategori' => $k, 'ffs_bulan' => request('ffs_bulan'), 'ffs_tahun' => request('ffs_tahun')])) }}"
+                        <a href="{{ route('admin.analisa.index', array_filter(['tab' => 'analisa', 'status' => request('status'), 'kategori' => $k, 'ffs_bulan' => request('ffs_bulan'), 'ffs_tahun' => request('ffs_tahun'), 'mode' => request('mode'), 'is_published' => request('is_published')])) }}"
                             class="px-3 py-1.5 rounded-lg border transition {{ request('kategori') === $k ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
                             {{ $k }}
                         </a>
@@ -89,6 +95,12 @@
                         @if (request('kategori'))
                             <input type="hidden" name="kategori" value="{{ request('kategori') }}">
                         @endif
+                        @if (request('mode'))
+                            <input type="hidden" name="mode" value="{{ request('mode') }}">
+                        @endif
+                        @if (request('is_published'))
+                            <input type="hidden" name="is_published" value="{{ request('is_published') }}">
+                        @endif
                         <select name="ffs_bulan" onchange="document.getElementById('ffs-filter-form').submit()"
                             class="text-xs border-gray-300 rounded-lg px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20">
                             <option value="">Semua Bulan FFS</option>
@@ -104,6 +116,18 @@
                                 <option value="{{ $thn }}" {{ request('ffs_tahun') == $thn ? 'selected' : '' }}>
                                     {{ $thn }}</option>
                             @endforeach
+                        </select>
+                        <select name="mode" onchange="document.getElementById('ffs-filter-form').submit()"
+                            class="text-xs border-gray-300 rounded-lg px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20">
+                            <option value="">Semua Mode</option>
+                            <option value="lengkap" {{ request('mode') === 'lengkap' ? 'selected' : '' }}>Input Lengkap</option>
+                            <option value="manual" {{ request('mode') === 'manual' ? 'selected' : '' }}>Input Manual</option>
+                        </select>
+                        <select name="is_published" onchange="document.getElementById('ffs-filter-form').submit()"
+                            class="text-xs border-gray-300 rounded-lg px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20">
+                            <option value="">Semua Publish</option>
+                            <option value="1" {{ request('is_published') === '1' ? 'selected' : '' }}>Published</option>
+                            <option value="0" {{ request('is_published') === '0' ? 'selected' : '' }}>Draft</option>
                         </select>
                     </form>
                 </div>

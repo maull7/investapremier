@@ -98,7 +98,7 @@ class GroqService
     {
         $text = mb_substr($pdfText, 0, 60000);
 
-        $systemPrompt = 'Kamu adalah parser dokumen Fund Fact Sheet (FFS) reksa dana Indonesia. Ekstrak data dari teks PDF dan kembalikan HANYA JSON valid tanpa teks lain.';
+        $systemPrompt = 'Kamu adalah parser dokumen Fund Fact Sheet (FFS) reksa dana Indonesia. Ekstrak data dari teks PDF dan kembalikan HANYA JSON valid tanpa teks lain. Perhatikan kode ISIN (International Securities Identification Number) yang biasanya tercantum di bagian informasi umum reksa dana, dekat dengan kode reksa dana.';
 
         if ($documentType === 'informasi_lainnya') {
             $systemPrompt = 'Kamu adalah parser dokumen reksa dana Indonesia. Fokus ekstrak informasi umum: nama reksa dana, jenis reksa dana, manajer investasi, bank kustodian, benchmark, tujuan investasi, kebijakan investasi, tanggal peluncuran, mata uang, management fee, custodian fee, return YTD, return 1 tahun, total AUM, NAB/UP, unit penyertaan, tanggal data, ffs_bulan, ffs_tahun. Kembalikan HANYA JSON valid tanpa teks lain.';
@@ -128,6 +128,7 @@ Ekstrak data dari teks Fund Fact Sheet berikut. Kembalikan HANYA JSON valid deng
 
 {
   "nama_reksa_dana": "string atau null",
+  "isin_code": "string kode ISIN (International Securities Identification Number) atau null",
   "jenis_reksa_dana": "Saham" atau "Pendapatan Tetap" atau "Campuran" atau "Pasar Uang" atau null,
   "kategori": ["Konvensional", "Syariah", "index", "ETF"],
   "manajer_investasi": "string nama MI atau null",
@@ -145,14 +146,25 @@ Ekstrak data dari teks Fund Fact Sheet berikut. Kembalikan HANYA JSON valid deng
   "ffs_bulan": angka bulan 1-12 atau null,
   "ffs_tahun": angka tahun 4 digit atau null,
   "return_ytd": angka persen return YTD atau null,
+  "return_5y": angka persen return 5 tahun atau null,
   "return_1y": angka persen return 1 tahun atau null,
+  "return_1m": angka persen return 1 bulan atau null,
   "total_return": angka persen total return atau null,
   "biaya_operasi": angka persen biaya operasi atau null,
   "portfolio_turnover_ratio": angka portfolio turnover ratio atau null,
   "management_fee": angka persen management fee atau null,
   "custodian_fee": angka persen custodian fee atau null,
+  "subscription_fee": angka persen subscription fee/biaya pembelian atau null,
+  "redemption_fee": angka persen redemption fee/biaya penjualan atau null,
+  "switching_fee": angka persen switching fee atau null,
+  "expense_ratio": angka persen expense ratio/biaya operasional total atau null,
+  "risk_category": "Rendah" atau "Sedang" atau "Tinggi" atau null,
+  "risk_descriptions": ["string deskripsi risiko seperti Risiko Perubahan Kondisi Ekonomi dan Politik, Risiko Kredit, dll"],
+  "sharpe_ratio": angka sharpe ratio atau null,
+  "standard_deviation": angka standard deviation/stdev atau null,
+  "beta": angka beta atau null,
+  "max_drawdown": angka persen max drawdown atau null,
   "total_aset": angka rupiah penuh total aset atau null,
-  "total_liabilitas": angka rupiah penuh total liabilitas atau null,
   "kas_dan_bank": angka rupiah penuh kas dan bank atau null,
   "piutang_bunga": angka rupiah penuh piutang bunga atau null,
   "piutang_dividen": angka rupiah penuh piutang dividen atau null,
