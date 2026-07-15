@@ -10,7 +10,7 @@ class AdvisorConnectionRequest extends Notification
 {
     use Queueable;
 
-    public function __construct(public User $advisor) {}
+    public function __construct(public User $client) {}
 
     public function via(object $notifiable): array
     {
@@ -20,12 +20,12 @@ class AdvisorConnectionRequest extends Notification
     public function toDatabase(object $notifiable): array
     {
         return [
-            'type'    => 'advisor_connection_request',
-            'title'   => 'Permintaan Koneksi Advisor',
-            'message' => "Advisor {$this->advisor->name} ingin menghubungkan Anda sebagai klien.",
-            'icon'    => 'user-plus',
-            'url'     => route('user.clients.requests.index'),
-            'advisor_id' => $this->advisor->id,
+            'type'      => 'advisor_connection_request',
+            'title'     => 'Permintaan Koneksi dari Klien',
+            'message'   => "{$this->client->name} ingin terhubung dengan Anda sebagai klien.",
+            'icon'      => 'user-plus',
+            'url'       => route('user.clients.index', ['tab' => 'tertunda']),
+            'client_id' => $this->client->id,
         ];
     }
 }

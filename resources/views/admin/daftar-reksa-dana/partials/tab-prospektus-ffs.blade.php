@@ -235,18 +235,15 @@
                 <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase">
                     <th class="px-4 py-3 font-semibold">Reksa Dana</th>
                     <th class="px-4 py-3 font-semibold">Prospektus</th>
-                    <th class="px-4 py-3 font-semibold">Keterangan Prospektus</th>
                     <th class="px-4 py-3 font-semibold">Fund Fact Sheet</th>
-                    <th class="px-4 py-3 font-semibold">Keterangan FFS</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-line">
                 @forelse ($documentFunds as $rd)
                     @php
                         $prospectuses = $rd->documents->where('document_type', 'prospektus');
-                        $ffsDocuments = $rd->documents
-                            ->where('document_type', 'ffs')
-                            ->sortByDesc(fn($d) => sprintf('%04d%02d', $d->ffs_year, $d->ffs_month));
+
+                        $ffsDocuments = $rd->documents->where('document_type', 'ffs');
                         $hasMoreDocs = $prospectuses->count() > 1 || $ffsDocuments->count() > 1;
                     @endphp
                     <tr x-data="{ showAll: false }" class="align-top hover:bg-emerald-50/50 transition-colors">
@@ -265,60 +262,57 @@
                                     x-text="showAll ? 'Sembunyikan' : 'Melihat Lainnya'"></button>
                             @endif
                         </td>
-                        <td class="px-4 py-3 min-w-72">
-                            @forelse ($prospectuses as $i => $document)
-                                <div @if ($i > 0) x-show="showAll" x-cloak @endif>
-                                    @include('admin.daftar-reksa-dana.partials.document-actions', [
-                                        'document' => $document,
-                                        'label' => $document->ffs_month
-                                            ? ($months[$document->ffs_month - 1] ?? '-') .
-                                                ' ' .
-                                                $document->ffs_year
-                                            : (string) $document->ffs_year,
-                                    ])
+                        <td class="px-4 py-3 min-w-[420px]">
+                            @forelse ($prospectuses as $document)
+                                <div class="flex items-center justify-between gap-4 py-2 border-b last:border-b-0 border-line"
+                                    @unless ($loop->first)
+            x-show="showAll"
+            x-cloak
+        @endunless>
+                                    <div class="flex-1 min-w-0">
+                                        @include('admin.daftar-reksa-dana.partials.document-actions', [
+                                            'document' => $document,
+                                            'label' => $document->ffs_month
+                                                ? ($months[$document->ffs_month - 1] ?? '-') .
+                                                    ' ' .
+                                                    $document->ffs_year
+                                                : (string) $document->ffs_year,
+                                        ])
+                                    </div>
+
+                                    <div class="w-32 text-xs text-muted text-left font-semibold">
+                                        {{ $document->notes ?: '—' }}
+                                    </div>
                                 </div>
                             @empty
-                                <p class="text-xs text-muted">Prospektus belum tersedia.</p>
+                                <span class="text-xs text-muted italic">
+                                    Prospektus belum tersedia.
+                                </span>
                             @endforelse
                         </td>
-                        <td class="px-4 py-3 text-xs text-muted max-w-xs">
-                            @php
-                                $prospektusNotes = $prospectuses->pluck('notes')->filter()->unique();
-                            @endphp
-                            @if ($prospektusNotes->isNotEmpty())
-                                @foreach ($prospektusNotes as $note)
-                                    <p class="mb-1 last:mb-0">{{ $note }}</p>
-                                @endforeach
-                            @else
-                                <span class="italic">—</span>
-                            @endif
-                        </td>
-                        <td class="px-4 py-3 min-w-80">
+                        <td class="px-4 py-3 min-w-[420px]">
                             @forelse ($ffsDocuments as $i => $document)
-                                <div @if ($i > 0) x-show="showAll" x-cloak @endif>
-                                    @include('admin.daftar-reksa-dana.partials.document-actions', [
-                                        'document' => $document,
-                                        'label' =>
-                                            ($months[$document->ffs_month - 1] ?? '-') .
-                                            ' ' .
-                                            $document->ffs_year,
-                                    ])
+                                <div class="flex items-center justify-between gap-4 py-2 border-b last:border-b-0 border-line"
+                                    @if ($i > 0) x-show="showAll" x-cloak @endif>
+                                    <div class="flex-1 min-w-0">
+                                        @include('admin.daftar-reksa-dana.partials.document-actions', [
+                                            'document' => $document,
+                                            'label' =>
+                                                ($months[$document->ffs_month - 1] ?? '-') .
+                                                ' ' .
+                                                $document->ffs_year,
+                                        ])
+                                    </div>
+
+                                    <div class="w-32 shrink-0 text-xs text-muted font-semibold text-left">
+                                        {{ $document->notes ?: '—' }}
+                                    </div>
                                 </div>
                             @empty
-                                <span class="text-xs text-muted italic">Belum diupload</span>
+                                <span class="text-xs text-muted italic">
+                                    Belum diupload
+                                </span>
                             @endforelse
-                        </td>
-                        <td class="px-4 py-3 text-xs text-muted max-w-xs">
-                            @php
-                                $ffsNotes = $ffsDocuments->pluck('notes')->filter()->unique();
-                            @endphp
-                            @if ($ffsNotes->isNotEmpty())
-                                @foreach ($ffsNotes as $note)
-                                    <p class="mb-1 last:mb-0">{{ $note }}</p>
-                                @endforeach
-                            @else
-                                <span class="italic">—</span>
-                            @endif
                         </td>
                     </tr>
                 @empty

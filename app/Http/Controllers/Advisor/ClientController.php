@@ -6,10 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\AdvisorClientRequest;
 use App\Models\PerencanaanInvestasi;
 use App\Models\User;
-use App\Notifications\AdvisorConnectionRequest;
+use App\Notifications\AdvisorConnectionResponse;
 use App\Services\PortfolioAggregationService;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 class ClientController extends Controller
 {
@@ -44,55 +43,42 @@ class ClientController extends Controller
         return view('advisor.client.index', compact('tab', 'clients', 'pendingRequests', 'rejectedRequests'));
     }
 
-    public function create()
+    public function approve(AdvisorClientRequest $request)
     {
-        $existingClientIds = User::where('advisor_id', auth()->id())->pluck('id');
+        if ($request->advisor_id !== auth()->id()) abort(403);
+        if ($request->status !== 'pending') return back()->with('error', 'Permintaan sudah diproses.');
 
-        $pendingIds = AdvisorClientRequest::where('advisor_id', auth()->id())
-            ->whereIn('status', ['pending', 'approved'])
-            ->pluck('client_id');
+        $client = $request->client;
 
-        $excludeIds = $existingClientIds->merge($pendingIds)->unique()->push(auth()->id());
+        $request->update(['status' => 'approved']);
+        $client->update(['advisor_id' => $request->advisor_id]);
 
-        $users = User::where('role', 'user')
-            ->whereNotIn('id', $excludeIds)
-            ->with('memberProfile')
-            ->orderBy('name')
-            ->get();
+        AdvisorClientRequest::where('client_id', $client->id)
+            ->where('id', '!=', $request->id)
+            ->where('status', 'pending')
+            ->update(['status' => 'rejected']);
 
-        return view('advisor.client.create', compact('users'));
+        if ($client) {
+            $client->notify(new AdvisorConnectionResponse(auth()->user(), 'approved'));
+        }
+
+        return back()->with('success', 'Permintaan koneksi dari ' . ($client->name ?? 'User') . ' berhasil disetujui.');
     }
 
-    public function store(Request $request)
+    public function reject(AdvisorClientRequest $request)
     {
-        $validated = $request->validate([
-            'client_id' => 'required|exists:users,id',
-        ]);
+        if ($request->advisor_id !== auth()->id()) abort(403);
+        if ($request->status !== 'pending') return back()->with('error', 'Permintaan sudah diproses.');
 
-        $client = User::findOrFail($validated['client_id']);
+        $client = $request->client;
 
-        if ($client->advisor_id || $client->role !== 'user') {
-            return back()->with('error', 'User tidak tersedia untuk dijadikan klien.');
+        $request->update(['status' => 'rejected']);
+
+        if ($client) {
+            $client->notify(new AdvisorConnectionResponse(auth()->user(), 'rejected'));
         }
 
-        $exists = AdvisorClientRequest::where('advisor_id', auth()->id())
-            ->where('client_id', $client->id)
-            ->whereIn('status', ['pending', 'approved'])
-            ->exists();
-
-        if ($exists) {
-            return back()->with('error', 'Permintaan koneksi sudah pernah dikirim ke user ini.');
-        }
-
-        AdvisorClientRequest::create([
-            'advisor_id' => auth()->id(),
-            'client_id'  => $client->id,
-            'status'     => 'pending',
-        ]);
-
-        $client->notify(new AdvisorConnectionRequest(auth()->user()));
-
-        return redirect()->route('user.clients.index')->with('success', 'Permintaan koneksi berhasil dikirim. Menunggu persetujuan klien.');
+        return back()->with('success', 'Permintaan koneksi ditolak.');
     }
 
     public function show(User $client)

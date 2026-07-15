@@ -7,12 +7,8 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="page-title">Daftar Klien</h1>
-            <p class="page-sub">Kelola klien yang Anda dampingi</p>
+            <p class="page-sub">Kelola klien yang terhubung dengan Anda</p>
         </div>
-        <a href="{{ route('user.clients.create') }}" class="btn-primary btn-sm">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Tambah Klien
-        </a>
     </div>
 
     @if(session('success'))
@@ -22,7 +18,7 @@
     {{-- Tab Navigation --}}
     <div class="flex gap-1 border-b border-line overflow-x-auto">
         @php
-            $tabs = ['terdaftar' => 'Terdaftar', 'tertunda' => 'Permintaan Tertunda', 'ditolak' => 'Ditolak'];
+            $tabs = ['terdaftar' => 'Terdaftar', 'tertunda' => 'Permintaan Masuk', 'ditolak' => 'Ditolak'];
         @endphp
         @foreach ($tabs as $key => $label)
             <a href="{{ route('user.clients.index', ['tab' => $key]) }}"
@@ -93,7 +89,7 @@
     @elseif ($tab === 'tertunda')
         <div class="table-card">
             @if ($pendingRequests->isEmpty())
-                <div class="p-12 text-center text-muted text-sm">Tidak ada permintaan tertunda.</div>
+                <div class="p-12 text-center text-muted text-sm">Tidak ada permintaan masuk.</div>
             @else
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
@@ -103,7 +99,6 @@
                                 <th class="text-left px-5 py-3 font-semibold text-primary">Email</th>
                                 <th class="text-left px-5 py-3 font-semibold text-primary">Pekerjaan</th>
                                 <th class="text-left px-5 py-3 font-semibold text-primary">Member</th>
-                                <th class="text-left px-5 py-3 font-semibold text-primary">Status</th>
                                 <th class="px-5 py-3"></th>
                             </tr>
                         </thead>
@@ -121,12 +116,17 @@
                                             <span class="text-muted text-xs">—</span>
                                         @endif
                                     </td>
-                                    <td class="px-5 py-3.5"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Menunggu</span></td>
                                     <td class="px-5 py-3.5 text-right">
-                                        <form method="POST" action="{{ route('user.clients.destroy', $req->client) }}" onsubmit="return confirm('Batalkan permintaan?')">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" class="px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition">Batalkan</button>
-                                        </form>
+                                        <div class="flex items-center gap-1 justify-end">
+                                            <form method="POST" action="{{ route('user.clients.approve', $req) }}" class="inline">
+                                                @csrf
+                                                <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-accent rounded-lg hover:bg-accent/90 transition">Setujui</button>
+                                            </form>
+                                            <form method="POST" action="{{ route('user.clients.reject', $req) }}" class="inline">
+                                                @csrf
+                                                <button type="submit" class="px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition">Tolak</button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach

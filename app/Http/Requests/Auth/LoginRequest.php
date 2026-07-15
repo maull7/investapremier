@@ -55,10 +55,13 @@ class LoginRequest extends FormRequest
         }
 
         $user = Auth::user();
-        if ($user && $user->role === 'sub_admin' && !$user->is_active) {
+        if ($user && in_array($user->role, ['sub_admin', 'advisor']) && !$user->is_active) {
             Auth::logout();
+            $message = $user->role === 'advisor'
+                ? 'Pendaftaran Advisor Anda sedang menunggu persetujuan Admin.'
+                : 'Akun Anda sedang dinonaktifkan. Silakan hubungi administrator.';
             throw ValidationException::withMessages([
-                'email' => 'Akun Anda sedang dinonaktifkan. Silakan hubungi administrator.',
+                'email' => $message,
             ]);
         }
 

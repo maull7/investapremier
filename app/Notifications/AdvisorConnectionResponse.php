@@ -11,8 +11,8 @@ class AdvisorConnectionResponse extends Notification
     use Queueable;
 
     public function __construct(
-        public User $client,
-        public string $status, // approved / rejected
+        public User $actor,
+        public string $status,
     ) {}
 
     public function via(object $notifiable): array
@@ -26,11 +26,11 @@ class AdvisorConnectionResponse extends Notification
 
         return [
             'type'    => 'advisor_connection_response',
-            'title'   => 'Respons Koneksi Klien',
-            'message' => "{$this->client->name} telah {$label} permintaan koneksi Anda.",
+            'title'   => 'Respons Koneksi',
+            'message' => "{$this->actor->name} telah {$label} permintaan koneksi Anda.",
             'icon'    => $this->status === 'approved' ? 'user-check' : 'user-x',
-            'url'     => route('user.clients.index'),
-            'client_id' => $this->client->id,
+            'url'     => route('user.clients.requests.index'),
+            'actor_id' => $this->actor->id,
         ];
     }
 }

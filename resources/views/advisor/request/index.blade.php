@@ -4,9 +4,17 @@
 
 @section('content')
 <div class="space-y-6">
-    <div>
-        <h1 class="page-title">Koneksi Advisor</h1>
-        <p class="page-sub">Kelola permintaan koneksi dari advisor</p>
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="page-title">Koneksi Advisor</h1>
+            <p class="page-sub">Kelola koneksi Anda dengan advisor</p>
+        </div>
+        @if (!auth()->user()->advisor_id)
+            <a href="{{ route('user.clients.requests.create') }}" class="btn-primary btn-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Tambah Advisor
+            </a>
+        @endif
     </div>
 
     @if(session('success'))
@@ -37,14 +45,14 @@
         </div>
     @endif
 
-    {{-- Permintaan Masuk --}}
+    {{-- Permintaan yang dikirim --}}
     <div class="bg-white rounded-xl border border-line overflow-hidden">
         <div class="px-6 py-4 border-b border-line">
             <h2 class="font-bold text-primary text-sm">Permintaan Koneksi</h2>
         </div>
 
         @if ($requests->isEmpty())
-            <div class="p-12 text-center text-muted text-sm">Tidak ada permintaan koneksi.</div>
+            <div class="p-12 text-center text-muted text-sm">Belum ada permintaan koneksi.</div>
         @else
             <div class="divide-y divide-line">
                 @foreach ($requests as $req)
@@ -60,13 +68,11 @@
                         </div>
                         <div class="flex items-center gap-2">
                             @if ($req->status === 'pending')
-                                <form method="POST" action="{{ route('user.clients.requests.approve', $req) }}" class="inline">
+                                <span class="px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Menunggu</span>
+                                <form method="POST" action="{{ route('user.clients.requests.cancel', $req) }}" class="inline"
+                                      onsubmit="return confirm('Batalkan permintaan?')">
                                     @csrf
-                                    <button type="submit" class="px-4 py-1.5 bg-accent text-white rounded-lg text-xs font-semibold hover:bg-accent/90 transition">Setujui</button>
-                                </form>
-                                <form method="POST" action="{{ route('user.clients.requests.reject', $req) }}" class="inline">
-                                    @csrf
-                                    <button type="submit" class="px-4 py-1.5 border border-red-200 text-red-600 rounded-lg text-xs font-semibold hover:bg-red-50 transition">Tolak</button>
+                                    <button type="submit" class="px-3 py-1.5 border border-red-200 text-red-600 rounded-lg text-xs font-semibold hover:bg-red-50 transition">Batalkan</button>
                                 </form>
                             @else
                                 <span class="px-3 py-1 rounded-full text-xs font-medium

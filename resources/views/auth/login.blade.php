@@ -168,6 +168,10 @@ body{margin:0;font-family:'Poppins',sans-serif}
         <div class="alert-success">{{ session('status') }}</div>
       @endif
 
+      @if(session('success'))
+        <div class="alert-success">{{ session('success') }}</div>
+      @endif
+
       <form method="POST" action="{{ route('login') }}">
         @csrf
 
