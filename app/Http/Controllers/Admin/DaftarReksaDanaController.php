@@ -74,7 +74,7 @@ class DaftarReksaDanaController extends Controller
             if ($request->search) {
                 $linkQuery->where(function ($q) use ($request) {
                     $q->where('nama_sumber', 'like', '%' . $request->search . '%')
-                        ->orWhereHas('reksaDana', fn ($r) => $r->where('nama_reksa_dana', 'like', '%' . $request->search . '%'));
+                        ->orWhereHas('reksaDana', fn($r) => $r->where('nama_reksa_dana', 'like', '%' . $request->search . '%'));
                 });
             }
             if ($request->jenis_akses) {
@@ -96,7 +96,11 @@ class DaftarReksaDanaController extends Controller
 
         if ($tab === 'prospektus-ffs') {
             $documentFundQuery = ReksaDana::with([
-                'documents' => fn($q) => $q->with('uploader')->withCount('parsedPages')
+                'documents' => fn($q) => $q
+                    ->with('uploader')
+                    ->withCount('parsedPages')
+                    ->orderByDesc('ffs_year')
+                    ->orderByDesc('ffs_month')
             ])->orderBy('nama_reksa_dana');
 
             if ($request->search) {
@@ -140,12 +144,22 @@ class DaftarReksaDanaController extends Controller
         ];
 
         return view('admin.daftar-reksa-dana.index', compact(
-            'reksaDanas', 'harian', 'tab',
-            'dataSourceLinks', 'syncLogs', 'reksaDanaList', 'editingLink',
+            'reksaDanas',
+            'harian',
+            'tab',
+            'dataSourceLinks',
+            'syncLogs',
+            'reksaDanaList',
+            'editingLink',
             'reksaDanaOptions',
-            'documents', 'documentFunds',
-            'harianTanggal', 'hargaTanggal',
-            'recentSyncRuns', 'selectedRun', 'changesUrl', 'detailTypes',
+            'documents',
+            'documentFunds',
+            'harianTanggal',
+            'hargaTanggal',
+            'recentSyncRuns',
+            'selectedRun',
+            'changesUrl',
+            'detailTypes',
             'lastSyncRun',
         ));
     }
@@ -194,10 +208,10 @@ class DaftarReksaDanaController extends Controller
             'mime_type' => $file->getClientMimeType(),
             'file_size' => $file->getSize(),
         ]);
-
+        $rd = ReksaDana::find($validated['reksa_dana_id']);
         ActivityLogger::log(
             'Upload Dokumen',
-            "Dokumen {$validated['document_type']} berhasil diupload untuk reksa dana ID {$validated['reksa_dana_id']}",
+            "Dokumen {$validated['document_type']} berhasil diupload untuk reksa dana dengan ID : {$validated['reksa_dana_id']}, NAMA : {$rd->nama_reksa_dana}, dan KODE : {$rd->kode_reksa_dana}",
             'success',
         );
 
@@ -319,10 +333,10 @@ class DaftarReksaDanaController extends Controller
 
         if (!empty($params['ffs_month'])) {
             $query->where('ffs_month', $params['ffs_month'])
-                  ->where('ffs_year', $params['ffs_year']);
+                ->where('ffs_year', $params['ffs_year']);
         } else {
             $query->whereNull('ffs_month')
-                  ->where('ffs_year', $params['ffs_year']);
+                ->where('ffs_year', $params['ffs_year']);
         }
 
         if ($excludeId) {
@@ -461,10 +475,23 @@ class DaftarReksaDanaController extends Controller
         }
 
         return view('admin.daftar-reksa-dana.show', compact(
-            'fund', 'navHistory', 'navLabels', 'navValues', 'aumValues', 'upValues',
-            'aaTimeline', 'aaLabels', 'topHoldings', 'portfolioTimeline',
-            'latestNav', 'returnDaily', 'returnMonthly', 'returnYearly', 'range',
-            'chartData', 'riskMetrics',
+            'fund',
+            'navHistory',
+            'navLabels',
+            'navValues',
+            'aumValues',
+            'upValues',
+            'aaTimeline',
+            'aaLabels',
+            'topHoldings',
+            'portfolioTimeline',
+            'latestNav',
+            'returnDaily',
+            'returnMonthly',
+            'returnYearly',
+            'range',
+            'chartData',
+            'riskMetrics',
         ));
     }
 
@@ -487,11 +514,11 @@ class DaftarReksaDanaController extends Controller
 
         $committee = $reksaDana->managementTeams
             ->where('type', 'committee')
-            ->map(fn ($row) => trim($row->name . ($row->position ? ' - ' . $row->position : '')))
+            ->map(fn($row) => trim($row->name . ($row->position ? ' - ' . $row->position : '')))
             ->implode("\n");
         $team = $reksaDana->managementTeams
             ->where('type', 'investment_manager')
-            ->map(fn ($row) => trim($row->name . ($row->position ? ' - ' . $row->position : '')))
+            ->map(fn($row) => trim($row->name . ($row->position ? ' - ' . $row->position : '')))
             ->implode("\n");
 
         $updates = [];
@@ -534,7 +561,7 @@ class DaftarReksaDanaController extends Controller
         $validated = $request->validate([
             'kode_reksa_dana'       => 'nullable|string|max:20|unique:reksa_dana,kode_reksa_dana',
             'nama_reksa_dana'       => 'required|string|max:255',
-            'nama_manajer_investasi'=> 'nullable|string|max:255',
+            'nama_manajer_investasi' => 'nullable|string|max:255',
             'jenis'                 => 'nullable|string|in:' . implode(',', self::JENIS_OPTIONS),
             'kategori'              => 'nullable|array',
             'kategori.*'            => 'string|in:' . implode(',', self::KATEGORI_OPTIONS),
@@ -601,7 +628,7 @@ class DaftarReksaDanaController extends Controller
         $validated = $request->validate([
             'kode_reksa_dana'       => 'nullable|string|max:20|unique:reksa_dana,kode_reksa_dana,' . $reksaDana->id,
             'nama_reksa_dana'       => 'required|string|max:255',
-            'nama_manajer_investasi'=> 'nullable|string|max:255',
+            'nama_manajer_investasi' => 'nullable|string|max:255',
             'jenis'                 => 'nullable|string|in:' . implode(',', self::JENIS_OPTIONS),
             'kategori'              => 'nullable|array',
             'kategori.*'            => 'string',
@@ -783,8 +810,8 @@ class DaftarReksaDanaController extends Controller
     {
         return collect($personService->parsePeople($old))
             ->merge($personService->parsePeople($new))
-            ->unique(fn ($item) => $personService->normalizeName($item['name']))
-            ->map(fn ($item) => trim($item['name'] . ($item['position'] ? ' - ' . $item['position'] : '')))
+            ->unique(fn($item) => $personService->normalizeName($item['name']))
+            ->map(fn($item) => trim($item['name'] . ($item['position'] ? ' - ' . $item['position'] : '')))
             ->values()
             ->implode("\n");
     }
@@ -1449,7 +1476,7 @@ class DaftarReksaDanaController extends Controller
         $validated = $request->validate([
             'kode_reksa_dana'       => 'nullable|string|max:20|unique:reksa_dana,kode_reksa_dana,' . $reksaDana->id,
             'nama_reksa_dana'       => 'required|string|max:255',
-            'nama_manajer_investasi'=> 'nullable|string|max:255',
+            'nama_manajer_investasi' => 'nullable|string|max:255',
             'jenis'                 => 'nullable|string|in:' . implode(',', self::JENIS_OPTIONS),
             'kategori'              => 'nullable|array',
             'kategori.*'            => 'string|in:' . implode(',', self::KATEGORI_OPTIONS),
@@ -1492,7 +1519,7 @@ class DaftarReksaDanaController extends Controller
             'management_fee'        => 'nullable|numeric',
             'custodian_fee'         => 'nullable|numeric',
             'expense_ratio'         => 'nullable|numeric',
-            'investment_manager_fee'=> 'nullable|string|max:255',
+            'investment_manager_fee' => 'nullable|string|max:255',
             'minimum_subscription'  => 'nullable|numeric',
             'minimum_topup'         => 'nullable|numeric',
             'minimum_redemption'    => 'nullable|numeric',
