@@ -474,7 +474,7 @@
                             <input type="date" name="harian_tanggal" value="{{ $harianTanggal }}"
                                 class="text-xs border border-white/30 bg-white/10 text-white rounded-lg px-3 py-1.5 focus:outline-none focus:bg-white/20 [color-scheme:dark]">
                             <input type="text" name="search" value="{{ request('search') }}"
-                                placeholder="Cari nama reksa dana..."
+                                placeholder="Cari nama/kode reksa dana..."
                                 class="text-xs border border-white/30 bg-white/10 text-white placeholder-white/50 rounded-lg px-3 py-1.5 w-44 focus:outline-none focus:bg-white/20">
                             <button type="submit"
                                 class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition">Cari</button>

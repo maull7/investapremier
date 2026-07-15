@@ -42,12 +42,18 @@
                                 <a href="{{ route('admin.advisors.clients', $a) }}" class="text-accent font-semibold hover:underline">{{ $a->clients_count }} klien</a>
                             </td>
                             <td class="px-5 py-3.5 text-center">
-                                <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium {{ $a->is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
-                                    {{ $a->is_active ? 'Aktif' : 'Nonaktif' }}
+                                <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium {{ $a->is_active ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
+                                    {{ $a->is_active ? 'Aktif' : 'Menunggu' }}
                                 </span>
                             </td>
                             <td class="px-5 py-3.5 text-center">
                                 <div class="flex items-center justify-center gap-2">
+                                    @if (!$a->is_active)
+                                        <form method="POST" action="{{ route('admin.advisors.approve', $a) }}">
+                                            @csrf
+                                            <button type="submit" class="px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition">Setujui</button>
+                                        </form>
+                                    @endif
                                     <a href="{{ route('admin.advisors.edit', $a) }}" class="px-3 py-1.5 text-xs font-medium text-primary border border-line rounded-lg hover:bg-[#f1f5f9] transition">Edit</a>
                                     <a href="{{ route('admin.advisors.clients', $a) }}" class="px-3 py-1.5 text-xs font-medium text-accent border border-accent/30 rounded-lg hover:bg-accent/5 transition">Daftar Klien</a>
                                     <form method="POST" action="{{ route('admin.advisors.destroy', $a) }}" onsubmit="return confirm('Hapus advisor ini? Semua relasi klien akan dilepas.')">

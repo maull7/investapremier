@@ -1,6 +1,6 @@
 @extends('layouts.guest')
 
-@section('title', 'Daftar — InvestaPremier')
+@section('title', 'Daftar Advisor — InvestaPremier')
 
 @section('body')
 <style>
@@ -66,6 +66,23 @@ body{margin:0;font-family:'Poppins',sans-serif}
 .auth-footer a{color:#16a34a;font-weight:600;text-decoration:none}
 .auth-footer a:hover{text-decoration:underline}
 
+.alert-info{
+  padding:12px 14px;border-radius:8px;background:#eff6ff;
+  border:1px solid #bfdbfe;color:#1e40af;font-size:13px;font-weight:500;
+  margin-bottom:16px;display:flex;align-items:flex-start;gap:8px;
+}
+
+.phone-prefix{
+  display:flex;gap:8px;
+}
+.phone-prefix .country-code{
+  width:90px;flex-shrink:0;padding:11px 14px;border-radius:8px;
+  border:1.5px solid #e2e8f0;background:#f8fafc;
+  font-family:'Poppins',sans-serif;font-size:14px;color:#0f172a;
+  outline:none;text-align:center;font-weight:600;
+}
+.phone-prefix .field{flex:1;margin-bottom:0}
+
 /* Right panel */
 .auth-right{
   display:none;flex:1;order:-1;
@@ -122,29 +139,29 @@ body{margin:0;font-family:'Poppins',sans-serif}
 </style>
 
 <div class="auth-wrap">
-  {{-- Visual side (left on register) --}}
+  {{-- Visual side --}}
   <div class="auth-right">
     <div class="auth-right-inner">
       <div class="auth-right-icon">
-        <svg viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
       </div>
-      <h2>Mulai Perjalanan<br><em>Wealth</em> Anda.</h2>
-      <p>Bergabunglah dan kelola seluruh portofolio keluarga dalam satu dashboard premium yang terstruktur.</p>
+      <h2>Daftar Menjadi<br><em>Financial Advisor</em></h2>
+      <p>Kelola portofolio klien, berikan rekomendasi investasi, dan pantau perkembangan keuangan mereka dalam satu platform.</p>
       <div class="steps-mini">
         <div class="sm-step">
           <div class="sm-num">1</div>
-          <div class="sm-text"><h4>Buat akun gratis</h4><p>Daftar dalam 60 detik, tanpa kartu kredit.</p></div>
+          <div class="sm-text"><h4>Daftar akun Advisor</h4><p>Isi data diri Anda, pengajuan akan direview oleh Admin.</p></div>
         </div>
         <div class="sm-step">
           <div class="sm-num">2</div>
-          <div class="sm-text"><h4>Konsolidasikan aset</h4><p>Input portofolio, tujuan, dan dokumen keluarga.</p></div>
+          <div class="sm-text"><h4>Tunggu persetujuan</h4><p>Admin akan menyetujui pendaftaran Anda dalam 1x24 jam.</p></div>
         </div>
         <div class="sm-step">
           <div class="sm-num">3</div>
-          <div class="sm-text"><h4>Pantau & putuskan</h4><p>Dashboard real-time + AI analysis siap pakai.</p></div>
+          <div class="sm-text"><h4>Kelola klien</h4><p>Akses penuh ke dashboard advisor, portfolio klien, dan alat analisa.</p></div>
         </div>
       </div>
-      <div class="auth-right-link">Sudah punya akun? <a href="{{ route('login') }}">Masuk sekarang</a></div>
+      <div class="auth-right-link">Sudah punya akun advisor? <a href="{{ route('login') }}">Masuk sekarang</a></div>
     </div>
   </div>
 
@@ -156,45 +173,61 @@ body{margin:0;font-family:'Poppins',sans-serif}
         <div class="auth-logo-mark">
           <svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
         </div>
-        <div class="auth-logo-name">InvestaPremier <small>WealthOS</small></div>
+        <div class="auth-logo-name">InvestaPremier <small>Advisor Portal</small></div>
       </a>
 
-        <h1 class="auth-title">Buat Akun Baru</h1>
-        <p class="auth-sub">Daftar gratis dan mulai kelola wealth keluarga Anda</p>
+      <h1 class="auth-title">Daftar Advisor</h1>
+      <p class="auth-sub">Isi data diri untuk mengajukan pendaftaran sebagai advisor</p>
 
-        <form method="POST" action="{{ route('register') }}">
-          @csrf
+      <div class="alert-info">
+        <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>Setelah mendaftar, akun Anda akan direview oleh Admin. Anda akan mendapat notifikasi setelah disetujui.</span>
+      </div>
 
-          <div class="field">
-            <label for="name">Nama Lengkap</label>
-            <input id="name" type="text" name="name" value="{{ old('name') }}" required autofocus autocomplete="name" placeholder="Nama Anda"/>
-            @error('name')<div class="field-error">{{ $message }}</div>@enderror
+      <form method="POST" action="{{ route('register.advisor') }}">
+        @csrf
+
+        <div class="field">
+          <label for="name">Nama Lengkap</label>
+          <input id="name" type="text" name="name" value="{{ old('name') }}" required autofocus autocomplete="name" placeholder="Nama Anda"/>
+          @error('name')<div class="field-error">{{ $message }}</div>@enderror
+        </div>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" name="email" value="{{ old('email') }}" required autocomplete="username" placeholder="you@example.com"/>
+          @error('email')<div class="field-error">{{ $message }}</div>@enderror
+        </div>
+
+        <div class="field">
+          <label for="phone">Nomor Telepon</label>
+          <div class="phone-prefix">
+            <input type="text" class="country-code" value="+62" readonly>
+            <div class="field">
+              <input id="phone" type="tel" name="phone" value="{{ old('phone') }}" placeholder="81234567890"/>
+            </div>
           </div>
+          @error('phone')<div class="field-error">{{ $message }}</div>@enderror
+        </div>
 
-          <div class="field">
-            <label for="email">Email</label>
-            <input id="email" type="email" name="email" value="{{ old('email') }}" required autocomplete="username" placeholder="you@example.com"/>
-            @error('email')<div class="field-error">{{ $message }}</div>@enderror
-          </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" type="password" name="password" required autocomplete="new-password" placeholder="Min. 8 karakter"/>
+          @error('password')<div class="field-error">{{ $message }}</div>@enderror
+        </div>
 
-          <div class="field">
-            <label for="password">Password</label>
-            <input id="password" type="password" name="password" required autocomplete="new-password" placeholder="Min. 8 karakter"/>
-            @error('password')<div class="field-error">{{ $message }}</div>@enderror
-          </div>
-
-          <div class="field">
-            <label for="password_confirmation">Konfirmasi Password</label>
-            <input id="password_confirmation" type="password" name="password_confirmation" required autocomplete="new-password" placeholder="Ulangi password"/>
-            @error('password_confirmation')<div class="field-error">{{ $message }}</div>@enderror
-          </div>
+        <div class="field">
+          <label for="password_confirmation">Konfirmasi Password</label>
+          <input id="password_confirmation" type="password" name="password_confirmation" required autocomplete="new-password" placeholder="Ulangi password"/>
+          @error('password_confirmation')<div class="field-error">{{ $message }}</div>@enderror
+        </div>
 
         <div style="margin-top:8px">
           {!! NoCaptcha::display() !!}
           @error('g-recaptcha-response')<div class="field-error">{{ $message }}</div>@enderror
         </div>
 
-        <button type="submit" class="btn-submit">Daftar Gratis</button>
+        <button type="submit" class="btn-submit">Ajukan Pendaftaran Advisor</button>
 
         <div class="divider"><span>atau lanjutkan dengan</span></div>
 
@@ -204,7 +237,7 @@ body{margin:0;font-family:'Poppins',sans-serif}
         </a>
 
         <p class="auth-footer lg-hide">Sudah punya akun? <a href="{{ route('login') }}">Masuk</a></p>
-        <p class="auth-footer" style="margin-top:8px"><a href="{{ route('register.advisor') }}">Daftar sebagai Advisor</a></p>
+        <p class="auth-footer" style="margin-top:8px"><a href="{{ route('register') }}">Daftar sebagai nasabah biasa</a></p>
       </form>
     </div>
   </div>

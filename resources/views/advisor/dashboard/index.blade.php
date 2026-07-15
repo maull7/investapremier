@@ -21,10 +21,7 @@
         <h1 class="text-2xl font-bold text-gray-900" style="letter-spacing:-.02em">Advisor Dashboard</h1>
         <p class="text-gray-500 text-sm mt-1">Overview portfolio klien Anda</p>
     </div>
-    <a href="{{ route('user.clients.create') }}" class="btn-ip btn-green hidden sm:inline-flex" style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:8px;font-family:'Poppins',sans-serif;font-weight:600;font-size:13px;border:1.5px solid transparent;cursor:pointer;transition:all .2s;text-decoration:none;background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;box-shadow:0 2px 10px rgba(22,163,74,.28)">
-        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-        Tambah Klien
-    </a>
+
 </div>
 
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">

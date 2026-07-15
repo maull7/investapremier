@@ -43,7 +43,12 @@ class DaftarReksaDanaController extends Controller
         $hargaDir = $request->get('direction', 'asc');
         $hargaQuery = ReksaDana::orderBy($hargaSort, $hargaDir);
         if ($request->jenis) $hargaQuery->where('jenis', $request->jenis);
-        if ($request->search) $hargaQuery->where('nama_reksa_dana', 'like', '%' . $request->search . '%');
+        if ($request->search) {
+            $hargaQuery->where(function ($q) use ($request) {
+                $q->where('nama_reksa_dana', 'like', '%' . $request->search . '%')
+                  ->orWhere('kode_reksa_dana', 'like', '%' . strtoupper($request->search) . '%');
+            });
+        }
         if ($request->harga_tanggal) $hargaQuery->whereDate('tanggal_nab', $request->harga_tanggal);
         $reksaDanas = $hargaQuery->paginate(20, ['*'], 'harga_page')->withQueryString();
 
@@ -55,7 +60,10 @@ class DaftarReksaDanaController extends Controller
             $harianQuery->whereDate('tanggal_nab', $harianTanggal);
         }
         if ($request->search) {
-            $harianQuery->where('nama_reksa_dana', 'like', '%' . $request->search . '%');
+            $harianQuery->where(function ($q) use ($request) {
+                $q->where('nama_reksa_dana', 'like', '%' . $request->search . '%')
+                  ->orWhere('kode_reksa_dana', 'like', '%' . strtoupper($request->search) . '%');
+            });
         }
         $harian = $harianQuery->paginate(20, ['*'], 'harian_page')->withQueryString();
 
