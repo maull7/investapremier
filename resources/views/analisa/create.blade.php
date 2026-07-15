@@ -3587,6 +3587,44 @@
                 @include('analisa.partials.create-ai-tabs')
             </div>
 
+                    {{-- Laporan Keuangan - Laba Rugi --}}
+                    <div class="bg-white rounded-xl border border-line p-6 space-y-4" x-show="jenisLaporan === 'laporan_tahunan'" x-cloak>
+                        <h3 class="font-semibold text-primary">Laporan Keuangan - Laba Rugi</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <span class="text-muted text-xs block">Pendapatan Dividen</span>
+                                <span class="font-medium text-primary" x-text="pendapatanDividen ? Number(pendapatanDividen).toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 2}) : '—'"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Analisa Pengelolaan Investasi Portofolio --}}
+                    <div class="bg-white rounded-xl border border-line p-6 space-y-4" x-show="jenisLaporan === 'laporan_tahunan'" x-cloak>
+                        <h3 class="font-semibold text-primary">Analisa Pengelolaan Investasi Portofolio</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <span class="text-muted text-xs block">Fee Cost to Performance</span>
+                                <span class="font-medium text-primary" x-text="feeCostToPerformance != null ? Number(feeCostToPerformance).toFixed(4) : '—'"></span>
+                            </div>
+                            <div>
+                                <span class="text-muted text-xs block">Pendapatan terhadap NAB</span>
+                                <span class="font-medium text-primary" x-text="pendapatanTerhadapNab != null ? Number(pendapatanTerhadapNab).toFixed(4) : '—'"></span>
+                            </div>
+                            <div>
+                                <span class="text-muted text-xs block">Beban terhadap Pendapatan</span>
+                                <span class="font-medium text-primary" x-text="bebanTerhadapPendapatan != null ? Number(bebanTerhadapPendapatan).toFixed(4) : '—'"></span>
+                            </div>
+                            <div>
+                                <span class="text-muted text-xs block">Pengelolaan Investasi terhadap Pendapatan</span>
+                                <span class="font-medium text-primary" x-text="pengelolaanInvestasiTerhadapPendapatan != null ? Number(pengelolaanInvestasiTerhadapPendapatan).toFixed(4) : '—'"></span>
+                            </div>
+                            <div>
+                                <span class="text-muted text-xs block">Transaction Profit terhadap NAB</span>
+                                <span class="font-medium text-primary" x-text="transactionProfitTerhadapNab != null ? Number(transactionProfitTerhadapNab).toFixed(4) : '—'"></span>
+                            </div>
+                        </div>
+                    </div>
+
                     {{-- Info Keuangan --}}
                     <div class="bg-white rounded-xl border border-line p-6 space-y-4" x-show="mode !== 'link-website'" x-cloak>
                         <h3 class="font-semibold text-primary">Info Keuangan</h3>
