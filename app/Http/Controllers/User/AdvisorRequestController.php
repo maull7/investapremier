@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AdvisorClientRequest;
 use App\Models\User;
 use App\Notifications\AdvisorConnectionRequest;
+use App\Notifications\UserBreakAdvisor;
 use Illuminate\Http\Request;
 
 class AdvisorRequestController extends Controller
@@ -81,5 +82,18 @@ class AdvisorRequestController extends Controller
         $request->delete();
 
         return back()->with('success', 'Permintaan koneksi dibatalkan.');
+    }
+    public function breakConnection(AdvisorClientRequest $request)
+    {
+        if ($request->client_id !== auth()->id()) abort(403);
+        if ($request->status !== 'approved') return back()->with('error', 'Tidak ada koneksi yang dapat diputus.');
+        $advisor = User::findOrFail($request->advisor_id);
+
+        $request->delete();
+        $user = auth()->user();
+        $user->advisor_id = null;
+        $user->save();
+        $advisor->notify(new UserBreakAdvisor(auth()->user()));
+        return back()->with('success', 'Koneksi dengan advisor telah diputus.');
     }
 }

@@ -408,7 +408,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
         ->name('sub-admins.toggle-status')
         ->middleware('role:admin');
 
-    // Advisor Management (admin utama only)
+// Advisor Management (admin utama only)
     Route::prefix('advisors')->name('advisors.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\AdvisorController::class, 'index'])->name('index');
         Route::get('/create', [\App\Http\Controllers\Admin\AdvisorController::class, 'create'])->name('create');
@@ -418,6 +418,8 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
         Route::post('/{advisor}/approve', [\App\Http\Controllers\Admin\AdvisorController::class, 'approve'])->name('approve');
         Route::delete('/{advisor}', [\App\Http\Controllers\Admin\AdvisorController::class, 'destroy'])->name('destroy');
         Route::get('/{advisor}/clients', [\App\Http\Controllers\Admin\AdvisorController::class, 'clients'])->name('clients');
+        Route::get('/{advisor}/clients/plan/{plan}', [\App\Http\Controllers\Admin\AdvisorController::class, 'planDetail'])->name('clients.plan.show');
+        Route::get('/{advisor}/clients/plan/{plan}/pdf', [\App\Http\Controllers\Admin\AdvisorController::class, 'planPdf'])->name('clients.plan.pdf');
     })->middleware('role:admin');
 
     // Notifikasi Admin (reuse user controller)
@@ -456,6 +458,7 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
         Route::get('/tambah', [\App\Http\Controllers\User\AdvisorRequestController::class, 'create'])->name('create');
         Route::post('/', [\App\Http\Controllers\User\AdvisorRequestController::class, 'store'])->name('store');
         Route::post('/{request}/cancel', [\App\Http\Controllers\User\AdvisorRequestController::class, 'cancel'])->name('cancel');
+        Route::put('/{request}/break-connection', [\App\Http\Controllers\User\AdvisorRequestController::class, 'breakConnection'])->name('break-connection');
     });
 
     // Upload & lihat hasil analisa

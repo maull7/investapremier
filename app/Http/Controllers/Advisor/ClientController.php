@@ -92,8 +92,21 @@ class ClientController extends Controller
             ->paginate(10);
 
         $portfolioSummary = app(PortfolioAggregationService::class)->aggregate($client);
+        $portfolioQuery = \App\Models\MemberPortfolio::where('user_id', $client->id);
 
-        return view('advisor.client.show', compact('client', 'perencanaan', 'portfolioSummary'));
+        $portfolioItems = $portfolioQuery->latest()->get();
+
+        $portfolioItems->each(function ($item) {
+            $item->penerbit = match ($item->jenis) {
+                'Saham' => \App\Models\Stock::where('kode', $item->nama_efek)->value('nama'),
+                'Reksa Dana', 'Reksadana' => \App\Models\ReksaDana::where('nama_reksa_dana', $item->nama_efek)->value('nama_manajer_investasi'),
+                'Obligasi' => \App\Models\ObligasiHargaReferensi::where('nama', $item->nama_efek)->value('nama'),
+                default => null,
+            } ?? '-';
+        });
+
+
+        return view('advisor.client.show', compact('client', 'perencanaan', 'portfolioSummary', 'portfolioItems'));
     }
 
     public function destroy(User $client)
