@@ -1,12 +1,12 @@
-@extends('layouts.user')
+@extends('layouts.admin')
 
-@section('title', 'Detail Perencanaan Investasi - InvestaPremier')
+@section('title', 'Detail Perencanaan Investasi - Admin')
 
 @section('content')
     <div class="mb-6">
         <div class="flex items-center gap-2 text-sm text-muted mb-3">
-            <a href="{{ route('user.perencanaan-investasi.index') }}" class="hover:text-primary transition">Perencanaan
-                Investasi</a>
+            <a href="{{ route('admin.advisors.clients', $advisor) }}" class="hover:text-primary transition">Kembali ke
+                Klien</a>
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
             </svg>
@@ -15,25 +15,26 @@
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="page-title">{{ $plan->kategori_perencanaan }}</h1>
-                <p class="page-sub">Dibuat {{ $plan->created_at->format('d F Y') }}</p>
+                <p class="page-sub">Dibuat {{ $plan->created_at->format('d F Y') }} | Klien: {{ $plan->user->name }}</p>
             </div>
             <div class="flex items-center gap-2">
-                <a href="{{ route('user.perencanaan-investasi.pdf', $plan) }}" class="btn-secondary">
+                <a href="{{ route('admin.advisors.clients.plan.pdf', ['advisor' => $advisor, 'plan' => $plan]) }}"
+                    class="btn-secondary">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     PDF
                 </a>
-                @if ($plan->user_id === auth()->id())
-                    <a href="{{ route('user.perencanaan-investasi.edit', $plan) }}" class="btn-secondary">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Edit
-                    </a>
-                @endif
+                <a href="{{ route('user.perencanaan-investasi.show', $plan) }}" class="btn-secondary" target="_blank">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    Halaman User
+                </a>
             </div>
         </div>
     </div>
@@ -197,17 +198,11 @@
                 </svg>
                 Progress Realisasi
             </h3>
-            <button type="button" onclick="bukaModalCheckin()"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white rounded-lg text-xs font-semibold hover:bg-accent/90 transition">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Check-in
-            </button>
         </div>
 
         @php
             $kebutuhan = (float) ($plan->kebutuhan_dana ?? 0);
+            $latestCheckin = $plan->progressCheckins->first();
             $latestDana = $latestCheckin ? (float) $latestCheckin->dana_terkumpul : 0;
             $progressPct = $kebutuhan > 0 ? min(100, round(($latestDana / $kebutuhan) * 100)) : 0;
         @endphp
@@ -239,11 +234,11 @@
                 style="width: {{ $progressPct }}%"></div>
         </div>
 
-        @if ($checkins->count() > 1)
+        @if ($plan->progressCheckins->count() > 1)
             <div class="mt-4">
                 <p class="text-xs text-muted font-semibold mb-2">Riwayat Check-in</p>
                 <div class="space-y-1.5">
-                    @foreach ($checkins->take(5) as $c)
+                    @foreach ($plan->progressCheckins->take(5) as $c)
                         <div
                             class="flex items-center justify-between text-xs py-1.5 px-3 bg-[#f8fafc] rounded-lg border border-line">
                             <span class="text-muted">{{ $c->tanggal_checkin->format('d M Y') }}</span>
@@ -263,32 +258,13 @@
     <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden mb-6">
         <div
             class="px-6 py-4 border-b border-line flex items-center justify-between bg-gradient-to-r from-accent to-accent/80">
-            <h3 class="th-title text-white font-semibold text-sm flex items-center gap-2">
+            <h3 class="th-title *:text-white font-semibold text-sm flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
                 Analisis & Rekomendasi AI
             </h3>
-            <form method="POST" action="{{ route('user.perencanaan-investasi.regenerate-ai', $plan) }}"
-                id="regenerate-form">
-                @csrf
-                <button type="submit" id="regenerate-btn"
-                    class="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 text-white rounded-lg text-xs font-semibold hover:bg-white/30 transition">
-                    <svg id="regenerate-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    <span id="regenerate-text">Regenerate</span>
-                </button>
-            </form>
-            <script>
-                document.getElementById('regenerate-form').addEventListener('submit', function() {
-                    document.getElementById('regenerate-text').textContent = 'Memproses...';
-                    document.getElementById('regenerate-icon').classList.add('animate-spin');
-                });
-            </script>
         </div>
 
         @if (!empty($plan->ai_output['error']))
@@ -303,7 +279,7 @@
                         <p class="font-semibold text-red-700 text-sm">Gagal menganalisis</p>
                         <p class="text-red-600 text-xs mt-1">
                             {{ $plan->ai_output['message'] ?? 'Terjadi kesalahan saat menghubungi AI.' }}</p>
-                        <p class="text-xs text-muted mt-2">Klik "Regenerate" untuk mencoba lagi.</p>
+                        <p class="text-xs text-muted mt-2">Silakan coba regenerate di halaman user.</p>
                     </div>
                 </div>
             </div>
@@ -317,8 +293,8 @@
                     </svg>
                     <div>
                         <p class="font-semibold text-blue-700 text-sm">Belum ada analisis</p>
-                        <p class="text-blue-600 text-xs mt-1">Klik "Regenerate" untuk meminta AI menganalisis rencana ini.
-                        </p>
+                        <p class="text-blue-600 text-xs mt-1">Gunakan halaman user untuk meminta AI menganalisis rencana
+                            ini.</p>
                     </div>
                 </div>
             </div>
@@ -440,7 +416,6 @@
 
                 @if (!empty($ai['rekomendasi_portofolio']))
                     @php
-                        // Map nama produk → item portofolio untuk keperluan grafik
                         $portofolioMap = $plan->portofolioItems->keyBy('nama_produk');
                     @endphp
                     <div>
@@ -459,14 +434,8 @@
                                 <div class="bg-white rounded-xl border border-line p-4">
                                     <div class="flex items-center justify-between mb-2">
                                         <div class="flex items-center gap-2">
-                                            <button type="button" onclick="bukaGrafikEfek(this)"
-                                                data-nama="{{ $efek['nama_efek'] ?? '' }}"
-                                                data-jenis="{{ $efek['jenis'] ?? ($item?->jenis ?? '') }}"
-                                                data-produk-id="{{ $item?->produk_id ?? '' }}"
-                                                data-produk-type="{{ $item?->produk_type ?? '' }}"
-                                                class="font-semibold text-sm text-accent hover:underline text-left">
-                                                {{ $efek['nama_efek'] ?? '-' }}
-                                            </button>
+                                            <span
+                                                class="font-semibold text-sm text-accent">{{ $efek['nama_efek'] ?? '-' }}</span>
                                             @if (!empty($efek['jenis']))
                                                 <span
                                                     class="text-xs text-muted bg-[#f1f5f9] px-2 py-0.5 rounded-full">{{ $efek['jenis'] }}</span>
@@ -576,10 +545,8 @@
                 const canvas = document.getElementById('whatifChart');
                 if (!canvas) return;
                 const ctx = canvas.getContext('2d');
-                if (window.__whatifChart) {
-                    window.__whatifChart.destroy();
-                    window.__whatifChart = null;
-                }
+                if (window.__whatifChart) { window.__whatifChart.destroy();
+                    window.__whatifChart = null; }
     
                 const labels = [];
                 const dataSkema = [];
@@ -731,187 +698,16 @@
     </div>
 
     <div class="flex items-center gap-3">
-        <a href="{{ route('user.perencanaan-investasi.index') }}"
+        <a href="{{ route('admin.advisors.clients', $advisor) }}"
             class="px-5 py-2.5 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary hover:border-primary/30 transition">
-            Kembali ke Daftar
+            Kembali ke Daftar Klien
         </a>
     </div>
+@endsection
 
-    {{-- Modal Check-in --}}
-    <div id="checkinModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 hidden">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h4 class="font-bold text-primary text-sm">Check-in Progress</h4>
-                <button onclick="tutupModalCheckin()" class="text-muted hover:text-primary transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            <form method="POST" action="{{ route('user.perencanaan-investasi.checkin', $plan) }}">
-                @csrf
-                <div class="space-y-4">
-                    <div>
-                        <label class="text-xs font-semibold text-primary block mb-1">Dana Terkumpul Saat Ini (Rp)</label>
-                        <input type="number" name="dana_terkumpul" required min="0"
-                            class="w-full px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
-                            placeholder="Masukkan total dana yang sudah terkumpul">
-                    </div>
-                    <div>
-                        <label class="text-xs font-semibold text-primary block mb-1">Catatan (opsional)</label>
-                        <textarea name="catatan" rows="2"
-                            class="w-full px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
-                            placeholder="Misalnya: 'Dari bonus tahunan'"></textarea>
-                    </div>
-                </div>
-                <div class="flex items-center justify-end gap-3 mt-6">
-                    <button type="button" onclick="tutupModalCheckin()"
-                        class="px-4 py-2 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary hover:border-primary/30 transition">Batal</button>
-                    <button type="submit"
-                        class="px-4 py-2 bg-accent text-white rounded-xl text-sm font-semibold hover:bg-accent/90 transition">Simpan
-                        Check-in</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    {{-- Grafik Modal --}}
-    <div id="grafikModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 hidden">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h4 id="grafikTitle" class="font-bold text-primary text-sm">Grafik Kinerja</h4>
-                <button onclick="tutupGrafik()" class="text-muted hover:text-primary transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            <div id="grafikLoading" class="flex items-center justify-center py-12 text-muted text-sm">Memuat grafik...
-            </div>
-            <div id="grafikEmpty" class="hidden flex items-center justify-center py-12 text-muted text-sm">Data grafik
-                tidak tersedia.</div>
-            <canvas id="grafikCanvas" class="hidden" height="200"></canvas>
-        </div>
-    </div>
-
+@push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
-        // Check-in Modal
-        function bukaModalCheckin() {
-            document.getElementById('checkinModal').classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function tutupModalCheckin() {
-            document.getElementById('checkinModal').classList.add('hidden');
-            document.body.style.overflow = '';
-        }
-
-        document.addEventListener('click', function(e) {
-            const modal = document.getElementById('checkinModal');
-            if (e.target === modal) tutupModalCheckin();
-        });
-
-        let grafikChart = null;
-
-        function bukaGrafikEfek(btn) {
-            const nama = btn.dataset.nama;
-            const jenis = btn.dataset.jenis;
-            const produkId = btn.dataset.produkId;
-            const produkType = btn.dataset.produkType;
-
-            document.getElementById('grafikTitle').textContent = 'Grafik Kinerja — ' + nama;
-            document.getElementById('grafikModal').classList.remove('hidden');
-            document.getElementById('grafikLoading').classList.remove('hidden');
-            document.getElementById('grafikEmpty').classList.add('hidden');
-            document.getElementById('grafikCanvas').classList.add('hidden');
-            document.body.style.overflow = 'hidden';
-
-            if (grafikChart) {
-                grafikChart.destroy();
-                grafikChart = null;
-            }
-
-            const url =
-                `{{ route('user.portofolio.grafik') }}?jenis=${encodeURIComponent(jenis)}&produk_type=${encodeURIComponent(produkType)}&produk_id=${encodeURIComponent(produkId)}&nama=${encodeURIComponent(nama)}`;
-
-            fetch(url)
-                .then(r => r.json())
-                .then(data => {
-                    document.getElementById('grafikLoading').classList.add('hidden');
-                    if (!data.labels || !data.labels.length) {
-                        document.getElementById('grafikEmpty').classList.remove('hidden');
-                        return;
-                    }
-                    const canvas = document.getElementById('grafikCanvas');
-                    canvas.classList.remove('hidden');
-                    grafikChart = new Chart(canvas, {
-                        type: 'line',
-                        data: {
-                            labels: data.labels,
-                            datasets: [{
-                                label: data.label || nama,
-                                data: data.values,
-                                borderColor: '#3b82f6',
-                                backgroundColor: 'rgba(59,130,246,0.08)',
-                                fill: true,
-                                tension: 0.3,
-                                pointRadius: 2,
-                                borderWidth: 2,
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            plugins: {
-                                legend: {
-                                    display: false
-                                }
-                            },
-                            scales: {
-                                x: {
-                                    grid: {
-                                        display: false
-                                    },
-                                    ticks: {
-                                        maxTicksLimit: 6,
-                                        font: {
-                                            size: 10
-                                        }
-                                    }
-                                },
-                                y: {
-                                    grid: {
-                                        color: '#f1f5f9'
-                                    },
-                                    ticks: {
-                                        font: {
-                                            size: 10
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
-                })
-                .catch(() => {
-                    document.getElementById('grafikLoading').classList.add('hidden');
-                    document.getElementById('grafikEmpty').classList.remove('hidden');
-                });
-        }
-
-        function tutupGrafik() {
-            document.getElementById('grafikModal').classList.add('hidden');
-            document.body.style.overflow = '';
-            if (grafikChart) {
-                grafikChart.destroy();
-                grafikChart = null;
-            }
-        }
-
-        document.getElementById('grafikModal').addEventListener('click', function(e) {
-            if (e.target === this) tutupGrafik();
-        });
-
         // Inline charts for portfolio items
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.portofolio-chart').forEach(function(canvas) {
@@ -988,4 +784,4 @@
             });
         });
     </script>
-@endsection
+@endpush

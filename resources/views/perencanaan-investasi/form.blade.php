@@ -432,8 +432,7 @@
                                             class="w-full px-2 py-1.5 border border-line rounded-lg text-xs text-right focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
                                     </td>
                                     <td class="py-1.5 px-2">
-                                        <input type="text" x-model="row.harga_akuisisi" disabled
-                                            x-on:pfSetPrice="row.harga_akuisisi = $event.detail"
+                                        <input type="text" x-model="row.harga_formatted" disabled
                                             class="w-full px-2 py-1.5 border border-line rounded-lg text-xs bg-gray-50 text-right text-muted cursor-not-allowed"
                                             placeholder="Otomatis">
                                         <span x-show="row.loading"
@@ -467,7 +466,7 @@
 
                 <div class="flex items-center justify-between mt-4 pt-4 border-t border-line">
                     <button type="button"
-                        x-on:click="pfRows.push({jenis:'', nama_produk:'', produk_id:'', produk_type:'', nominal:'', harga_akuisisi:'', loading:false, numberinput:0, total_nilai:0})"
+                        x-on:click="pfRows.push({jenis:'', nama_produk:'', produk_id:'', produk_type:'', nominal:'', harga_akuisisi:'', harga_formatted:'', loading:false, numberinput:0, total_nilai:0})"
                         class="inline-flex items-center gap-1.5 px-4 py-2 bg-accent/10 text-accent rounded-xl text-xs font-semibold hover:bg-accent/20 transition">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 23 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -577,7 +576,7 @@
 
                     fetch(
                             `{{ route('user.portofolio.produk') }}?jenis=${encodeURIComponent(row.jenis)}`
-                            )
+                        )
                         .then(r => r.json())
                         .then(data => {
                             row.products = data;
@@ -613,7 +612,7 @@
 
                     fetch(
                             `{{ route('user.portofolio.produk') }}?jenis=${encodeURIComponent(row.jenis)}`
-                            )
+                        )
                         .then(r => r.json())
                         .then(data => {
                             row.products = data;
@@ -663,7 +662,8 @@
                     const nominal = parseFloat(cleanRupiah(row.nominal)) || 0;
                     const harga = parseFloat(cleanRupiah(row.harga_akuisisi)) || 0;
                     row.total_nilai = nominal * harga;
-                    row.total_nilai_formatted = 'Rp ' + formatNumber(Math.floor(row.total_nilai));
+                    row.total_nilai_formatted = 'Rp ' + formatNumber(row.total_nilai, 0);
+                    row.harga_formatted = formatNumber(harga, 2);
                 },
 
                 pfHitungAll() {
@@ -672,10 +672,10 @@
                         total += row.total_nilai || 0;
                     });
                     this.pfTotal = total;
-                    this.ptotalFormatted = 'Rp ' + formatNumber(Math.floor(total));
+                    this.ptotalFormatted = 'Rp ' + formatNumber(total, 0);
                     document.getElementById('totalPortofolio').textContent = this.ptotalFormatted;
                     const danaInput = document.getElementById('dana_tersedia');
-                    if (danaInput) danaInput.value = formatNumber(Math.floor(total));
+                    if (danaInput) danaInput.value = formatNumber(Math.floor(total), 0);
                 },
 
                 pfFetchHarga(row) {
@@ -688,14 +688,21 @@
                     fetch(`{{ route('user.portofolio.harga') }}?${params}`)
                         .then(r => r.json())
                         .then(data => {
-                            row.harga_akuisisi = (data.harga !== null && data.harga !== undefined) ?
-                                data.harga : '';
+                            if (data.harga !== null && data.harga !== undefined) {
+                                row.harga_akuisisi = data.harga;
+                                // Format with Indonesian locale (comma as decimal separator)
+                                row.harga_formatted = Number(data.harga).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                            } else {
+                                row.harga_akuisisi = '';
+                                row.harga_formatted = '';
+                            }
                             row.loading = false;
                             this.pfUpdateTotal(row);
                             this.pfHitungAll();
                         })
                         .catch(() => {
                             row.harga_akuisisi = '';
+                            row.harga_formatted = '';
                             row.loading = false;
                             this.pfUpdateTotal(row);
                             this.pfHitungAll();
@@ -953,8 +960,11 @@
             return String(val).replace(/\./g, '').replace(/,/g, '.');
         }
 
-        function formatNumber(num) {
-            return Math.floor(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        function formatNumber(num, decimals = 0) {
+            const fixed = Number(num).toFixed(decimals);
+            const [intPart, decPart] = fixed.split('.');
+            const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            return decimals > 0 ? formattedInt + ',' + decPart : formattedInt;
         }
 
         function bukaGrafik(jenis, nama) {
