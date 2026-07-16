@@ -168,6 +168,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('daftar-reksa-dana/{reksaDana}/edit', [DaftarReksaDanaController::class, 'edit'])->name('daftar-reksa-dana.edit');
     Route::post('daftar-reksa-dana/{reksaDana}/toggle-parser-lock', [DaftarReksaDanaController::class, 'toggleParserLock'])->name('daftar-reksa-dana.toggle-parser-lock');
     Route::post('daftar-reksa-dana/{reksaDana}/save-portfolio', [DaftarReksaDanaController::class, 'savePortfolio'])->name('daftar-reksa-dana.save-portfolio');
+    Route::post('daftar-reksa-dana/{reksaDana}/save-ffs-period', [DaftarReksaDanaController::class, 'saveFfsPeriod'])->name('daftar-reksa-dana.save-ffs-period');
     Route::get('daftar-reksa-dana/{reksaDana}', [DaftarReksaDanaController::class, 'show'])->name('daftar-reksa-dana.show');
 
     Route::post('data-source-links', [DataSourceLinkController::class, 'store'])->name('data-source-links.store');
@@ -201,6 +202,8 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('analisa-rd/lookup-bond-return', [AdminAnalisaRdController::class, 'lookupBondReturn'])->name('analisa-rd.lookup-bond-return');
     Route::get('analisa-rd/lookup-sukuk-return', [AdminAnalisaRdController::class, 'lookupSukukReturn'])->name('analisa-rd.lookup-sukuk-return');
     Route::get('analisa-rd/lookup-bank-data', [AdminAnalisaRdController::class, 'lookupBankData'])->name('analisa-rd.lookup-bank-data');
+    Route::get('analisa-rd/lookup-kode-efek', [AdminAnalisaRdController::class, 'lookupKodeEfek'])->name('analisa-rd.lookup-kode-efek');
+    Route::get('analisa-rd/get-financial-data', [AdminAnalisaRdController::class, 'getFinancialData'])->name('analisa-rd.get-financial-data');
 
     // Daftar & Analisa Saham // && cek analisa sahamm
     Route::resource('saham', StockController::class)->except(['show']);

@@ -99,6 +99,8 @@ class AnalisaController extends Controller
             'lookup_bond_return' => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-bond-return") ? route("{$prefix}.lookup-bond-return") : null,
             'lookup_bank_data' => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-bank-data") ? route("{$prefix}.lookup-bank-data") : null,
             'lookup_sukuk_return' => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-sukuk-return") ? route("{$prefix}.lookup-sukuk-return") : null,
+            'lookup_kode_efek' => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-kode-efek") ? route("{$prefix}.lookup-kode-efek") : null,
+            'get_financial_data' => \Illuminate\Support\Facades\Route::has("{$prefix}.get-financial-data") ? route("{$prefix}.get-financial-data") : null,
             'parse_web_file'      => route("{$prefix}.parse-web-file"),
             'import_excel_preview' => route("{$prefix}.import-excel-preview"),
             'scrape_web'          => $scrapeWebBase,
@@ -487,7 +489,7 @@ class AnalisaController extends Controller
             } else {
                 $data = $ffsParser->parseWithAi($path, $groq, $documentType);
             }
-        } catch (\Throwable $e) {
+} catch (\Throwable $e) {
             if (connection_aborted()) {
                 \Log::warning('[PARSE-PDF] Koneksi terputus oleh klien/proxy sebelum ekstraksi selesai. Data mungkin tidak lengkap.');
             }
@@ -519,58 +521,93 @@ class AnalisaController extends Controller
             }
         }
 
-        $extracted = [];
-        if (!empty($data['nama_reksa_dana'])) $extracted[] = 'Nama RD';
-        if (!empty($data['jenis_reksa_dana'])) $extracted[] = 'Jenis RD';
-        if (!empty($data['manajer_investasi'])) $extracted[] = 'MI';
-        if (!empty($data['total_aum'])) $extracted[] = 'Total AUM';
-        if (!empty($data['unit_penyertaan'])) $extracted[] = 'Unit Penyertaan';
-        if (!empty($data['nab_per_unit'])) $extracted[] = 'NAB/UP';
-        if (!empty($data['return_ytd'])) $extracted[] = 'Return YTD';
-        if (!empty($data['tanggal_data'])) $extracted[] = 'Tanggal Data';
-        if (!empty($data['total_aset'])) $extracted[] = 'Neraca';
-        if (!empty($data['laba_bersih'])) $extracted[] = 'Laba Bersih';
-        if (!empty($data['total_beban'])) $extracted[] = 'Total Beban';
-        if (!empty($data['laba_sebelum_pajak'])) $extracted[] = 'Laba Sblm Pajak';
-        if (!empty($data['laba_bersih_tahun_berjalan'])) $extracted[] = 'Laba Bersih Thn Brjln';
-        if (!empty($data['penghasilan_komprehensif_lain_setelah_pajak'])) $extracted[] = 'PK Lain Stlh Pajak';
-        if (!empty($data['penghasilan_komprehensif_tahun_berjalan'])) $extracted[] = 'PK Thn Brjln';
-        if (!empty($data['nilai_aset_bersih'])) $extracted[] = 'Nilai Aset Bersih';
-        if (!empty($data['total_pendapatan'])) $extracted[] = 'Total Pendapatan';
-        if (!empty($data['kas'])) $extracted[] = 'Kas';
-        if (!empty($data['arus_kas_operasi'])) $extracted[] = 'Arus Kas';
-        if (!empty($data['total_hasil_investasi'])) $extracted[] = 'Rasio';
-        if (!empty($data['fair_value_level_1'])) $extracted[] = 'Fair Value';
-        if (!empty($data['unit_milik_investor'])) $extracted[] = 'Unit MI';
-        if (!empty($data['portofolio_efek']) || !empty($data['instrumen_pasar_uang']) || !empty($data['piutang_transaksi_efek']) || !empty($data['piutang_bunga_dan_dividen']) || !empty($data['uang_muka_diterima'])) $extracted[] = 'Aset Detail';
-        if (!empty($data['liabilitas_pembelian_kembali']) || !empty($data['beban_akrual']) || !empty($data['liabilitas_atas_biaya']) || !empty($data['pembelian_kembali_unit_penyertaan']) || !empty($data['utang_pajak_lainnya'])) $extracted[] = 'Liabilitas Detail';
-        if (!empty($data['pendapatan_investasi']) || !empty($data['pendapatan_lainnya'])) $extracted[] = 'Pendapatan Detail';
-        if (!empty($data['beban_investasi']) || !empty($data['beban_pengelolaan_investasi'])) $extracted[] = 'Beban Detail';
-        if (!empty($data['pembelian_efek_ekuitas']) || !empty($data['penjualan_efek_ekuitas']) || !empty($data['penerimaan_bunga_deposito']) || !empty($data['penerimaan_bunga_jasa_giro']) || !empty($data['penerimaan_dividen_kas'])) $extracted[] = 'Penerimaan Detail';
-        if (!empty($data['pembayaran_jasa_pengelolaan']) || !empty($data['pembayaran_jasa_kustodian']) || !empty($data['pembayaran_beban_lain_arus']) || !empty($data['kas_bersih_aktivitas_operasi']) || !empty($data['penerimaan_penjualan_unit']) || !empty($data['pembayaran_pembelian_kembali_unit']) || !empty($data['kas_bersih_aktivitas_pendanaan']) || !empty($data['kenaikan_kas_setara_kas'])) $extracted[] = 'Detail Arus Kas';
-        if (!empty($data['alokasi_aset'])) $extracted[] = count($data['alokasi_aset']) . ' Alokasi Aset';
-        if (!empty($data['sektor'])) $extracted[] = count($data['sektor']) . ' Sektor';
-        if (!empty($data['efek'])) $extracted[] = count($data['efek']) . ' Efek';
-        if (!empty($data['kinerja'])) $extracted[] = count($data['kinerja']) . ' Bulan Kinerja';
-        if (!empty($data['obligasi'])) $extracted[] = count($data['obligasi']) . ' Obligasi';
-        if (!empty($data['sukuk'])) $extracted[] = count($data['sukuk']) . ' Sukuk';
-        if (!empty($data['bank'])) $extracted[] = count($data['bank']) . ' Bank';
-        if (!empty($data['pasar_uang'])) $extracted[] = count($data['pasar_uang']) . ' Pasar Uang';
-        if (!empty($data['piutang_bunga_detail'])) $extracted[] = count($data['piutang_bunga_detail']) . ' Piutang Bunga';
-        $success = count($extracted) > 0;
+        $exportResult = $this->exportAndReimport($data);
+
+        // Admin context: return preview mode (don't auto-save)
+        if ($this->isAdminContext) {
+            $extracted = $this->buildExtractedList($data);
+
+            return response()->json([
+                'success' => true,
+                'preview' => true,
+                'message' => 'Data berhasil diekstrak dari FFS. Silakan review lalu klik Simpan.',
+                'extracted' => $extracted,
+                'period' => $this->extractPeriodFromData($data),
+                'data' => $exportResult['data'],
+                'export_file' => $exportResult['export_file'],
+                'pdf_file' => $storedPath,
+            ]);
+        }
+
+        if ($storedPath && !empty($data['efek'])) {
+            $tanggal = now()->subDay()->toDateString();
+            foreach ($data['efek'] as $efek) {
+                if (!empty($efek['kode_efek'])) {
+                    $harga = !empty($efek['harga']) ? $efek['harga'] : null;
+                    StockPrice::updateOrCreate(
+                        ['kode_efek' => strtoupper($efek['kode_efek']), 'tanggal' => $tanggal],
+                        [
+                            'nama_efek' => $efek['nama_efek'] ?? null,
+                            'jenis' => 'Saham',
+                            'harga' => $harga ?? 0,
+                            'sumber' => 'PDF FFS',
+                        ]
+                    );
+}
+        }
 
         $exportResult = $this->exportAndReimport($data);
 
+        // Admin context: return preview mode (don't auto-save)
+        if ($this->isAdminContext) {
+            $extracted = $this->buildExtractedList($data);
+            $period = $this->extractPeriodFromData($data);
+
+            return response()->json([
+                'success' => true,
+                'preview' => true,
+                'message' => 'Data berhasil diekstrak dari FFS. Silakan review lalu klik Simpan.',
+                'extracted' => $extracted,
+                'period' => $period,
+                'data' => $exportResult['data'],
+                'export_file' => $exportResult['export_file'],
+                'pdf_file' => $storedPath,
+            ]);
+        }
+
+        if ($storedPath && !empty($data['efek'])) {
+            $tanggal = now()->subDay()->toDateString();
+            foreach ($data['efek'] as $efek) {
+                if (!empty($efek['kode_efek'])) {
+                    $harga = !empty($efek['harga']) ? $efek['harga'] : null;
+                    StockPrice::updateOrCreate(
+                        ['kode_efek' => strtoupper($efek['kode_efek']), 'tanggal' => $tanggal],
+                        [
+                            'nama_efek' => $efek['nama_efek'] ?? null,
+                            'jenis' => 'Saham',
+                            'harga' => $harga ?? 0,
+                            'sumber' => 'PDF FFS',
+                        ]
+                    );
+                }
+            }
+        }
+
+        $extracted = $this->buildExtractedList($data);
+        $success = count($extracted) > 0;
+        $message = $success
+            ? 'Berhasil mengekstrak: ' . implode(', ', $extracted) . '.'
+            : 'Tidak dapat mengekstrak data dari PDF ini. Format mungkin tidak didukung.';
+
         return response()->json([
             'success' => $success,
-            'message' => $success
-                ? 'Berhasil mengekstrak: ' . implode(', ', $extracted) . '.'
-                : 'Tidak dapat mengekstrak data dari PDF ini. Format mungkin tidak didukung.',
+            'message' => $message,
             'warning' => $success ? 'Data hasil ekstraksi AI bisa saja tidak akurat. Mohon periksa dan validasi setiap field sebelum menyimpan.' : null,
             'data' => $exportResult['data'],
             'export_file' => $exportResult['export_file'],
             'pdf_file' => $storedPath,
         ]);
+    }
     }
 
     public function getExistingDocuments(Request $request)
@@ -2518,5 +2555,87 @@ class AnalisaController extends Controller
         $analisa->delete();
 
         return redirect()->route('user.analisa.index')->with('success', 'Data analisa dihapus.');
+    }
+
+    private function buildExtractedList(array $data): array
+    {
+        $extracted = [];
+        if (!empty($data['nama_reksa_dana'])) $extracted[] = 'Nama RD';
+        if (!empty($data['jenis_reksa_dana'])) $extracted[] = 'Jenis RD';
+        if (!empty($data['manajer_investasi'])) $extracted[] = 'MI';
+        if (!empty($data['total_aum'])) $extracted[] = 'Total AUM';
+        if (!empty($data['unit_penyertaan'])) $extracted[] = 'Unit Penyertaan';
+        if (!empty($data['nab_per_unit'])) $extracted[] = 'NAB/UP';
+        if (!empty($data['return_ytd'])) $extracted[] = 'Return YTD';
+        if (!empty($data['tanggal_data'])) $extracted[] = 'Tanggal Data';
+        if (!empty($data['total_aset'])) $extracted[] = 'Neraca';
+        if (!empty($data['laba_bersih'])) $extracted[] = 'Laba Bersih';
+        if (!empty($data['total_beban'])) $extracted[] = 'Total Beban';
+        if (!empty($data['laba_sebelum_pajak'])) $extracted[] = 'Laba Sblm Pajak';
+        if (!empty($data['laba_bersih_tahun_berjalan'])) $extracted[] = 'Laba Bersih Thn Brjln';
+        if (!empty($data['penghasilan_komprehensif_lain_setelah_pajak'])) $extracted[] = 'PK Lain Stlh Pajak';
+        if (!empty($data['penghasilan_komprehensif_tahun_berjalan'])) $extracted[] = 'PK Thn Brjln';
+        if (!empty($data['nilai_aset_bersih'])) $extracted[] = 'Nilai Aset Bersih';
+        if (!empty($data['total_pendapatan'])) $extracted[] = 'Total Pendapatan';
+        if (!empty($data['kas'])) $extracted[] = 'Kas';
+        if (!empty($data['arus_kas_operasi'])) $extracted[] = 'Arus Kas';
+        if (!empty($data['total_hasil_investasi'])) $extracted[] = 'Rasio';
+        if (!empty($data['fair_value_level_1'])) $extracted[] = 'Fair Value';
+        if (!empty($data['unit_milik_investor'])) $extracted[] = 'Unit MI';
+        if (!empty($data['portofolio_efek']) || !empty($data['instrumen_pasar_uang']) || !empty($data['piutang_transaksi_efek']) || !empty($data['piutang_bunga_dan_dividen']) || !empty($data['uang_muka_diterima'])) $extracted[] = 'Aset Detail';
+        if (!empty($data['liabilitas_pembelian_kembali']) || !empty($data['beban_akrual']) || !empty($data['liabilitas_atas_biaya']) || !empty($data['pembelian_kembali_unit_penyertaan']) || !empty($data['utang_pajak_lainnya'])) $extracted[] = 'Liabilitas Detail';
+        if (!empty($data['pendapatan_investasi']) || !empty($data['pendapatan_lainnya'])) $extracted[] = 'Pendapatan Detail';
+        if (!empty($data['beban_investasi']) || !empty($data['beban_pengelolaan_investasi'])) $extracted[] = 'Beban Detail';
+        if (!empty($data['pembelian_efek_ekuitas']) || !empty($data['penjualan_efek_ekuitas']) || !empty($data['penerimaan_bunga_deposito']) || !empty($data['penerimaan_bunga_jasa_giro']) || !empty($data['penerimaan_dividen_kas'])) $extracted[] = 'Penerimaan Detail';
+        if (!empty($data['pembayaran_jasa_pengelolaan']) || !empty($data['pembayaran_jasa_kustodian']) || !empty($data['pembayaran_beban_lain_arus']) || !empty($data['kas_bersih_aktivitas_operasi']) || !empty($data['penerimaan_penjualan_unit']) || !empty($data['pembayaran_pembelian_kembali_unit']) || !empty($data['kas_bersih_aktivitas_pendanaan']) || !empty($data['kenaikan_kas_setara_kas'])) $extracted[] = 'Detail Arus Kas';
+        if (!empty($data['alokasi_aset'])) $extracted[] = count($data['alokasi_aset']) . ' Alokasi Aset';
+        if (!empty($data['sektor'])) $extracted[] = count($data['sektor']) . ' Sektor';
+        if (!empty($data['efek'])) $extracted[] = count($data['efek']) . ' Efek';
+        if (!empty($data['kinerja'])) $extracted[] = count($data['kinerja']) . ' Bulan Kinerja';
+        if (!empty($data['obligasi'])) $extracted[] = count($data['obligasi']) . ' Obligasi';
+        if (!empty($data['sukuk'])) $extracted[] = count($data['sukuk']) . ' Sukuk';
+        if (!empty($data['bank'])) $extracted[] = count($data['bank']) . ' Bank';
+        if (!empty($data['pasar_uang'])) $extracted[] = count($data['pasar_uang']) . ' Pasar Uang';
+        if (!empty($data['piutang_bunga_detail'])) $extracted[] = count($data['piutang_bunga_detail']) . ' Piutang Bunga';
+        if (!empty($data['_raw_tables'])) {
+            $totalTabel = array_sum(array_map(fn($p) => count($p['tables'] ?? []), $data['_raw_tables']));
+            if ($totalTabel > 0) {
+                $extracted[] = "{$totalTabel} tabel";
+            } elseif (!empty($data['_raw_tables'])) {
+                $extracted[] = count($data['_raw_tables']) . ' partisi';
+            }
+        }
+        return $extracted;
+    }
+
+    private function extractPeriodFromData(array $data): ?array
+    {
+        // Try to extract period from various fields
+        $month = $data['ffs_bulan'] ?? $data['month'] ?? null;
+        $year = $data['ffs_tahun'] ?? $data['year'] ?? null;
+        
+        // Try to extract from tanggal_data
+        if (empty($month) || empty($year)) {
+            if (!empty($data['tanggal_data'])) {
+                $date = \Carbon\Carbon::parse($data['tanggal_data']);
+                $month = $month ?? $date->month;
+                $year = $year ?? $date->year;
+            }
+        }
+        
+        // Try to extract from tanggal_nab
+        if (empty($month) || empty($year)) {
+            if (!empty($data['tanggal_nab'])) {
+                $date = \Carbon\Carbon::parse($data['tanggal_nab']);
+                $month = $month ?? $date->month;
+                $year = $year ?? $date->year;
+            }
+        }
+        
+        if ($month && $year) {
+            return ['month' => (int)$month, 'year' => (int)$year];
+        }
+        
+        return null;
     }
 }

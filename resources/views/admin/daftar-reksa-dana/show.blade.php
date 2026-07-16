@@ -3,143 +3,7 @@
 @section('title', $fund->nama_reksa_dana . ' - Detail Reksa Dana')
 
 @section('content')
-<div x-data="{
-    tab: {{ Js::from(request('tab', 'snapshot')) }},
-    personModal: { open: false, loading: false, error: null, data: null },
-    parserLocks: @js($fund->parser_locks ?? []),
-    toggling: false,
-    editModal: null,
-    editData: {},
-    editSaving: false,
-    openEdit(section) {
-        this.editData = {};
-        if (section === 'ringkasan') {
-            this.editData = { nab_per_unit: @js($fund->nab_per_unit), tanggal_nab: @js($fund->tanggal_nab?->format('Y-m-d')), aum: @js($fund->aum), total_unit: @js($fund->total_unit) };
-        } else if (section === 'risiko') {
-            this.editData = {
-                risk_category: @js($fund->risk_category),
-                sharpe_ratio_1y: @js($fund->sharpe_ratio_1y), sharpe_ratio_3y: @js($fund->sharpe_ratio_3y), sharpe_ratio_5y: @js($fund->sharpe_ratio_5y),
-                stdev_1y: @js($fund->stdev_1y), stdev_3y: @js($fund->stdev_3y), stdev_5y: @js($fund->stdev_5y),
-                beta_1y: @js($fund->beta_1y), beta_3y: @js($fund->beta_3y), beta_5y: @js($fund->beta_5y),
-                max_drawdown_1y: @js($fund->max_drawdown_1y), max_drawdown_3y: @js($fund->max_drawdown_3y), max_drawdown_5y: @js($fund->max_drawdown_5y),
-            };
-        } else if (section === 'biaya') {
-            this.editData = {
-                subscription_fee: @js($fund->subscription_fee), redemption_fee: @js($fund->redemption_fee), switching_fee: @js($fund->switching_fee),
-                management_fee: @js($fund->management_fee), custodian_fee: @js($fund->custodian_fee),
-                expense_ratio: @js($fund->expense_ratio), investment_manager_fee: @js($fund->investment_manager_fee),
-                minimum_subscription: @js($fund->minimum_subscription), minimum_topup: @js($fund->minimum_topup), minimum_redemption: @js($fund->minimum_redemption),
-            };
-        } else if (section === 'portofolio') {
-            if (!this.portfolioMonth || !this.portfolioYear) return;
-        }
-        this.editModal = section;
-    },
-    async submitEdit(section) {
-        if (this.editSaving) return;
-        this.editSaving = true;
-        try {
-            const res = await fetch('{{ route('admin.daftar-reksa-dana.update-info', $fund) }}', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-                body: JSON.stringify(this.editData),
-            });
-            const json = await res.json();
-            if (json.success) location.reload();
-        } catch (e) {}
-        this.editSaving = false;
-    },
-    isLocked(section) { return this.parserLocks.includes(section) },
-    async toggleLock(section) {
-        if (this.toggling) return;
-        this.toggling = true;
-        try {
-            const res = await fetch('{{ route('admin.daftar-reksa-dana.toggle-parser-lock', $fund) }}', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-                body: JSON.stringify({ section }),
-            });
-            const json = await res.json();
-            if (json.success) this.parserLocks = json.parser_locks;
-        } catch (e) {}
-        this.toggling = false;
-    },
-    async openPerson(name) {
-        this.personModal = { open: true, loading: true, error: null, data: null };
-        try {
-            const url = '{{ route('admin.investment-person-roles.detail') }}?name=' + encodeURIComponent(name);
-            const res = await fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
-            const json = await res.json();
-            if (!res.ok) {
-                this.personModal.error = json.message || 'Gagal mengambil detail.';
-                return;
-            }
-            this.personModal.data = json;
-        } catch (e) {
-            this.personModal.error = e.message;
-        } finally {
-            this.personModal.loading = false;
-        }
-    },
-    portfolioMonth: {{ Js::from(request('month', '')) }},
-    portfolioYear: {{ Js::from(request('year', '')) }},
-    portfolioSaving: false,
-    portfolioSaham: {{ Js::from($periodAa?->equity_percent ?? 0) }},
-    portfolioObligasi: {{ Js::from($periodAa?->bond_percent ?? 0) }},
-    portfolioPasarUang: {{ Js::from($periodAa?->money_market_percent ?? 0) }},
-    portfolioKas: {{ Js::from($periodAa?->cash_percent ?? 0) }},
-    portfolioTopHoldings: @js($periodTopHoldings->map(fn($h) => trim("{$h->security_name}:{$h->weight_percent}:{$h->security_type}"))->implode("\n")),
-    portfolioNabPerUnit: {{ Js::from($fund->nab_per_unit) }},
-    portfolioTanggalNab: {{ Js::from($fund->tanggal_nab?->format('Y-m-d')) }},
-    portfolioAum: {{ Js::from($fund->aum) }},
-    portfolioTotalUnit: {{ Js::from($fund->total_unit) }},
-    portfolioReturnYtd: {{ Js::from($fund->return_ytd) }},
-    portfolioReturn1y: {{ Js::from($fund->return_1y) }},
-    portfolioReturn1m: {{ Js::from($fund->return_1m) }},
-    portfolioReturnInception: {{ Js::from($fund->return_inception) }},
-    portfolioSuccess: null,
-    portfolioError: null,
-    loadPortfolioData() {},
-    async savePortfolio() {
-        if (this.portfolioSaving) return;
-        this.portfolioSaving = true;
-        this.portfolioSuccess = null;
-        this.portfolioError = null;
-        try {
-            const res = await fetch('{{ route('admin.daftar-reksa-dana.save-portfolio', $fund) }}', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-                body: JSON.stringify({
-                    month: this.portfolioMonth,
-                    year: this.portfolioYear,
-                    saham: this.portfolioSaham,
-                    obligasi: this.portfolioObligasi,
-                    pasar_uang: this.portfolioPasarUang,
-                    kas: this.portfolioKas,
-                    top_holdings: this.portfolioTopHoldings,
-                    nab_per_unit: this.portfolioNabPerUnit,
-                    tanggal_nab: this.portfolioTanggalNab,
-                    aum: this.portfolioAum,
-                    total_unit: this.portfolioTotalUnit,
-                    return_ytd: this.portfolioReturnYtd,
-                    return_1y: this.portfolioReturn1y,
-                    return_1m: this.portfolioReturn1m,
-                    return_inception: this.portfolioReturnInception,
-                }),
-            });
-            const json = await res.json();
-            if (json.success) {
-                this.portfolioSuccess = json.message || 'Data portfolio berhasil disimpan.';
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                this.portfolioError = json.message || 'Gagal menyimpan.';
-            }
-        } catch (e) {
-            this.portfolioError = e.message;
-        }
-        this.portfolioSaving = false;
-    },
-}">
+<div x-data="reksaDanaShow()">
 
 <div class="mb-6">
     <div class="flex items-center gap-2 text-sm text-muted mb-3">
@@ -163,30 +27,25 @@
     </div>
     <div class="flex items-center gap-3 mt-3 flex-wrap">
         <span class="text-xs font-semibold text-muted">Data Portfolio:</span>
-        <form method="GET" id="period-filter" class="flex items-center gap-2 flex-wrap">
-            <input type="hidden" name="tab" value="{{ request('tab', 'snapshot') }}">
-            <select name="month" onchange="this.form.submit()" class="border border-line rounded-lg px-3 py-1.5 text-xs text-muted">
+        <div class="flex items-center gap-2 flex-wrap">
+            <select x-model="portfolioMonth" @change="applyPeriodFilter()" class="border border-line rounded-lg px-3 py-1.5 text-xs text-muted">
                 <option value="">Bulan</option>
                 @foreach(range(1, 12) as $m)
-                <option value="{{ $m }}" {{ request('month') == $m ? 'selected' : '' }}>{{ \Carbon\Carbon::create()->month($m)->format('F') }}</option>
+                <option value="{{ $m }}">{{ \Carbon\Carbon::create()->month($m)->format('F') }}</option>
                 @endforeach
             </select>
-            <select name="year" onchange="this.form.submit()" class="border border-line rounded-lg px-3 py-1.5 text-xs text-muted">
+            <select x-model="portfolioYear" @change="applyPeriodFilter()" class="border border-line rounded-lg px-3 py-1.5 text-xs text-muted">
                 <option value="">Tahun</option>
                 @foreach(range(now()->year, now()->year - 10) as $y)
-                <option value="{{ $y }}" {{ request('year') == $y ? 'selected' : '' }}>{{ $y }}</option>
+                <option value="{{ $y }}">{{ $y }}</option>
                 @endforeach
             </select>
-        </form>
-        @if(request('month') && request('year'))
-            @php
-                $monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-            @endphp
-            <span class="px-2.5 py-1 bg-accent/10 text-accent rounded-full text-[11px] font-semibold">
-                {{ $monthNames[request('month') - 1] ?? '-' }} {{ request('year') }}
-            </span>
-            <a href="{{ route('admin.daftar-reksa-dana.show', $fund) }}" class="px-2.5 py-1 text-[11px] text-muted hover:text-primary border border-line rounded-lg transition">Reset</a>
-        @endif
+        </div>
+        <template x-if="portfolioMonth && portfolioYear">
+            <span class="px-2.5 py-1 bg-accent/10 text-accent rounded-full text-[11px] font-semibold" x-text="periodLabel"></span>
+        </template>
+        <button type="button" x-show="portfolioMonth && portfolioYear" @click="resetPeriod()"
+            class="px-2.5 py-1 text-[11px] text-muted hover:text-primary border border-line rounded-lg transition">Reset</button>
         <button @click="savePortfolio" :disabled="portfolioSaving"
             class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
@@ -201,60 +60,71 @@
     </div>
 </div>
 
+@if($periodActive)
+<div class="mb-4 px-4 py-3 bg-accent/5 border border-accent/20 rounded-xl text-sm text-primary flex items-center gap-2 flex-wrap">
+    <svg class="w-4 h-4 text-accent shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+    @php $monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']; @endphp
+    <span>Menampilkan data periode <strong>{{ $monthNames[$periodMonth - 1] ?? '-' }} {{ $periodYear }}</strong> di semua tab.</span>
+    @unless($periodHasSnapshotData)
+        <span class="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">Belum ada data tersimpan untuk periode ini.</span>
+    @endunless
+</div>
+@endif
+
 {{-- Ringkasan --}}
+@php
+    $formatAum = function ($aumVal) {
+        if ($aumVal === null) return '—';
+        if ($aumVal >= 1_000_000_000_000) return 'Rp' . number_format($aumVal / 1_000_000_000_000, 2, ',', '.') . 'T';
+        if ($aumVal >= 1_000_000_000) return 'Rp' . number_format($aumVal / 1_000_000_000, 1, ',', '.') . 'M';
+        if ($aumVal >= 1_000_000) return 'Rp' . number_format($aumVal / 1_000_000, 1, ',', '.') . 'jt';
+        return 'Rp' . number_format($aumVal, 0, ',', '.');
+    };
+@endphp
 <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
     <div class="bg-white rounded-xl border border-line p-4">
         <p class="text-xs text-muted mb-1">NAV / NAB-UP</p>
-        <p class="text-sm font-bold text-primary">{{ $latestNav ? number_format($latestNav->nab_per_unit, 4, ',', '.') : ($fund->nab_per_unit ? number_format($fund->nab_per_unit, 4, ',', '.') : '—') }}</p>
+        <p class="text-sm font-bold text-primary">{{ $displayNab !== null ? number_format($displayNab, 4, ',', '.') : '—' }}</p>
     </div>
     <div class="bg-white rounded-xl border border-line p-4">
-        <p class="text-xs text-muted mb-1">Return Harian</p>
-        <p class="text-sm font-bold {{ $returnDaily !== null ? ($returnDaily >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $returnDaily !== null ? number_format($returnDaily, 2, ',', '.') . '%' : '—' }}</p>
+        <p class="text-xs text-muted mb-1">{{ $periodActive ? 'Return 1 Bulan' : 'Return Harian' }}</p>
+        @php $cardReturn1 = $periodActive ? $displayReturnMonthly : $displayReturnDaily; @endphp
+        <p class="text-sm font-bold {{ $cardReturn1 !== null ? ($cardReturn1 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $cardReturn1 !== null ? number_format($cardReturn1, 2, ',', '.') . '%' : '—' }}</p>
     </div>
     <div class="bg-white rounded-xl border border-line p-4">
-        <p class="text-xs text-muted mb-1">Return Bulanan</p>
-        <p class="text-sm font-bold {{ $returnMonthly !== null ? ($returnMonthly >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $returnMonthly !== null ? number_format($returnMonthly, 2, ',', '.') . '%' : '—' }}</p>
+        <p class="text-xs text-muted mb-1">{{ $periodActive ? 'Return YTD' : 'Return Bulanan' }}</p>
+        @php $cardReturn2 = $periodActive ? $displayReturnYtd : $displayReturnMonthly; @endphp
+        <p class="text-sm font-bold {{ $cardReturn2 !== null ? ($cardReturn2 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $cardReturn2 !== null ? number_format($cardReturn2, 2, ',', '.') . '%' : '—' }}</p>
     </div>
     <div class="bg-white rounded-xl border border-line p-4">
         <p class="text-xs text-muted mb-1">Return Tahunan</p>
-        <p class="text-sm font-bold {{ $returnYearly !== null ? ($returnYearly >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $returnYearly !== null ? number_format($returnYearly, 2, ',', '.') . '%' : '—' }}</p>
+        <p class="text-sm font-bold {{ $displayReturnYearly !== null ? ($displayReturnYearly >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $displayReturnYearly !== null ? number_format($displayReturnYearly, 2, ',', '.') . '%' : '—' }}</p>
     </div>
     <div class="bg-white rounded-xl border border-line p-4">
         <p class="text-xs text-muted mb-1">AUM</p>
-        @php
-            $aumVal = $latestNav && $latestNav->aum ? $latestNav->aum : ($fund->aum ?? null);
-            if ($aumVal !== null) {
-                if ($aumVal >= 1_000_000_000_000) $aumDisplay = 'Rp' . number_format($aumVal / 1_000_000_000_000, 2, ',', '.') . 'T';
-                elseif ($aumVal >= 1_000_000_000) $aumDisplay = 'Rp' . number_format($aumVal / 1_000_000_000, 1, ',', '.') . 'M';
-                elseif ($aumVal >= 1_000_000) $aumDisplay = 'Rp' . number_format($aumVal / 1_000_000, 1, ',', '.') . 'jt';
-                else $aumDisplay = 'Rp' . number_format($aumVal, 0, ',', '.');
-            } else {
-                $aumDisplay = '—';
-            }
-        @endphp
-        <p class="text-sm font-bold text-primary">{{ $aumDisplay }}</p>
+        <p class="text-sm font-bold text-primary">{{ $formatAum($displayAum) }}</p>
     </div>
     <div class="bg-white rounded-xl border border-line p-4">
         <p class="text-xs text-muted mb-1">Unit Penyertaan</p>
-        <p class="text-sm font-bold text-primary">{{ $latestNav && $latestNav->unit_participation ? number_format($latestNav->unit_participation, 0, ',', '.') : ($fund->total_unit ? number_format($fund->total_unit, 0, ',', '.') : '—') }}</p>
+        <p class="text-sm font-bold text-primary">{{ $displayTotalUnit !== null ? number_format($displayTotalUnit, 0, ',', '.') : '—' }}</p>
     </div>
 </div>
 
 {{-- Tab Navigation --}}
 <div class="flex items-center gap-1 mb-6 border-b border-line overflow-x-auto">
-    <button @click="tab = 'snapshot'" :class="tab === 'snapshot' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'"
+    <button @click="setTab('snapshot')" :class="tab === 'snapshot' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'"
             class="px-5 py-3 text-sm font-semibold border-b-2 transition whitespace-nowrap">Snapshot</button>
-    <button @click="tab = 'grafik'" :class="tab === 'grafik' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'"
+    <button @click="setTab('grafik')" :class="tab === 'grafik' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'"
             class="px-5 py-3 text-sm font-semibold border-b-2 transition whitespace-nowrap">Grafik dan Data</button>
-    <button @click="tab = 'risiko'" :class="tab === 'risiko' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'"
+    <button @click="setTab('risiko')" :class="tab === 'risiko' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'"
             class="px-5 py-3 text-sm font-semibold border-b-2 transition whitespace-nowrap">Risiko</button>
-    <button @click="tab = 'biaya'" :class="tab === 'biaya' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'"
+    <button @click="setTab('biaya')" :class="tab === 'biaya' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'"
             class="px-5 py-3 text-sm font-semibold border-b-2 transition whitespace-nowrap">Biaya</button>
-    <button @click="tab = 'portofolio'" :class="tab === 'portofolio' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'"
+    <button @click="setTab('portofolio')" :class="tab === 'portofolio' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'"
             class="px-5 py-3 text-sm font-semibold border-b-2 transition whitespace-nowrap">Portofolio</button>
-    <button @click="tab = 'pdf-prospektus'" :class="tab === 'pdf-prospektus' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'"
+    <button @click="setTab('pdf-prospektus')" :class="tab === 'pdf-prospektus' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'"
             class="px-5 py-3 text-sm font-semibold border-b-2 transition whitespace-nowrap">PDF Prospektus</button>
-    <button @click="tab = 'pdf-ffs'" :class="tab === 'pdf-ffs' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'"
+    <button @click="setTab('pdf-ffs')" :class="tab === 'pdf-ffs' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'"
             class="px-5 py-3 text-sm font-semibold border-b-2 transition whitespace-nowrap">PDF FFS</button>
 </div>
 
@@ -319,26 +189,20 @@
                 </button>
             </div>
             <div class="divide-y divide-line">
-                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">NAV / NAB-UP</span><span class="text-sm font-bold text-primary">{{ $latestNav ? number_format($latestNav->nab_per_unit, 4, ',', '.') : ($fund->nab_per_unit ? number_format($fund->nab_per_unit, 4, ',', '.') : '—') }}</span></div>
-                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Return Harian</span><span class="text-sm font-bold {{ $returnDaily !== null ? ($returnDaily >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $returnDaily !== null ? number_format($returnDaily, 2, ',', '.') . '%' : '—' }}</span></div>
-                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Return Bulanan</span><span class="text-sm font-bold {{ $returnMonthly !== null ? ($returnMonthly >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $returnMonthly !== null ? number_format($returnMonthly, 2, ',', '.') . '%' : '—' }}</span></div>
-                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Return Tahunan</span><span class="text-sm font-bold {{ $returnYearly !== null ? ($returnYearly >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $returnYearly !== null ? number_format($returnYearly, 2, ',', '.') . '%' : '—' }}</span></div>
+                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">NAV / NAB-UP</span><span class="text-sm font-bold text-primary">{{ $displayNab !== null ? number_format($displayNab, 4, ',', '.') : '—' }}</span></div>
+                @if(!$periodActive)
+                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Return Harian</span><span class="text-sm font-bold {{ $displayReturnDaily !== null ? ($displayReturnDaily >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $displayReturnDaily !== null ? number_format($displayReturnDaily, 2, ',', '.') . '%' : '—' }}</span></div>
+                @endif
+                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Return 1 Bulan</span><span class="text-sm font-bold {{ $displayReturnMonthly !== null ? ($displayReturnMonthly >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $displayReturnMonthly !== null ? number_format($displayReturnMonthly, 2, ',', '.') . '%' : '—' }}</span></div>
+                @if($periodActive)
+                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Return YTD</span><span class="text-sm font-bold {{ $displayReturnYtd !== null ? ($displayReturnYtd >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $displayReturnYtd !== null ? number_format($displayReturnYtd, 2, ',', '.') . '%' : '—' }}</span></div>
+                @endif
+                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Return Tahunan</span><span class="text-sm font-bold {{ $displayReturnYearly !== null ? ($displayReturnYearly >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $displayReturnYearly !== null ? number_format($displayReturnYearly, 2, ',', '.') . '%' : '—' }}</span></div>
                 <div class="px-6 py-3.5 flex items-start gap-4">
                     <span class="text-xs font-semibold text-muted w-36 shrink-0">AUM</span>
-                    @php
-                        $aumInfo = $latestNav && $latestNav->aum ? $latestNav->aum : ($fund->aum ?? null);
-                        if ($aumInfo !== null) {
-                            if ($aumInfo >= 1_000_000_000_000) $aumInfoDisplay = 'Rp' . number_format($aumInfo / 1_000_000_000_000, 2, ',', '.') . 'T';
-                            elseif ($aumInfo >= 1_000_000_000) $aumInfoDisplay = 'Rp' . number_format($aumInfo / 1_000_000_000, 1, ',', '.') . 'M';
-                            elseif ($aumInfo >= 1_000_000) $aumInfoDisplay = 'Rp' . number_format($aumInfo / 1_000_000, 1, ',', '.') . 'jt';
-                            else $aumInfoDisplay = 'Rp' . number_format($aumInfo, 0, ',', '.');
-                        } else {
-                            $aumInfoDisplay = '—';
-                        }
-                    @endphp
-                    <span class="text-sm font-bold text-primary">{{ $aumInfoDisplay }}</span>
+                    <span class="text-sm font-bold text-primary">{{ $formatAum($displayAum) }}</span>
                 </div>
-                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Unit Penyertaan</span><span class="text-sm font-bold text-primary">{{ $latestNav && $latestNav->unit_participation ? number_format($latestNav->unit_participation, 0, ',', '.') : ($fund->total_unit ? number_format($fund->total_unit, 0, ',', '.') : '—') }}</span></div>
+                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Unit Penyertaan</span><span class="text-sm font-bold text-primary">{{ $displayTotalUnit !== null ? number_format($displayTotalUnit, 0, ',', '.') : '—' }}</span></div>
             </div>
         </div>
     </div>
@@ -456,13 +320,17 @@
     <div class="mb-4 space-y-3">
         <div class="flex flex-wrap items-center gap-2">
             @foreach($rangeOptions as $k=>$l)
-                <a href="{{ route('admin.daftar-reksa-dana.show', ['reksaDana' => $fund, 'tab' => 'grafik', 'range' => $k]) }}"
+                <a href="{{ route('admin.daftar-reksa-dana.show', array_merge(['reksaDana' => $fund, 'tab' => 'grafik', 'range' => $k], $periodQuery)) }}"
                    class="px-3 py-1.5 rounded-lg text-xs font-semibold transition {{ $range === $k && !request()->filled('from_date') && !request()->filled('to_date') ? 'bg-primary text-white' : 'border border-line text-muted hover:bg-[#f1f5f9]' }}">{{ $l }}</a>
             @endforeach
         </div>
         <form method="GET" action="{{ route('admin.daftar-reksa-dana.show', $fund) }}"
             class="flex flex-wrap items-end gap-3">
             <input type="hidden" name="tab" value="grafik">
+            @if($periodActive)
+                <input type="hidden" name="month" value="{{ $periodMonth }}">
+                <input type="hidden" name="year" value="{{ $periodYear }}">
+            @endif
             <div>
                 <label class="block text-xs text-muted mb-1">From Date</label>
                 <input type="date" name="from_date" value="{{ request('from_date') }}"
@@ -476,7 +344,7 @@
             <button type="submit"
                 class="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition">Terapkan</button>
             @if(request()->filled('from_date') || request()->filled('to_date'))
-                <a href="{{ route('admin.daftar-reksa-dana.show', ['reksaDana' => $fund, 'tab' => 'grafik', 'range' => $range]) }}"
+                <a href="{{ route('admin.daftar-reksa-dana.show', array_merge(['reksaDana' => $fund, 'tab' => 'grafik', 'range' => $range], $periodQuery)) }}"
                     class="px-4 py-2 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary transition">Reset</a>
             @endif
         </form>
@@ -745,25 +613,38 @@
             </div>
         </div>
         @php
-            $hasFeeData = $fund->subscription_fee || $fund->redemption_fee || $fund->switching_fee || $fund->management_fee || $fund->custodian_fee || $fund->minimum_subscription || $fund->minimum_topup || $fund->minimum_redemption || $fund->expense_ratio || $fund->investment_manager_fee;
+            $_sub = $fees?->subscription_fee ?? ($periodActive ? null : $fund->subscription_fee);
+            $_red = $fees?->redemption_fee ?? ($periodActive ? null : $fund->redemption_fee);
+            $_swi = $fees?->switching_fee ?? ($periodActive ? null : $fund->switching_fee);
+            $_mgmt = $fees?->management_fee ?? ($periodActive ? null : $fund->management_fee);
+            $_cust = $fees?->custodian_fee ?? ($periodActive ? null : $fund->custodian_fee);
+            $_exp = $fees?->expense_ratio ?? ($periodActive ? null : $fund->expense_ratio);
+            $_im = $fees?->investment_manager_fee ?? ($periodActive ? null : $fund->investment_manager_fee);
+            $hasFeeData = $_sub || $_red || $_swi || $_mgmt || $_cust || $_exp || $_im
+                || (!$periodActive && ($fund->minimum_subscription || $fund->minimum_topup || $fund->minimum_redemption));
         @endphp
         @if($hasFeeData)
         <div class="divide-y divide-line">
-            @if($fund->subscription_fee)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Subscription Fee</span><span class="text-sm">{{ number_format($fund->subscription_fee, 2, ',', '.') }}%</span></div>@endif
-            @if($fund->redemption_fee)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Redemption Fee</span><span class="text-sm">{{ number_format($fund->redemption_fee, 2, ',', '.') }}%</span></div>@endif
-            @if($fund->switching_fee)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Switching Fee</span><span class="text-sm">{{ number_format($fund->switching_fee, 2, ',', '.') }}%</span></div>@endif
-            @if($fund->management_fee)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Management Fee</span><span class="text-sm">{{ number_format($fund->management_fee, 2, ',', '.') }}%</span></div>@endif
-            @if($fund->custodian_fee)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Custodian Fee</span><span class="text-sm">{{ number_format($fund->custodian_fee, 2, ',', '.') }}%</span></div>@endif
-            @if($fund->expense_ratio)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Expense Ratio</span><span class="text-sm">{{ number_format($fund->expense_ratio, 4, ',', '.') }}%</span></div>@endif
-            @if($fund->investment_manager_fee)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">IM Fee</span><span class="text-sm">{{ $fund->investment_manager_fee }}</span></div>@endif
-            @if($fund->minimum_subscription)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Minimum Pembelian</span><span class="text-sm">Rp{{ number_format($fund->minimum_subscription, 0, ',', '.') }}</span></div>@endif
-            @if($fund->minimum_topup)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Minimum Top Up</span><span class="text-sm">Rp{{ number_format($fund->minimum_topup, 0, ',', '.') }}</span></div>@endif
-            @if($fund->minimum_redemption)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Minimum Redemption</span><span class="text-sm">Rp{{ number_format($fund->minimum_redemption, 0, ',', '.') }}</span></div>@endif
+            @if($_sub)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Subscription Fee</span><span class="text-sm">{{ number_format($_sub, 2, ',', '.') }}%</span></div>@endif
+            @if($_red)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Redemption Fee</span><span class="text-sm">{{ number_format($_red, 2, ',', '.') }}%</span></div>@endif
+            @if($_swi)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Switching Fee</span><span class="text-sm">{{ number_format($_swi, 2, ',', '.') }}%</span></div>@endif
+            @if($_mgmt)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Management Fee</span><span class="text-sm">{{ number_format($_mgmt, 2, ',', '.') }}%</span></div>@endif
+            @if($_cust)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Custodian Fee</span><span class="text-sm">{{ number_format($_cust, 2, ',', '.') }}%</span></div>@endif
+            @if($_exp)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Expense Ratio</span><span class="text-sm">{{ number_format($_exp, 4, ',', '.') }}%</span></div>@endif
+            @if($_im)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">IM Fee</span><span class="text-sm">{{ $_im }}</span></div>@endif
+            @if(!$periodActive && $fund->minimum_subscription)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Minimum Pembelian</span><span class="text-sm">Rp{{ number_format($fund->minimum_subscription, 0, ',', '.') }}</span></div>@endif
+            @if(!$periodActive && $fund->minimum_topup)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Minimum Top Up</span><span class="text-sm">Rp{{ number_format($fund->minimum_topup, 0, ',', '.') }}</span></div>@endif
+            @if(!$periodActive && $fund->minimum_redemption)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-40 shrink-0">Minimum Redemption</span><span class="text-sm">Rp{{ number_format($fund->minimum_redemption, 0, ',', '.') }}</span></div>@endif
         </div>
         @else
         <div class="py-12 text-center text-muted text-sm">
             <svg class="w-10 h-10 mx-auto mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            Data biaya belum tersedia.
+            @if($periodActive)
+                @php $monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']; @endphp
+                Data biaya belum tersedia untuk periode {{ $monthNames[$periodMonth - 1] ?? '-' }} {{ $periodYear }}.
+            @else
+                Data biaya belum tersedia.
+            @endif
         </div>
         @endif
     </div>
@@ -772,14 +653,16 @@
 {{-- TAB: PORTOFOLIO --}}
 <div x-show="tab === 'portofolio'" x-cloak>
     @php
-        $showAa = $periodMonth && $periodYear ? $periodAa : $aaTimeline->last();
-        $showTopHoldings = $periodMonth && $periodYear ? $periodTopHoldings : $topHoldings;
-        $hasAnyData = $periodMonth && $periodYear ? $periodHasData : ($aaTimeline->isNotEmpty() || $topHoldings->isNotEmpty());
+        $showAa = $periodActive ? $allocation : $aaTimeline->last();
+        $showTopHoldings = $periodActive ? $holdings : $topHoldings;
+        $hasAnyData = $periodActive
+            ? ($allocation !== null || $holdings->isNotEmpty())
+            : ($aaTimeline->isNotEmpty() || $topHoldings->isNotEmpty());
     @endphp
     @if(!$hasAnyData)
     <div class="py-12 text-center text-muted bg-white rounded-2xl border border-line">
         <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-        @if($periodMonth && $periodYear)
+        @if($periodActive)
             @php $monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']; @endphp
             <p class="font-medium">Data portofolio belum tersedia untuk periode {{ $monthNames[$periodMonth - 1] ?? '-' }} {{ $periodYear }}.</p>
         @else
@@ -958,6 +841,23 @@
     @endif
 </div>
 
+{{-- FFS Preview Modal --}}
+<div id="modal-ffs-preview" class="fixed inset-0 z-50 hidden bg-black/40 flex items-center justify-center p-4" @click.self="closeFfsPreviewModal()">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b border-line p-4 flex items-center justify-between rounded-t-2xl">
+            <h3 class="font-bold text-primary">Preview Data FFS</h3>
+            <button type="button" @click="closeFfsPreviewModal()" class="p-1 hover:bg-[#f1f5f9] rounded-lg transition text-muted">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div id="ffs-preview-content" class="p-6 space-y-6">
+            <div class="flex items-center justify-center py-12">
+                <svg class="animate-spin h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- TAB: PDF PROSPEKTUS --}}
 <div x-show="tab === 'pdf-prospektus'" x-cloak x-data="documentTabData('prospektus')">
     @include('admin.daftar-reksa-dana.partials.tab-pdf-document', ['fund' => $fund, 'docType' => 'prospektus'])
@@ -965,7 +865,7 @@
 
 {{-- TAB: PDF FFS --}}
 <div x-show="tab === 'pdf-ffs'" x-cloak x-data="documentTabData('ffs')">
-    @if(!$periodMonth || !$periodYear)
+    @if(!$periodActive)
         <div class="py-12 text-center text-muted bg-white rounded-2xl border border-line">
             <svg class="w-10 h-10 mx-auto mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             <p class="font-medium">Pilih Bulan dan Tahun pada "Data Portfolio" untuk menampilkan data FFS.</p>
@@ -1437,6 +1337,297 @@
 </div>
 
 <script>
+function reksaDanaShow() {
+    return {
+        tab: @js(request('tab', 'snapshot')),
+        periodMonthNames: @js(['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']),
+        get periodLabel() {
+            if (!this.portfolioMonth || !this.portfolioYear) return '';
+            const month = this.periodMonthNames[parseInt(this.portfolioMonth, 10) - 1] || '-';
+            return `${month} ${this.portfolioYear}`;
+        },
+        setTab(name) {
+            this.tab = name;
+            const url = new URL(window.location);
+            url.searchParams.set('tab', name);
+            window.history.replaceState({}, '', url);
+        },
+        applyPeriodFilter() {
+            if (!this.portfolioMonth || !this.portfolioYear) return;
+            const url = new URL(@js(route('admin.daftar-reksa-dana.show', $fund)), window.location.origin);
+            url.searchParams.set('tab', this.tab);
+            url.searchParams.set('month', this.portfolioMonth);
+            url.searchParams.set('year', this.portfolioYear);
+            const current = new URL(window.location);
+            ['range', 'from_date', 'to_date'].forEach((key) => {
+                const val = current.searchParams.get(key);
+                if (val) url.searchParams.set(key, val);
+            });
+            window.location.href = url.toString();
+        },
+        resetPeriod() {
+            const url = new URL(@js(route('admin.daftar-reksa-dana.show', $fund)), window.location.origin);
+            url.searchParams.set('tab', this.tab);
+            const current = new URL(window.location);
+            ['range', 'from_date', 'to_date'].forEach((key) => {
+                const val = current.searchParams.get(key);
+                if (val) url.searchParams.set(key, val);
+            });
+            window.location.href = url.toString();
+        },
+        personModal: { open: false, loading: false, error: null, data: null },
+        parserLocks: @js($fund->parser_locks ?? []),
+        toggling: false,
+        editModal: null,
+        editData: {},
+        editSaving: false,
+        openEdit(section) {
+            this.editData = {};
+            if (section === 'ringkasan') {
+                this.editData = { nab_per_unit: @js($displayNab), tanggal_nab: @js($periodActive && $snapshot?->period_date ? $snapshot->period_date->format('Y-m-d') : ($periodActive && $nav?->tanggal ? $nav->tanggal->format('Y-m-d') : $fund->tanggal_nab?->format('Y-m-d'))), aum: @js($displayAum), total_unit: @js($displayTotalUnit) };
+            } else if (section === 'risiko') {
+                this.editData = {
+                    risk_category: @js($fund->risk_category),
+                    sharpe_ratio_1y: @js($riskMetrics['sharpe_ratio_1y']), sharpe_ratio_3y: @js($riskMetrics['sharpe_ratio_3y']), sharpe_ratio_5y: @js($riskMetrics['sharpe_ratio_5y']),
+                    stdev_1y: @js($riskMetrics['stdev_1y']), stdev_3y: @js($riskMetrics['stdev_3y']), stdev_5y: @js($riskMetrics['stdev_5y']),
+                    beta_1y: @js($riskMetrics['beta_1y']), beta_3y: @js($riskMetrics['beta_3y']), beta_5y: @js($riskMetrics['beta_5y']),
+                    max_drawdown_1y: @js($riskMetrics['max_drawdown_1y']), max_drawdown_3y: @js($riskMetrics['max_drawdown_3y']), max_drawdown_5y: @js($riskMetrics['max_drawdown_5y']),
+                };
+            } else if (section === 'biaya') {
+                this.editData = {
+                    subscription_fee: @js($fees?->subscription_fee ?? ($periodActive ? null : $fund->subscription_fee)),
+                    redemption_fee: @js($fees?->redemption_fee ?? ($periodActive ? null : $fund->redemption_fee)),
+                    switching_fee: @js($fees?->switching_fee ?? ($periodActive ? null : $fund->switching_fee)),
+                    management_fee: @js($fees?->management_fee ?? ($periodActive ? null : $fund->management_fee)),
+                    custodian_fee: @js($fees?->custodian_fee ?? ($periodActive ? null : $fund->custodian_fee)),
+                    expense_ratio: @js($fees?->expense_ratio ?? ($periodActive ? null : $fund->expense_ratio)),
+                    investment_manager_fee: @js($fees?->investment_manager_fee ?? ($periodActive ? null : $fund->investment_manager_fee)),
+                    minimum_subscription: @js($periodActive ? null : $fund->minimum_subscription),
+                    minimum_topup: @js($periodActive ? null : $fund->minimum_topup),
+                    minimum_redemption: @js($periodActive ? null : $fund->minimum_redemption),
+                };
+            } else if (section === 'portofolio') {
+                if (!this.portfolioMonth || !this.portfolioYear) return;
+            }
+            this.editModal = section;
+        },
+        async submitEdit(section) {
+            if (this.editSaving) return;
+            this.editSaving = true;
+            try {
+                const res = await fetch(@js(route('admin.daftar-reksa-dana.update-info', $fund)), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': @js(csrf_token()), 'Accept': 'application/json' },
+                    body: JSON.stringify(this.editData),
+                });
+                const json = await res.json();
+                if (json.success) location.reload();
+            } catch (e) {}
+            this.editSaving = false;
+        },
+        isLocked(section) { return this.parserLocks.includes(section) },
+        async toggleLock(section) {
+            if (this.toggling) return;
+            this.toggling = true;
+            try {
+                const res = await fetch(@js(route('admin.daftar-reksa-dana.toggle-parser-lock', $fund)), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': @js(csrf_token()), 'Accept': 'application/json' },
+                    body: JSON.stringify({ section }),
+                });
+                const json = await res.json();
+                if (json.success) this.parserLocks = json.parser_locks;
+            } catch (e) {}
+            this.toggling = false;
+        },
+        async openPerson(name) {
+            this.personModal = { open: true, loading: true, error: null, data: null };
+            try {
+                const url = @js(route('admin.investment-person-roles.detail')) + '?name=' + encodeURIComponent(name);
+                const res = await fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                const json = await res.json();
+                if (!res.ok) {
+                    this.personModal.error = json.message || 'Gagal mengambil detail.';
+                    return;
+                }
+                this.personModal.data = json;
+            } catch (e) {
+                this.personModal.error = e.message;
+            } finally {
+                this.personModal.loading = false;
+            }
+        },
+        portfolioMonth: @js($periodMonth ?? ''),
+        portfolioYear: @js($periodYear ?? ''),
+        portfolioSaving: false,
+        portfolioSaham: @js($allocation?->equity_percent ?? 0),
+        portfolioObligasi: @js($allocation?->bond_percent ?? 0),
+        portfolioPasarUang: @js($allocation?->money_market_percent ?? 0),
+        portfolioKas: @js($allocation?->cash_percent ?? 0),
+        portfolioTopHoldings: @js($holdings->map(fn($h) => trim("{$h->security_name}:{$h->weight_percent}:{$h->security_type}"))->implode("\n")),
+        portfolioNabPerUnit: @js($displayNab),
+        portfolioTanggalNab: @js($periodActive && $snapshot?->period_date ? $snapshot->period_date->format('Y-m-d') : ($periodActive && $nav?->tanggal ? $nav->tanggal->format('Y-m-d') : $fund->tanggal_nab?->format('Y-m-d'))),
+        portfolioAum: @js($displayAum),
+        portfolioTotalUnit: @js($displayTotalUnit),
+        portfolioReturnYtd: @js($snapshot?->return_ytd ?? ($periodActive ? null : $fund->return_ytd)),
+        portfolioReturn1y: @js($snapshot?->return_1y ?? ($periodActive ? null : $fund->return_1y)),
+        portfolioReturn1m: @js($snapshot?->return_1m ?? ($periodActive ? null : $fund->return_1m)),
+        portfolioReturnInception: @js($snapshot?->return_inception ?? ($periodActive ? null : $fund->return_inception)),
+        portfolioSuccess: null,
+        portfolioError: null,
+        loadPortfolioData() {},
+        async savePortfolio() {
+            if (this.portfolioSaving) return;
+            this.portfolioSaving = true;
+            this.portfolioSuccess = null;
+            this.portfolioError = null;
+            try {
+                const res = await fetch(@js(route('admin.daftar-reksa-dana.save-portfolio', $fund)), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': @js(csrf_token()), 'Accept': 'application/json' },
+                    body: JSON.stringify({
+                        month: this.portfolioMonth,
+                        year: this.portfolioYear,
+                        saham: this.portfolioSaham,
+                        obligasi: this.portfolioObligasi,
+                        pasar_uang: this.portfolioPasarUang,
+                        kas: this.portfolioKas,
+                        top_holdings: this.portfolioTopHoldings,
+                        nab_per_unit: this.portfolioNabPerUnit,
+                        tanggal_nab: this.portfolioTanggalNab,
+                        aum: this.portfolioAum,
+                        total_unit: this.portfolioTotalUnit,
+                        return_ytd: this.portfolioReturnYtd,
+                        return_1y: this.portfolioReturn1y,
+                        return_1m: this.portfolioReturn1m,
+                        return_inception: this.portfolioReturnInception,
+                    }),
+                });
+                const json = await res.json();
+                if (json.success) {
+                    this.portfolioSuccess = json.message || 'Data portfolio berhasil disimpan.';
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    this.portfolioError = json.message || 'Gagal menyimpan.';
+                }
+            } catch (e) {
+                this.portfolioError = e.message;
+            }
+            this.portfolioSaving = false;
+        },
+        ffsPreviewLoading: false,
+        ffsPreviewData: null,
+        ffsPreviewError: null,
+        ffsPreviewSaving: false,
+        ffsPreviewSuccess: null,
+        async showFfsPreview(docId) {
+            try {
+                this.ffsPreviewLoading = true;
+                this.ffsPreviewData = null;
+                this.ffsPreviewError = null;
+                const formData = new FormData();
+                formData.append('_token', @js(csrf_token()));
+                const res = await fetch(`/admin/daftar-reksa-dana/documents/${docId}/parse-ffs`, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': @js(csrf_token()) },
+                    body: formData,
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || 'Gagal parse FFS.');
+                this.ffsPreviewData = json;
+                this.openFfsPreviewModal();
+            } catch (e) {
+                this.ffsPreviewError = e.message;
+            } finally {
+                this.ffsPreviewLoading = false;
+            }
+        },
+        openFfsPreviewModal() {
+            document.getElementById('modal-ffs-preview').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            this.renderFfsPreviewContent();
+        },
+        closeFfsPreviewModal() {
+            document.getElementById('modal-ffs-preview').classList.add('hidden');
+            document.body.style.overflow = '';
+            this.ffsPreviewData = null;
+        },
+        async saveFfsPreview() {
+            if (!this.ffsPreviewData?.preview) return;
+            this.ffsPreviewSaving = true;
+            this.ffsPreviewError = null;
+            this.ffsPreviewSuccess = null;
+            try {
+                const formData = new FormData();
+                formData.append('_token', @js(csrf_token()));
+                formData.append('reksa_dana_id', @js($fund->id));
+                formData.append('month', this.ffsPreviewData.period?.month || this.portfolioMonth);
+                formData.append('year', this.ffsPreviewData.period?.year || this.portfolioYear);
+                formData.append('snapshot', JSON.stringify(this.ffsPreviewData.data?.snapshot || {}));
+                formData.append('risk', JSON.stringify(this.ffsPreviewData.data?.risk || {}));
+                formData.append('fees', JSON.stringify(this.ffsPreviewData.data?.fees || {}));
+                formData.append('allocation', JSON.stringify(this.ffsPreviewData.data?.allocation || {}));
+                formData.append('holdings', JSON.stringify(this.ffsPreviewData.data?.holdings || []));
+                const res = await fetch(@js(route('admin.daftar-reksa-dana.save-ffs-period', $fund)), {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': @js(csrf_token()) },
+                    body: formData,
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || json.message || 'Gagal menyimpan data FFS.');
+                this.ffsPreviewSuccess = json.message;
+                setTimeout(() => {
+                    this.closeFfsPreviewModal();
+                    window.location.reload();
+                }, 1000);
+            } catch (e) {
+                this.ffsPreviewError = e.message;
+            } finally {
+                this.ffsPreviewSaving = false;
+            }
+        },
+        renderFfsPreviewContent() {
+            const content = document.getElementById('ffs-preview-content');
+            if (!this.ffsPreviewData) {
+                content.innerHTML = '<div class="text-center py-12 text-muted">Memuat preview...</div>';
+                return;
+            }
+            const data = this.ffsPreviewData.data || {};
+            const period = this.ffsPreviewData.period || {};
+            const extracted = this.ffsPreviewData.extracted || [];
+            let html = `<div class="space-y-6"><div class="flex items-center justify-between mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg"><h4 class="font-semibold text-primary">Preview Data FFS</h4><span class="text-xs text-muted">Periode: ${period.month ? period.month + '/' + period.year : 'Belum ditentukan'}</span></div><div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg"><p class="text-xs text-yellow-700"><strong>⚠️ Preview Only:</strong> Data ini diekstrak dari FFS oleh AI. Mohon review dan validasi setiap field sebelum menyimpan.</p></div>`;
+            if (data.snapshot) {
+                html += `<div class="bg-white border border-line rounded-lg p-4"><h5 class="font-semibold text-primary mb-3">Ringkasan (Snapshot)</h5><div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">${this.renderPreviewField('NAB/UP', data.snapshot?.nab_per_unit, 'Rp')}${this.renderPreviewField('AUM', data.snapshot?.aum, 'Rp')}${this.renderPreviewField('Total Unit', data.snapshot?.total_unit)}${this.renderPreviewField('Return 1M', data.snapshot?.return_1m, '%')}${this.renderPreviewField('Return 3M', data.snapshot?.return_3m, '%')}${this.renderPreviewField('Return YTD', data.snapshot?.return_ytd, '%')}${this.renderPreviewField('Return 1Y', data.snapshot?.return_1y, '%')}${this.renderPreviewField('Return 3Y', data.snapshot?.return_3y, '%')}${this.renderPreviewField('Return Inception', data.snapshot?.return_inception, '%')}</div></div>`;
+            }
+            if (data.risk) {
+                html += `<div class="bg-white border border-line rounded-lg p-4"><h5 class="font-semibold text-primary mb-3">Metrik Risiko</h5><div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">${this.renderPreviewField('Sharpe 1M', data.risk?.sharpe_ratio?.['1m'])}${this.renderPreviewField('Sharpe 1Y', data.risk?.sharpe_ratio?.['1y'])}${this.renderPreviewField('Stdev 1M', data.risk?.stdev?.['1m'], '%')}${this.renderPreviewField('Stdev 1Y', data.risk?.stdev?.['1y'], '%')}${this.renderPreviewField('Beta 1M', data.risk?.beta?.['1m'])}${this.renderPreviewField('Beta 1Y', data.risk?.beta?.['1y'])}${this.renderPreviewField('MaxDD 1M', data.risk?.max_drawdown?.['1m'], '%')}${this.renderPreviewField('MaxDD 1Y', data.risk?.max_drawdown?.['1y'], '%')}</div></div>`;
+            }
+            if (data.fees) {
+                html += `<div class="bg-white border border-line rounded-lg p-4"><h5 class="font-semibold text-primary mb-3">Biaya & Fee</h5><div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">${this.renderPreviewField('Mgmt Fee', data.fees?.management_fee, '%')}${this.renderPreviewField('Custodian Fee', data.fees?.custodian_fee, '%')}${this.renderPreviewField('Expense Ratio', data.fees?.expense_ratio, '%')}${this.renderPreviewField('Sub Fee', data.fees?.subscription_fee, '%')}${this.renderPreviewField('Red Fee', data.fees?.redemption_fee, '%')}${this.renderPreviewField('Switch Fee', data.fees?.switching_fee, '%')}${this.renderPreviewField('IM Fee', data.fees?.investment_manager_fee, '%')}</div></div>`;
+            }
+            if (data.allocation) {
+                html += `<div class="bg-white border border-line rounded-lg p-4"><h5 class="font-semibold text-primary mb-3">Alokasi Aset</h5><div class="grid grid-cols-4 gap-3 text-sm">${this.renderPreviewField('Saham', data.allocation?.equity_percent, '%')}${this.renderPreviewField('Obligasi', data.allocation?.bond_percent, '%')}${this.renderPreviewField('Pasar Uang', data.allocation?.money_market_percent, '%')}${this.renderPreviewField('Kas', data.allocation?.cash_percent, '%')}</div></div>`;
+            }
+            if (data.holdings?.length) {
+                html += `<div class="bg-white border border-line rounded-lg p-4"><h5 class="font-semibold text-primary mb-3">Top Holdings (${data.holdings.length} efek)</h5><div class="overflow-x-auto"><table class="w-full text-xs"><thead class="bg-[#f8fafc]"><tr><th class="px-2 py-1 text-left font-semibold text-muted">Efek</th><th class="px-2 py-1 text-left font-semibold text-muted">Jenis</th><th class="px-2 py-1 text-right font-semibold text-muted">Bobot</th></tr></thead><tbody class="divide-y divide-line">${data.holdings.map(h => `<tr><td class="px-2 py-1 font-medium">${h.security_name}</td><td class="px-2 py-1 text-muted">${h.security_type || '—'}</td><td class="px-2 py-1 text-right font-semibold">${Number(h.weight_percent || 0).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%</td></tr>`).join('')}</tbody></table></div></div>`;
+            }
+            if (this.ffsPreviewData.extracted?.length) {
+                html += `<div class="bg-white border border-line rounded-lg p-4"><h5 class="font-semibold text-primary mb-2">Data yang Terektrak (${extracted.length} item)</h5><div class="flex flex-wrap gap-1">${extracted.map(e => `<span class="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full">${e}</span>`).join('')}</div></div>`;
+            }
+            const saveLabel = this.ffsPreviewSaving ? 'Menyimpan...' : 'Simpan ke Periode';
+            html += `<div class="flex justify-end gap-2 pt-4 border-t border-line"><button type="button" data-ffs-cancel class="px-4 py-2 text-sm text-muted border border-line rounded-lg hover:bg-gray-50">Batal</button><button type="button" data-ffs-save class="px-4 py-2 text-sm text-white bg-emerald-700 rounded-lg hover:bg-emerald-800 disabled:opacity-50 flex items-center gap-1.5" ${this.ffsPreviewSaving ? 'disabled' : ''}>${saveLabel}</button></div>`;
+            content.innerHTML = html;
+            content.querySelector('[data-ffs-cancel]')?.addEventListener('click', () => this.closeFfsPreviewModal());
+            content.querySelector('[data-ffs-save]')?.addEventListener('click', () => this.saveFfsPreview());
+        },
+        renderPreviewField(label, value, suffix = '') {
+            if (value === null || value === undefined || value === '') return '';
+            const formatted = typeof value === 'number' ? value.toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : value;
+            return `<div><p class="text-xs text-muted">${label}</p><p class="font-semibold text-primary">${formatted}${suffix}</p></div>`;
+        },
+    };
+}
+
 function documentTabData(defaultDocType) {
     return {
         docType: defaultDocType,
@@ -1673,7 +1864,8 @@ function documentTabData(defaultDocType) {
                 this.uploadFfsLoading = false;
             }
         },
-    };
-}
+};
+    }
 </script>
+
 @endsection

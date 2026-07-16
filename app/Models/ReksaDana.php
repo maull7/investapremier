@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\MutualFundSnapshot;
+use App\Models\MutualFundRiskMetric;
+use App\Models\MutualFundFeeMetric;
 use App\Services\KodeReksaDanaParser;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -168,6 +171,24 @@ class ReksaDana extends Model
     public function personRoles(): HasMany
     {
         return $this->hasMany(InvestmentPersonRole::class, 'reksa_dana_id');
+    }
+
+    public function snapshots(): HasMany
+    {
+        return $this->hasMany(MutualFundSnapshot::class, 'reksa_dana_id')
+            ->orderBy('period_date');
+    }
+
+    public function riskMetrics(): HasMany
+    {
+        return $this->hasMany(MutualFundRiskMetric::class, 'reksa_dana_id')
+            ->orderBy('period_date');
+    }
+
+    public function feeMetrics(): HasMany
+    {
+        return $this->hasMany(MutualFundFeeMetric::class, 'reksa_dana_id')
+            ->orderBy('period_date');
     }
 
     public function fillFromKode(): bool

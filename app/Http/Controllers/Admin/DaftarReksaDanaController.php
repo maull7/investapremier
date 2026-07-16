@@ -6,15 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Jobs\ReplaceRewriteReksaDanaJob;
 use App\Jobs\SyncAllPasardanaJob;
 use App\Jobs\SyncReksaDanaFromPasardanaJob;
-use App\Models\DataSourceLink;
-use App\Models\DataSourceSyncLog;
-use App\Models\DocumentParsedPage;
-use App\Models\DocumentPartition;
-use App\Models\FfsExtractionResult;
-use App\Models\HargaReksaDana;
-use App\Models\InvestmentManager;
 use App\Models\MutualFundAssetAllocation;
 use App\Models\MutualFundPortfolioComposition;
+use App\Models\MutualFundSnapshot;
+use App\Models\MutualFundRiskMetric;
+use App\Models\MutualFundFeeMetric;
 use App\Models\ReksaDana;
 use App\Models\ReksaDanaDocument;
 use App\Models\SyncRun;
@@ -25,6 +21,7 @@ use App\Services\FfsExtractionService;
 use App\Services\ProspektusParserService;
 use App\Services\DocumentDataExtractorService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Support\ActivityLogger;
@@ -368,12 +365,19 @@ class DaftarReksaDanaController extends Controller
             'managementTeams',
             'investmentManager',
             'documents' => fn($q) => $q->with(['parsedPages', 'partitions', 'ffsExtractionResults']),
+            'snapshots' => fn($q) => $q->orderBy('period_date'),
+            'riskMetrics' => fn($q) => $q->orderBy('period_date'),
+            'feeMetrics' => fn($q) => $q->orderBy('period_date'),
         ])->findOrFail($id);
 
         $month = request('month') ? (int) request('month') : null;
         $year = request('year') ? (int) request('year') : null;
         $periodMonth = $month && $year ? $month : null;
         $periodYear = $month && $year ? $year : null;
+
+        $periodDate = $periodMonth && $periodYear
+            ? sprintf('%04d-%02d-01', $periodYear, $periodMonth)
+            : null;
 
         $range = request('range', '1y');
         $chartData = $chartDataService->forFund(
@@ -421,7 +425,6 @@ class DaftarReksaDanaController extends Controller
         $returnMonthly = null;
         $returnYearly = null;
 
-        // — NAV-based returns (when history has at least 2 points) —
         if ($latestNav && $firstNav && $firstNav->nab_per_unit > 0 && $navHistory->count() > 1) {
             $returnYearly = (($latestNav->nab_per_unit - $firstNav->nab_per_unit) / $firstNav->nab_per_unit) * 100;
         }
@@ -439,7 +442,6 @@ class DaftarReksaDanaController extends Controller
             $returnMonthly = (($latestNav->nab_per_unit - $prevMonthNav->nab_per_unit) / $prevMonthNav->nab_per_unit) * 100;
         }
 
-        // — Fallback to Pasardana/FFS return fields when NAV history can't compute —
         if ($returnDaily === null && $fund->return_1d !== null) {
             $returnDaily = (float) $fund->return_1d * 100;
         }
@@ -450,23 +452,84 @@ class DaftarReksaDanaController extends Controller
             $returnYearly = (float) $fund->return_1y * 100;
         }
 
-        // — Pasardana risk metrics —
+        // — Period-filtered data from new periodic tables —
+        $periodSnapshot = null;
+        $periodRisk = null;
+        $periodFees = null;
+        $periodAllocation = null;
+        $periodHoldings = collect();
+        $periodNav = null;
+
+        if ($periodDate) {
+            $periodSnapshot = $fund->snapshots()->where('period_date', $periodDate)->first();
+            $periodRisk = $fund->riskMetrics()->where('period_date', $periodDate)->first();
+            $periodFees = $fund->feeMetrics()->where('period_date', $periodDate)->first();
+            $periodAllocation = $fund->assetAllocations()->where('period_date', $periodDate)->first();
+            $periodHoldings = $fund->portfolioCompositions()->where('period_date', $periodDate)->get();
+            $periodNav = $fund->harga()->where('tanggal', $periodDate)->first();
+        }
+
+        $periodActive = $periodMonth && $periodYear;
+
+        if ($periodActive) {
+            $snapshot = $periodSnapshot;
+            $risk = $periodRisk;
+            $fees = $periodFees;
+            $allocation = $periodAllocation;
+            $holdings = $periodHoldings;
+            $nav = $periodNav;
+        } else {
+            $snapshot = $fund->snapshots()->latest('period_date')->first();
+            $risk = $fund->riskMetrics()->latest('period_date')->first();
+            $fees = $fund->feeMetrics()->latest('period_date')->first();
+            $allocation = $fund->assetAllocations()->latest('period_date')->first();
+            $latestCompositionDate = $fund->portfolioCompositions()->max('period_date');
+            $holdings = $latestCompositionDate
+                ? $fund->portfolioCompositions()->where('period_date', $latestCompositionDate)->get()
+                : collect();
+            $nav = $fund->harga()->latest('tanggal')->first();
+        }
+
         $riskMetrics = [
-            'sharpe_ratio_1y' => $fund->sharpe_ratio_1y,
-            'sharpe_ratio_3y' => $fund->sharpe_ratio_3y,
-            'sharpe_ratio_5y' => $fund->sharpe_ratio_5y,
-            'stdev_1y'        => $fund->stdev_1y,
-            'stdev_3y'        => $fund->stdev_3y,
-            'stdev_5y'        => $fund->stdev_5y,
-            'beta_1y'         => $fund->beta_1y,
-            'beta_3y'         => $fund->beta_3y,
-            'beta_5y'         => $fund->beta_5y,
-            'max_drawdown_1y' => $fund->max_drawdown_1y,
-            'max_drawdown_3y' => $fund->max_drawdown_3y,
-            'max_drawdown_5y' => $fund->max_drawdown_5y,
+            'sharpe_ratio_1y' => $periodActive ? $risk?->sharpe_ratio_1y : ($risk?->sharpe_ratio_1y ?? $fund->sharpe_ratio_1y),
+            'sharpe_ratio_3y' => $periodActive ? $risk?->sharpe_ratio_3y : ($risk?->sharpe_ratio_3y ?? $fund->sharpe_ratio_3y),
+            'sharpe_ratio_5y' => $periodActive ? $risk?->sharpe_ratio_5y : ($risk?->sharpe_ratio_5y ?? $fund->sharpe_ratio_5y),
+            'stdev_1y'        => $periodActive ? $risk?->stdev_1y : ($risk?->stdev_1y ?? $fund->stdev_1y),
+            'stdev_3y'        => $periodActive ? $risk?->stdev_3y : ($risk?->stdev_3y ?? $fund->stdev_3y),
+            'stdev_5y'        => $periodActive ? $risk?->stdev_5y : ($risk?->stdev_5y ?? $fund->stdev_5y),
+            'beta_1y'         => $periodActive ? $risk?->beta_1y : ($risk?->beta_1y ?? $fund->beta_1y),
+            'beta_3y'         => $periodActive ? $risk?->beta_3y : ($risk?->beta_3y ?? $fund->beta_3y),
+            'beta_5y'         => $periodActive ? $risk?->beta_5y : ($risk?->beta_5y ?? $fund->beta_5y),
+            'max_drawdown_1y' => $periodActive ? $risk?->max_drawdown_1y : ($risk?->max_drawdown_1y ?? $fund->max_drawdown_1y),
+            'max_drawdown_3y' => $periodActive ? $risk?->max_drawdown_3y : ($risk?->max_drawdown_3y ?? $fund->max_drawdown_3y),
+            'max_drawdown_5y' => $periodActive ? $risk?->max_drawdown_5y : ($risk?->max_drawdown_5y ?? $fund->max_drawdown_5y),
         ];
 
-        // — Period-filtered portfolio data —
+        $toPercent = fn($value) => $value !== null ? (float) $value * 100 : null;
+
+        if ($periodActive) {
+            $displayNab = $snapshot?->nab_per_unit ?? $nav?->nab_per_unit;
+            $displayAum = $snapshot?->aum ?? $nav?->aum;
+            $displayTotalUnit = $snapshot?->total_unit ?? $nav?->unit_participation;
+            $displayReturnDaily = null;
+            $displayReturnMonthly = $snapshot?->return_1m !== null ? $toPercent($snapshot->return_1m) : null;
+            $displayReturnYearly = $snapshot?->return_1y !== null ? $toPercent($snapshot->return_1y) : null;
+            $displayReturnYtd = $snapshot?->return_ytd !== null ? $toPercent($snapshot->return_ytd) : null;
+            $periodHasSnapshotData = $snapshot !== null || $nav !== null || $risk !== null || $fees !== null || $allocation !== null || $holdings->isNotEmpty();
+        } else {
+            $displayNab = $latestNav?->nab_per_unit ?? $fund->nab_per_unit;
+            $displayAum = $latestNav?->aum ?? $fund->aum;
+            $displayTotalUnit = $latestNav?->unit_participation ?? $fund->total_unit;
+            $displayReturnDaily = $returnDaily;
+            $displayReturnMonthly = $returnMonthly;
+            $displayReturnYearly = $returnYearly;
+            $displayReturnYtd = $fund->return_ytd !== null ? $toPercent($fund->return_ytd) : null;
+            $periodHasSnapshotData = true;
+        }
+
+        $periodQuery = $periodActive ? ['month' => $periodMonth, 'year' => $periodYear] : [];
+
+        // — Period-filtered portfolio data (existing) —
         $periodAa = null;
         $periodTopHoldings = collect();
         $periodHasData = false;
@@ -537,6 +600,29 @@ class DaftarReksaDanaController extends Controller
             'periodTopHoldings',
             'periodHasData',
             'ffsDocument',
+            // New periodic data
+            'snapshot',
+            'risk',
+            'fees',
+            'allocation',
+            'holdings',
+            'nav',
+            'periodSnapshot',
+            'periodRisk',
+            'periodFees',
+            'periodAllocation',
+            'periodHoldings',
+            'periodNav',
+            'periodActive',
+            'periodQuery',
+            'displayNab',
+            'displayAum',
+            'displayTotalUnit',
+            'displayReturnDaily',
+            'displayReturnMonthly',
+            'displayReturnYearly',
+            'displayReturnYtd',
+            'periodHasSnapshotData',
         ));
     }
 
@@ -1504,6 +1590,108 @@ class DaftarReksaDanaController extends Controller
         );
 
         return response()->json(['success' => true, 'message' => 'Data portfolio berhasil disimpan.']);
+    }
+
+    public function saveFfsPeriod(Request $request, ReksaDana $reksaDana)
+    {
+        $validated = $request->validate([
+            'month' => 'required|integer|between:1,12',
+            'year' => 'required|integer|min:2000|max:2099',
+            'snapshot' => 'required|array',
+            'risk' => 'required|array',
+            'fees' => 'required|array',
+            'allocation' => 'required|array',
+            'holdings' => 'required|array',
+        ]);
+
+        $periodDate = sprintf('%04d-%02d-01', $validated['year'], $validated['month']);
+
+        DB::transaction(function () use ($reksaDana, $validated, $periodDate) {
+            // 1. Snapshot
+            MutualFundSnapshot::updateOrCreate(
+                ['reksa_dana_id' => $reksaDana->id, 'period_date' => $periodDate],
+                $validated['snapshot']
+            );
+
+            // 2. Risk Metrics
+            MutualFundRiskMetric::updateOrCreate(
+                ['reksa_dana_id' => $reksaDana->id, 'period_date' => $periodDate],
+                [
+                    'sharpe_ratio_1m' => $validated['risk']['sharpe_ratio']['1m'] ?? null,
+                    'sharpe_ratio_3m' => $validated['risk']['sharpe_ratio']['3m'] ?? null,
+                    'sharpe_ratio_6m' => $validated['risk']['sharpe_ratio']['6m'] ?? null,
+                    'sharpe_ratio_1y' => $validated['risk']['sharpe_ratio']['1y'] ?? null,
+                    'sharpe_ratio_3y' => $validated['risk']['sharpe_ratio']['3y'] ?? null,
+                    'sharpe_ratio_5y' => $validated['risk']['sharpe_ratio']['5y'] ?? null,
+                    'sharpe_ratio_10y' => $validated['risk']['sharpe_ratio']['10y'] ?? null,
+                    'stdev_1m' => $validated['risk']['stdev']['1m'] ?? null,
+                    'stdev_3m' => $validated['risk']['stdev']['3m'] ?? null,
+                    'stdev_6m' => $validated['risk']['stdev']['6m'] ?? null,
+                    'stdev_1y' => $validated['risk']['stdev']['1y'] ?? null,
+                    'stdev_3y' => $validated['risk']['stdev']['3y'] ?? null,
+                    'stdev_5y' => $validated['risk']['stdev']['5y'] ?? null,
+                    'stdev_10y' => $validated['risk']['stdev']['10y'] ?? null,
+                    'beta_1m' => $validated['risk']['beta']['1m'] ?? null,
+                    'beta_3m' => $validated['risk']['beta']['3m'] ?? null,
+                    'beta_6m' => $validated['risk']['beta']['6m'] ?? null,
+                    'beta_1y' => $validated['risk']['beta']['1y'] ?? null,
+                    'beta_3y' => $validated['risk']['beta']['3y'] ?? null,
+                    'beta_5y' => $validated['risk']['beta']['5y'] ?? null,
+                    'beta_10y' => $validated['risk']['beta']['10y'] ?? null,
+                    'max_drawdown_1m' => $validated['risk']['max_drawdown']['1m'] ?? null,
+                    'max_drawdown_3m' => $validated['risk']['max_drawdown']['3m'] ?? null,
+                    'max_drawdown_6m' => $validated['risk']['max_drawdown']['6m'] ?? null,
+                    'max_drawdown_1y' => $validated['risk']['max_drawdown']['1y'] ?? null,
+                    'max_drawdown_3y' => $validated['risk']['max_drawdown']['3y'] ?? null,
+                    'max_drawdown_5y' => $validated['risk']['max_drawdown']['5y'] ?? null,
+                    'max_drawdown_10y' => $validated['risk']['max_drawdown']['10y'] ?? null,
+                ]
+            );
+
+            // 3. Fees
+            MutualFundFeeMetric::updateOrCreate(
+                ['reksa_dana_id' => $reksaDana->id, 'period_date' => $periodDate],
+                $validated['fees']
+            );
+
+            // 4. Allocation
+            MutualFundAssetAllocation::updateOrCreate(
+                ['reksa_dana_id' => $reksaDana->id, 'period_date' => $periodDate],
+                $validated['allocation']
+            );
+
+            // 5. Holdings
+            MutualFundPortfolioComposition::where('reksa_dana_id', $reksaDana->id)
+                ->where('period_date', $periodDate)
+                ->delete();
+            foreach ($validated['holdings'] as $h) {
+                MutualFundPortfolioComposition::create([
+                    'reksa_dana_id' => $reksaDana->id,
+                    'period_date' => $periodDate,
+                    'security_name' => $h['security_name'],
+                    'weight_percent' => $h['weight_percent'],
+                    'security_type' => $h['security_type'],
+                ]);
+            }
+
+            // 6. Update ReksaDana latest snapshot fields
+            $reksaDana->update(array_merge(
+                $validated['snapshot'],
+                $validated['fees'],
+                ['nab_per_unit' => $validated['snapshot']['nab_per_unit'] ?? null,
+                 'aum' => $validated['snapshot']['aum'] ?? null,
+                 'total_unit' => $validated['snapshot']['total_unit'] ?? null]
+            ));
+        });
+
+        ActivityLogger::log(
+            'Simpan FFS Period',
+            "Data FFS periode {$validated['month']}/{$validated['year']} untuk {$reksaDana->nama_reksa_dana} berhasil disimpan.",
+            'success',
+            $reksaDana,
+        );
+
+        return response()->json(['success' => true, 'message' => 'Data periode FFS berhasil disimpan.']);
     }
 
     public function updateInformasi(Request $request, ReksaDana $reksaDana)
