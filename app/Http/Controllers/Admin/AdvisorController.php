@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\PerencanaanInvestasi;
 use App\Support\ActivityLogger;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -116,5 +118,19 @@ class AdvisorController extends Controller
         ActivityLogger::log('Hapus Advisor', "Advisor {$advisor->name} telah dihapus", 'success');
 
         return redirect()->route('admin.advisors.index')->with('success', 'Advisor berhasil dihapus.');
+    }
+
+    public function planDetail(User $advisor, PerencanaanInvestasi $plan)
+    {
+        // Admin can view any client's plan
+        $plan->load('portofolioItems', 'progressCheckins', 'user.memberProfile');
+        return view('admin.advisor.clients.plan-detail', compact('advisor', 'plan'));
+    }
+
+    public function planPdf(User $advisor, PerencanaanInvestasi $plan)
+    {
+        $plan->load('portofolioItems', 'progressCheckins', 'user.memberProfile');
+        $pdf = Pdf::loadView('perencanaan-investasi.pdf', compact('plan'));
+        return $pdf->download('Perencanaan_Investasi_' . str_replace(' ', '_', $plan->kategori_perencanaan) . '.pdf');
     }
 }

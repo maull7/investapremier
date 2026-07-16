@@ -106,7 +106,7 @@ class PerencanaanInvestasiController extends Controller
     public function show(PerencanaanInvestasi $perencanaanInvestasi)
     {
         $owner = $perencanaanInvestasi->user;
-        if ($owner->id !== auth()->id() && $owner->advisor_id !== auth()->id()) abort(403);
+        if ($owner->id !== auth()->id() && $owner->advisor_id !== auth()->id() && !auth()->user()->isAdmin()) abort(403);
         $plan = $perencanaanInvestasi;
         $plan->load('portofolioItems', 'progressCheckins');
         $checkins = $plan->progressCheckins()->latest()->get();
@@ -118,9 +118,12 @@ class PerencanaanInvestasiController extends Controller
     {
         if ($perencanaanInvestasi->user_id !== auth()->id()) abort(403);
         $perencanaanInvestasi->load('portofolioItems');
+        $memberPortfolios = MemberPortfolio::where('user_id', auth()->id())->latest()->get();
+
         return view('perencanaan-investasi.form', [
             'plan' => $perencanaanInvestasi,
             'portofolioItems' => $perencanaanInvestasi->portofolioItems,
+            'memberPortfolios' => $memberPortfolios,
         ]);
     }
 
@@ -505,7 +508,9 @@ class PerencanaanInvestasiController extends Controller
         $systemPrompt = AiPrompt::get('system_perencanaan_investasi', 'Kamu adalah AI Financial Planning Assistant yang bertugas menganalisa perencanaan investasi pengguna. Hitung proyeksi kebutuhan dana, estimasi nilai investasi, dan berikan rekomendasi strategi.');
 
         $data = $this->buildDataSection($plan);
-        $instruksi = AiPrompt::get('instruksi_perencanaan_investasi', <<<JSON
+        $instruksi = AiPrompt::get(
+            'instruksi_perencanaan_investasi',
+            <<<JSON
 {
   "ringkasan": "string",
   "analisis_keuangan": {

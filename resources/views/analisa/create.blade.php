@@ -513,6 +513,7 @@
                                         <tr>
                                             <td class="px-1 py-1"><input type="text" :name="`efek[${i}][kode_efek]`"
                                                     x-model="row.kode_efek" placeholder="BBCA"
+                                                    @blur="lookupKodeEfek(row.kode_efek, i)"
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" />
                                             </td>
                                             <td class="px-1 py-1"><input type="text" :name="`efek[${i}][nama_efek]`"
@@ -3783,6 +3784,8 @@
                     lookupReturnUrl: @json($formRoutes['lookup_return']),
                     lookupBondReturnUrl: @json($formRoutes['lookup_bond_return']),
                     lookupBankDataUrl: @json($formRoutes['lookup_bank_data']),
+                    lookupKodeEfekUrl: @json($formRoutes['lookup_kode_efek']),
+                    getFinancialDataUrl: @json($formRoutes['get_financial_data']),
                     parsePdfVisionUrl: @json($formRoutes['parse_pdf_vision']),
                     existingDocsUrl: @json($formRoutes['existing_documents']),
                     parseExistingDocUrl: @json($formRoutes['parse_existing_document']),
@@ -4155,6 +4158,81 @@
                         if (this[type].length > 1) this[type].splice(index, 1);
                     },
 
+                    async lookupKodeEfek(kode, index) {
+                        if (!kode || kode.trim() === '' || !this.lookupKodeEfekUrl) return;
+                        
+                        try {
+                            console.log('Looking up kode efek:', kode);
+                            const res = await fetch(`${this.lookupKodeEfekUrl}?kode=${encodeURIComponent(kode)}`);
+                            const data = await res.json();
+                            
+                            console.log('Lookup response:', data);
+                            
+                            if (data.found) {
+                                this.efek[index].kode_efek = data.data.kode_efek;
+                                this.efek[index].nama_efek = data.data.nama_efek;
+                                if (data.data.sektor) {
+                                    this.efek[index].sektor = data.data.sektor;
+                                }
+                                console.log('Calling populateKeuanganData for', data.data.kode_efek, 'type:', data.type);
+                                await this.populateKeuanganData(data.data.kode_efek, data.data.nama_efek, data.type);
+                            } else {
+                                console.warn('Kode efek tidak ditemukan:', kode);
+                            }
+                        } catch (e) {
+                            console.error('Lookup error:', e);
+                        }
+                    },
+
+                    async populateKeuanganData(kode, nama, type) {
+                        if (!this.getFinancialDataUrl) return;
+                        const exists = this.keuangan.find(k => k.kode_efek === kode);
+                        if (exists) return;
+
+                        try {
+                            const res = await fetch(`${this.getFinancialDataUrl}?kode=${encodeURIComponent(kode)}&type=${type}`);
+                            const data = await res.json();
+                            
+                            console.log('Financial data response for', kode, ':', data);
+                            
+                            if (data.found) {
+                                if (data.message && !data.has_financial_data) {
+                                    console.info(`ℹ️ ${data.message}`);
+                                } else if (data.has_financial_data) {
+                                    console.info(`✓ Data keuangan ${kode} berhasil diambil dari ${data.data_source || 'database'}`);
+                                }
+                                
+                                const newRow = {
+                                    kategori: type === 'saham' ? 'Saham' : 'Obligasi',
+                                    kode_efek: data.data.kode_efek,
+                                    nama_efek: data.data.nama_efek,
+                                    per: data.data.per || '',
+                                    pbv: data.data.pbv || '',
+                                    roe: data.data.roe || '',
+                                    roa: data.data.roa || '',
+                                    npm: data.data.npm || '',
+                                    ev_ebitda: data.data.ev_ebitda || '',
+                                    der: data.data.der || '',
+                                    current_ratio: data.data.current_ratio || '',
+                                    aktivitas_lancar: data.data.aktivitas_lancar || '',
+                                    gross_profit_margin: data.data.gross_profit_margin || '',
+                                    operating_profit_margin: data.data.operating_profit_margin || '',
+                                    ytm: data.data.ytm || '',
+                                    rating: data.data.rating || '',
+                                    kupon: data.data.kupon || '',
+                                    tenor: data.data.tenor || '',
+                                    durasi: data.data.durasi || '',
+                                    shadow_rating: data.data.shadow_rating || '',
+                                };
+                                
+                                this.keuangan.push(newRow);
+                                console.log('Keuangan array after push:', this.keuangan);
+                            }
+                        } catch (e) {
+                            console.error('Financial data error:', e);
+                        }
+                    },
+
                     alokasiAsetTotal() {
                         return this.alokasi_aset.reduce((sum, row) => sum + (parseFloat(row.persentase) || 0), 0);
                     },
@@ -4299,6 +4377,66 @@
                         });
 
                         this.keuangan = next;
+                        
+                        // ponytail: Auto fetch financial data from Yahoo Finance after sync
+                        this.autoPopulateKeuangan();
+                    },
+
+                    async autoPopulateKeuangan() {
+                        if (!this.getFinancialDataUrl) return;
+                        
+                        // Collect unique codes from Saham and Obligasi
+                        const sahamCodes = [...new Set(this.efek.map(e => e.kode_efek?.trim()).filter(Boolean))];
+                        const obligasiCodes = [...new Set(this.obligasi.map(e => e.kode_obligasi?.trim()).filter(Boolean))];
+                        const sukukCodes = [...new Set(this.sukuk.map(e => e.kode_sukuk?.trim()).filter(Boolean))];
+                        
+                        // Check which ones need data (have empty critical fields)
+                        const needsFetch = [];
+                        
+                        this.keuangan.forEach(row => {
+                            const kode = row.kode_efek;
+                            const isSaham = row.kategori === 'Saham';
+                            const isObligasi = row.kategori === 'Obligasi';
+                            
+                            if (isSaham && sahamCodes.includes(kode)) {
+                                // Check if critical fields are empty
+                                if (!row.per || !row.pbv || !row.roe || !row.roa || !row.npm) {
+                                    needsFetch.push({ kode, type: 'saham' });
+                                }
+                            } else if (isObligasi && obligasiCodes.includes(kode)) {
+                                if (!row.ytm || !row.rating || !row.kupon || !row.der) {
+                                    needsFetch.push({ kode, type: 'obligasi' });
+                                }
+                            } else if (row.kategori === 'Sukuk' && sukukCodes.includes(kode)) {
+                                if (!row.ytm || !row.rating) {
+                                    needsFetch.push({ kode, type: 'sukuk' });
+                                }
+                            }
+                        });
+                        
+                        // Fetch in parallel (batch)
+                        if (needsFetch.length > 0) {
+                            console.log(`🔄 Auto-fetching financial data for ${needsFetch.length} items:`, needsFetch.map(n => n.kode).join(', '));
+                            
+                            const promises = needsFetch.map(item => 
+                                fetch(`${this.getFinancialDataUrl}?kode=${encodeURIComponent(item.kode)}&type=${item.type}`)
+                                    .then(res => res.json())
+                                    .then(data => {
+                                        if (data.found && data.has_financial_data) {
+                                            const idx = this.keuangan.findIndex(r => r.kode_efek === item.kode && r.kategori === (item.type === 'saham' ? 'Saham' : item.type === 'obligasi' ? 'Obligasi' : 'Sukuk'));
+                                            if (idx !== -1) {
+                                                const updated = { ...this.keuangan[idx], ...data.data };
+                                                this.keuangan.splice(idx, 1, updated);
+                                                console.log(`✓ Updated ${item.kode} from ${data.data_source}`);
+                                            }
+                                        }
+                                    })
+                                    .catch(err => console.warn(`Failed to fetch ${item.kode}:`, err))
+                            );
+                            
+                            await Promise.all(promises);
+                            console.log('✓ Auto-populate keuangan completed');
+                        }
                     },
 
                     applyPembanding(id) {
@@ -4489,11 +4627,12 @@
                         const setField = (id, val) => this.setFieldValue(id, val);
                         setField('nama_reksa_dana', p.nama_reksa_dana || pdf.nama_reksa_dana);
                         setField('jenis_reksa_dana', p.jenis_reksa_dana || pdf.jenis_reksa_dana);
-                        this.totalAum = p.total_aum || pdf.total_aum || this.totalAum;
+                        // ponytail: Tidak update Informasi Reksa Dana dari hasil parse
+                        // this.totalAum = p.total_aum || pdf.total_aum || this.totalAum;
                         this.totalMarcap10Efek = p.total_marcap_10_efek || pdf.total_marcap_10_efek || this.totalMarcap10Efek;
                         this.tanggalData = p.tanggal_data || pdf.tanggal_data || this.tanggalData;
-                        this.unitPenyertaan = p.unit_penyertaan || pdf.unit_penyertaan || this.unitPenyertaan;
-                        this.nabPerUnit = p.nab_per_unit || pdf.nab_per_unit || this.nabPerUnit;
+                        // this.unitPenyertaan = p.unit_penyertaan || pdf.unit_penyertaan || this.unitPenyertaan;
+                        // this.nabPerUnit = p.nab_per_unit || pdf.nab_per_unit || this.nabPerUnit;
                         this.applyKategori(p.kategori || pdf.kategori || []);
 
                         // Sektor — dari AI (alokasi_aset), fallback PDF
@@ -4764,11 +4903,12 @@
                         this.benchmark = data.benchmark ?? this.benchmark;
                         this.tujuanInvestasi = data.tujuan_investasi ?? this.tujuanInvestasi;
                         this.kebijakanInvestasi = data.kebijakan_investasi ?? this.kebijakanInvestasi;
-                        this.totalAum = data.total_aum ?? this.totalAum;
+                        // ponytail: Tidak update Informasi Reksa Dana dari hasil parse
+                        // this.totalAum = data.total_aum ?? this.totalAum;
                         this.totalMarcap10Efek = data.total_marcap_10_efek ?? this.totalMarcap10Efek;
                         this.tanggalData = data.tanggal_data ?? this.tanggalData;
-                        this.unitPenyertaan = data.unit_penyertaan ?? this.unitPenyertaan;
-                        this.nabPerUnit = data.nab_per_unit ?? this.nabPerUnit;
+                        // this.unitPenyertaan = data.unit_penyertaan ?? this.unitPenyertaan;
+                        // this.nabPerUnit = data.nab_per_unit ?? this.nabPerUnit;
                         this.returnYtd = data.return_ytd ?? this.returnYtd;
                         this.return1y = data.return_1y ?? this.return1y;
                         this.totalReturn = data.total_return ?? this.totalReturn;

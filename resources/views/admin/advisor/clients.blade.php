@@ -42,11 +42,15 @@
                                 <td class="px-5 py-3.5 text-right font-semibold">{{ $latestPlan?->dana_tersedia ? 'Rp ' . number_format($latestPlan->dana_tersedia, 0, ',', '.') : '—' }}</td>
                                 <td class="px-5 py-3.5 text-right font-semibold text-accent">{{ $latestPlan?->kebutuhan_dana ? 'Rp ' . number_format($latestPlan->kebutuhan_dana, 0, ',', '.') : '—' }}</td>
                                 <td class="px-5 py-3.5 text-right">
-                                    <a href="{{ route('user.perencanaan-investasi.show', $latestPlan) }}"
-                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-accent border border-accent/30 rounded-lg hover:bg-accent/5 transition">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                        Detail
-                                    </a>
+                                    @if ($latestPlan)
+                                        <a href="{{ route('admin.advisors.clients.plan.show', ['advisor' => $advisor, 'plan' => $latestPlan]) }}"
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-accent border border-accent/30 rounded-lg hover:bg-accent/5 transition">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            Detail
+                                        </a>
+                                    @else
+                                        <span class="text-muted text-xs">Belum ada rencana</span>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
