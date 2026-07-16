@@ -2784,6 +2784,14 @@
                             <span>Memuat dokumen...</span>
                         </div>
 
+                        <div x-show="!existingDocsLoading && !kodeReksaDana" class="text-xs text-muted italic">
+                            Masukkan Kode Reksa Dana untuk melihat dokumen tersimpan
+                        </div>
+
+                        <div x-show="existingDocsLoaded && existingDocs.length === 0 && kodeReksaDana" class="text-xs text-muted italic">
+                            Dokumen tidak ditemukan untuk periode yang dipilih.
+                        </div>
+
                         <template x-if="existingDocs.length > 0">
                             <div>
                                 <div class="flex items-center justify-between mb-2">
@@ -3786,6 +3794,9 @@
                     batchParsing: false,
                     batchParsedCount: 0,
                     currentKode: '',
+                    _docFetchTimer: null,
+                    _docFetchAbortController: null,
+                    _lastFetchedKey: '',
                     resumeId: resumeData?.id || null,
                     plusRequiredLabels: @json($plusLabels),
                     lookupMessage: '',
@@ -3996,12 +4007,12 @@
                         } else if (this.kodeReksaDana) {
                             this.lookupReksaDana(this.kodeReksaDana);
                         }
-                        this.fetchExistingDocuments();
-                        this.$watch('jenisLaporan', () => this.fetchExistingDocuments());
-                        this.$watch('ffsBulan', () => this.fetchExistingDocuments());
-                        this.$watch('ffsTahun', () => this.fetchExistingDocuments());
+                        this.debouncedFetchDocs();
+                        this.$watch('jenisLaporan', () => this.debouncedFetchDocs());
+                        this.$watch('ffsBulan', () => this.debouncedFetchDocs());
+                        this.$watch('ffsTahun', () => this.debouncedFetchDocs());
                         this.$watch('ffsPembanding', (id) => this.applyPembanding(id));
-                        this.$watch('tahunLaporan', () => this.fetchExistingDocuments());
+                        this.$watch('tahunLaporan', () => this.debouncedFetchDocs());
 
                         this.$watch('unitMilikInvestor', () => this.autoCalcDerived());
                         this.$watch('unitMilikMi', () => this.autoCalcDerived());
@@ -5628,11 +5639,18 @@
                                         obj[prop] = val;
                                     }
                                 });
-                                return obj;
+return obj;
                             });
-
-                            this[target] = rows;
                         });
+
+                        this[target] = rows;
+                    },
+
+                    debouncedFetchDocs() {
+                        clearTimeout(this._docFetchTimer);
+                        this._docFetchTimer = setTimeout(() => {
+                            this.fetchExistingDocuments();
+                        }, 300);
                     },
 
                     fetchExistingDocuments() {
@@ -5643,11 +5661,29 @@
                             this.existingDocsLoaded = true;
                             this.existingDocs = [];
                             this.selectedDocIds = [];
+                            this._lastFetchedKey = '';
                             return;
                         }
+                        // Build filter key based on jenis_laporan
+                        let filterKey = '';
+                        if (this.jenisLaporan === 'kalender_ffs') {
+                            filterKey = `${kode}|${this.jenisLaporan}|${this.ffsBulan || ''}|${this.ffsTahun || ''}`;
+                        } else {
+                            filterKey = `${kode}|${this.jenisLaporan}|${this.tahunLaporan || ''}`;
+                        }
+                        // Skip if same filter key already fetched
+                        if (filterKey === this._lastFetchedKey && this.existingDocsLoaded) {
+                            return;
+                        }
+                        // Cancel previous request
+                        if (this._docFetchAbortController) {
+                            this._docFetchAbortController.abort();
+                        }
+                        this._docFetchAbortController = new AbortController();
+
                         this.existingDocsLoading = true;
                         this.existingDocsLoaded = false;
-                        this.existingDocs = [];
+                        // Keep existing docs visible while loading new ones (prevents flicker)
                         this.selectedDocIds = [];
 
                         const params = new URLSearchParams();
@@ -5664,19 +5700,32 @@
                         fetch(`${this.existingDocsUrl}?${params.toString()}`, {
                                 headers: {
                                     Accept: 'application/json'
-                                }
+                                },
+                                signal: this._docFetchAbortController.signal
                             })
-                            .then(res => res.json())
+                            .then(res => {
+                                if (!res.ok) {
+                                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                                }
+                                return res.json();
+                            })
                             .then(resp => {
                                 this.existingDocsLoading = false;
                                 this.existingDocsLoaded = true;
                                 if (Array.isArray(resp.documents)) {
                                     this.existingDocs = resp.documents;
+                                } else {
+                                    this.existingDocs = [];
                                 }
+                                this._lastFetchedKey = filterKey;
                             })
-                            .catch(() => {
+                            .catch(err => {
+                                if (err.name === 'AbortError') return; // Ignore cancelled requests
                                 this.existingDocsLoading = false;
                                 this.existingDocsLoaded = true;
+                                this.existingDocs = [];
+                                this._lastFetchedKey = filterKey;
+                                console.error('Failed to load documents:', err);
                             });
                     },
 
@@ -6065,6 +6114,108 @@
                         } catch (e) {
                             this.testJsonError = 'Gagal download: ' + e.message;
                         }
+                    },
+
+                    async lookupReksaDana(kode) {
+                        if (!kode || !this.lookupKodeUrl) return;
+                        const k = String(kode).trim().toUpperCase();
+                        if (k.length < 3) {
+                            this.lookupMessage = 'Kode minimal 3 karakter';
+                            this.lookupOk = false;
+                            return;
+                        }
+                        try {
+                            const resp = await fetch(`${this.lookupKodeUrl}?kode_reksa_dana=${encodeURIComponent(k)}`, {
+                                headers: { Accept: 'application/json' }
+                            });
+                            const data = await resp.json();
+                            if (data?.master) {
+                                const m = data.master;
+                                this.setFieldValue('kode_reksa_dana', m.kode_reksa_dana);
+                                this.setFieldValue('nama_reksa_dana', m.nama_reksa_dana);
+                                this.setFieldValue('jenis_reksa_dana', m.jenis_reksa_dana);
+                                this.setFieldValue('benchmark', m.benchmark);
+                                this.setFieldValue('tujuan_investasi', m.tujuan_investasi);
+                                this.setFieldValue('kebijakan_investasi', m.kebijakan_investasi);
+                                this.setFieldValue('manajer_investasi', m.manajer_investasi);
+                                this.setFieldValue('bank_kustodian', m.bank_kustodian);
+                                this.setFieldValue('tanggal_peluncuran', m.tanggal_peluncuran);
+                                this.setFieldValue('mata_uang', m.mata_uang);
+                                this.setFieldValue('management_fee', m.management_fee);
+                                this.setFieldValue('custodian_fee', m.custodian_fee);
+                                this.setFieldValue('total_aum', m.total_aum);
+                                this.setFieldValue('unit_penyertaan', m.unit_penyertaan);
+                                this.setFieldValue('nab_per_unit', m.nab_per_unit);
+                                this.setFieldValue('return_ytd', m.return_ytd);
+                                this.setFieldValue('return_1y', m.return_1y);
+                                this.setFieldValue('expense_ratio', m.expense_ratio);
+                                if (m.kategori && Array.isArray(m.kategori)) {
+                                    this.applyKategori(m.kategori);
+                                }
+                                this.lookupMessage = 'Data reksa dana ditemukan';
+                                this.lookupOk = true;
+                            } else {
+                                this.lookupMessage = data?.last_analisa ? 'Data dari analisa terakhir' : 'Kode reksa dana tidak ditemukan';
+                                this.lookupOk = data?.last_analisa ? true : false;
+                            }
+                            this.debouncedFetchDocs();
+                        } catch (e) {
+                            this.lookupMessage = 'Gagal lookup: ' + e.message;
+                            this.lookupOk = false;
+                        }
+                    },
+
+                    applyLookupData(data) {
+                        if (!data) return;
+                        const fields = {
+                            kode_reksa_dana: 'kode_reksa_dana',
+                            nama_reksa_dana: 'nama_reksa_dana',
+                            jenis_reksa_dana: 'jenis_reksa_dana',
+                            benchmark: 'benchmark',
+                            tujuan_investasi: 'tujuan_investasi',
+                            kebijakan_investasi: 'kebijakan_investasi',
+                            manajer_investasi: 'manajer_investasi',
+                            bank_kustodian: 'bank_kustodian',
+                            tanggal_peluncuran: 'tanggal_peluncuran',
+                            mata_uang: 'mata_uang',
+                            management_fee: 'management_fee',
+                            custodian_fee: 'custodian_fee',
+                            total_aum: 'total_aum',
+                            unit_penyertaan: 'unit_penyertaan',
+                            nab_per_unit: 'nab_per_unit',
+                            return_ytd: 'return_ytd',
+                            return_1y: 'return_1y',
+                            total_return: 'total_return',
+                            biaya_operasi: 'biaya_operasi',
+                            portfolio_turnover_ratio: 'portfolio_turnover_ratio',
+                            expense_ratio: 'expense_ratio',
+                            total_marcap_10_efek: 'total_marcap_10_efek',
+                            tanggal_data: 'tanggal_data',
+                            ffs_bulan: 'ffs_bulan',
+                            ffs_tahun: 'ffs_tahun',
+                            jenis_laporan: 'jenis_laporan',
+                            periode_awal: 'periode_awal',
+                            periode_akhir: 'periode_akhir',
+                            tahun_laporan: 'tahun_laporan',
+                            mode: 'mode',
+                        };
+                        for (const [key, id] of Object.entries(fields)) {
+                            this.setFieldValue(id, data[key]);
+                        }
+                        if (data.kategori && Array.isArray(data.kategori)) {
+                            this.applyKategori(data.kategori);
+                        }
+                        if (data.sektor?.length) this.sektor = data.sektor;
+                        if (data.efek?.length) this.efek = data.efek;
+                        if (data.kinerja?.length) this.kinerja = data.kinerja;
+                        if (data.obligasi?.length) this.obligasi = data.obligasi;
+                        if (data.sukuk?.length) this.sukuk = data.sukuk;
+                        if (data.bank?.length) this.bank = data.bank;
+                        if (data.alokasi_aset?.length) this.alokasi_aset = data.alokasi_aset;
+                        this.hitungSektorFromEfek();
+                        this.syncLikuiditasFromEfek();
+                        this.syncKeuanganFromData();
+                        this.debouncedFetchDocs();
                     },
                 };
             }
