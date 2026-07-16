@@ -140,7 +140,9 @@ class ReksaDana extends Model
 
     public function documents(): HasMany
     {
-        return $this->hasMany(ReksaDanaDocument::class, 'reksa_dana_id')->latest();
+        return $this->hasMany(ReksaDanaDocument::class, 'reksa_dana_id')
+            ->orderByDesc('ffs_year')
+            ->orderByDesc('ffs_month');
     }
 
     public function analisa(): HasMany
