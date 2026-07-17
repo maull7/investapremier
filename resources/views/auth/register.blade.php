@@ -15,13 +15,54 @@ body{margin:0;font-family:'Poppins',sans-serif}
 .auth-form-box{width:100%;max-width:400px}
 
 .auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:36px}
-.auth-logo-mark{
-  width:40px;height:40px;border-radius:10px;
-  background:linear-gradient(135deg,#16a34a,#22c55e);
-  display:grid;place-items:center;color:#fff;
-  box-shadow:0 2px 12px rgba(22,163,74,.3);flex-shrink:0;
-}
-.auth-logo-mark svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.auth-logo-mark {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #27B556, #32CD5F);
+            display: grid;
+            place-items: center;
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(39, 181, 86, .3);
+            flex-shrink: 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-logo-mark::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,.3), transparent);
+            transform: translateX(-100%);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-100%) }
+            50%, 100% { transform: translateX(100%) }
+        }
+
+        .auth-logo-mark svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            position: relative;
+            z-index: 1;
+        }
+
+        .auth-logo-mark img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 12px;
+            position: relative;
+            z-index: 1;
+        }
 .auth-logo-name{font-weight:700;font-size:15px;color:#0f172a;line-height:1.2}
 .auth-logo-name small{display:block;font-size:10px;font-weight:500;color:#64748b;text-transform:uppercase;letter-spacing:.06em}
 
@@ -154,10 +195,11 @@ body{margin:0;font-family:'Poppins',sans-serif}
 
       <a href="{{ route('index') }}" class="auth-logo">
         <div class="auth-logo-mark">
-          <svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            <img src="{{ asset('favicon.png') }}" class="w-full h-full object-contain" alt="Logo InvestaPremier"
+                loading="lazy" />
         </div>
         <div class="auth-logo-name">InvestaPremier <small>WealthOS</small></div>
-      </a>
+    </a>
 
         <h1 class="auth-title">Buat Akun Baru</h1>
         <p class="auth-sub">Daftar gratis dan mulai kelola wealth keluarga Anda</p>

@@ -105,7 +105,7 @@
             <div>
                 <label class="block text-xs font-semibold text-primary mb-1">Kategori</label>
                 <div class="flex flex-wrap gap-3">
-                    @php $kategori = old('kategori', $reksaDana->kategori ?? []); @endphp
+                    @php $kategori = old('kategori', is_array($reksaDana->kategori) ? $reksaDana->kategori : []); @endphp
                     @foreach (['Konvensional', 'Syariah', 'index', 'ETF'] as $opt)
                         <label class="flex items-center gap-1.5 text-sm">
                             <input type="checkbox" name="kategori[]" value="{{ $opt }}"

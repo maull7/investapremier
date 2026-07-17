@@ -23,7 +23,7 @@ class PortfolioAggregationService
         $goals = $this->getGoals($user);
         $alerts = $this->getAlerts($user, $goals['items']);
         $quizResult = QuizResult::where('user_id', $user->id)->latest()->first();
-        $advisor = $user->advisor;
+        $advisor = $user->advisors->first();
 
         $likuiditas = collect($alokasi)->where('label', 'Kas/Deposito')->sum('nilai');
         $asetInvestasi = $totalKekayaan - $likuiditas;
@@ -44,16 +44,16 @@ class PortfolioAggregationService
             'goals' => $goals['items'],
             'alerts' => $alerts,
             'riskProfile' => $quizResult?->profile,
-            'advisor' => $user->advisor ? [
-                'name' => $user->advisor->name,
-                'initial' => strtoupper(substr($user->advisor->name, 0, 2)),
+            'advisor' => $advisor ? [
+                'name' => $advisor->name,
+                'initial' => strtoupper(substr($advisor->name, 0, 2)),
             ] : null,
         ];
     }
 
     public function aggregateAdvisorClients(User $advisor): array
     {
-        $clientIds = User::where('advisor_id', $advisor->id)->pluck('id');
+        $clientIds = $advisor->clients()->pluck('users.id');
         $totalAum = MemberPortfolio::whereIn('user_id', $clientIds)->sum('total_nilai')
             + PortofolioItem::whereIn('user_id', $clientIds)->sum('nilai');
 

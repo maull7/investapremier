@@ -3872,6 +3872,7 @@
                     tujuanInvestasi: @json(old('tujuan_investasi')),
                     kebijakanInvestasi: @json(old('kebijakan_investasi')),
                     returnYtd: @json(old('return_ytd')),
+                    return1m: @json(old('return_1m')),
                     return1y: @json(old('return_1y')),
                     totalReturn: @json(old('total_return')),
                     biayaOperasi: @json(old('biaya_operasi')),
@@ -4909,6 +4910,7 @@
                         this.tanggalData = data.tanggal_data ?? this.tanggalData;
                         // this.unitPenyertaan = data.unit_penyertaan ?? this.unitPenyertaan;
                         // this.nabPerUnit = data.nab_per_unit ?? this.nabPerUnit;
+                        this.return1m = data.return_1m ?? this.return1m;
                         this.returnYtd = data.return_ytd ?? this.returnYtd;
                         this.return1y = data.return_1y ?? this.return1y;
                         this.totalReturn = data.total_return ?? this.totalReturn;
@@ -5779,11 +5781,11 @@
                                         obj[prop] = val;
                                     }
                                 });
-return obj;
+                                return obj;
                             });
-                        });
 
-                        this[target] = rows;
+                            this[target] = rows;
+                        });
                     },
 
                     debouncedFetchDocs() {
@@ -6006,7 +6008,7 @@ return obj;
                             'nama_reksa_dana', 'jenis_reksa_dana', 'manajer_investasi', 'bank_kustodian',
                             'tanggal_peluncuran', 'mata_uang', 'benchmark', 'tujuan_investasi', 'kebijakan_investasi',
                             'kode_reksa_dana', 'total_aum', 'total_marcap_10_efek', 'tanggal_data',
-                            'unit_penyertaan', 'nab_per_unit', 'return_ytd', 'return_1y', 'total_return',
+                            'unit_penyertaan', 'nab_per_unit', 'return_1m', 'return_ytd', 'return_1y', 'total_return',
                             'biaya_operasi', 'portfolio_turnover_ratio', 'management_fee', 'custodian_fee',
                             'total_aset', 'total_liabilitas', 'nilai_aset_bersih', 'kas_dan_bank',
                             'piutang_bunga', 'piutang_dividen', 'piutang_lain', 'utang_pajak', 'utang_lain',
@@ -6284,10 +6286,17 @@ return obj;
                                 this.setFieldValue('management_fee', m.management_fee);
                                 this.setFieldValue('custodian_fee', m.custodian_fee);
                                 this.setFieldValue('total_aum', m.total_aum);
+                                this.totalAum = m.total_aum ?? this.totalAum;
                                 this.setFieldValue('unit_penyertaan', m.unit_penyertaan);
+                                this.unitPenyertaan = m.unit_penyertaan ?? this.unitPenyertaan;
                                 this.setFieldValue('nab_per_unit', m.nab_per_unit);
+                                this.nabPerUnit = m.nab_per_unit ?? this.nabPerUnit;
+                                this.setFieldValue('return_1m', m.return_1m);
+                                this.return1m = m.return_1m ?? this.return1m;
                                 this.setFieldValue('return_ytd', m.return_ytd);
+                                this.returnYtd = m.return_ytd ?? this.returnYtd;
                                 this.setFieldValue('return_1y', m.return_1y);
+                                this.return1y = m.return_1y ?? this.return1y;
                                 this.setFieldValue('expense_ratio', m.expense_ratio);
                                 if (m.kategori && Array.isArray(m.kategori)) {
                                     this.applyKategori(m.kategori);

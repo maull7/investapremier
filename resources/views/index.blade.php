@@ -7,8 +7,7 @@
     <title>InvestaPremier WealthOS — Private Wealth Advisory</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,600&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('css/landing.css') }}">
     <link rel="shortcut icon" href="{{ asset('favicon.png') }}" type="image/x-icon">
@@ -19,13 +18,9 @@
     <!-- ════════ NAVBAR ════════ -->
     <header class="nav">
         <div class="container nav-inner">
-            <a href="#" class="logo">
+            <a href="{{ route('index') }}" class="logo">
                 <div class="logo-mark">
-                    <svg viewBox="0 0 24 24">
-                        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-                        <polyline points="16 7 22 7 22 13" />
-                    </svg>
-                    {{-- <img src="{{ asset('favicon.png') }}" alt=""> --}}
+                    <img src="{{ asset('favicon.png') }}" alt="InvestaPremier">
                 </div>
                 <div class="logo-name">InvestaPremier <small>WealthOS</small></div>
             </a>

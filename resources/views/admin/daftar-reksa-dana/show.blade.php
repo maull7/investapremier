@@ -80,6 +80,8 @@
         if ($aumVal >= 1_000_000) return 'Rp' . number_format($aumVal / 1_000_000, 1, ',', '.') . 'jt';
         return 'Rp' . number_format($aumVal, 0, ',', '.');
     };
+    $unitPenyertaan = $displayAum !== null && $displayNab !== null && $displayNab > 0 ? $displayAum / $displayNab : null;
+    $maxUnit = $fund->harga()->max('unit_participation');
 @endphp
 <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
     <div class="bg-white rounded-xl border border-line p-4">
@@ -87,14 +89,12 @@
         <p class="text-sm font-bold text-primary">{{ $displayNab !== null ? number_format($displayNab, 4, ',', '.') : '—' }}</p>
     </div>
     <div class="bg-white rounded-xl border border-line p-4">
-        <p class="text-xs text-muted mb-1">{{ $periodActive ? 'Return 1 Bulan' : 'Return Harian' }}</p>
-        @php $cardReturn1 = $periodActive ? $displayReturnMonthly : $displayReturnDaily; @endphp
-        <p class="text-sm font-bold {{ $cardReturn1 !== null ? ($cardReturn1 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $cardReturn1 !== null ? number_format($cardReturn1, 2, ',', '.') . '%' : '—' }}</p>
+        <p class="text-xs text-muted mb-1">Return Bulanan</p>
+        <p class="text-sm font-bold {{ $displayReturnMonthly !== null ? ($displayReturnMonthly >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $displayReturnMonthly !== null ? number_format($displayReturnMonthly, 2, ',', '.') . '%' : '—' }}</p>
     </div>
     <div class="bg-white rounded-xl border border-line p-4">
-        <p class="text-xs text-muted mb-1">{{ $periodActive ? 'Return YTD' : 'Return Bulanan' }}</p>
-        @php $cardReturn2 = $periodActive ? $displayReturnYtd : $displayReturnMonthly; @endphp
-        <p class="text-sm font-bold {{ $cardReturn2 !== null ? ($cardReturn2 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $cardReturn2 !== null ? number_format($cardReturn2, 2, ',', '.') . '%' : '—' }}</p>
+        <p class="text-xs text-muted mb-1">Return YTD</p>
+        <p class="text-sm font-bold {{ $displayReturnYtd !== null ? ($displayReturnYtd >= 0 ? 'text-green-600' : 'text-red-600') : 'text-muted' }}">{{ $displayReturnYtd !== null ? number_format($displayReturnYtd, 2, ',', '.') . '%' : '—' }}</p>
     </div>
     <div class="bg-white rounded-xl border border-line p-4">
         <p class="text-xs text-muted mb-1">Return Tahunan</p>
@@ -106,7 +106,7 @@
     </div>
     <div class="bg-white rounded-xl border border-line p-4">
         <p class="text-xs text-muted mb-1">Unit Penyertaan</p>
-        <p class="text-sm font-bold text-primary">{{ $displayTotalUnit !== null ? number_format($displayTotalUnit, 0, ',', '.') : '—' }}</p>
+        <p class="text-sm font-bold text-primary">{{ $unitPenyertaan !== null ? number_format($unitPenyertaan, 0, ',', '.') : '—' }}</p>
     </div>
 </div>
 
@@ -160,6 +160,8 @@
                 @if($fund->investmentManager || $fund->nama_manajer_investasi)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Manajer Investasi</span><span class="text-sm">@if($fund->investmentManager)<a href="{{ route('admin.investment-managers.show', $fund->investmentManager) }}" class="text-accent hover:underline">{{ $fund->nama_manajer_investasi }}</a>@else{{ $fund->nama_manajer_investasi }}@endif</span></div>@endif
                 @if($fund->custodian_bank)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Bank Kustodian</span><span class="text-sm">{{ $fund->custodian_bank }}</span></div>@endif
                 <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Tanggal Efektif</span><span class="text-sm">{{ $fund->launch_date?->format('d M Y') ?: '-' }}</span></div>
+                @php $launchDate = $fund->launch_date; @endphp
+                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Tanggal Peluncuran</span><span class="text-sm">{{ $launchDate?->format('d M Y') ?: '-' }}</span></div>
                 @if($fund->tujuan_investasi)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Tujuan Investasi</span><span class="text-sm">{{ $fund->tujuan_investasi }}</span></div>@endif
                 @if($fund->kebijakan_investasi)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Kebijakan Investasi</span><span class="text-sm">{{ $fund->kebijakan_investasi }}</span></div>@endif
                 <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Benchmark Tolak Ukur</span><span class="text-sm">{{ $fund->benchmark ?: '-' }}</span></div>
@@ -202,7 +204,8 @@
                     <span class="text-xs font-semibold text-muted w-36 shrink-0">AUM</span>
                     <span class="text-sm font-bold text-primary">{{ $formatAum($displayAum) }}</span>
                 </div>
-                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Unit Penyertaan</span><span class="text-sm font-bold text-primary">{{ $displayTotalUnit !== null ? number_format($displayTotalUnit, 0, ',', '.') : '—' }}</span></div>
+                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Unit Penyertaan</span><span class="text-sm font-bold text-primary">{{ $unitPenyertaan !== null ? number_format($unitPenyertaan, 0, ',', '.') : '—' }}</span></div>
+                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Maks. Unit Penyertaan</span><span class="text-sm font-bold text-primary">{{ $maxUnit ? number_format($maxUnit, 0, ',', '.') : '—' }}</span></div>
             </div>
         </div>
     </div>
@@ -717,7 +720,7 @@
         @if($showAa)
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="bg-white rounded-2xl border border-line shadow-sm p-5">
-                <h3 class="font-bold text-primary text-sm mb-4">Asset Allocation ({{ $showAa->period_date->format('M Y') }})</h3>
+                <h3 class="font-bold text-primary text-sm mb-4">Asset Allocation ({{ $showAa->period_date->format('d M Y') }})</h3>
                 <div style="height: 280px;"><canvas id="chartAaPie"></canvas></div>
             </div>
             <div class="bg-white rounded-2xl border border-line shadow-sm p-5">
@@ -751,7 +754,7 @@
         {{-- Timeline Portfolio Composition --}}
         @if($portfolioTimeline->isNotEmpty())
         @php
-            $ptLabels = $portfolioTimeline->keys()->map(fn($d) => \Carbon\Carbon::parse($d)->format('M Y'));
+            $ptLabels = $portfolioTimeline->keys()->map(fn($d) => \Carbon\Carbon::parse($d)->format('d M Y'));
             $allSecurities = $portfolioTimeline->flatMap(fn($items) => $items->pluck('security_name'))->unique();
             $ptColors = ['#2563eb','#059669','#d97706','#dc2626','#7c3aed','#0891b2','#db2777','#65a30d','#ca8a04','#ea580c','#4f46e5','#0d9488'];
         @endphp

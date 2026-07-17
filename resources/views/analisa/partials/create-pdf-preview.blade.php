@@ -1,29 +1,29 @@
 <h4 class="text-sm font-semibold text-primary mb-2">Hasil Ekstraksi</h4>
 
-{{-- Informasi Umum --}}
-<div x-show="pdfData.nama_reksa_dana || pdfData.total_aum || pdfData.manajer_investasi" class="border rounded-lg p-3 bg-white shadow-sm mb-3">
-    <h5 class="font-semibold text-xs text-primary mb-2">Informasi Umum</h5>
-    <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-        <template x-for="(v, k) in {
-            'Nama Reksa Dana': pdfData.nama_reksa_dana,
-            'Jenis Reksa Dana': pdfData.jenis_reksa_dana,
-            'Manajer Investasi': pdfData.manajer_investasi,
-            'Bank Kustodian': pdfData.bank_kustodian,
-            'Kode Reksa Dana': pdfData.kode_reksa_dana,
-            'Total AUM': pdfData.total_aum,
-            'Total Market Cap': pdfData.total_marcap_10_efek,
-            'Mata Uang': pdfData.mata_uang,
-            'Tanggal Data': pdfData.tanggal_data,
-            'Unit Penyertaan': pdfData.unit_penyertaan,
-            'NAB/Unit': pdfData.nab_per_unit,
-            'Tanggal Peluncuran': pdfData.tanggal_peluncuran,
-            'Benchmark': pdfData.benchmark,
-        }">
-            <div x-show="v" class="flex justify-between py-0.5">
-                <span class="text-muted" x-text="k"></span>
-                <span class="font-medium" x-text="v"></span>
-            </div>
-        </template>
+{{-- Info Keuangan --}}
+<div x-show="pdfData.total_aum || pdfData.total_marcap_10_efek || pdfData.nab_per_unit || pdfData.unit_penyertaan" class="border rounded-lg p-3 bg-white shadow-sm mb-3">
+    <h5 class="font-semibold text-xs text-primary mb-2">Info Keuangan</h5>
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+        <div>
+            <span class="text-muted block">Total AUM</span>
+            <span class="font-medium" x-text="pdfData.total_aum ? 'Rp ' + Number(pdfData.total_aum).toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '—'"></span>
+        </div>
+        <div>
+            <span class="text-muted block">Total MarCap 10 Saham Terbesar</span>
+            <span class="font-medium" x-text="pdfData.total_marcap_10_efek ? 'Rp ' + Number(pdfData.total_marcap_10_efek).toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '—'"></span>
+        </div>
+        <div>
+            <span class="text-muted block">NAB/UP</span>
+            <span class="font-medium" x-text="pdfData.nab_per_unit ? Number(pdfData.nab_per_unit).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 6}) : '—'"></span>
+        </div>
+        <div>
+            <span class="text-muted block">Unit Penyertaan</span>
+            <span class="font-medium" x-text="pdfData.unit_penyertaan ? Number(pdfData.unit_penyertaan).toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '—'"></span>
+        </div>
+        <div>
+            <span class="text-muted block">Tanggal Data</span>
+            <span class="font-medium" x-text="pdfData.tanggal_data || '—'"></span>
+        </div>
     </div>
 </div>
 
@@ -159,25 +159,23 @@
     </table>
 </div>
 
-{{-- Kinerja --}}
-<div x-show="pdfData.kinerja?.length" class="border rounded-lg p-3 bg-white shadow-sm mb-3">
-    <h5 class="font-semibold text-xs text-primary mb-2">Kinerja</h5>
-    <table class="w-full text-xs">
-        <thead>
-            <tr class="bg-gray-50">
-                <th class="text-left px-2 py-1 font-medium text-muted">Periode</th>
-                <th class="text-right px-2 py-1 font-medium text-muted">Return (%)</th>
-            </tr>
-        </thead>
-        <tbody>
-            <template x-for="(row, i) in pdfData.kinerja" :key="i">
-                <tr class="border-t border-gray-100">
-                    <td class="px-2 py-1" x-text="row.periode || '-'"></td>
-                    <td class="px-2 py-1 text-right" x-text="row.return_pct ?? '-'"></td>
-                </tr>
-            </template>
-        </tbody>
-    </table>
+{{-- Return --}}
+<div x-show="pdfData.return_1m || pdfData.return_ytd || pdfData.return_1y" class="border rounded-lg p-3 bg-white shadow-sm mb-3">
+    <h5 class="font-semibold text-xs text-primary mb-2">Return</h5>
+    <div class="grid grid-cols-3 gap-3 text-xs">
+        <div>
+            <span class="text-muted block">Return 1 Bulan</span>
+            <span class="font-medium" x-text="pdfData.return_1m ? Number(pdfData.return_1m).toFixed(2) + '%' : '—'"></span>
+        </div>
+        <div>
+            <span class="text-muted block">Return YTD</span>
+            <span class="font-medium" x-text="pdfData.return_ytd ? Number(pdfData.return_ytd).toFixed(2) + '%' : '—'"></span>
+        </div>
+        <div>
+            <span class="text-muted block">Return 1 Tahun</span>
+            <span class="font-medium" x-text="pdfData.return_1y ? Number(pdfData.return_1y).toFixed(2) + '%' : '—'"></span>
+        </div>
+    </div>
 </div>
 
 {{-- Data Tahunan --}}
