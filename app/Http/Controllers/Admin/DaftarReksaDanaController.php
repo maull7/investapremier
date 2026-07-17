@@ -413,7 +413,7 @@ class DaftarReksaDanaController extends Controller
         $upValues = $navHistory->pluck('unit_participation');
 
         $aaTimeline = $fund->assetAllocations()->orderBy('period_date')->get();
-        $aaLabels = $aaTimeline->pluck('period_date')->map(fn($d) => $d->format('M Y'));
+        $aaLabels = $aaTimeline->pluck('period_date')->map(fn($d) => $d->format('d M Y'));
 
         $latestPeriodDate = $fund->portfolioCompositions()->max('period_date');
         $topHoldings = collect();
