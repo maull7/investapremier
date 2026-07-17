@@ -200,6 +200,21 @@
             <div class="table-card">
                 <div class="table-head">
                     <h2 class="font-bold text-white text-sm">Daftar Reksa Dana ({{ $reksaDanas->total() }} total)</h2>
+                    <div class="flex items-center gap-3 pr-2">
+                        <div class="bg-white/10 rounded-lg px-3 py-2 text-center min-w-[110px]">
+                            <p class="text-[11px] text-white/60">Prospektus</p>
+                            <p class="text-lg font-bold text-white">
+                                {{ $totalProspektus }}
+                            </p>
+                        </div>
+
+                        <div class="bg-white/10 rounded-lg px-3 py-2 text-center min-w-[110px]">
+                            <p class="text-[11px] text-white/60">FFS</p>
+                            <p class="text-lg font-bold text-white">
+                                {{ $totalFfs }}
+                            </p>
+                        </div>
+                    </div>
                     <div class="flex gap-2">
                         <button type="button" onclick="openModal('modal-harga-create')"
                             class="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition">

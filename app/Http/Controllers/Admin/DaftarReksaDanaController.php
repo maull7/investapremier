@@ -43,10 +43,11 @@ class DaftarReksaDanaController extends Controller
         if ($request->search) {
             $hargaQuery->where(function ($q) use ($request) {
                 $q->where('nama_reksa_dana', 'like', '%' . $request->search . '%')
-                  ->orWhere('kode_reksa_dana', 'like', '%' . strtoupper($request->search) . '%');
+                    ->orWhere('kode_reksa_dana', 'like', '%' . strtoupper($request->search) . '%');
             });
         }
         if ($request->harga_tanggal) $hargaQuery->whereDate('tanggal_nab', $request->harga_tanggal);
+        $filteredIds = (clone $hargaQuery)->pluck('id');
         $reksaDanas = $hargaQuery->paginate(20, ['*'], 'harga_page')->withQueryString();
 
         $harianTanggal = $request->get('harian_tanggal');
@@ -59,7 +60,7 @@ class DaftarReksaDanaController extends Controller
         if ($request->search) {
             $harianQuery->where(function ($q) use ($request) {
                 $q->where('nama_reksa_dana', 'like', '%' . $request->search . '%')
-                  ->orWhere('kode_reksa_dana', 'like', '%' . strtoupper($request->search) . '%');
+                    ->orWhere('kode_reksa_dana', 'like', '%' . strtoupper($request->search) . '%');
             });
         }
         $harian = $harianQuery->paginate(20, ['*'], 'harian_page')->withQueryString();
@@ -148,6 +149,14 @@ class DaftarReksaDanaController extends Controller
             'rd_harian' => 'Harga Harian RD',
         ];
 
+        $documentCounts = ReksaDanaDocument::whereIn('reksa_dana_id', $filteredIds)
+            ->selectRaw('document_type, COUNT(*) as total')
+            ->groupBy('document_type')
+            ->pluck('total', 'document_type');
+
+        $totalProspektus = $documentCounts['prospektus'] ?? 0;
+        $totalFfs = $documentCounts['ffs'] ?? 0;
+
         return view('admin.daftar-reksa-dana.index', compact(
             'reksaDanas',
             'harian',
@@ -166,6 +175,8 @@ class DaftarReksaDanaController extends Controller
             'changesUrl',
             'detailTypes',
             'lastSyncRun',
+            'totalProspektus',
+            'totalFfs'
         ));
     }
 
@@ -1678,9 +1689,11 @@ class DaftarReksaDanaController extends Controller
             $reksaDana->update(array_merge(
                 $validated['snapshot'],
                 $validated['fees'],
-                ['nab_per_unit' => $validated['snapshot']['nab_per_unit'] ?? null,
-                 'aum' => $validated['snapshot']['aum'] ?? null,
-                 'total_unit' => $validated['snapshot']['total_unit'] ?? null]
+                [
+                    'nab_per_unit' => $validated['snapshot']['nab_per_unit'] ?? null,
+                    'aum' => $validated['snapshot']['aum'] ?? null,
+                    'total_unit' => $validated['snapshot']['total_unit'] ?? null
+                ]
             ));
         });
 

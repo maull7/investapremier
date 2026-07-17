@@ -21,7 +21,7 @@ class ClientController extends Controller
         $rejectedRequests = collect();
 
         if ($tab === 'terdaftar') {
-            $clients = User::where('advisor_id', auth()->id())
+            $clients = auth()->user()->clients()
                 ->with('memberProfile')
                 ->withCount('perencanaanInvestasi')
                 ->latest()
@@ -51,12 +51,7 @@ class ClientController extends Controller
         $client = $request->client;
 
         $request->update(['status' => 'approved']);
-        $client->update(['advisor_id' => $request->advisor_id]);
-
-        AdvisorClientRequest::where('client_id', $client->id)
-            ->where('id', '!=', $request->id)
-            ->where('status', 'pending')
-            ->update(['status' => 'rejected']);
+        $client->advisors()->syncWithoutDetaching([$request->advisor_id]);
 
         if ($client) {
             $client->notify(new AdvisorConnectionResponse(auth()->user(), 'approved'));
@@ -83,7 +78,7 @@ class ClientController extends Controller
 
     public function show(User $client)
     {
-        if ($client->advisor_id !== auth()->id()) abort(403);
+        if (!auth()->user()->clients()->where('users.id', $client->id)->exists()) abort(403);
 
         $client->load('memberProfile');
 
@@ -111,13 +106,13 @@ class ClientController extends Controller
 
     public function destroy(User $client)
     {
-        if ($client->advisor_id !== auth()->id()) abort(403);
+        if (!auth()->user()->clients()->where('users.id', $client->id)->exists()) abort(403);
 
         AdvisorClientRequest::where('advisor_id', auth()->id())
             ->where('client_id', $client->id)
             ->delete();
 
-        $client->update(['advisor_id' => null]);
+        auth()->user()->clients()->detach($client->id);
 
         return redirect()->route('user.clients.index')->with('success', 'Klien berhasil dihapus dari daftar.');
     }
