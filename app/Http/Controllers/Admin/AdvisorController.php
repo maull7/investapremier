@@ -98,7 +98,7 @@ class AdvisorController extends Controller
     {
         if ($advisor->role !== 'advisor') abort(404);
 
-        $clients = User::where('advisor_id', $advisor->id)
+        $clients = $advisor->clients()
             ->with('memberProfile')
             ->withCount('perencanaanInvestasi')
             ->latest()
@@ -111,7 +111,7 @@ class AdvisorController extends Controller
     {
         if ($advisor->role !== 'advisor') abort(404);
 
-        User::where('advisor_id', $advisor->id)->update(['advisor_id' => null]);
+        $advisor->clients()->detach();
 
         $advisor->delete();
 

@@ -86,98 +86,64 @@
 
     <div x-show="activeTab==='data'" class="space-y-6">
 
-    {{-- Informasi Umum --}}
-    @if($analisa->manajer_investasi || $analisa->bank_kustodian || $analisa->tanggal_peluncuran || $analisa->benchmark || $analisa->tujuan_investasi || $analisa->kebijakan_investasi)
-    <div class="bg-white rounded-xl border border-line p-6">
-        <h3 class="font-semibold text-primary mb-4">Informasi Reksa Dana</h3>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-sm">
-            @if($analisa->manajer_investasi)
+    {{-- Info Keuangan --}}
+    @if($analisa->total_aum || $analisa->total_marcap_10_efek || $analisa->nab_per_unit || $analisa->unit_penyertaan)
+    <div class="bg-white rounded-xl border border-line p-6 space-y-4">
+        <h3 class="font-semibold text-primary">Info Keuangan</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
             <div>
-                <p class="text-muted text-xs">Manajer Investasi</p>
-                <p class="font-medium mt-0.5">{{ $analisa->manajer_investasi }}</p>
+                <span class="text-muted text-xs block">Total AUM</span>
+                <span class="font-medium text-primary">Rp {{ number_format($analisa->total_aum, 0, ',', '.') }}</span>
             </div>
-            @endif
-            @if($analisa->bank_kustodian)
             <div>
-                <p class="text-muted text-xs">Bank Kustodian</p>
-                <p class="font-medium mt-0.5">{{ $analisa->bank_kustodian }}</p>
+                <span class="text-muted text-xs block">Total MarCap 10 Saham Terbesar</span>
+                <span class="font-medium text-primary">Rp {{ number_format($analisa->total_marcap_10_efek, 0, ',', '.') }}</span>
             </div>
-            @endif
-            @if($analisa->tanggal_peluncuran)
             <div>
-                <p class="text-muted text-xs">Tanggal Peluncuran</p>
-                <p class="font-medium mt-0.5">{{ $analisa->tanggal_peluncuran->format('d M Y') }}</p>
+                <span class="text-muted text-xs block">NAB/UP</span>
+                <span class="font-medium text-primary">{{ number_format($analisa->nab_per_unit, 2, ',', '.') }}</span>
             </div>
-            @endif
-            @if($analisa->benchmark)
             <div>
-                <p class="text-muted text-xs">Benchmark</p>
-                <p class="font-medium mt-0.5">{{ $analisa->benchmark }}</p>
+                <span class="text-muted text-xs block">Unit Penyertaan</span>
+                <span class="font-medium text-primary">{{ number_format($analisa->unit_penyertaan, 0, ',', '.') }}</span>
             </div>
-            @endif
-            @if($analisa->tujuan_investasi)
-            <div class="col-span-2">
-                <p class="text-muted text-xs">Tujuan Investasi</p>
-                <p class="font-medium mt-0.5">{{ $analisa->tujuan_investasi }}</p>
+            <div>
+                <span class="text-muted text-xs block">Kalender FFS</span>
+                <span class="font-medium text-primary">
+                    @if($analisa->ffs_bulan && $analisa->ffs_tahun)
+                        {{ ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][$analisa->ffs_bulan - 1] }} {{ $analisa->ffs_tahun }}
+                    @elseif($analisa->jenis_laporan === 'laporan_tahunan' && $analisa->tahun_laporan)
+                        Laporan Tahunan {{ $analisa->tahun_laporan }}
+                    @else
+                        —
+                    @endif
+                </span>
             </div>
-            @endif
-            @if($analisa->kebijakan_investasi)
-            <div class="col-span-2">
-                <p class="text-muted text-xs">Kebijakan Investasi</p>
-                <p class="font-medium mt-0.5">{{ $analisa->kebijakan_investasi }}</p>
+            <div>
+                <span class="text-muted text-xs block">Tanggal Data</span>
+                <span class="font-medium text-primary">{{ $analisa->tanggal_data ? \Carbon\Carbon::parse($analisa->tanggal_data)->format('d M Y') : '—' }}</span>
             </div>
-            @endif
         </div>
     </div>
     @endif
 
-    {{-- Kinerja & Rasio --}}
-    @if($analisa->return_ytd || $analisa->return_1y || $analisa->total_return || $analisa->biaya_operasi || $analisa->portfolio_turnover_ratio || $analisa->management_fee || $analisa->custodian_fee)
+    {{-- Kinerja --}}
+    @if($analisa->return_1m || $analisa->return_ytd || $analisa->return_1y)
     <div class="bg-white rounded-xl border border-line p-6">
-        <h3 class="font-semibold text-primary mb-4">Kinerja & Rasio</h3>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-sm">
-            @if($analisa->return_ytd)
+        <h3 class="font-semibold text-primary mb-4">Kinerja</h3>
+        <div class="grid grid-cols-3 gap-4 text-sm">
+            <div>
+                <p class="text-muted text-xs">Return 1 Bulan</p>
+                <p class="font-medium mt-0.5">{{ number_format($analisa->return_1m, 2) }}%</p>
+            </div>
             <div>
                 <p class="text-muted text-xs">Return YTD</p>
                 <p class="font-medium mt-0.5">{{ number_format($analisa->return_ytd, 2) }}%</p>
             </div>
-            @endif
-            @if($analisa->return_1y)
             <div>
                 <p class="text-muted text-xs">Return 1 Tahun</p>
                 <p class="font-medium mt-0.5">{{ number_format($analisa->return_1y, 2) }}%</p>
             </div>
-            @endif
-            @if($analisa->total_return)
-            <div>
-                <p class="text-muted text-xs">Total Return</p>
-                <p class="font-medium mt-0.5">{{ number_format($analisa->total_return, 2) }}%</p>
-            </div>
-            @endif
-            @if($analisa->biaya_operasi)
-            <div>
-                <p class="text-muted text-xs">Biaya Operasi</p>
-                <p class="font-medium mt-0.5">{{ number_format($analisa->biaya_operasi, 2) }}%</p>
-            </div>
-            @endif
-            @if($analisa->portfolio_turnover_ratio)
-            <div>
-                <p class="text-muted text-xs">Portfolio Turnover</p>
-                <p class="font-medium mt-0.5">{{ number_format($analisa->portfolio_turnover_ratio, 2) }}</p>
-            </div>
-            @endif
-            @if($analisa->management_fee)
-            <div>
-                <p class="text-muted text-xs">Management Fee</p>
-                <p class="font-medium mt-0.5">{{ number_format($analisa->management_fee, 2) }}%</p>
-            </div>
-            @endif
-            @if($analisa->custodian_fee)
-            <div>
-                <p class="text-muted text-xs">Custodian Fee</p>
-                <p class="font-medium mt-0.5">{{ number_format($analisa->custodian_fee, 2) }}%</p>
-            </div>
-            @endif
         </div>
     </div>
     @endif

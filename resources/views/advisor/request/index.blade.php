@@ -9,14 +9,14 @@
                 <h1 class="page-title">Koneksi Advisor</h1>
                 <p class="page-sub">Kelola koneksi Anda dengan advisor</p>
             </div>
-            @if (!auth()->user()->advisor_id)
-                <a href="{{ route('user.clients.requests.create') }}" class="btn-primary btn-sm">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Tambah Advisor
-                </a>
-            @endif
+
+            <a href="{{ route('user.clients.requests.create') }}" class="btn-primary btn-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Tambah Advisor
+            </a>
+
         </div>
 
         @if (session('success'))
@@ -29,23 +29,27 @@
         @endif
 
         {{-- Advisor terhubung --}}
-        @if ($approvedAdvisor)
+        @if ($approvedAdvisors->count() > 0)
             <div class="bg-white rounded-xl border border-line overflow-hidden">
                 <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-accent to-accent/80">
                     <h2 class="font-bold text-white text-sm">Advisor Anda</h2>
                 </div>
-                <div class="p-5 flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <div
-                            class="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center text-accent font-bold text-lg">
-                            {{ substr($approvedAdvisor->name, 0, 1) }}
+                <div class="divide-y divide-line">
+                    @foreach($approvedAdvisors as $advisor)
+                    <div class="p-5 flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center text-accent font-bold text-lg">
+                                {{ substr($advisor->name, 0, 1) }}
+                            </div>
+                            <div>
+                                <p class="font-semibold text-primary">{{ $advisor->name }}</p>
+                                <p class="text-xs text-muted">{{ $advisor->email }}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p class="font-semibold text-primary">{{ $approvedAdvisor->name }}</p>
-                            <p class="text-xs text-muted">{{ $approvedAdvisor->email }}</p>
-                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">Terhubung</span>
                     </div>
-                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">Terhubung</span>
+                    @endforeach
                 </div>
             </div>
         @endif

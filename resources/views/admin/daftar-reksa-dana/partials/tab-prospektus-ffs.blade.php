@@ -261,6 +261,11 @@
                                     class="text-xs text-accent-dark underline hover:underline mt-1.5 block"
                                     x-text="showAll ? 'Sembunyikan' : 'Melihat Lainnya'"></button>
                             @endif
+                            <div class="flex flex-col pt-1 font-semibold text-primary-light">
+                                <span>Total prospektus: {{ $prospectuses->count() }}</span>
+                                <span>Total FFS: {{ $ffsDocuments->count() }}</span>
+
+                            </div>
                         </td>
                         <td class="px-4 py-3 min-w-[420px]">
                             @forelse ($prospectuses as $document)

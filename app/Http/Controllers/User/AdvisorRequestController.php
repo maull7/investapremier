@@ -18,20 +18,20 @@ class AdvisorRequestController extends Controller
             ->latest()
             ->get();
 
-        $approvedAdvisor = auth()->user()->advisor;
+        $approvedAdvisors = auth()->user()->advisors;
 
-        return view('advisor.request.index', compact('requests', 'approvedAdvisor'));
+        return view('advisor.request.index', compact('requests', 'approvedAdvisors'));
     }
 
     public function create()
     {
-        $connectedAdvisorId = auth()->user()->advisor_id;
+        $connectedAdvisorIds = auth()->user()->advisors()->pluck('users.id');
 
         $existingIds = AdvisorClientRequest::where('client_id', auth()->id())
             ->whereIn('status', ['pending', 'approved'])
             ->pluck('advisor_id');
 
-        $excludeIds = $existingIds->merge([$connectedAdvisorId, auth()->id()])->unique()->filter();
+        $excludeIds = $existingIds->merge($connectedAdvisorIds)->push(auth()->id())->unique()->filter();
 
         $advisors = User::where('role', 'advisor')
             ->where('is_active', true)
@@ -90,9 +90,7 @@ class AdvisorRequestController extends Controller
         $advisor = User::findOrFail($request->advisor_id);
 
         $request->delete();
-        $user = auth()->user();
-        $user->advisor_id = null;
-        $user->save();
+        auth()->user()->advisors()->detach($advisor->id);
         $advisor->notify(new UserBreakAdvisor(auth()->user()));
         return back()->with('success', 'Koneksi dengan advisor telah diputus.');
     }

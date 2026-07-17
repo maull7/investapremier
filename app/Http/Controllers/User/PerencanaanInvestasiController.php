@@ -106,7 +106,7 @@ class PerencanaanInvestasiController extends Controller
     public function show(PerencanaanInvestasi $perencanaanInvestasi)
     {
         $owner = $perencanaanInvestasi->user;
-        if ($owner->id !== auth()->id() && $owner->advisor_id !== auth()->id() && !auth()->user()->isAdmin()) abort(403);
+        if ($owner->id !== auth()->id() && !$owner->advisors()->where('users.id', auth()->id())->exists() && !auth()->user()->isAdmin()) abort(403);
         $plan = $perencanaanInvestasi;
         $plan->load('portofolioItems', 'progressCheckins');
         $checkins = $plan->progressCheckins()->latest()->get();
