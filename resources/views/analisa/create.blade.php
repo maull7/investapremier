@@ -2125,9 +2125,9 @@
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20"
                                                     @input="hitungNilaiPasarEfek(i)" />
                                             </td>
-                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][nilai_pasar]`"
-                                                    x-model="row.nilai_pasar" step="0.01" readonly
-                                                    class="w-28 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            <td class="px-1 py-1 text-right">
+                                                <span x-text="formatNumber(row.nilai_pasar)" class="text-gray-700 text-xs"></span>
+                                                <input type="hidden" :name="`efek[${i}][nilai_pasar]`" :value="row.nilai_pasar" />
                                             </td>
                                             <td class="px-1 py-1">
                                                 <template x-if="ffsPembandingOptions.length > 0">

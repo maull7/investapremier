@@ -187,8 +187,14 @@ class StockDetailController extends Controller
             $range = '1d';
         }
 
+        $interval = $request->input('interval', 'auto');
+        $allowedInterval = ['auto', '1m', '2m', '5m', '15m', '30m', '1h', '1d', '1wk', '1mo'];
+        if (!in_array($interval, $allowedInterval)) {
+            $interval = 'auto';
+        }
+
         try {
-            $data = $service->fetchYahooData($stock, $range);
+            $data = $service->fetchYahooData($stock, $range, $interval);
 
             return response()->json(['success' => true, 'data' => $data]);
         } catch (\Throwable $e) {

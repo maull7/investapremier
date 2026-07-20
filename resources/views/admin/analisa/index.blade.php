@@ -40,9 +40,10 @@
                         {{ match ($s) {'' => 'Semua','original' => 'Original','submitted' => 'Menunggu Review','reviewed' => 'Sudah Direview','input_manual' => 'Input Manual'} }}
                     </a>
                 @endforeach
-                
+
                 {{-- Search by Status Dropdown --}}
-                <form method="GET" action="{{ route('admin.analisa.index') }}" class="inline-flex items-center gap-2 ml-4">
+                <form method="GET" action="{{ route('admin.analisa.index') }}"
+                    class="inline-flex items-center gap-2 ml-4">
                     <input type="hidden" name="tab" value="analisa">
                     @if (request('kategori'))
                         <input type="hidden" name="kategori" value="{{ request('kategori') }}">
@@ -63,9 +64,12 @@
                         class="text-xs border-gray-300 rounded-lg px-3 py-1.5 focus:border-primary focus:ring focus:ring-primary/20">
                         <option value="">Pilih Status...</option>
                         <option value="original" {{ request('status') === 'original' ? 'selected' : '' }}>Original</option>
-                        <option value="submitted" {{ request('status') === 'submitted' ? 'selected' : '' }}>Menunggu Review</option>
-                        <option value="reviewed" {{ request('status') === 'reviewed' ? 'selected' : '' }}>Sudah Direview</option>
-                        <option value="input_manual" {{ request('status') === 'input_manual' ? 'selected' : '' }}>Input Manual</option>
+                        <option value="submitted" {{ request('status') === 'submitted' ? 'selected' : '' }}>Menunggu Review
+                        </option>
+                        <option value="reviewed" {{ request('status') === 'reviewed' ? 'selected' : '' }}>Sudah Direview
+                        </option>
+                        <option value="input_manual" {{ request('status') === 'input_manual' ? 'selected' : '' }}>Input
+                            Manual</option>
                     </select>
                 </form>
             </div>
@@ -120,13 +124,16 @@
                         <select name="mode" onchange="document.getElementById('ffs-filter-form').submit()"
                             class="text-xs border-gray-300 rounded-lg px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20">
                             <option value="">Semua Mode</option>
-                            <option value="lengkap" {{ request('mode') === 'lengkap' ? 'selected' : '' }}>Input Lengkap</option>
-                            <option value="manual" {{ request('mode') === 'manual' ? 'selected' : '' }}>Input Manual</option>
+                            <option value="lengkap" {{ request('mode') === 'lengkap' ? 'selected' : '' }}>Input Lengkap
+                            </option>
+                            <option value="manual" {{ request('mode') === 'manual' ? 'selected' : '' }}>Input Manual
+                            </option>
                         </select>
                         <select name="is_published" onchange="document.getElementById('ffs-filter-form').submit()"
                             class="text-xs border-gray-300 rounded-lg px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20">
                             <option value="">Semua Publish</option>
-                            <option value="1" {{ request('is_published') === '1' ? 'selected' : '' }}>Published</option>
+                            <option value="1" {{ request('is_published') === '1' ? 'selected' : '' }}>Published
+                            </option>
                             <option value="0" {{ request('is_published') === '0' ? 'selected' : '' }}>Draft</option>
                         </select>
                     </form>
@@ -187,23 +194,33 @@
                         <thead class="bg-[#f8fafc] border-b border-line">
                             <tr>
                                 <th class="text-left px-5 py-3 font-semibold text-primary">
-                                    <a href="{{ route('admin.analisa.index', array_merge(request()->all(), ['sort' => 'nama_reksa_dana', 'direction' => request('sort') === 'nama_reksa_dana' && request('direction') === 'asc' ? 'desc' : 'asc'])) }}" class="flex items-center gap-1 hover:text-accent">
+                                    <a href="{{ route('admin.analisa.index', array_merge(request()->all(), ['sort' => 'nama_reksa_dana', 'direction' => request('sort') === 'nama_reksa_dana' && request('direction') === 'asc' ? 'desc' : 'asc'])) }}"
+                                        class="flex items-center gap-1 hover:text-accent">
                                         Reksa Dana
-                                        @if(request('sort') === 'nama_reksa_dana')
-                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="{{ request('direction') === 'asc' ? 'M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z' : 'M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z' }}" clip-rule="evenodd"/></svg>
+                                        @if (request('sort') === 'nama_reksa_dana')
+                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd"
+                                                    d="{{ request('direction') === 'asc' ? 'M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z' : 'M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z' }}"
+                                                    clip-rule="evenodd" />
+                                            </svg>
                                         @endif
                                     </a>
                                 </th>
                                 <th class="text-left px-5 py-3 font-semibold text-primary">
-                                    <a href="{{ route('admin.analisa.index', array_merge(request()->all(), ['sort' => 'jenis', 'direction' => request('sort') === 'jenis' && request('direction') === 'asc' ? 'desc' : 'asc'])) }}" class="flex items-center gap-1 hover:text-accent">
+                                    <a href="{{ route('admin.analisa.index', array_merge(request()->all(), ['sort' => 'jenis', 'direction' => request('sort') === 'jenis' && request('direction') === 'asc' ? 'desc' : 'asc'])) }}"
+                                        class="flex items-center gap-1 hover:text-accent">
                                         Jenis
-                                        @if(request('sort') === 'jenis')
-                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="{{ request('direction') === 'asc' ? 'M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z' : 'M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z' }}" clip-rule="evenodd"/></svg>
+                                        @if (request('sort') === 'jenis')
+                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd"
+                                                    d="{{ request('direction') === 'asc' ? 'M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z' : 'M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z' }}"
+                                                    clip-rule="evenodd" />
+                                            </svg>
                                         @endif
                                     </a>
                                 </th>
                                 <th class="text-left px-5 py-3 font-semibold text-primary">Kategori</th>
-                                <th class="text-left px-5 py-3 font-semibold text-primary">Kalender FFS</th>
+
                                 <th class="text-left px-5 py-3 font-semibold text-primary">Status</th>
                                 <th class="text-center px-5 py-3 font-semibold text-primary">Publish</th>
                                 <th class="text-left px-5 py-3 font-semibold text-primary">User</th>
@@ -242,33 +259,7 @@
                                             <span class="text-muted text-xs">—</span>
                                         @endif
                                     </td>
-                                    <td class="px-5 py-3.5 text-muted">
-                                        <div class="flex items-center gap-2">
-                                            @if ($ffsBulan && $ffsTahun)
-                                                <span>{{ $bulanIndonesia[$ffsBulan - 1] }} {{ $ffsTahun }}</span>
-                                            @else
-                                                <span class="text-muted text-xs">—</span>
-                                            @endif
-                                            @if ($rd->documents->where('document_type', 'ffs')->count() > 0)
-                                                <button @click="showAllFfs = !showAllFfs"
-                                                    class="text-xs text-accent-dark underline hover:underline whitespace-nowrap"
-                                                    x-text="showAllFfs ? 'Sembunyikan' : 'Melihat FFS Lainnya'">
-                                                </button>
-                                            @endif
-                                        </div>
-                                        @if ($rd->documents->where('document_type', 'ffs')->count() > 0)
-                                            <div x-show="showAllFfs" x-cloak class="mt-1 space-y-0.5">
-                                                @foreach ($rd->documents->where('document_type', 'ffs') as $doc)
-                                                    <div class="text-xs text-muted">
-                                                        — {{ $bulanIndonesia[$doc->ffs_month - 1] }} {{ $doc->ffs_year }}
-                                                        @if ($doc->notes)
-                                                            <span class="text-[10px]">({{ $doc->notes }})</span>
-                                                        @endif
-                                                    </div>
-                                                @endforeach
-                                            </div>
-                                        @endif
-                                    </td>
+
                                     <td class="px-5 py-3.5">
                                         @php
                                             if ($status === 'original') {

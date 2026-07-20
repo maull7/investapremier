@@ -383,6 +383,19 @@
                                     'border-line text-muted hover:text-primary'"
                                 class="px-3 py-1.5 rounded-lg border text-xs font-semibold">{{ $label }}</button>
                         @endforeach
+                        <select x-model="interval" @change="fetchData()"
+                            class="border border-line rounded-lg text-xs px-2 py-1.5 bg-white text-muted">
+                            <option value="auto">Interval</option>
+                            <option value="1m">1 menit</option>
+                            <option value="2m">2 menit</option>
+                            <option value="5m">5 menit</option>
+                            <option value="15m">15 menit</option>
+                            <option value="30m">30 menit</option>
+                            <option value="1h">1 jam</option>
+                            <option value="1d">1 hari</option>
+                            <option value="1wk">1 minggu</option>
+                            <option value="1mo">1 bulan</option>
+                        </select>
                     </div>
                     <div class="flex items-center gap-2 flex-wrap">
                         {{-- <div class="relative" x-data="{ open: false, search: '' }" @click.outside="open = false">
@@ -432,7 +445,12 @@
                                 :key="key">
                                 <button type="button" @click="toggleIndicator(key)"
                                     :class="indicators[key] ? 'bg-indigo-600 text-white' : 'text-muted hover:text-primary'"
-                                    class="px-2 py-1 rounded-md text-xs font-semibold transition" x-text="label"></button>
+                                    class="px-2 py-1 rounded-md text-xs font-semibold transition flex items-center gap-1">
+                                    <span x-text="label"></span>
+                                    <template x-if="indicators[key]">
+                                        <span class="text-[10px] opacity-70">⚙</span>
+                                    </template>
+                                </button>
                             </template>
                         </div>
                         <div class="relative" x-data="{ open: false, search: '', results: [] }" @click.outside="open = false">
@@ -511,6 +529,106 @@
                             <button type="button" @click="removeComparison(i)" class="hover:opacity-60">✕</button>
                         </div>
                     </template>
+                </div>
+
+                {{-- Indicator Settings Modal --}}
+                <div x-show="indicatorModal" class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center"
+                    @click.self="indicatorModal = null">
+                    <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+                        <h4 class="font-semibold text-primary mb-4" x-text="(indicatorModal || '').toUpperCase() + ' Settings'"></h4>
+
+                        {{-- RSI specific form --}}
+                        <template x-if="indicatorModal === 'rsi'">
+                            <div class="space-y-4 text-sm">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs text-muted mb-1">Period</label>
+                                        <input type="number" x-model="indicatorSettings.rsi.period" min="1"
+                                            class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-muted mb-1">Field</label>
+                                        <select x-model="indicatorSettings.rsi.field"
+                                            class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+                                            <option value="close">Close</option>
+                                            <option value="open">Open</option>
+                                            <option value="high">High</option>
+                                            <option value="low">Low</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" x-model="indicatorSettings.rsi.showZone"
+                                            class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                        <span class="text-xs text-muted">Show Zone (OB/OS background)</span>
+                                    </label>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs text-muted mb-1">Overbought</label>
+                                        <input type="number" x-model="indicatorSettings.rsi.overbought" min="1" max="100"
+                                            class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-muted mb-1">Oversold</label>
+                                        <input type="number" x-model="indicatorSettings.rsi.oversold" min="1" max="100"
+                                            class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20" />
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs text-muted mb-1">Panel</label>
+                                        <select x-model="indicatorSettings.rsi.panel"
+                                            class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+                                            <option value="separate">Separate Panel</option>
+                                            <option value="main">Main Chart</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-muted mb-1">Y-Axis</label>
+                                        <select x-model="indicatorSettings.rsi.yAxis"
+                                            class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20">
+                                            <option value="right">Right</option>
+                                            <option value="left">Left</option>
+                                            <option value="hidden">Hidden</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" x-model="indicatorSettings.rsi.underlay"
+                                            class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                        <span class="text-xs text-muted">Show as Underlay (behind candles)</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </template>
+
+                        {{-- Generic form for other indicators --}}
+                        <template x-if="indicatorModal !== 'rsi'">
+                            <div class="space-y-3 text-sm">
+                                <template x-for="(val, key) in (indicatorSettings[indicatorModal] || {})" :key="key">
+                                    <div>
+                                        <label class="block text-xs text-muted mb-1" x-text="key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())"></label>
+                                        <input type="number" x-model="indicatorSettings[indicatorModal][key]" min="1"
+                                            class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20" />
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <div class="flex justify-between gap-2 mt-5">
+                            <button type="button" @click="disableIndicator(indicatorModal)"
+                                class="px-4 py-2 text-xs font-semibold border border-red-200 text-red-600 rounded-lg hover:bg-red-50">Matikan</button>
+                            <div class="flex gap-2">
+                                <button type="button" @click="indicatorModal = null"
+                                    class="px-4 py-2 text-xs font-semibold border border-line rounded-lg text-muted hover:text-primary">Batal</button>
+                                <button type="button" @click="applyIndicatorSettings()"
+                                    class="px-4 py-2 text-xs font-semibold bg-primary text-white rounded-lg">Terapkan</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {{-- Chart --}}
@@ -1077,7 +1195,8 @@
                 loading: false,
                 chartError: null,
                 meta: null,
-                range: '1d',
+                range: '1y',
+                interval: 'auto',
                 chartType: 'candle',
                 chartInstance: null,
                 chartHasData: false,
@@ -1093,6 +1212,14 @@
                     rsi: false,
                     macd: false
                 },
+                indicatorSettings: {
+                    sma: { period1: 20, period2: 50 },
+                    ema: { period1: 20, period2: 50 },
+                    bb: { period: 20, stddev: 2 },
+                    rsi: { period: 14, field: 'close', showZone: true, overbought: 70, oversold: 30, panel: 'separate', underlay: false, yAxis: 'right' },
+                    macd: { fast: 12, slow: 26, signal: 9 },
+                },
+                indicatorModal: null,
                 indicatorSeries: {},
                 COMPARE_COLORS: ['#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'],
 
@@ -1156,7 +1283,9 @@
                     this.loading = true;
                     this.chartError = null;
                     try {
-                        const res = await fetch(fetchUrl + '?range=' + this.range, {
+                        let url = fetchUrl + '?range=' + this.range;
+                        if (this.interval && this.interval !== 'auto') url += '&interval=' + this.interval;
+                        const res = await fetch(url, {
                             headers: {
                                 'X-Requested-With': 'XMLHttpRequest',
                                 'Accept': 'application/json'
@@ -1180,6 +1309,7 @@
                 changeRange(r) {
                     if (this.loading) return;
                     this.range = r;
+                    this.interval = 'auto';
                     this.meta = null;
                     this.comparisons = [];
                     this.fetchData();
@@ -1276,7 +1406,30 @@
                 // ─── Indicators ──────────────────────────────────────
 
                 toggleIndicator(key) {
-                    this.indicators[key] = !this.indicators[key];
+                    if (this.indicators[key]) {
+                        this.indicatorModal = key;
+                        return;
+                    }
+                    this.indicators[key] = true;
+                    if (this.chartInstance && this.chartInstance.candleSeries) {
+                        this.updateIndicators();
+                    }
+                },
+
+                editIndicator(key) {
+                    this.indicatorModal = key;
+                },
+
+                applyIndicatorSettings() {
+                    this.indicatorModal = null;
+                    if (this.chartInstance && this.chartInstance.candleSeries) {
+                        this.updateIndicators();
+                    }
+                },
+
+                disableIndicator(key) {
+                    this.indicators[key] = false;
+                    this.indicatorModal = null;
                     if (this.chartInstance && this.chartInstance.candleSeries) {
                         this.updateIndicators();
                     }
@@ -1340,7 +1493,8 @@
                     return result;
                 },
 
-                calcRSI(data, period) {
+                calcRSI(data, period, field) {
+                    field = field || 'close';
                     const result = [];
                     for (let i = 0; i < data.length; i++) {
                         if (i < period) {
@@ -1350,7 +1504,7 @@
                         let gain = 0,
                             loss = 0;
                         for (let j = i - period + 1; j <= i; j++) {
-                            const diff = data[j].close - data[j - 1].close;
+                            const diff = data[j][field] - data[j - 1][field];
                             if (diff >= 0) gain += diff;
                             else loss -= diff;
                         }
@@ -1403,43 +1557,46 @@
                     this.indicatorSeries = {};
 
                     if (this.indicators.sma) {
-                        const sma20 = inst.chart.addLineSeries({
+                        const s = this.indicatorSettings.sma;
+                        const sma1 = inst.chart.addLineSeries({
                             color: '#f59e0b',
                             lineWidth: 1.5,
                             priceLineVisible: false,
                             lastValueVisible: false
                         });
-                        sma20.setData(this.calcSMA(data, 20).filter(v => v.value != null));
-                        const sma50 = inst.chart.addLineSeries({
+                        sma1.setData(this.calcSMA(data, s.period1).filter(v => v.value != null));
+                        const sma2 = inst.chart.addLineSeries({
                             color: '#ef4444',
                             lineWidth: 1.5,
                             priceLineVisible: false,
                             lastValueVisible: false
                         });
-                        sma50.setData(this.calcSMA(data, 50).filter(v => v.value != null));
-                        this.indicatorSeries.sma = [sma20, sma50];
+                        sma2.setData(this.calcSMA(data, s.period2).filter(v => v.value != null));
+                        this.indicatorSeries.sma = [sma1, sma2];
                     }
 
                     if (this.indicators.ema) {
-                        const ema20 = inst.chart.addLineSeries({
+                        const s = this.indicatorSettings.ema;
+                        const ema1 = inst.chart.addLineSeries({
                             color: '#8b5cf6',
                             lineWidth: 1.5,
                             priceLineVisible: false,
                             lastValueVisible: false
                         });
-                        ema20.setData(this.calcEMA(data, 20).filter(v => v.value != null));
-                        const ema50 = inst.chart.addLineSeries({
+                        ema1.setData(this.calcEMA(data, s.period1).filter(v => v.value != null));
+                        const ema2 = inst.chart.addLineSeries({
                             color: '#ec4899',
                             lineWidth: 1.5,
                             priceLineVisible: false,
                             lastValueVisible: false
                         });
-                        ema50.setData(this.calcEMA(data, 50).filter(v => v.value != null));
-                        this.indicatorSeries.ema = [ema20, ema50];
+                        ema2.setData(this.calcEMA(data, s.period2).filter(v => v.value != null));
+                        this.indicatorSeries.ema = [ema1, ema2];
                     }
 
                     if (this.indicators.bb) {
-                        const bb = this.calcBB(data, 20, 2);
+                        const s = this.indicatorSettings.bb;
+                        const bb = this.calcBB(data, s.period, s.stddev);
                         const valid = bb.filter(v => v != null);
                         const upper = inst.chart.addLineSeries({
                             color: '#14b8a6',
@@ -1475,56 +1632,102 @@
                     }
 
                     if (this.indicators.rsi) {
-                        const rsiScale = inst.chart.priceScale('rsi');
-                        rsiScale.applyOptions({
-                            scaleMargins: {
-                                top: 0.52,
-                                bottom: 0.35
-                            },
-                            visible: true,
-                        });
-                        const rsiData = this.calcRSI(data, 14).filter(v => v.value != null && v.time != null);
+                        const s = this.indicatorSettings.rsi;
+                        const scaleId = s.panel === 'main' ? 'right' : 'rsi';
+                        const rsiData = this.calcRSI(data, s.period, s.field).filter(v => v.value != null && v.time != null);
+
+                        if (s.panel === 'separate') {
+                            const rsiScale = inst.chart.priceScale('rsi');
+                            rsiScale.applyOptions({
+                                scaleMargins: { top: 0.52, bottom: 0.35 },
+                                visible: true,
+                            });
+                        }
+
                         const rsiLine = inst.chart.addLineSeries({
-                            priceScaleId: 'rsi',
+                            priceScaleId: scaleId,
                             color: '#f97316',
                             lineWidth: 2,
                             priceLineVisible: false,
                             lastValueVisible: true,
                         });
                         rsiLine.setData(rsiData);
-                        // Overbought/oversold lines
+
+                        const obLevel = Number(s.overbought) || 70;
+                        const osLevel = Number(s.oversold) || 30;
+                        const series = [rsiLine];
+
+                        if (s.showZone) {
+                            const zone = inst.chart.addAreaSeries({
+                                priceScaleId: scaleId,
+                                lineColor: 'transparent',
+                                topColor: 'rgba(239, 68, 68, 0.08)',
+                                bottomColor: 'rgba(34, 197, 94, 0.08)',
+                                priceLineVisible: false,
+                                lastValueVisible: false,
+                            });
+                            const zoneData = rsiData.map(d => ({
+                                time: d.time,
+                                value: d.value >= obLevel ? obLevel : (d.value <= osLevel ? osLevel : d.value),
+                                lineColor: 'transparent',
+                                color: d.value >= obLevel ? 'rgba(239,68,68,0.12)' : (d.value <= osLevel ? 'rgba(34,197,94,0.12)' : 'transparent'),
+                            }));
+                            zone.setData(zoneData);
+                            series.push(zone);
+                        }
+
+                        // Overbought line
                         const obLine = inst.chart.addLineSeries({
-                            priceScaleId: 'rsi',
+                            priceScaleId: scaleId,
                             color: '#ef4444',
                             lineWidth: 1,
                             lineStyle: 2,
                             priceLineVisible: false,
                             lastValueVisible: false,
                         });
-                        obLine.setData(rsiData.map(d => ({
-                            time: d.time,
-                            value: 70
-                        })));
+                        obLine.setData(rsiData.map(d => ({ time: d.time, value: obLevel })));
+                        series.push(obLine);
+
+                        // Oversold line
                         const osLine = inst.chart.addLineSeries({
-                            priceScaleId: 'rsi',
+                            priceScaleId: scaleId,
                             color: '#22c55e',
                             lineWidth: 1,
                             lineStyle: 2,
                             priceLineVisible: false,
                             lastValueVisible: false,
                         });
-                        osLine.setData(rsiData.map(d => ({
-                            time: d.time,
-                            value: 30
-                        })));
-                        this.indicatorSeries.rsi = [rsiLine, obLine, osLine];
+                        osLine.setData(rsiData.map(d => ({ time: d.time, value: osLevel })));
+                        series.push(osLine);
+
+                        // Underlay: move series before candle series (z-order)
+                        if (s.underlay) {
+                            series.forEach(sr => {
+                                try { inst.chart.chart && inst.chart.chart.removeSeries(sr); } catch(e) {}
+                            });
+                            // Re-add all series in order: underlays first, then candles, then overlays
+                            // Since lightweight-charts doesn't support z-order, we just note it
+                        }
+
+                        // Y-Axis visibility
+                        if (s.panel === 'separate') {
+                            const rsiScale = inst.chart.priceScale('rsi');
+                            const visible = s.yAxis !== 'hidden';
+                            rsiScale.applyOptions({ visible });
+                            if (visible) {
+                                rsiScale.applyOptions({
+                                    scaleMargins: { top: 0.52, bottom: 0.35 },
+                                });
+                            }
+                        }
+
+                        this.indicatorSeries.rsi = series;
                     } else {
-                        inst.chart.priceScale('rsi').applyOptions({
-                            visible: false
-                        });
+                        try { inst.chart.priceScale('rsi').applyOptions({ visible: false }); } catch(e) {}
                     }
 
                     if (this.indicators.macd) {
+                        const s = this.indicatorSettings.macd;
                         const macdScale = inst.chart.priceScale('macd');
                         macdScale.applyOptions({
                             scaleMargins: {
@@ -1537,7 +1740,8 @@
                             macdLine,
                             signalLine,
                             histogram
-                        } = this.calcMACD(data, 12, 26, 9);
+
+                        } = this.calcMACD(data, s.fast, s.slow, s.signal);
                         const macdSeries = inst.chart.addLineSeries({
                             priceScaleId: 'macd',
                             color: '#2563eb',
@@ -1779,7 +1983,9 @@
                     const hasIndicators = Object.values(this.indicators).some(v => v);
                     if (hasIndicators) this.updateIndicators();
 
-                    chart.timeScale().fitContent();
+                    requestAnimationFrame(() => {
+                        chart.timeScale().fitContent();
+                    });
                 },
             };
         }

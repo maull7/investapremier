@@ -20,7 +20,7 @@
 <div class="meta">
     {{ $analisa->kode_saham ? 'Kode: '.$analisa->kode_saham.' · ' : '' }}
     {{ $analisa->sektor ? 'Sektor: '.$analisa->sektor.' · ' : '' }}
-    Periode: {{ $analisa->periode ?? '-' }} · Mata Uang: {{ $analisa->mata_uang ?? 'IDR' }}<br>
+    Periode: {{ ($analisa->periode_dari && $analisa->periode_sampai) ? $analisa->periode_dari.' - '.$analisa->periode_sampai : ($analisa->periode ?? '-') }} · Mata Uang: {{ $analisa->mata_uang ?? 'IDR' }}<br>
     Disubmit oleh: {{ $analisa->user->name ?? '-' }} pada {{ $analisa->created_at->format('d M Y') }}
 </div>
 
@@ -93,6 +93,22 @@
 <div class="section">
 <h2>Analisa AI Plus</h2>
 <p>{{ $analisa->ai_narasi_plus }}</p>
+</div>
+@endif
+
+@if(!empty($analisa->saham_pembanding_data) && is_array($analisa->saham_pembanding_data))
+<div class="section">
+<h2>Saham Pembanding</h2>
+<table>
+    <tr><th>Kode</th><th>Nama</th><th>Sektor</th></tr>
+    @foreach($analisa->saham_pembanding_data as $item)
+        <tr>
+            <td>{{ $item['kode'] ?? '-' }}</td>
+            <td>{{ $item['nama'] ?? '-' }}</td>
+            <td>{{ $item['sektor'] ?? '-' }}</td>
+        </tr>
+    @endforeach
+</table>
 </div>
 @endif
 

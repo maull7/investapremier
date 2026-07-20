@@ -112,12 +112,12 @@ class YahooStockDataService
 
     // ─── Public: ambil quote detail + chart untuk ditampilkan di UI ───────────
 
-    public function fetchYahooData(Stock $stock, string $range = '1d'): array
+    public function fetchYahooData(Stock $stock, string $range = '1d', string $interval = 'auto'): array
     {
         $symbol   = $this->symbol($stock->kode);
-        $interval = $this->intervalFor($range);
+        $interval = $interval !== 'auto' ? $interval : $this->intervalFor($range);
         $ttl      = in_array($range, ['1d', '5d']) ? 300 : 3600;
-        $cacheKey = "yfapi_chart_{$symbol}_{$range}";
+        $cacheKey = "yfapi_chart_{$symbol}_{$range}_{$interval}";
 
         return Cache::remember($cacheKey, $ttl, function () use ($symbol, $range, $interval) {
             $quote = $this->fetchQuote($symbol);
