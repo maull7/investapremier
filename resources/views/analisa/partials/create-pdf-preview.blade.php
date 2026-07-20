@@ -1,24 +1,29 @@
 <h4 class="text-sm font-semibold text-primary mb-2">Hasil Ekstraksi</h4>
 
 {{-- Info Keuangan --}}
-<div x-show="pdfData.total_aum || pdfData.total_marcap_10_efek || pdfData.nab_per_unit || pdfData.unit_penyertaan" class="border rounded-lg p-3 bg-white shadow-sm mb-3">
+<div x-show="pdfData.total_aum || pdfData.total_marcap_10_efek || pdfData.nab_per_unit || pdfData.total_aum / pdfData.nab_per_unit || pdfData.tanggal_data"
+    class="border rounded-lg p-3 bg-white shadow-sm mb-3">
     <h5 class="font-semibold text-xs text-primary mb-2">Info Keuangan</h5>
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
         <div>
             <span class="text-muted block">Total AUM</span>
-            <span class="font-medium" x-text="pdfData.total_aum ? 'Rp ' + Number(pdfData.total_aum).toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '—'"></span>
+            <span class="font-medium"
+                x-text="pdfData.total_aum ? 'Rp ' + Number(pdfData.total_aum).toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '—'"></span>
         </div>
         <div>
             <span class="text-muted block">Total MarCap 10 Saham Terbesar</span>
-            <span class="font-medium" x-text="pdfData.total_marcap_10_efek ? 'Rp ' + Number(pdfData.total_marcap_10_efek).toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '—'"></span>
+            <span class="font-medium"
+                x-text="pdfData.total_marcap_10_efek ? 'Rp ' + Number(pdfData.total_marcap_10_efek).toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '—'"></span>
         </div>
         <div>
             <span class="text-muted block">NAB/UP</span>
-            <span class="font-medium" x-text="pdfData.nab_per_unit ? Number(pdfData.nab_per_unit).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 6}) : '—'"></span>
+            <span class="font-medium"
+                x-text="pdfData.nab_per_unit ? Number(pdfData.nab_per_unit).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 6}) : '—'"></span>
         </div>
         <div>
             <span class="text-muted block">Unit Penyertaan</span>
-            <span class="font-medium" x-text="pdfData.unit_penyertaan ? Number(pdfData.unit_penyertaan).toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '—'"></span>
+            <span class="font-medium"
+                x-text="pdfData.total_aum / pdfData.nab_per_unit ? Number(pdfData.total_aum / pdfData.nab_per_unit).toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '—'"></span>
         </div>
         <div>
             <span class="text-muted block">Tanggal Data</span>
@@ -160,28 +165,34 @@
 </div>
 
 {{-- Return --}}
-<div x-show="pdfData.return_1m || pdfData.return_ytd || pdfData.return_1y" class="border rounded-lg p-3 bg-white shadow-sm mb-3">
+<div x-show="pdfData.return_1m || pdfData.return_ytd || pdfData.return_1y"
+    class="border rounded-lg p-3 bg-white shadow-sm mb-3">
     <h5 class="font-semibold text-xs text-primary mb-2">Return</h5>
     <div class="grid grid-cols-3 gap-3 text-xs">
         <div>
             <span class="text-muted block">Return 1 Bulan</span>
-            <span class="font-medium" x-text="pdfData.return_1m ? Number(pdfData.return_1m).toFixed(2) + '%' : '—'"></span>
+            <span class="font-medium"
+                x-text="pdfData.return_1m ? Number(pdfData.return_1m).toFixed(2) + '%' : '—'"></span>
         </div>
         <div>
             <span class="text-muted block">Return YTD</span>
-            <span class="font-medium" x-text="pdfData.return_ytd ? Number(pdfData.return_ytd).toFixed(2) + '%' : '—'"></span>
+            <span class="font-medium"
+                x-text="pdfData.return_ytd ? Number(pdfData.return_ytd).toFixed(2) + '%' : '—'"></span>
         </div>
         <div>
             <span class="text-muted block">Return 1 Tahun</span>
-            <span class="font-medium" x-text="pdfData.return_1y ? Number(pdfData.return_1y).toFixed(2) + '%' : '—'"></span>
+            <span class="font-medium"
+                x-text="pdfData.return_1y ? Number(pdfData.return_1y).toFixed(2) + '%' : '—'"></span>
         </div>
     </div>
 </div>
 
 {{-- Data Tahunan --}}
-<div x-show="pdfData.data_tambahan && Object.keys(pdfData.data_tambahan).length" class="border rounded-lg p-3 bg-white shadow-sm mb-3">
+<div x-show="pdfData.data_tambahan && Object.keys(pdfData.data_tambahan).length"
+    class="border rounded-lg p-3 bg-white shadow-sm mb-3">
     <h5 class="font-semibold text-xs text-primary mb-2">Data Tahunan</h5>
-    <template x-for="(tahun, ti) in (pdfData.tahun_tambahan || Object.keys(pdfData.data_tambahan))" :key="ti">
+    <template x-for="(tahun, ti) in (pdfData.tahun_tambahan || Object.keys(pdfData.data_tambahan))"
+        :key="ti">
         <div class="mb-2">
             <h6 class="text-xs font-medium text-primary mb-1" x-text="'Tahun: ' + tahun"></h6>
             <table class="w-full text-xs">
@@ -205,10 +216,12 @@
 </div>
 
 {{-- Laporan Keuangan (scalar fields) --}}
-<div x-show="pdfData.total_aset || pdfData.total_liabilitas || pdfData.nilai_aset_bersih || pdfData.pendapatan_bunga || pdfData.pendapatan_dividen || pdfData.laba_bersih || pdfData.arus_kas_operasi" class="border rounded-lg p-3 bg-white shadow-sm">
+<div x-show="pdfData.total_aset || pdfData.total_liabilitas || pdfData.nilai_aset_bersih || pdfData.pendapatan_bunga || pdfData.pendapatan_dividen || pdfData.laba_bersih || pdfData.arus_kas_operasi"
+    class="border rounded-lg p-3 bg-white shadow-sm">
     <h5 class="font-semibold text-xs text-primary mb-2">Laporan Keuangan</h5>
     <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-        <template x-for="(v, k) in {
+        <template
+            x-for="(v, k) in {
             'Total Aset': pdfData.total_aset,
             'Total Liabilitas': pdfData.total_liabilitas,
             'Nilai Aset Bersih': pdfData.nilai_aset_bersih,

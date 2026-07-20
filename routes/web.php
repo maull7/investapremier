@@ -204,6 +204,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('analisa-rd/lookup-bank-data', [AdminAnalisaRdController::class, 'lookupBankData'])->name('analisa-rd.lookup-bank-data');
     Route::get('analisa-rd/lookup-kode-efek', [AdminAnalisaRdController::class, 'lookupKodeEfek'])->name('analisa-rd.lookup-kode-efek');
     Route::get('analisa-rd/get-financial-data', [AdminAnalisaRdController::class, 'getFinancialData'])->name('analisa-rd.get-financial-data');
+    Route::get('analisa-rd/lookup-nav-history', [AdminAnalisaRdController::class, 'lookupNavHistory'])->name('analisa-rd.lookup-nav-history');
 
     // Daftar & Analisa Saham // && cek analisa sahamm
     Route::resource('saham', StockController::class)->except(['show']);

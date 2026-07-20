@@ -155,7 +155,7 @@
 
                 {{-- Data dari Yahoo Finance (yfapi) --}}
                 <div x-show="summary" class="space-y-4">
-                    <h3 class="font-semibold text-primary">Data Yahoo Finance</h3>
+                    <h3 class="font-semibold text-primary">Data Detail Saham</h3>
 
                     {{-- Profile dari yfapi --}}
                     <div x-show="summary && summary.profile" class="grid md:grid-cols-2 gap-3 text-sm">
@@ -268,7 +268,74 @@
                     </div>
                 </div>
 
+                {{-- Financial Highlights dari Yahoo Finance --}}
+                <div x-show="summary && summary.highlights" class="border border-line rounded-xl p-4 text-sm">
+                    <h3 class="font-semibold text-primary mb-3">Financial Highlights</h3>
+                    <div class="grid md:grid-cols-3 gap-4">
+                        <div>
+                            <p class="font-semibold mb-2 text-xs uppercase text-muted">Profitabilitas</p>
+                            <p>Gross Margin: <span class="font-medium" x-text="summary?.highlights?.grossMargins ? (Number(summary.highlights.grossMargins)*100).toFixed(2)+'%' : '-'"></span></p>
+                            <p>Operating Margin: <span class="font-medium" x-text="summary?.highlights?.operatingMargins ? (Number(summary.highlights.operatingMargins)*100).toFixed(2)+'%' : '-'"></span></p>
+                            <p>EBITDA Margin: <span class="font-medium" x-text="summary?.highlights?.ebitdaMargins ? (Number(summary.highlights.ebitdaMargins)*100).toFixed(2)+'%' : '-'"></span></p>
+                            <p>ROE: <span class="font-medium" x-text="summary?.highlights?.returnOnEquity ? (Number(summary.highlights.returnOnEquity)*100).toFixed(2)+'%' : '-'"></span></p>
+                            <p>ROA: <span class="font-medium" x-text="summary?.highlights?.returnOnAssets ? (Number(summary.highlights.returnOnAssets)*100).toFixed(2)+'%' : '-'"></span></p>
+                        </div>
+                        <div>
+                            <p class="font-semibold mb-2 text-xs uppercase text-muted">Pertumbuhan & Valuasi</p>
+                            <p>Revenue Growth: <span class="font-medium" x-text="summary?.highlights?.revenueGrowth ? (Number(summary.highlights.revenueGrowth)*100).toFixed(2)+'%' : '-'"></span></p>
+                            <p>Earnings Growth: <span class="font-medium" x-text="summary?.highlights?.earningsGrowth ? (Number(summary.highlights.earningsGrowth)*100).toFixed(2)+'%' : '-'"></span></p>
+                            <p>Earnings Growth (Q): <span class="font-medium" x-text="summary?.highlights?.earningsQuarterlyGrowth ? (Number(summary.highlights.earningsQuarterlyGrowth)*100).toFixed(2)+'%' : '-'"></span></p>
+                            <p>Harga: <span class="font-medium" x-text="summary?.highlights?.currentPrice ? fmt(summary.highlights.currentPrice) : '-'"></span></p>
+                            <p>Target Harga: <span class="font-medium" x-text="summary?.highlights?.targetMeanPrice ? fmt(summary.highlights.targetMeanPrice) : '-'"></span></p>
+                        </div>
+                        <div>
+                            <p class="font-semibold mb-2 text-xs uppercase text-muted">Kesehatan Keuangan</p>
+                            <p>D/E Ratio: <span class="font-medium" x-text="summary?.highlights?.debtToEquity ? Number(summary.highlights.debtToEquity).toFixed(2) : '-'"></span></p>
+                            <p>Total Revenue: <span class="font-medium" x-text="summary?.highlights?.totalRevenue ? fmt(summary.highlights.totalRevenue) : '-'"></span></p>
+                            <p>Free Cash Flow: <span class="font-medium" x-text="summary?.highlights?.freeCashflow ? fmt(summary.highlights.freeCashflow) : '-'"></span></p>
+                            <p>Operating Cash Flow: <span class="font-medium" x-text="summary?.highlights?.operatingCashflow ? fmt(summary.highlights.operatingCashflow) : '-'"></span></p>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- Data Laporan Keuangan untuk Analisa FFS --}}
+                @if ($stock->financialReports->isNotEmpty())
+                    <div>
+                        <h3 class="font-semibold text-primary mb-3">Laporan Keuangan (untuk Analisa FFS)</h3>
+                        @foreach ($stock->financialReports as $report)
+                            <div class="border border-line rounded-xl p-4 mb-4">
+                                <h4 class="font-semibold text-primary text-sm">{{ $report->report_year }} ·
+                                    {{ $report->report_period }}</h4>
+                                <div class="grid md:grid-cols-3 gap-4 mt-3 text-sm">
+                                    <div>
+                                        <p class="font-semibold mb-2 text-xs uppercase text-muted">Neraca</p>
+                                        <p>Total Aset: <span class="font-medium">{{ $fmt($report->total_asset) }}</span>
+                                        </p>
+                                        <p>Total Liabilitas: <span
+                                                class="font-medium">{{ $fmt($report->total_liabilities) }}</span></p>
+                                        <p>Total Ekuitas: <span
+                                                class="font-medium">{{ $fmt($report->total_equity) }}</span></p>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold mb-2 text-xs uppercase text-muted">Laba Rugi</p>
+                                        <p>Pendapatan: <span class="font-medium">{{ $fmt($report->revenue) }}</span></p>
+                                        <p>Laba Operasional: <span
+                                                class="font-medium">{{ $fmt($report->operating_income) }}</span></p>
+                                        <p>Laba Bersih: <span class="font-medium">{{ $fmt($report->net_income) }}</span>
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold mb-2 text-xs uppercase text-muted">Arus Kas</p>
+                                        <p>CFO: <span class="font-medium">{{ $fmt($report->cfo) }}</span></p>
+                                        <p>CFI: <span class="font-medium">{{ $fmt($report->cfi) }}</span></p>
+                                        <p>CFF: <span class="font-medium">{{ $fmt($report->cff) }}</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
                 @if ($stock->financialReports->isNotEmpty())
                     <div>
                         <h3 class="font-semibold text-primary mb-3">Laporan Keuangan (untuk Analisa FFS)</h3>
