@@ -19,15 +19,13 @@
 
         <form id="lapkeu-form" method="POST" action="{{ $storeRoute }}" enctype="multipart/form-data" class="space-y-6">
             @csrf
-            <input type="hidden" name="input_mode" :value="(mode === 'ai' || mode === 'ai-plus') ? 'manual' : mode">
+            <input type="hidden" name="input_mode" :value="(mode === 'ai' || mode === 'ai-plus' || mode === 'lengkap' || mode === 'pdf') ? 'manual' : mode">
             <input type="hidden" name="ai_narasi" :value="aiResult?.raw || ''">
             <input type="hidden" name="ai_output" :value="aiResult ? JSON.stringify(aiResult.parsed || {}) : ''">
             <input type="hidden" name="ai_narasi_plus" :value="aiPlusResult?.raw || ''">
             <input type="hidden" name="ai_output_plus"
                 :value="aiPlusResult ? JSON.stringify(aiPlusResult.parsed || {}) : ''">
             <input type="hidden" name="pdf_lapkeu_path" x-model="pdfPath">
-            <input type="hidden" name="kode_obligasi" :value="kodeObligasi">
-            <input type="hidden" name="nama_emiten" :value="namaEmiten">
             <input type="hidden" name="jenis_analisa" :value="jenisAnalisa">
             <input type="hidden" name="periode" :value="jenisAnalisa === 'periode' ? periodeAnalisa : ''">
             <input type="hidden" name="tahun" :value="jenisAnalisa === 'tahunan' ? tahunAnalisa : ''">
@@ -37,11 +35,46 @@
             <div class="bg-white rounded-xl border border-line p-6 space-y-4">
                 <h3 class="font-semibold text-primary">Informasi Obligasi</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="relative">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Obligasi <span class="text-red-500">*</span></label>
+                        <input type="text" name="nama_obligasi" id="nama_obligasi" x-model="namaObligasiSearch" required
+                            @input.debounce.300ms="if (namaObligasiSearch.length > 0) { lookupObligasi(namaObligasiSearch).then(r => nameResults = r) } else { nameResults = [] }"
+                            @blur="if (namaObligasiSearch.length > 0) { lookupObligasi(namaObligasiSearch).then(list => { if (list.length > 0) { selectObligasi(list[0]); nameResults = [] } }) }"
+                            value="{{ old('nama_obligasi') }}"
+                            class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
+                        <div x-show="nameResults.length > 0" @click.outside="nameResults = []"
+                            class="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                            <template x-for="b in nameResults" :key="b.id">
+                                <button type="button" @click="selectObligasi(b); nameResults = []"
+                                    class="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm border-b border-gray-100 last:border-0">
+                                    <span class="font-semibold" x-text="b.nama_obligasi"></span>
+                                    <span class="text-gray-500" x-text="' (' + b.kode + ')'"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Kode Obligasi</label>
+                        <input type="text" name="kode_obligasi" x-model="kodeObligasi" placeholder="cth: FR0070"
+                            @input.debounce.300ms="if (kodeObligasi.length > 0) { lookupObligasi(kodeObligasi).then(r => codeResults = r) } else { codeResults = [] }"
+                            @blur="if (kodeObligasi.length > 0) { lookupObligasi(kodeObligasi).then(list => { if (list.length > 0) { selectObligasi(list[0]); codeResults = [] } }) }"
+                            value="{{ old('kode_obligasi') }}"
+                            class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm uppercase">
+                        <div x-show="codeResults.length > 0" @click.outside="codeResults = []"
+                            class="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                            <template x-for="b in codeResults" :key="b.id">
+                                <button type="button" @click="selectObligasi(b); codeResults = []"
+                                    class="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm border-b border-gray-100 last:border-0">
+                                    <span class="font-semibold" x-text="b.kode"></span>
+                                    <span class="text-gray-500" x-text="' - ' + b.nama_obligasi"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Obligasi <span
-                                class="text-red-500">*</span></label>
-                        <input type="text" name="nama_obligasi" id="nama_obligasi" value="{{ old('nama_obligasi') }}"
-                            required
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Emiten</label>
+                        <input type="text" name="nama_emiten" x-model="namaEmiten" value="{{ old('nama_emiten') }}"
+                            placeholder="cth: PT Pertamina (Persero)"
                             class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
                     </div>
                     <div>
@@ -76,6 +109,59 @@
                                     {{ old('mata_uang', 'IDR') === $c ? 'selected' : '' }}>{{ $c }}</option>
                             @endforeach
                         </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Sektor</label>
+                        <select name="sektor"
+                            class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
+                            <option value="">Pilih Sektor</option>
+                            @foreach (['Perbankan', 'Keuangan', 'Consumer Goods', 'Energi', 'Infrastruktur', 'Industri Dasar', 'Perkebunan', 'Properti', 'Teknologi', 'Transportasi', 'Telekomunikasi', 'Pertambangan', 'Lainnya'] as $s)
+                                <option value="{{ $s }}" {{ old('sektor') === $s ? 'selected' : '' }}>
+                                    {{ $s }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nominal Penerbit</label>
+                        <input type="number" name="nominal_penerbit" step="0.01" value="{{ old('nominal_penerbit') }}"
+                            placeholder="cth: 1000000000"
+                            class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Terbit</label>
+                        <input type="date" name="tanggal_terbit" value="{{ old('tanggal_terbit') }}"
+                            class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Jatuh Tempo</label>
+                        <input type="date" name="tanggal_jatuh_tempo" value="{{ old('tanggal_jatuh_tempo') }}"
+                            class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
+                    </div>
+                    <div class="flex items-center gap-6">
+                        <label class="inline-flex items-center gap-2">
+                            <input type="checkbox" name="tanpa_jaminan" value="1" {{ old('tanpa_jaminan') ? 'checked' : '' }}
+                                class="rounded border-gray-300 text-primary focus:ring-primary/20">
+                            <span class="text-sm text-gray-700">Tanpa Jaminan</span>
+                        </label>
+                        <label class="inline-flex items-center gap-2">
+                            <input type="checkbox" name="dengan_jaminan" value="1" {{ old('dengan_jaminan') ? 'checked' : '' }}
+                                class="rounded border-gray-300 text-primary focus:ring-primary/20">
+                            <span class="text-sm text-gray-700">Dengan Jaminan</span>
+                        </label>
+                    </div>
+                    <div class="flex flex-row items-center gap-2">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Periode Dari Tahun</label>
+                            <input type="number" name="periode_dari" value="{{ old('periode_dari') }}"
+                                placeholder="cth: 2024"
+                                class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Sampai Tahun</label>
+                            <input type="number" name="periode_sampai" value="{{ old('periode_sampai') }}"
+                                placeholder="cth: 2025"
+                                class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -124,6 +210,10 @@
                         :class="mode === 'manual' ? 'border-b-2 border-primary text-primary font-semibold' :
                             'text-muted hover:text-primary'"
                         class="px-6 py-3.5 text-sm transition whitespace-nowrap">Input Manual</button>
+                    <button type="button" @click="mode='lengkap'"
+                        :class="mode === 'lengkap' ? 'border-b-2 border-primary text-primary font-semibold' :
+                            'text-muted hover:text-primary'"
+                        class="px-6 py-3.5 text-sm transition whitespace-nowrap">Input Lengkap</button>
                     <button type="button" @click="mode='excel'"
                         :class="mode === 'excel' ? 'border-b-2 border-primary text-primary font-semibold' :
                             'text-muted hover:text-primary'"
@@ -144,9 +234,208 @@
 
                 {{-- TAB: MANUAL --}}
                 <div x-show="mode==='manual'" class="p-6 space-y-6">
+                    @include('analisa-obligasi.partials.form-informasi-obligasi')
                     @include('analisa-obligasi.partials.form-neraca')
                     @include('analisa-obligasi.partials.form-laba-rugi')
                     @include('analisa-obligasi.partials.form-arus-kas')
+                </div>
+
+                {{-- TAB: LENGKAP --}}
+                <div x-show="mode==='lengkap'" class="p-6 space-y-6">
+
+                    @include('analisa-obligasi.partials.form-informasi-obligasi-lengkap')
+
+                    {{-- Neraca (Balance Sheet) --}}
+                    <div class="bg-white rounded-xl border border-line overflow-hidden">
+                        <div class="px-5 py-4 border-b border-line">
+                            <h4 class="font-semibold text-primary">Neraca (Balance Sheet) <span
+                                    class="text-xs font-normal text-muted">— dalam juta Rupiah (atau sesuai mata
+                                    uang)</span></h4>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm border-collapse">
+                                <thead class="bg-gray-50 text-muted text-xs">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left border-b border-line w-1/2">Akun</th>
+                                        <th class="px-3 py-2 text-right border-b border-line w-1/2">Nilai (dalam juta)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-line text-xs">
+                                    <tr class="bg-gray-50/50">
+                                        <td colspan="2" class="px-3 py-2 font-semibold text-muted">Aset Lancar</td>
+                                    </tr>
+                                    @foreach ([['cash_equivalents', 'Kas & Setara Kas'], ['account_receivable', 'Piutang Usaha'], ['inventories', 'Persediaan'], ['other_current_asset', 'Aset Lancar Lainnya'], ['current_asset', 'Total Aset Lancar']] as [$name, $label])
+                                        <tr class="hover:bg-gray-50/50">
+                                            <td class="px-3 py-1.5 {{ in_array($name, ['current_asset']) ? 'font-semibold' : '' }}">{{ $label }}</td>
+                                            <td class="px-2 py-1.5"><input type="number" name="{{ $name }}"
+                                                    x-model="{{ $name }}" step="0.01"
+                                                    value="{{ old($name) }}"
+                                                    class="w-full border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded {{ in_array($name, ['current_asset']) ? 'font-semibold' : '' }}">
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                    <tr class="bg-gray-50/50">
+                                        <td colspan="2" class="px-3 py-2 font-semibold text-muted">Aset Tidak Lancar</td>
+                                    </tr>
+                                    @foreach ([['fixed_asset', 'Aset Tetap'], ['other_non_current_asset', 'Aset Tidak Lancar Lainnya'], ['total_asset', 'Total Aset']] as [$name, $label])
+                                        <tr class="hover:bg-gray-50/50">
+                                            <td class="px-3 py-1.5 {{ in_array($name, ['total_asset']) ? 'font-semibold' : '' }}">{{ $label }}</td>
+                                            <td class="px-2 py-1.5"><input type="number" name="{{ $name }}"
+                                                    x-model="{{ $name }}" step="0.01"
+                                                    value="{{ old($name) }}"
+                                                    class="w-full border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded {{ in_array($name, ['total_asset']) ? 'font-semibold' : '' }}">
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                    <tr class="bg-gray-50/50">
+                                        <td colspan="2" class="px-3 py-2 font-semibold text-muted">Liabilitas Jangka Pendek</td>
+                                    </tr>
+                                    @foreach ([['account_payable', 'Utang Usaha'], ['accruals', 'Akrual'], ['short_term_loans', 'Pinjaman Jangka Pendek'], ['current_maturities_of_long_term_loans', 'Bagian Lancar Utang JK Panjang'], ['other_current_liabilities', 'Liabilitas Lancar Lainnya'], ['current_liabilities', 'Total Liabilitas Lancar']] as [$name, $label])
+                                        <tr class="hover:bg-gray-50/50">
+                                            <td class="px-3 py-1.5 {{ in_array($name, ['current_liabilities']) ? 'font-semibold' : '' }}">{{ $label }}</td>
+                                            <td class="px-2 py-1.5"><input type="number" name="{{ $name }}"
+                                                    x-model="{{ $name }}" step="0.01"
+                                                    value="{{ old($name) }}"
+                                                    class="w-full border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded {{ in_array($name, ['current_liabilities']) ? 'font-semibold' : '' }}">
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                    <tr class="bg-gray-50/50">
+                                        <td colspan="2" class="px-3 py-2 font-semibold text-muted">Liabilitas JK Panjang & Ekuitas</td>
+                                    </tr>
+                                    @foreach ([['long_term_loans', 'Pinjaman Jangka Panjang'], ['other_non_current_liabilities', 'Liabilitas Tidak Lancar Lainnya'], ['total_non_current_liabilities', 'Total Liabilitas Tidak Lancar'], ['total_liabilities', 'Total Liabilitas'], ['retained_earning', 'Saldo Laba'], ['equity', 'Total Ekuitas'], ['share_capital', 'Modal Saham'], ['additional_paid_in_capital', 'Tambahan Modal Disetor'], ['others', 'Komponen Ekuitas Lain'], ['non_controlling_interest', 'Kepentingan Non-Pengendali'], ['total_equity_equity_to_parent_entity', 'Ekuitas ke Entitas Induk']] as [$name, $label])
+                                        <tr class="hover:bg-gray-50/50">
+                                            <td class="px-3 py-1.5 {{ in_array($name, ['total_liabilities', 'equity']) ? 'font-semibold' : '' }}">{{ $label }}</td>
+                                            <td class="px-2 py-1.5"><input type="number" name="{{ $name }}"
+                                                    x-model="{{ $name }}" step="0.01"
+                                                    value="{{ old($name) }}"
+                                                    class="w-full border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded {{ in_array($name, ['total_liabilities', 'equity']) ? 'font-semibold' : '' }}">
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {{-- Laba Rugi (Income Statement) --}}
+                    <div class="bg-white rounded-xl border border-line overflow-hidden">
+                        <div class="px-5 py-4 border-b border-line">
+                            <h4 class="font-semibold text-primary">Laba Rugi (Income Statement)</h4>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm border-collapse">
+                                <thead class="bg-gray-50 text-muted text-xs">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left border-b border-line w-1/2">Akun</th>
+                                        <th class="px-3 py-2 text-right border-b border-line w-1/2">Nilai (dalam juta)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-line text-xs">
+                                    @foreach ([['net_revenue', 'Pendapatan Bersih'], ['cost_of_good_sold', 'Beban Pokok Penjualan'], ['gross_income', 'Laba Kotor'], ['operational_expense', 'Beban Operasional'], ['laba_operasional', 'Laba Operasional'], ['interest_expense', 'Beban Bunga'], ['other_income_expense', 'Pendapatan/Beban Lain-lain'], ['income_before_tax', 'Laba Sebelum Pajak'], ['ebit', 'EBIT'], ['taxes', 'Pajak Penghasilan'], ['ebitda', 'EBITDA'], ['net_income_attributable_to_non_controlling_interest', 'NCI Net Income'], ['net_income', 'Laba Bersih'], ['eps', 'EPS / Laba per Saham']] as [$name, $label])
+                                        <tr class="hover:bg-gray-50/50">
+                                            <td class="px-3 py-1.5 {{ in_array($name, ['gross_income', 'ebit', 'ebitda', 'net_income', 'eps']) ? 'font-semibold' : '' }}">{{ $label }}</td>
+                                            <td class="px-2 py-1.5"><input type="number" name="{{ $name }}"
+                                                    x-model="{{ $name }}" step="0.01"
+                                                    value="{{ old($name) }}"
+                                                    class="w-full border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded {{ in_array($name, ['gross_income', 'ebit', 'ebitda', 'net_income', 'eps']) ? 'font-semibold' : '' }}">
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {{-- Arus Kas (Cash Flow Statement) --}}
+                    <div class="bg-white rounded-xl border border-line overflow-hidden">
+                        <div class="px-5 py-4 border-b border-line">
+                            <h4 class="font-semibold text-primary">Arus Kas (Cash Flow Statement)</h4>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm border-collapse">
+                                <thead class="bg-gray-50 text-muted text-xs">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left border-b border-line w-1/2">Akun</th>
+                                        <th class="px-3 py-2 text-right border-b border-line w-1/2">Nilai (dalam juta)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-line text-xs">
+                                    @foreach ([['cash_flows_operating_activities', 'Arus Kas dari Operasi'], ['cash_flows_investment', 'Arus Kas dari Investasi'], ['cash_flows_financing', 'Arus Kas dari Pendanaan']] as [$name, $label])
+                                        <tr class="hover:bg-gray-50/50">
+                                            <td class="px-3 py-1.5">{{ $label }}</td>
+                                            <td class="px-2 py-1.5"><input type="number" name="{{ $name }}"
+                                                    x-model="{{ $name }}" step="0.01"
+                                                    value="{{ old($name) }}"
+                                                    class="w-full border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {{-- Data Saham --}}
+                    <div class="bg-white rounded-xl border border-line overflow-hidden">
+                        <div class="px-5 py-4 border-b border-line flex items-center justify-between">
+                            <div>
+                                <h4 class="font-semibold text-primary">Data Saham</h4>
+                                <p class="text-xs text-muted mt-0.5">Rasio keuangan emiten saham pembanding.</p>
+                            </div>
+                            <button type="button" @click="keuanganSaham.push({kode_efek:'',nama_efek:'',per:'',pbv:'',roe:'',roa:'',npm:'',ev_ebitda:'',der:'',current_ratio:'',aktivitas_lancar:'',gross_profit_margin:'',operating_profit_margin:''})"
+                                class="text-xs px-3 py-1.5 border border-line rounded-lg hover:bg-gray-50">+ Tambah</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm border-collapse">
+                                <thead class="bg-gray-50 text-muted text-xs">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left whitespace-nowrap border-b border-line">Daftar Efek</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">PER</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">PBV</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">ROE</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">ROA</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">NPM</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">EV/EBITDA</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">DER</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Current Ratio</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Aktivitas Lancar</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Gross Profit Margin</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Operating Profit Margin</th>
+                                        <th class="px-3 py-2 text-center whitespace-nowrap border-b border-line"></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-line">
+                                    <template x-for="(item, index) in keuanganSaham" :key="index">
+                                        <tr class="hover:bg-gray-50/50">
+                                            <td class="px-2 py-1.5 whitespace-nowrap">
+                                                <input type="text" x-model="item.kode_efek" :name="`keuangan_saham[${index}][kode_efek]`" class="w-16 border-0 bg-transparent text-sm px-1 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30 rounded" placeholder="Kode">
+                                                <span class="text-muted mx-0.5">-</span>
+                                                <input type="text" x-model="item.nama_efek" :name="`keuangan_saham[${index}][nama_efek]`" class="w-24 border-0 bg-transparent text-sm px-1 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30 rounded" placeholder="Nama">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.per" :name="`keuangan_saham[${index}][per]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.pbv" :name="`keuangan_saham[${index}][pbv]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.roe" :name="`keuangan_saham[${index}][roe]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.roa" :name="`keuangan_saham[${index}][roa]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.npm" :name="`keuangan_saham[${index}][npm]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.ev_ebitda" :name="`keuangan_saham[${index}][ev_ebitda]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.der" :name="`keuangan_saham[${index}][der]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.current_ratio" :name="`keuangan_saham[${index}][current_ratio]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.aktivitas_lancar" :name="`keuangan_saham[${index}][aktivitas_lancar]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.gross_profit_margin" :name="`keuangan_saham[${index}][gross_profit_margin]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.operating_profit_margin" :name="`keuangan_saham[${index}][operating_profit_margin]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
+                                            <td class="px-2 py-1.5 text-center"><button type="button" @click="keuanganSaham.splice(index, 1)" class="text-red-500 hover:text-red-700 text-xs">Hapus</button></td>
+                                        </tr>
+                                    </template>
+                                    <tr x-show="keuanganSaham.length === 0">
+                                        <td colspan="13" class="px-3 py-4 text-center text-muted text-sm italic">
+                                            Tidak ada data saham. Tambahkan baris jika diperlukan.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 {{-- TAB: EXCEL --}}
@@ -319,6 +608,8 @@
 
     @push('scripts')
         <script>
+            window.lookupObligasiUrl = @json($lookupObligasiRoute ?? null);
+
             function lapkeuForm(previewAiUrl, previewAiPlusUrl, parsePdfUrl, parsePdfVisionUrl, parsePdfStatusUrl, lookupKeuanganEmitenUrl, resolveAiPlusDataUrl) {
                 @php
                     $plusLabels = [
@@ -334,6 +625,9 @@
                     jenisAnalisa: @json(old('jenis_analisa', 'periode')),
                     kodeObligasi: @json(old('kode_obligasi')),
                     namaEmiten: @json(old('nama_emiten')),
+                    namaObligasiSearch: @json(old('nama_obligasi')),
+                    nameResults: [],
+                    codeResults: [],
                     periodeAnalisa: @json(old('periode')),
                     tahunAnalisa: @json(old('tahun', now()->year)),
                     sourceLoading: false,
@@ -360,6 +654,7 @@
                     plusResolvedMissing: [],
                     financialDataSources: {},
                     financialFieldNames: ['total_asset', 'total_liabilities', 'equity', 'net_revenue', 'net_income'],
+                    keuanganSaham: @json(collect(old('keuangan_saham', []))->values()),
                     pdfLoading: false,
                     pdfError: '',
                     pdfSuccess: '',
@@ -426,6 +721,38 @@
                         });
                     },
 
+                    lookupObligasi(query) {
+                        if (!query || query.trim().length < 1 || !window.lookupObligasiUrl) return Promise.resolve([]);
+                        return fetch(window.lookupObligasiUrl + '?q=' + encodeURIComponent(query.trim()), {
+                            headers: { 'Accept': 'application/json' }
+                        }).then(r => r.json()).catch(() => []);
+                    },
+
+                    selectObligasi(bond) {
+                        this.namaObligasiSearch = bond.nama_obligasi || '';
+                        this.kodeObligasi = bond.kode || '';
+                        this.namaEmiten = bond.nama_emiten || '';
+
+                        const set = (name, val) => {
+                            const el = document.querySelector(`[name="${name}"]`);
+                            if (el && val != null) el.value = val;
+                        };
+                        const setSelect = (name, val) => {
+                            const sel = document.querySelector(`[name="${name}"]`);
+                            if (sel && val) {
+                                [...sel.options].forEach(o => {
+                                    if (o.value === val) o.selected = true;
+                                });
+                            }
+                        };
+
+                        set('nama_obligasi', bond.nama_obligasi);
+                        set('kode_obligasi', bond.kode);
+                        set('nama_emiten', bond.nama_emiten);
+                        setSelect('rating', bond.rating);
+                        if (bond.kupon) set('kupon', bond.kupon);
+                    },
+
                     onPdfSelected(event) {
                         this.aiPdfFile = event.target?.files?.[0] || null;
                         this.aiParseError = '';
@@ -445,15 +772,36 @@
                                 });
                             }
                         };
-                        set('nama_obligasi', d.nama_obligasi || d.nama_perusahaan);
+
+                        this.namaObligasiSearch = d.nama_obligasi || d.nama_perusahaan || this.namaObligasiSearch;
                         this.kodeObligasi = d.kode_obligasi || d.kode_saham || this.kodeObligasi;
                         this.namaEmiten = d.nama_emiten || this.namaEmiten;
                         this.periodeAnalisa = d.periode || this.periodeAnalisa;
                         if (d.periode && String(d.periode).length >= 4) this.tahunAnalisa = String(d.periode).slice(0, 4);
+
                         setSelect('rating', d.rating);
                         setSelect('mata_uang', d.mata_uang);
+                        setSelect('sektor', d.sektor);
                         if (d.kupon) set('kupon', d.kupon);
                         if (d.ytm) set('ytm', d.ytm);
+                        set('periode_dari', d.periode_dari);
+                        set('periode_sampai', d.periode_sampai);
+                        set('nominal_penerbit', d.nominal_penerbit);
+                        set('tanggal_terbit', d.tanggal_terbit);
+                        set('tanggal_jatuh_tempo', d.tanggal_jatuh_tempo);
+                        if (d.tanpa_jaminan) {
+                            const cb = document.querySelector('[name="tanpa_jaminan"]');
+                            if (cb) cb.checked = true;
+                        }
+                        if (d.dengan_jaminan) {
+                            const cb = document.querySelector('[name="dengan_jaminan"]');
+                            if (cb) cb.checked = true;
+                        }
+
+                        if (Array.isArray(d.keuangan_saham)) {
+                            this.keuanganSaham = d.keuangan_saham;
+                        }
+
                         const numFields = ['total_asset', 'current_asset', 'cash_equivalents', 'account_receivable',
                             'inventories', 'other_current_asset', 'fixed_asset', 'other_non_current_asset',
                             'total_liabilities', 'current_liabilities', 'account_payable', 'accruals',

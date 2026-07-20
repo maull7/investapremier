@@ -2125,9 +2125,9 @@
                                                     class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20"
                                                     @input="hitungNilaiPasarEfek(i)" />
                                             </td>
-                                            <td class="px-1 py-1"><input type="number" :name="`efek[${i}][nilai_pasar]`"
-                                                    x-model="row.nilai_pasar" step="0.01" readonly
-                                                    class="w-28 border-gray-300 rounded text-xs px-2 py-1.5 bg-gray-50 focus:border-primary focus:ring focus:ring-primary/20" />
+                                            <td class="px-1 py-1 text-right">
+                                                <span x-text="formatNumber(row.nilai_pasar)" class="text-gray-700 text-xs"></span>
+                                                <input type="hidden" :name="`efek[${i}][nilai_pasar]`" :value="row.nilai_pasar" />
                                             </td>
                                             <td class="px-1 py-1">
                                                 <template x-if="ffsPembandingOptions.length > 0">
@@ -2531,6 +2531,57 @@
                         {{-- Obligasi --}}
                         <div class="mb-4">
                             <h5 class="text-xs font-semibold text-muted mb-2">Obligasi</h5>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm">
+                                    <thead class="bg-[#f8fafc]">
+                                        <tr>
+                                            <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Daftar Efek</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">YTM</th>
+                                            <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Rating</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Kupon</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Tenor</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Durasi</th>
+                                            <th class="text-left px-2 py-2 text-xs font-semibold text-muted">Shadow Rating</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">DER</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Current Ratio</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Aktivitas Lancar</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Gross Profit Margin</th>
+                                            <th class="text-right px-2 py-2 text-xs font-semibold text-muted">Operating Profit Margin</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-line">
+                                        <template x-for="(row, i) in keuangan" :key="'ko'+i">
+                                            <tr x-show="row.kategori === 'Sukuk'">
+                                                <td class="px-1 py-1 whitespace-nowrap">
+                                                    <span class="text-xs text-gray-700" x-text="row.kode_efek + ' - ' + row.nama_efek"></span>
+                                                    <input type="hidden" :name="`keuangan[${i}][kategori]`" value="Sukuk" />
+                                                    <input type="hidden" :name="`keuangan[${i}][kode_efek]`" x-model="row.kode_efek" />
+                                                    <input type="hidden" :name="`keuangan[${i}][nama_efek]`" x-model="row.nama_efek" />
+                                                </td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][ytm]`" x-model="row.ytm" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="text" :name="`keuangan[${i}][rating]`" x-model="row.rating" class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][kupon]`" x-model="row.kupon" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][tenor]`" x-model="row.tenor" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][durasi]`" x-model="row.durasi" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="text" :name="`keuangan[${i}][shadow_rating]`" x-model="row.shadow_rating" class="w-16 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][der]`" x-model="row.der" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][current_ratio]`" x-model="row.current_ratio" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][aktivitas_lancar]`" x-model="row.aktivitas_lancar" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][gross_profit_margin]`" x-model="row.gross_profit_margin" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                                <td class="px-1 py-1"><input type="number" :name="`keuangan[${i}][operating_profit_margin]`" x-model="row.operating_profit_margin" step="0.0001" class="w-20 border-gray-300 rounded text-xs px-2 py-1.5 focus:border-primary focus:ring focus:ring-primary/20" /></td>
+                                            </tr>
+                                        </template>
+                                        <tr x-show="!keuangan.filter(r => r.kategori === 'Obligasi').length">
+                                            <td class="px-3 py-2 text-gray-400 italic" colspan="12">Tidak ada data obligasi</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                          {{-- Sukuk --}}
+                        <div class="mb-4">
+                            <h5 class="text-xs font-semibold text-muted mb-2">Sukuk</h5>
                             <div class="overflow-x-auto">
                                 <table class="w-full text-sm">
                                     <thead class="bg-[#f8fafc]">
@@ -3786,6 +3837,7 @@
                     lookupBankDataUrl: @json($formRoutes['lookup_bank_data']),
                     lookupKodeEfekUrl: @json($formRoutes['lookup_kode_efek']),
                     getFinancialDataUrl: @json($formRoutes['get_financial_data']),
+                    lookupNavHistoryUrl: @json($formRoutes['lookup_nav_history']),
                     parsePdfVisionUrl: @json($formRoutes['parse_pdf_vision']),
                     existingDocsUrl: @json($formRoutes['existing_documents']),
                     parseExistingDocUrl: @json($formRoutes['parse_existing_document']),
@@ -4008,6 +4060,7 @@
                                 el.value = resumeData.kode_reksa_dana;
                             }
                             this.applyLookupData(resumeData);
+                            this.autoCalcUnitPenyertaan();
                         } else if (this.kodeReksaDana) {
                             this.lookupReksaDana(this.kodeReksaDana);
                         }
@@ -4033,6 +4086,18 @@
                         this.$watch('kasAkhirTahun', () => this.autoCalcDerived());
                         this.$watch('arusKasOperasi', () => this.autoCalcDerived());
                         this.$watch('arusKasPendanaan', () => this.autoCalcDerived());
+                        this.$watch('totalAum', () => this.autoCalcUnitPenyertaan());
+                        this.$watch('nabPerUnit', () => this.autoCalcUnitPenyertaan());
+                        this.$watch('tanggalData', (val) => {
+                            if (val && this.kodeReksaDana) this.fetchNavHistory();
+                        });
+                        this.$watch('kodeReksaDana', (val) => {
+                            if (val && this.tanggalData) this.fetchNavHistory();
+                        });
+                        // Trigger initial fetch if both kode and tanggal already set (e.g., resume)
+                        if (this.kodeReksaDana && this.tanggalData) {
+                            this.fetchNavHistory();
+                        }
                     },
 
                     autoCalcDerived() {
@@ -4071,6 +4136,37 @@
                         this.bebanTerhadapPendapatan = totalPend ? totalBeb / totalPend : null;
                         this.pengelolaanInvestasiTerhadapPendapatan = totalPend ? bm / totalPend : null;
                         this.transactionProfitTerhadapNab = nab ? (gr + gu) / nab : null;
+                    },
+
+                    autoCalcUnitPenyertaan() {
+                        const aum = Number(this.totalAum);
+                        const nab = Number(this.nabPerUnit);
+                        if (aum && nab && nab > 0) {
+                            this.unitPenyertaan = (aum / nab).toFixed(4);
+                        }
+                    },
+
+                    async fetchNavHistory() {
+                        if (!this.tanggalData || !this.kodeReksaDana) return;
+                        try {
+                            const resp = await fetch(`${this.lookupNavHistoryUrl}?kode_reksa_dana=${encodeURIComponent(this.kodeReksaDana)}&tanggal=${encodeURIComponent(this.tanggalData)}`);
+                            const data = await resp.json();
+                            if (data.found && data.data) {
+                                const nab = data.data.nab_per_unit;
+                                const aum = data.data.aum;
+                                if (nab) this.nabPerUnit = nab;
+                                if (aum) this.totalAum = aum;
+                                if (!aum && !nab && data.data.unit_participation) {
+                                    this.unitPenyertaan = data.data.unit_participation;
+                                }
+                                if (data.data.tanggal_nav || data.data.tanggal_snapshot) {
+                                    this.tanggalData = data.data.tanggal_nav || data.data.tanggal_snapshot;
+                                }
+                                this.autoCalcUnitPenyertaan();
+                            }
+                        } catch (e) {
+                            console.warn('fetchNavHistory failed', e);
+                        }
                     },
 
                     addRow(type) {
@@ -5698,6 +5794,11 @@
                         const headerMaps = {
                             'Portofolio Efek': {
                                 'Kode': 'kode_efek',
+                                'Kode Efek': 'kode_efek',
+                                'Ticker': 'kode_efek',
+                                'Symbol': 'kode_efek',
+                                'Kode Saham': 'kode_efek',
+                                'ISIN': 'kode_efek',
                                 'Nama Efek': 'nama_efek',
                                 'Nama': 'nama_efek',
                                 'Sektor': 'sektor',
@@ -6287,8 +6388,6 @@
                                 this.setFieldValue('custodian_fee', m.custodian_fee);
                                 this.setFieldValue('total_aum', m.total_aum);
                                 this.totalAum = m.total_aum ?? this.totalAum;
-                                this.setFieldValue('unit_penyertaan', m.unit_penyertaan);
-                                this.unitPenyertaan = m.unit_penyertaan ?? this.unitPenyertaan;
                                 this.setFieldValue('nab_per_unit', m.nab_per_unit);
                                 this.nabPerUnit = m.nab_per_unit ?? this.nabPerUnit;
                                 this.setFieldValue('return_1m', m.return_1m);
@@ -6301,6 +6400,7 @@
                                 if (m.kategori && Array.isArray(m.kategori)) {
                                     this.applyKategori(m.kategori);
                                 }
+                                this.autoCalcUnitPenyertaan();
                                 this.lookupMessage = 'Data reksa dana ditemukan';
                                 this.lookupOk = true;
                             } else {

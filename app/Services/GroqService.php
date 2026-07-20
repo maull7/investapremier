@@ -2373,6 +2373,8 @@ Ekstrak data laporan keuangan dari teks berikut. Kembalikan HANYA JSON valid:
 {
 {$extraFields}
   "periode": "string misal Q4 2024 atau null",
+  "periode_dari": "tahun angka 4 digit misal 2022 atau null",
+  "periode_sampai": "tahun angka 4 digit misal 2024 atau null",
   "mata_uang": "IDR atau USD atau null",
   "total_asset": angka atau null,
   "current_asset": angka atau null,
@@ -2414,7 +2416,54 @@ Ekstrak data laporan keuangan dari teks berikut. Kembalikan HANYA JSON valid:
   "eps": angka atau null,
   "cash_flows_operating_activities": angka atau null,
   "cash_flows_investment": angka atau null,
-  "cash_flows_financing": angka atau null
+  "cash_flows_financing": angka atau null,
+  "portofolio": [
+    {
+      "kode_efek": "string atau null",
+      "nama_efek": "string atau null",
+      "sektor": "string atau null",
+      "bobot": angka atau null,
+      "nilai_pasar": angka atau null,
+      "harga_perolehan": angka atau null,
+      "persen_nab": angka atau null,
+      "ihsg_contribution": angka atau null,
+      "return_1m": angka atau null,
+      "return_3m": angka atau null,
+      "return_6m": angka atau null,
+      "return_1y": angka atau null,
+      "top_10": true/false
+    }
+  ] atau [],
+  "likuiditas": [
+    {
+      "kode_efek": "string atau null",
+      "nama_efek": "string atau null",
+      "rata_volume_transaksi_harian": angka atau null,
+      "volume_terendah": angka atau null,
+      "volume_saham": angka atau null,
+      "skenario_20_persen_reds": angka atau null,
+      "skenario_reds_closing_10": angka atau null,
+      "rasio_likuiditas_harian": angka atau null,
+      "rasio_likuiditas": angka atau null
+    }
+  ] atau [],
+  "keuangan": [
+    {
+      "kode_efek": "string atau null",
+      "nama_efek": "string atau null",
+      "per": angka atau null,
+      "pbv": angka atau null,
+      "roe": angka atau null,
+      "roa": angka atau null,
+      "npm": angka atau null,
+      "ev_ebitda": angka atau null,
+      "der": angka atau null,
+      "current_ratio": angka atau null,
+      "aktivitas_lancar": angka atau null,
+      "gross_profit_margin": angka atau null,
+      "operating_profit_margin": angka atau null
+    }
+  ] atau []
 }
 
 ATURAN:
@@ -2470,6 +2519,8 @@ Baca PDF laporan keuangan {$instrumen} ini seperti analis yang melihat halaman P
 {
 {$extraFields}
   "periode": "string misal Q4 2024 atau null",
+  "periode_dari": "tahun angka 4 digit misal 2022 atau null",
+  "periode_sampai": "tahun angka 4 digit misal 2024 atau null",
   "mata_uang": "IDR atau USD atau null",
   "total_asset": angka atau null,
   "current_asset": angka atau null,
@@ -2512,7 +2563,54 @@ Baca PDF laporan keuangan {$instrumen} ini seperti analis yang melihat halaman P
   "eps": angka atau null,
   "cash_flows_operating_activities": angka atau null,
   "cash_flows_investment": angka atau null,
-  "cash_flows_financing": angka atau null
+  "cash_flows_financing": angka atau null,
+  "portofolio": [
+    {
+      "kode_efek": "string atau null",
+      "nama_efek": "string atau null",
+      "sektor": "string atau null",
+      "bobot": angka atau null,
+      "nilai_pasar": angka atau null,
+      "harga_perolehan": angka atau null,
+      "persen_nab": angka atau null,
+      "ihsg_contribution": angka atau null,
+      "return_1m": angka atau null,
+      "return_3m": angka atau null,
+      "return_6m": angka atau null,
+      "return_1y": angka atau null,
+      "top_10": true/false
+    }
+  ] atau [],
+  "likuiditas": [
+    {
+      "kode_efek": "string atau null",
+      "nama_efek": "string atau null",
+      "rata_volume_transaksi_harian": angka atau null,
+      "volume_terendah": angka atau null,
+      "volume_saham": angka atau null,
+      "skenario_20_persen_reds": angka atau null,
+      "skenario_reds_closing_10": angka atau null,
+      "rasio_likuiditas_harian": angka atau null,
+      "rasio_likuiditas": angka atau null
+    }
+  ] atau [],
+  "keuangan": [
+    {
+      "kode_efek": "string atau null",
+      "nama_efek": "string atau null",
+      "per": angka atau null,
+      "pbv": angka atau null,
+      "roe": angka atau null,
+      "roa": angka atau null,
+      "npm": angka atau null,
+      "ev_ebitda": angka atau null,
+      "der": angka atau null,
+      "current_ratio": angka atau null,
+      "aktivitas_lancar": angka atau null,
+      "gross_profit_margin": angka atau null,
+      "operating_profit_margin": angka atau null
+    }
+  ] atau []
 }
 
 ATURAN:
@@ -2718,6 +2816,8 @@ PROMPT;
             'ytm',
             'sektor',
             'periode',
+            'periode_dari',
+            'periode_sampai',
             'mata_uang',
             'total_asset',
             'current_asset',
@@ -2760,6 +2860,9 @@ PROMPT;
             'cash_flows_operating_activities',
             'cash_flows_investment',
             'cash_flows_financing',
+            'portofolio',
+            'likuiditas',
+            'keuangan',
         ];
 
         $normalized = [];
@@ -2768,7 +2871,12 @@ PROMPT;
                 continue;
             }
 
-            $normalized[$field] = in_array($field, ['periode', 'mata_uang', 'nama_perusahaan', 'kode_saham', 'nama_obligasi', 'kode_obligasi', 'nama_emiten', 'rating', 'sektor'], true)
+            if (in_array($field, ['portofolio', 'likuiditas', 'keuangan'], true)) {
+                $normalized[$field] = is_array($data[$field]) ? array_values($data[$field]) : null;
+                continue;
+            }
+
+            $normalized[$field] = in_array($field, ['periode', 'periode_dari', 'periode_sampai', 'mata_uang', 'nama_perusahaan', 'kode_saham', 'nama_obligasi', 'kode_obligasi', 'nama_emiten', 'rating', 'sektor'], true)
                 ? ($data[$field] !== '' ? $data[$field] : null)
                 : self::normalizeNumericValue($data[$field]);
         }

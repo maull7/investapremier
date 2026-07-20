@@ -46,6 +46,15 @@ class AnalisaSahamController extends BaseAnalisaSahamController
                 'nama_perusahaan'=> $request->nama_perusahaan,
                 'kode_saham'     => $request->kode_saham,
                 'sektor'         => $request->sektor,
+                'mata_uang'      => $request->mata_uang,
+                'nama_saham'     => $request->nama_saham,
+                'jumlah_lembar_saham' => $request->jumlah_lembar_saham,
+                'harga_saham'    => $request->harga_saham,
+                'q1_saham'       => $request->q1_saham,
+                'q2_saham'       => $request->q2_saham,
+                'q3_saham'       => $request->q3_saham,
+                'q4_saham'       => $request->q4_saham,
+                'kapitalisasi_pasar' => $request->kapitalisasi_pasar,
                 'status'         => 'reviewed',
             ]
         );

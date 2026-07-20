@@ -232,4 +232,41 @@ class AnalisaRdController extends AnalisaController
 
         return response()->json(['found' => false, 'message' => 'Kode efek ' . $kode . ' tidak ditemukan di database']);
     }
+
+    public function lookupNavHistory(Request $request)
+    {
+        $request->validate([
+            'kode_reksa_dana' => 'required|string|max:20',
+            'tanggal' => 'required|date',
+        ]);
+
+        $kode = strtoupper(trim($request->kode_reksa_dana));
+        $tanggal = $request->tanggal;
+
+        $fund = \App\Models\ReksaDana::whereRaw('UPPER(kode_reksa_dana) = ?', [$kode])->first();
+
+        if (!$fund) {
+            return response()->json(['found' => false, 'message' => 'Reksa dana tidak ditemukan']);
+        }
+
+        $nav = $fund->harga()->where('tanggal', '<=', $tanggal)->latest('tanggal')->first();
+
+        $snapshot = $fund->snapshots()
+            ->where('period_date', '<=', $tanggal)
+            ->latest('period_date')
+            ->first();
+
+        $data = [
+            'nab_per_unit' => $nav?->nab_per_unit ?? $snapshot?->nab_per_unit,
+            'aum' => $nav?->aum ?? $snapshot?->aum,
+            'unit_participation' => $nav?->unit_participation ?? $snapshot?->total_unit,
+            'tanggal_nav' => $nav?->tanggal?->format('Y-m-d'),
+            'tanggal_snapshot' => $snapshot?->period_date?->format('Y-m-d'),
+        ];
+
+        return response()->json([
+            'found' => true,
+            'data' => $data,
+        ]);
+    }
 }

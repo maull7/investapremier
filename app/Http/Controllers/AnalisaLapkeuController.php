@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Jobs\AnalisaLapkeuAiJob;
 use App\Jobs\AnalisaLapkeuAiPlusJob;
 use App\Jobs\ParseLapkeuPdfJob;
+use App\Models\AnalisaEfek;
+use App\Models\AnalisaReksaDana;
 use App\Models\LapkeuPdfExtraction;
 use App\Services\GroqService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -73,6 +75,19 @@ abstract class AnalisaLapkeuController extends Controller
     {
         $prefix = $this->routePrefix();
         $hasPlusRoute = \Illuminate\Support\Facades\Route::has($prefix . '.preview-ai-plus');
+
+        // ponytail: latest reksa dana analysis for reference in Input Lengkap tab
+        $latestAnalisa = AnalisaReksaDana::query()
+            ->whereHas('efek')
+            ->with(['likuiditas', 'keuangan', 'efek'])
+            ->latest('tanggal_data')
+            ->first();
+        $rdPortofolio = $latestAnalisa?->efek ?? collect();
+        $rdLikuiditas = $latestAnalisa?->likuiditas ?? collect();
+        $rdKeuangan   = $latestAnalisa?->keuangan ?? collect();
+
+        $stocks = \App\Models\Stock::orderBy('kode')->get(['kode', 'nama']);
+
         return view($this->createView(), [
             'layout'            => $this->layout(),
             'productLabel'      => $this->productLabel,
@@ -87,7 +102,47 @@ abstract class AnalisaLapkeuController extends Controller
             'parsePdfRoute'         => route($prefix . '.parse-pdf'),
             'parsePdfVisionRoute'   => \Illuminate\Support\Facades\Route::has($prefix . '.parse-pdf-vision') ? route($prefix . '.parse-pdf-vision') : null,
             'parsePdfStatusRoute'   => route($prefix . '.parse-pdf-status', ['uuid' => '__UUID__']),
+            'lookupStockRoute'  => \Illuminate\Support\Facades\Route::has($prefix . '.lookup-stock') ? route($prefix . '.lookup-stock') : null,
+            'lookupObligasiRoute' => \Illuminate\Support\Facades\Route::has($prefix . '.lookup-obligasi') ? route($prefix . '.lookup-obligasi') : null,
+            'rdPortofolio'   => $rdPortofolio,
+            'rdLikuiditas'   => $rdLikuiditas,
+            'rdKeuangan'     => $rdKeuangan,
+            'stocks'         => $stocks,
         ]);
+    }
+
+    public function lookupStock(\Illuminate\Http\Request $request)
+    {
+        $q = $request->get('q');
+        if (!$q || strlen(trim($q)) < 1) {
+            return response()->json([]);
+        }
+        $q = strtoupper(trim($q));
+        $stocks = \App\Models\Stock::where('kode', 'like', "%{$q}%")
+            ->orWhere('nama', 'like', "%{$q}%")
+            ->limit(10)
+            ->get(['id', 'kode', 'nama', 'sektor']);
+        return response()->json($stocks);
+    }
+
+    public function lookupObligasi(\Illuminate\Http\Request $request)
+    {
+        $q = $request->get('q');
+        if (!$q || strlen(trim($q)) < 1) {
+            return response()->json([]);
+        }
+        $q = strtoupper(trim($q));
+        
+        $bonds = \App\Models\ObligasiHargaReferensi::select('kode', 'nama as nama_obligasi', 'emiten as nama_emiten', 'kupon', 'rating')
+            ->where(function($query) use ($q) {
+                $query->where('kode', 'like', "%{$q}%")
+                      ->orWhere('nama', 'like', "%{$q}%")
+                      ->orWhere('emiten', 'like', "%{$q}%");
+            })
+            ->limit(10)
+            ->get();
+            
+        return response()->json($bonds);
     }
 
     public function parsePdf(Request $request)
@@ -490,6 +545,8 @@ abstract class AnalisaLapkeuController extends Controller
         $fields = [
             'mata_uang',
             'periode',
+            'periode_dari',
+            'periode_sampai',
             'catatan',
             'current_asset',
             'cash_equivalents',
@@ -540,6 +597,17 @@ abstract class AnalisaLapkeuController extends Controller
             if ($request->has($field)) {
                 $data[$field] = $request->input($field) !== '' ? $request->input($field) : null;
             }
+        }
+        foreach (['likuiditas', 'keuangan', 'portofolio'] as $arr) {
+            if ($request->has($arr)) {
+                $data[$arr . '_data'] = $request->input($arr);
+            }
+        }
+        if ($request->has('saham_pembanding')) {
+            $data['saham_pembanding_data'] = $request->input('saham_pembanding');
+        }
+        if ($request->has('keuangan_saham')) {
+            $data['keuangan_saham_data'] = $request->input('keuangan_saham');
         }
         return $data;
     }

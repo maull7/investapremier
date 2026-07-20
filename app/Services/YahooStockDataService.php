@@ -78,6 +78,22 @@ class YahooStockDataService
                     'earningsPerShare'  => $this->raw($stats, 'trailingEps'),
                     'dividendYield'     => $this->raw($detail, 'dividendYield'),
                 ],
+                'highlights' => [
+                    'currentPrice'            => $this->raw($financial, 'currentPrice'),
+                    'targetMeanPrice'         => $this->raw($financial, 'targetMeanPrice'),
+                    'totalRevenue'            => $this->raw($financial, 'totalRevenue'),
+                    'revenueGrowth'           => $this->raw($financial, 'revenueGrowth'),
+                    'grossMargins'            => $this->raw($financial, 'grossMargins'),
+                    'ebitdaMargins'           => $this->raw($financial, 'ebitdaMargins'),
+                    'operatingMargins'        => $this->raw($financial, 'operatingMargins'),
+                    'returnOnEquity'          => $this->raw($financial, 'returnOnEquity'),
+                    'returnOnAssets'          => $this->raw($financial, 'returnOnAssets'),
+                    'freeCashflow'            => $this->raw($financial, 'freeCashflow'),
+                    'operatingCashflow'       => $this->raw($financial, 'operatingCashflow'),
+                    'debtToEquity'            => $this->raw($financial, 'debtToEquity'),
+                    'earningsGrowth'          => $this->raw($financial, 'earningsGrowth'),
+                    'earningsQuarterlyGrowth' => $this->raw($financial, 'earningsQuarterlyGrowth'),
+                ],
                 'financials' => $this->financialStatements($result),
                 'analysts'   => [
                     'targetHighPrice'          => $this->raw($financial, 'targetHighPrice'),
@@ -96,12 +112,12 @@ class YahooStockDataService
 
     // ─── Public: ambil quote detail + chart untuk ditampilkan di UI ───────────
 
-    public function fetchYahooData(Stock $stock, string $range = '1d'): array
+    public function fetchYahooData(Stock $stock, string $range = '1d', string $interval = 'auto'): array
     {
         $symbol   = $this->symbol($stock->kode);
-        $interval = $this->intervalFor($range);
+        $interval = $interval !== 'auto' ? $interval : $this->intervalFor($range);
         $ttl      = in_array($range, ['1d', '5d']) ? 300 : 3600;
-        $cacheKey = "yfapi_chart_{$symbol}_{$range}";
+        $cacheKey = "yfapi_chart_{$symbol}_{$range}_{$interval}";
 
         return Cache::remember($cacheKey, $ttl, function () use ($symbol, $range, $interval) {
             $quote = $this->fetchQuote($symbol);

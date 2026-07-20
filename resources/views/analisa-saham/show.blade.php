@@ -70,7 +70,11 @@
             <h1 class="page-title">{{ $analisa->nama_perusahaan }}</h1>
             <p class="page-sub">
                 {{ $analisa->kode_saham ? $analisa->kode_saham . ' · ' : '' }}{{ $analisa->sektor ?? '' }}
-                @if($analisa->periode) &bull; {{ $analisa->periode }} @endif
+                @if($analisa->periode_dari && $analisa->periode_sampai)
+                    &bull; {{ $analisa->periode_dari }} - {{ $analisa->periode_sampai }}
+                @elseif($analisa->periode)
+                    &bull; {{ $analisa->periode }}
+                @endif
             </p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
@@ -124,6 +128,32 @@
 
     {{-- Tab: Data --}}
     <div x-show="activeTab==='data'" class="space-y-6">
+        @if(!empty($analisa->saham_pembanding_data) && is_array($analisa->saham_pembanding_data))
+            <div class="bg-white rounded-xl border border-line p-6">
+                <h3 class="font-semibold text-primary mb-4">Saham Pembanding</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm border-collapse">
+                        <thead class="bg-gray-50 text-muted text-xs">
+                            <tr>
+                                <th class="px-3 py-2 text-left border-b border-line">Kode</th>
+                                <th class="px-3 py-2 text-left border-b border-line">Nama Perusahaan</th>
+                                <th class="px-3 py-2 text-left border-b border-line">Sektor</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-line">
+                            @foreach($analisa->saham_pembanding_data as $item)
+                                <tr>
+                                    <td class="px-3 py-2 font-semibold">{{ $item['kode'] ?? '-' }}</td>
+                                    <td class="px-3 py-2">{{ $item['nama'] ?? '-' }}</td>
+                                    <td class="px-3 py-2">{{ $item['sektor'] ?? '-' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        @endif
+
         @include('analisa-saham.partials.show-lapkeu')
     </div>
 
