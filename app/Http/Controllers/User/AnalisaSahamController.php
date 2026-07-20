@@ -27,6 +27,16 @@ class AnalisaSahamController extends AnalisaLapkeuController
             'sektor' => 'nullable|string|max:100',
             'mata_uang' => 'nullable|string|max:10',
             'periode' => 'nullable|string|max:20',
+            'periode_dari' => 'nullable|integer|digits:4',
+            'periode_sampai' => 'nullable|integer|digits:4|gte:periode_dari',
+            'nama_saham' => 'nullable|string|max:255',
+            'jumlah_lembar_saham' => 'nullable|numeric|min:0',
+            'harga_saham' => 'nullable|numeric|min:0',
+            'q1_saham' => 'nullable|numeric',
+            'q2_saham' => 'nullable|numeric',
+            'q3_saham' => 'nullable|numeric',
+            'q4_saham' => 'nullable|numeric',
+            'kapitalisasi_pasar' => 'nullable|numeric|min:0',
         ];
     }
 
@@ -47,6 +57,15 @@ class AnalisaSahamController extends AnalisaLapkeuController
                 'nama_perusahaan' => $request->nama_perusahaan,
                 'kode_saham' => $request->kode_saham,
                 'sektor' => $request->sektor,
+                'mata_uang' => $request->mata_uang,
+                'nama_saham' => $request->nama_saham,
+                'jumlah_lembar_saham' => $request->jumlah_lembar_saham,
+                'harga_saham' => $request->harga_saham,
+                'q1_saham' => $request->q1_saham,
+                'q2_saham' => $request->q2_saham,
+                'q3_saham' => $request->q3_saham,
+                'q4_saham' => $request->q4_saham,
+                'kapitalisasi_pasar' => $request->kapitalisasi_pasar,
                 'status' => 'submitted',
             ]
         );

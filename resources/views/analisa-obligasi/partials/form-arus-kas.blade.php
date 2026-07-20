@@ -9,7 +9,7 @@
         ] as [$name, $label])
         <div class="flex items-center gap-2">
             <label class="w-52 text-xs text-gray-600 shrink-0">{{ $label }}</label>
-            <input type="number" name="{{ $name }}" step="0.01" value="{{ old($name) }}"
+            <input type="number" name="{{ $name }}" step="0.01" value="{{ old($name) }}" x-model="{{ $name }}"
                 class="flex-1 border-gray-300 rounded-lg text-sm focus:border-primary focus:ring focus:ring-primary/20">
         </div>
         @endforeach

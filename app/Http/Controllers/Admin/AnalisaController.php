@@ -33,7 +33,8 @@ class AnalisaController extends Controller
         $query = ReksaDana::with([
             'documents' => fn($q) => $q->where('document_type', 'ffs')->orderBy('ffs_year', 'desc')->orderBy('ffs_month', 'desc'),
             'analisa' => fn($q) => $q->where('product_type', 'reksa_dana')->with('user')->latest(),
-        ]);
+        ])
+            ->whereHas('documents');
 
         if ($request->status) {
             if ($request->status === 'original') {
@@ -46,7 +47,7 @@ class AnalisaController extends Controller
         if ($request->kategori) {
             $query->where(function ($q) use ($request) {
                 $q->whereJsonContains('kategori', $request->kategori)
-                  ->orWhereHas('analisa', fn($qq) => $qq->where('product_type', 'reksa_dana')->whereJsonContains('kategori', $request->kategori));
+                    ->orWhereHas('analisa', fn($qq) => $qq->where('product_type', 'reksa_dana')->whereJsonContains('kategori', $request->kategori));
             });
         }
 
@@ -76,7 +77,7 @@ class AnalisaController extends Controller
             ->whereNotNull('ffs_tahun')
             ->distinct()->orderBy('ffs_tahun', 'desc')->pluck('ffs_tahun');
 
-        $bulanIndonesia = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        $bulanIndonesia = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
         return view('admin.analisa.index', compact('reksaDanas', 'tahunList', 'bulanIndonesia') + ['tab' => 'analisa']);
     }
@@ -91,13 +92,13 @@ class AnalisaController extends Controller
             $s = $request->search;
             $query->where(function ($q) use ($s) {
                 $q->where('nama_reksa_dana', 'like', "%{$s}%")
-                  ->orWhere('kode_reksa_dana', 'like', "%{$s}%");
+                    ->orWhere('kode_reksa_dana', 'like', "%{$s}%");
             });
         }
 
         $reksaDanas = $query->orderBy('nama_reksa_dana')->paginate(20);
 
-        $bulanIndonesia = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        $bulanIndonesia = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
         return view('admin.analisa.index', compact('reksaDanas', 'bulanIndonesia') + ['tab' => 'prospektus']);
     }
@@ -112,7 +113,7 @@ class AnalisaController extends Controller
             $s = $request->search;
             $query->where(function ($q) use ($s) {
                 $q->where('nama_reksa_dana', 'like', "%{$s}%")
-                  ->orWhere('kode_reksa_dana', 'like', "%{$s}%");
+                    ->orWhere('kode_reksa_dana', 'like', "%{$s}%");
             });
         }
 
@@ -132,7 +133,7 @@ class AnalisaController extends Controller
             ->orderBy('ffs_year', 'desc')
             ->pluck('ffs_year');
 
-        $bulanIndonesia = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        $bulanIndonesia = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
         return view('admin.analisa.index', compact('reksaDanas', 'tahunList', 'bulanIndonesia') + ['tab' => 'ffs']);
     }
@@ -169,7 +170,7 @@ class AnalisaController extends Controller
         $pdf = Pdf::loadView('analisa.pdf', compact('analisa'))
             ->setPaper('a4', 'portrait');
 
-        $filename = 'analisa-'.str($analisa->nama_reksa_dana)->slug().'-'.now()->format('Ymd').'.pdf';
+        $filename = 'analisa-' . str($analisa->nama_reksa_dana)->slug() . '-' . now()->format('Ymd') . '.pdf';
 
         return $pdf->download($filename);
     }
@@ -180,7 +181,7 @@ class AnalisaController extends Controller
             abort(404, 'File PDF tidak ditemukan.');
         }
 
-        return Storage::disk('public')->download($analisa->pdf_path, 'ffs-'.str($analisa->nama_reksa_dana)->slug().'.pdf');
+        return Storage::disk('public')->download($analisa->pdf_path, 'ffs-' . str($analisa->nama_reksa_dana)->slug() . '.pdf');
     }
 
     public function review(Request $request, AnalisaReksaDana $analisa)

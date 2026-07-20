@@ -15,7 +15,7 @@
             ] as [$name, $label])
             <div class="flex items-center gap-2">
                 <label class="w-44 text-xs text-gray-600 shrink-0">{{ $label }}</label>
-                <input type="number" name="{{ $name }}" step="0.01" value="{{ old($name) }}"
+                <input type="number" name="{{ $name }}" step="0.01" value="{{ old($name) }}" x-model="{{ $name }}"
                     class="flex-1 border-gray-300 rounded-lg text-sm focus:border-primary focus:ring focus:ring-primary/20 {{ in_array($name,['current_asset','total_asset','total_liabilities','equity']) ? 'font-semibold bg-[#f8fafc]' : '' }}">
             </div>
             @endforeach
@@ -31,7 +31,7 @@
             ] as [$name, $label])
             <div class="flex items-center gap-2">
                 <label class="w-44 text-xs text-gray-600 shrink-0">{{ $label }}</label>
-                <input type="number" name="{{ $name }}" step="0.01" value="{{ old($name) }}"
+                <input type="number" name="{{ $name }}" step="0.01" value="{{ old($name) }}" x-model="{{ $name }}"
                     class="flex-1 border-gray-300 rounded-lg text-sm focus:border-primary focus:ring focus:ring-primary/20 {{ in_array($name,['total_asset']) ? 'font-semibold bg-[#f8fafc]' : '' }}">
             </div>
             @endforeach
@@ -50,7 +50,7 @@
             ] as [$name, $label])
             <div class="flex items-center gap-2">
                 <label class="w-44 text-xs text-gray-600 shrink-0">{{ $label }}</label>
-                <input type="number" name="{{ $name }}" step="0.01" value="{{ old($name) }}"
+                <input type="number" name="{{ $name }}" step="0.01" value="{{ old($name) }}" x-model="{{ $name }}"
                     class="flex-1 border-gray-300 rounded-lg text-sm focus:border-primary focus:ring focus:ring-primary/20 {{ in_array($name,['current_liabilities']) ? 'font-semibold bg-[#f8fafc]' : '' }}">
             </div>
             @endforeach
@@ -74,7 +74,7 @@
             ] as [$name, $label])
             <div class="flex items-center gap-2">
                 <label class="w-44 text-xs text-gray-600 shrink-0">{{ $label }}</label>
-                <input type="number" name="{{ $name }}" step="0.01" value="{{ old($name) }}"
+                <input type="number" name="{{ $name }}" step="0.01" value="{{ old($name) }}" x-model="{{ $name }}"
                     class="flex-1 border-gray-300 rounded-lg text-sm focus:border-primary focus:ring focus:ring-primary/20 {{ in_array($name,['total_liabilities','equity']) ? 'font-semibold bg-[#f8fafc]' : '' }}">
             </div>
             @endforeach

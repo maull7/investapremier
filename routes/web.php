@@ -204,6 +204,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('analisa-rd/lookup-bank-data', [AdminAnalisaRdController::class, 'lookupBankData'])->name('analisa-rd.lookup-bank-data');
     Route::get('analisa-rd/lookup-kode-efek', [AdminAnalisaRdController::class, 'lookupKodeEfek'])->name('analisa-rd.lookup-kode-efek');
     Route::get('analisa-rd/get-financial-data', [AdminAnalisaRdController::class, 'getFinancialData'])->name('analisa-rd.get-financial-data');
+    Route::get('analisa-rd/lookup-nav-history', [AdminAnalisaRdController::class, 'lookupNavHistory'])->name('analisa-rd.lookup-nav-history');
 
     // Daftar & Analisa Saham // && cek analisa sahamm
     Route::resource('saham', StockController::class)->except(['show']);
@@ -239,6 +240,8 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::get('analisa-saham/parse-pdf/{uuid}/status', [AdminAnalisaSahamController::class, 'parsePdfStatus'])->name('analisa-saham.parse-pdf-status');
     Route::post('analisa-saham/preview-ai', [AdminAnalisaSahamController::class, 'previewAi'])->name('analisa-saham.preview-ai');
     Route::post('analisa-saham/preview-ai-plus', [AdminAnalisaSahamController::class, 'previewAiPlus'])->name('analisa-saham.preview-ai-plus');
+    Route::get('analisa-saham/lookup-stock', [AdminAnalisaSahamController::class, 'lookupStock'])->name('analisa-saham.lookup-stock');
+    Route::get('analisa-obligasi/lookup-obligasi', [App\Http\Controllers\Admin\AnalisaObligasiController::class, 'lookupObligasi'])->name('analisa-obligasi.lookup-obligasi');
     Route::get('analisa-saham/{analisa}', [AdminMonitorAnalisaSahamController::class, 'show'])->name('analisa-saham.show');
     Route::get('analisa-saham/{analisa}/pdf', [AdminMonitorAnalisaSahamController::class, 'exportPdf'])->name('analisa-saham.pdf');
     Route::get('analisa-saham/{analisa}/download-lapkeu', [AdminMonitorAnalisaSahamController::class, 'downloadLapkeu'])->name('analisa-saham.download-lapkeu');
@@ -531,6 +534,8 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
     Route::get('/analisa-saham/parse-pdf/{uuid}/status', [UserAnalisaSahamController::class, 'parsePdfStatus'])->name('analisa-saham.parse-pdf-status');
     Route::post('/analisa-saham/preview-ai', [UserAnalisaSahamController::class, 'previewAi'])->name('analisa-saham.preview-ai');
     Route::post('/analisa-saham/preview-ai-plus', [UserAnalisaSahamController::class, 'previewAiPlus'])->name('analisa-saham.preview-ai-plus');
+    Route::get('/analisa-saham/lookup-stock', [UserAnalisaSahamController::class, 'lookupStock'])->name('analisa-saham.lookup-stock');
+    Route::get('/analisa-obligasi/lookup-obligasi', [UserAnalisaObligasiController::class, 'lookupObligasi'])->name('analisa-obligasi.lookup-obligasi');
     Route::get('/analisa-saham/{analisa}', [UserAnalisaSahamController::class, 'show'])->name('analisa-saham.show');
     Route::get('/analisa-saham/{analisa}/pdf', [UserAnalisaSahamController::class, 'exportPdf'])->name('analisa-saham.pdf');
     Route::get('/analisa-saham/{analisa}/download-lapkeu', [UserAnalisaSahamController::class, 'downloadLapkeu'])->name('analisa-saham.download-lapkeu');

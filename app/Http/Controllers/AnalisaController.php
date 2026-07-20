@@ -101,6 +101,7 @@ class AnalisaController extends Controller
             'lookup_sukuk_return' => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-sukuk-return") ? route("{$prefix}.lookup-sukuk-return") : null,
             'lookup_kode_efek' => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-kode-efek") ? route("{$prefix}.lookup-kode-efek") : null,
             'get_financial_data' => \Illuminate\Support\Facades\Route::has("{$prefix}.get-financial-data") ? route("{$prefix}.get-financial-data") : null,
+            'lookup_nav_history' => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-nav-history") ? route("{$prefix}.lookup-nav-history") : null,
             'parse_web_file'      => route("{$prefix}.parse-web-file"),
             'import_excel_preview' => route("{$prefix}.import-excel-preview"),
             'scrape_web'          => $scrapeWebBase,
@@ -462,6 +463,64 @@ class AnalisaController extends Controller
         return $fields;
     }
 
+    private function enrichKodeEfek(array &$data): void
+    {
+        $resolver = app(\App\Services\StockIdentityResolver::class);
+
+        foreach ($data['efek'] ?? [] as &$efek) {
+            if (!empty($efek['kode_efek']) || empty($efek['nama_efek'])) {
+                continue;
+            }
+            $enriched = $resolver->enrich([
+                'kode_saham' => '',
+                'nama_perusahaan' => $efek['nama_efek'],
+                'sektor' => $efek['sektor'] ?? '',
+            ]);
+            if ($enriched['kode_saham']) {
+                $efek['kode_efek'] = $enriched['kode_saham'];
+                $efek['sektor'] = $efek['sektor'] ?: $enriched['sektor'];
+            }
+        }
+        unset($efek);
+
+        foreach ($data['_raw_tables'] ?? [] as &$partition) {
+            foreach ($partition['tables'] ?? [] as &$table) {
+                if (($table['table_name'] ?? '') !== 'Portofolio Efek') continue;
+
+                $kodeIdx = null;
+                $namaIdx = null;
+                foreach ($table['headers'] ?? [] as $i => $h) {
+                    $h = trim((string) $h);
+                    if (in_array($h, ['Kode', 'Kode Efek', 'Ticker', 'Symbol', 'Kode Saham', 'ISIN'])) {
+                        $kodeIdx = $i;
+                    }
+                    if (in_array($h, ['Nama Efek', 'Nama', 'Nama Saham'])) {
+                        $namaIdx = $i;
+                    }
+                }
+                if ($kodeIdx === null || $namaIdx === null) continue;
+
+                foreach ($table['rows'] as &$row) {
+                    if (!empty($row[$kodeIdx] ?? '')) continue;
+                    $nama = $row[$namaIdx] ?? '';
+                    if (empty($nama)) continue;
+
+                    $enriched = $resolver->enrich([
+                        'kode_saham' => '',
+                        'nama_perusahaan' => $nama,
+                        'sektor' => '',
+                    ]);
+                    if ($enriched['kode_saham']) {
+                        $row[$kodeIdx] = $enriched['kode_saham'];
+                    }
+                }
+                unset($row);
+            }
+            unset($table);
+        }
+        unset($partition);
+    }
+
     public function parsePdf(Request $request, FfsParserService $ffsParser, GroqService $groq, AiTableService $aiTable)
     {
         ignore_user_abort(true);
@@ -490,7 +549,9 @@ class AnalisaController extends Controller
             } else {
                 $data = $ffsParser->parseWithAi($path, $groq, $documentType);
             }
-} catch (\Throwable $e) {
+
+            $this->enrichKodeEfek($data);
+        } catch (\Throwable $e) {
             if (connection_aborted()) {
                 \Log::warning('[PARSE-PDF] Koneksi terputus oleh klien/proxy sebelum ekstraksi selesai. Data mungkin tidak lengkap.');
             }
@@ -775,6 +836,8 @@ class AnalisaController extends Controller
             } else {
                 $data = $ffsParser->parseWithAi($fullPath, $groq, $documentType);
             }
+
+            $this->enrichKodeEfek($data);
 
             // Simpan hasil ekstraksi agar tidak hilang jika koneksi terputus
             try {
