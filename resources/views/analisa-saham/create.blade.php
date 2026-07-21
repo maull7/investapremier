@@ -17,7 +17,8 @@
             </div>
         @endif
 
-        <form id="lapkeu-form" method="POST" action="{{ $storeRoute }}" enctype="multipart/form-data" class="space-y-6" novalidate>
+        <form id="lapkeu-form" method="POST" action="{{ $storeRoute }}" enctype="multipart/form-data" class="space-y-6"
+            novalidate>
             @csrf
             <input type="hidden" name="input_mode"
                 :value="['ai', 'ai-plus', 'pdf', 'riset-broker'].includes(mode) ? 'manual' : mode">
@@ -35,7 +36,8 @@
                     <div class="relative" x-data="{ nameSearch: @json(old('nama_perusahaan', '')), nameResults: [] }" @click.outside="nameResults = []">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Nama Perusahaan <span
                                 class="text-red-500">*</span></label>
-                        <input type="text" name="nama_perusahaan" id="nama_perusahaan" x-model="nameSearch" x-ref="namaPerusahaan"
+                        <input type="text" name="nama_perusahaan" id="nama_perusahaan" x-model="nameSearch"
+                            x-ref="namaPerusahaan"
                             @input.debounce.300ms="if (nameSearch.length > 0) { let d = $data; window.lookupStock(nameSearch).then(r => d.nameResults = r) } else { nameResults = [] }"
                             @blur="if (nameSearch.length > 0) { let d = $data; window.lookupStock(nameSearch).then(list => { if (list.length > 0) { window.selectStock(list[0]); nameSearch = list[0].nama; d.nameResults = []; } }) }"
                             class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
@@ -309,50 +311,106 @@
                                 <h4 class="font-semibold text-primary">Portofolio Efek</h4>
                                 <p class="text-xs text-muted mt-0.5">Daftar efek. Bisa terisi otomatis dari PDF.</p>
                             </div>
-                            <button type="button" @click="portofolio.push({kode_efek:'',nama_efek:'',sektor:'',bobot:'',nilai_pasar:'',harga_perolehan:'',persen_nab:'',ihsg_contribution:'',return_1m:'',return_3m:'',return_6m:'',return_1y:'',top_10:false})"
-                                class="text-xs px-3 py-1.5 border border-line rounded-lg hover:bg-gray-50">+ Tambah</button>
+                            <button type="button"
+                                @click="portofolio.push({kode_efek:'',nama_efek:'',sektor:'',bobot:'',nilai_pasar:'',harga_perolehan:'',persen_nab:'',ihsg_contribution:'',return_1m:'',return_3m:'',return_6m:'',return_1y:'',top_10:false})"
+                                class="text-xs px-3 py-1.5 border border-line rounded-lg hover:bg-gray-50">+
+                                Tambah</button>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm border-collapse">
                                 <thead class="bg-gray-50 text-muted text-xs">
                                     <tr>
                                         <th class="px-3 py-2 text-left whitespace-nowrap border-b border-line">Kode</th>
-                                        <th class="px-3 py-2 text-left whitespace-nowrap border-b border-line">Nama Efek</th>
+                                        <th class="px-3 py-2 text-left whitespace-nowrap border-b border-line">Nama Efek
+                                        </th>
                                         <th class="px-3 py-2 text-left whitespace-nowrap border-b border-line">Sektor</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Bobot %</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Nilai Pasar</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Harga Perolehan</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">% thd NAB</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Kontribusi % IHSG</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Return 1M</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Return 3M</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Return 6M</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Return 1 Thn</th>
-                                        <th class="px-3 py-2 text-center whitespace-nowrap border-b border-line">Top 10</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Bobot %
+                                        </th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Nilai Pasar
+                                        </th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Harga
+                                            Perolehan</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">% thd NAB
+                                        </th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Kontribusi
+                                            % IHSG</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Return 1M
+                                        </th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Return 3M
+                                        </th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Return 6M
+                                        </th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Return 1
+                                            Thn</th>
+                                        <th class="px-3 py-2 text-center whitespace-nowrap border-b border-line">Top 10
+                                        </th>
                                         <th class="px-3 py-2 text-center whitespace-nowrap border-b border-line"></th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-line">
                                     <template x-for="(item, index) in portofolio" :key="index">
                                         <tr class="hover:bg-gray-50/50">
-                                            <td class="px-2 py-1.5"><input type="text" x-model="item.kode_efek" :name="`portofolio[${index}][kode_efek]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="text" x-model="item.nama_efek" :name="`portofolio[${index}][nama_efek]`" class="w-28 border-0 bg-transparent text-sm px-1 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="text" x-model="item.sektor" :name="`portofolio[${index}][sektor]`" class="w-24 border-0 bg-transparent text-sm px-1 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.01" x-model="item.bobot" :name="`portofolio[${index}][bobot]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.01" x-model="item.nilai_pasar" :name="`portofolio[${index}][nilai_pasar]`" class="w-24 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.01" x-model="item.harga_perolehan" :name="`portofolio[${index}][harga_perolehan]`" class="w-24 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.01" x-model="item.persen_nab" :name="`portofolio[${index}][persen_nab]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.01" x-model="item.ihsg_contribution" :name="`portofolio[${index}][ihsg_contribution]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.01" x-model="item.return_1m" :name="`portofolio[${index}][return_1m]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.01" x-model="item.return_3m" :name="`portofolio[${index}][return_3m]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.01" x-model="item.return_6m" :name="`portofolio[${index}][return_6m]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.01" x-model="item.return_1y" :name="`portofolio[${index}][return_1y]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5 text-center">
-                                                <input type="hidden" :name="`portofolio[${index}][top_10]`" value="0">
-                                                <input type="checkbox" :name="`portofolio[${index}][top_10]`" value="1" :checked="item.top_10" @change="item.top_10 = $event.target.checked" class="rounded border-gray-300 text-primary focus:ring-primary/30">
+                                            <td class="px-2 py-1.5"><input type="text" x-model="item.kode_efek"
+                                                    :name="`portofolio[${index}][kode_efek]`"
+                                                    class="w-20 border-0 bg-transparent text-sm px-1 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="text" x-model="item.nama_efek"
+                                                    :name="`portofolio[${index}][nama_efek]`"
+                                                    class="w-28 border-0 bg-transparent text-sm px-1 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="text" x-model="item.sektor"
+                                                    :name="`portofolio[${index}][sektor]`"
+                                                    class="w-24 border-0 bg-transparent text-sm px-1 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.01"
+                                                    x-model="item.bobot" :name="`portofolio[${index}][bobot]`"
+                                                    class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.01"
+                                                    x-model="item.nilai_pasar" :name="`portofolio[${index}][nilai_pasar]`"
+                                                    class="w-24 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.01"
+                                                    x-model="item.harga_perolehan"
+                                                    :name="`portofolio[${index}][harga_perolehan]`"
+                                                    class="w-24 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.01"
+                                                    x-model="item.persen_nab" :name="`portofolio[${index}][persen_nab]`"
+                                                    class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.01"
+                                                    x-model="item.ihsg_contribution"
+                                                    :name="`portofolio[${index}][ihsg_contribution]`"
+                                                    class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.01"
+                                                    x-model="item.return_1m" :name="`portofolio[${index}][return_1m]`"
+                                                    class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.01"
+                                                    x-model="item.return_3m" :name="`portofolio[${index}][return_3m]`"
+                                                    class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.01"
+                                                    x-model="item.return_6m" :name="`portofolio[${index}][return_6m]`"
+                                                    class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.01"
+                                                    x-model="item.return_1y" :name="`portofolio[${index}][return_1y]`"
+                                                    class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
                                             </td>
                                             <td class="px-2 py-1.5 text-center">
-                                                <button type="button" @click="portofolio.splice(index, 1)" class="text-red-500 hover:text-red-700 text-xs">Hapus</button>
+                                                <input type="hidden" :name="`portofolio[${index}][top_10]`"
+                                                    value="0">
+                                                <input type="checkbox" :name="`portofolio[${index}][top_10]`"
+                                                    value="1" :checked="item.top_10"
+                                                    @change="item.top_10 = $event.target.checked"
+                                                    class="rounded border-gray-300 text-primary focus:ring-primary/30">
+                                            </td>
+                                            <td class="px-2 py-1.5 text-center">
+                                                <button type="button" @click="portofolio.splice(index, 1)"
+                                                    class="text-red-500 hover:text-red-700 text-xs">Hapus</button>
                                             </td>
                                         </tr>
                                     </template>
@@ -373,21 +431,31 @@
                                 <h4 class="font-semibold text-primary">Analisa Likuiditas</h4>
                                 <p class="text-xs text-muted mt-0.5">Data likuiditas. Bisa terisi otomatis dari PDF.</p>
                             </div>
-                            <button type="button" @click="likuiditas.push({kode_efek:'',nama_efek:'',rata_volume_transaksi_harian:'',volume_terendah:'',volume_saham:'',skenario_20_persen_reds:'',skenario_reds_closing_10:'',rasio_likuiditas_harian:'',rasio_likuiditas:''})"
-                                class="text-xs px-3 py-1.5 border border-line rounded-lg hover:bg-gray-50">+ Tambah</button>
+                            <button type="button"
+                                @click="likuiditas.push({kode_efek:'',nama_efek:'',rata_volume_transaksi_harian:'',volume_terendah:'',volume_saham:'',skenario_20_persen_reds:'',skenario_reds_closing_10:'',rasio_likuiditas_harian:'',rasio_likuiditas:''})"
+                                class="text-xs px-3 py-1.5 border border-line rounded-lg hover:bg-gray-50">+
+                                Tambah</button>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm border-collapse">
                                 <thead class="bg-gray-50 text-muted text-xs">
                                     <tr>
-                                        <th class="px-3 py-2 text-left whitespace-nowrap border-b border-line">Daftar Efek</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Rata-rata Volume Transaksi Harian</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Volume Terendah</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Volume Saham</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Skenario 20% Reds</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Skenario Reds Vol. Closing (10%)</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Rasio Likuiditas Harian</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Rasio Likuiditas</th>
+                                        <th class="px-3 py-2 text-left whitespace-nowrap border-b border-line">Daftar Efek
+                                        </th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Rata-rata
+                                            Volume Transaksi Harian</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Volume
+                                            Terendah</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Volume
+                                            Saham</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Skenario
+                                            20% Reds</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Skenario
+                                            Reds Vol. Closing (10%)</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Rasio
+                                            Likuiditas Harian</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Rasio
+                                            Likuiditas</th>
                                         <th class="px-3 py-2 text-center whitespace-nowrap border-b border-line"></th>
                                     </tr>
                                 </thead>
@@ -395,18 +463,54 @@
                                     <template x-for="(item, index) in likuiditas" :key="index">
                                         <tr class="hover:bg-gray-50/50">
                                             <td class="px-2 py-1.5 whitespace-nowrap">
-                                                <input type="text" x-model="item.kode_efek" :name="`likuiditas[${index}][kode_efek]`" class="w-16 border-0 bg-transparent text-sm px-1 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30 rounded" placeholder="Kode">
+                                                <input type="text" x-model="item.kode_efek"
+                                                    :name="`likuiditas[${index}][kode_efek]`"
+                                                    class="w-16 border-0 bg-transparent text-sm px-1 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"
+                                                    placeholder="Kode">
                                                 <span class="text-muted mx-0.5">-</span>
-                                                <input type="text" x-model="item.nama_efek" :name="`likuiditas[${index}][nama_efek]`" class="w-24 border-0 bg-transparent text-sm px-1 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30 rounded" placeholder="Nama">
+                                                <input type="text" x-model="item.nama_efek"
+                                                    :name="`likuiditas[${index}][nama_efek]`"
+                                                    class="w-24 border-0 bg-transparent text-sm px-1 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"
+                                                    placeholder="Nama">
                                             </td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.rata_volume_transaksi_harian" :name="`likuiditas[${index}][rata_volume_transaksi_harian]`" class="w-24 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.volume_terendah" :name="`likuiditas[${index}][volume_terendah]`" class="w-24 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.volume_saham" :name="`likuiditas[${index}][volume_saham]`" class="w-24 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.skenario_20_persen_reds" :name="`likuiditas[${index}][skenario_20_persen_reds]`" class="w-24 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.skenario_reds_closing_10" :name="`likuiditas[${index}][skenario_reds_closing_10]`" class="w-24 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.rasio_likuiditas_harian" :name="`likuiditas[${index}][rasio_likuiditas_harian]`" class="w-24 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.rasio_likuiditas" :name="`likuiditas[${index}][rasio_likuiditas]`" class="w-24 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5 text-center"><button type="button" @click="likuiditas.splice(index, 1)" class="text-red-500 hover:text-red-700 text-xs">Hapus</button></td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001"
+                                                    x-model="item.rata_volume_transaksi_harian"
+                                                    :name="`likuiditas[${index}][rata_volume_transaksi_harian]`"
+                                                    class="w-24 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001"
+                                                    x-model="item.volume_terendah"
+                                                    :name="`likuiditas[${index}][volume_terendah]`"
+                                                    class="w-24 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001"
+                                                    x-model="item.volume_saham"
+                                                    :name="`likuiditas[${index}][volume_saham]`"
+                                                    class="w-24 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001"
+                                                    x-model="item.skenario_20_persen_reds"
+                                                    :name="`likuiditas[${index}][skenario_20_persen_reds]`"
+                                                    class="w-24 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001"
+                                                    x-model="item.skenario_reds_closing_10"
+                                                    :name="`likuiditas[${index}][skenario_reds_closing_10]`"
+                                                    class="w-24 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001"
+                                                    x-model="item.rasio_likuiditas_harian"
+                                                    :name="`likuiditas[${index}][rasio_likuiditas_harian]`"
+                                                    class="w-24 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001"
+                                                    x-model="item.rasio_likuiditas"
+                                                    :name="`likuiditas[${index}][rasio_likuiditas]`"
+                                                    class="w-24 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5 text-center"><button type="button"
+                                                    @click="likuiditas.splice(index, 1)"
+                                                    class="text-red-500 hover:text-red-700 text-xs">Hapus</button></td>
                                         </tr>
                                     </template>
                                     <tr x-show="likuiditas.length === 0">
@@ -426,25 +530,33 @@
                                 <h4 class="font-semibold text-primary">Analisa Keuangan</h4>
                                 <p class="text-xs text-muted mt-0.5">Rasio keuangan. Bisa terisi otomatis dari PDF.</p>
                             </div>
-                            <button type="button" @click="keuangan.push({kode_efek:'',nama_efek:'',per:'',pbv:'',roe:'',roa:'',npm:'',ev_ebitda:'',der:'',current_ratio:'',aktivitas_lancar:'',gross_profit_margin:'',operating_profit_margin:''})"
-                                class="text-xs px-3 py-1.5 border border-line rounded-lg hover:bg-gray-50">+ Tambah</button>
+                            <button type="button"
+                                @click="keuangan.push({kode_efek:'',nama_efek:'',per:'',pbv:'',roe:'',roa:'',npm:'',ev_ebitda:'',der:'',current_ratio:'',aktivitas_lancar:'',gross_profit_margin:'',operating_profit_margin:''})"
+                                class="text-xs px-3 py-1.5 border border-line rounded-lg hover:bg-gray-50">+
+                                Tambah</button>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm border-collapse">
                                 <thead class="bg-gray-50 text-muted text-xs">
                                     <tr>
-                                        <th class="px-3 py-2 text-left whitespace-nowrap border-b border-line">Daftar Efek</th>
+                                        <th class="px-3 py-2 text-left whitespace-nowrap border-b border-line">Daftar Efek
+                                        </th>
                                         <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">PER</th>
                                         <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">PBV</th>
                                         <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">ROE</th>
                                         <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">ROA</th>
                                         <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">NPM</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">EV/EBITDA</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">EV/EBITDA
+                                        </th>
                                         <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">DER</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Current Ratio</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Aktivitas Lancar</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Gross Profit Margin</th>
-                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Operating Profit Margin</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Current
+                                            Ratio</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Aktivitas
+                                            Lancar</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Gross
+                                            Profit Margin</th>
+                                        <th class="px-3 py-2 text-right whitespace-nowrap border-b border-line">Operating
+                                            Profit Margin</th>
                                         <th class="px-3 py-2 text-center whitespace-nowrap border-b border-line"></th>
                                     </tr>
                                 </thead>
@@ -452,22 +564,67 @@
                                     <template x-for="(item, index) in keuangan" :key="index">
                                         <tr class="hover:bg-gray-50/50">
                                             <td class="px-2 py-1.5 whitespace-nowrap">
-                                                <input type="text" x-model="item.kode_efek" :name="`keuangan[${index}][kode_efek]`" class="w-16 border-0 bg-transparent text-sm px-1 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30 rounded" placeholder="Kode">
+                                                <input type="text" x-model="item.kode_efek"
+                                                    :name="`keuangan[${index}][kode_efek]`"
+                                                    class="w-16 border-0 bg-transparent text-sm px-1 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"
+                                                    placeholder="Kode">
                                                 <span class="text-muted mx-0.5">-</span>
-                                                <input type="text" x-model="item.nama_efek" :name="`keuangan[${index}][nama_efek]`" class="w-24 border-0 bg-transparent text-sm px-1 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30 rounded" placeholder="Nama">
+                                                <input type="text" x-model="item.nama_efek"
+                                                    :name="`keuangan[${index}][nama_efek]`"
+                                                    class="w-24 border-0 bg-transparent text-sm px-1 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"
+                                                    placeholder="Nama">
                                             </td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.per" :name="`keuangan[${index}][per]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.pbv" :name="`keuangan[${index}][pbv]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.roe" :name="`keuangan[${index}][roe]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.roa" :name="`keuangan[${index}][roa]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.npm" :name="`keuangan[${index}][npm]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.ev_ebitda" :name="`keuangan[${index}][ev_ebitda]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.der" :name="`keuangan[${index}][der]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.current_ratio" :name="`keuangan[${index}][current_ratio]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.aktivitas_lancar" :name="`keuangan[${index}][aktivitas_lancar]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.gross_profit_margin" :name="`keuangan[${index}][gross_profit_margin]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5"><input type="number" step="0.0001" x-model="item.operating_profit_margin" :name="`keuangan[${index}][operating_profit_margin]`" class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded"></td>
-                                            <td class="px-2 py-1.5 text-center"><button type="button" @click="keuangan.splice(index, 1)" class="text-red-500 hover:text-red-700 text-xs">Hapus</button></td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001"
+                                                    x-model="item.per" :name="`keuangan[${index}][per]`"
+                                                    class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001"
+                                                    x-model="item.pbv" :name="`keuangan[${index}][pbv]`"
+                                                    class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001"
+                                                    x-model="item.roe" :name="`keuangan[${index}][roe]`"
+                                                    class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001"
+                                                    x-model="item.roa" :name="`keuangan[${index}][roa]`"
+                                                    class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001"
+                                                    x-model="item.npm" :name="`keuangan[${index}][npm]`"
+                                                    class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001"
+                                                    x-model="item.ev_ebitda" :name="`keuangan[${index}][ev_ebitda]`"
+                                                    class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001"
+                                                    x-model="item.der" :name="`keuangan[${index}][der]`"
+                                                    class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001"
+                                                    x-model="item.current_ratio"
+                                                    :name="`keuangan[${index}][current_ratio]`"
+                                                    class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001"
+                                                    x-model="item.aktivitas_lancar"
+                                                    :name="`keuangan[${index}][aktivitas_lancar]`"
+                                                    class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001"
+                                                    x-model="item.gross_profit_margin"
+                                                    :name="`keuangan[${index}][gross_profit_margin]`"
+                                                    class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5"><input type="number" step="0.0001"
+                                                    x-model="item.operating_profit_margin"
+                                                    :name="`keuangan[${index}][operating_profit_margin]`"
+                                                    class="w-20 border-0 bg-transparent text-sm px-1 py-1 text-right focus:outline-none focus:ring-1 focus:ring-primary/30 rounded">
+                                            </td>
+                                            <td class="px-2 py-1.5 text-center"><button type="button"
+                                                    @click="keuangan.splice(index, 1)"
+                                                    class="text-red-500 hover:text-red-700 text-xs">Hapus</button></td>
                                         </tr>
                                     </template>
                                     <tr x-show="keuangan.length === 0">
@@ -481,8 +638,7 @@
                     </div>
 
                     {{-- Saham Pembanding --}}
-                    <div x-data="sahamPembandingManager(@json(old('saham_pembanding', [])))"
-                        class="bg-white rounded-xl border border-line p-6 space-y-4">
+                    <div x-data="sahamPembandingManager(@json(old('saham_pembanding', [])))" class="bg-white rounded-xl border border-line p-6 space-y-4">
                         <h4 class="font-semibold text-primary">Saham Pembanding</h4>
                         <div class="relative" @click.outside="results = []">
                             <input type="text" x-model="search" placeholder="Cari kode/nama saham..."
@@ -502,12 +658,14 @@
                         <div class="space-y-2">
                             <template x-for="(item, index) in list" :key="index">
                                 <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                                    <input type="hidden" :name="`saham_pembanding[${index}][kode]`" :value="item.kode">
-                                    <input type="hidden" :name="`saham_pembanding[${index}][nama]`" :value="item.nama">
-                                    <input type="hidden" :name="`saham_pembanding[${index}][sektor]`" :value="item.sektor">
+                                    <input type="hidden" :name="`saham_pembanding[${index}][kode]`"
+                                        :value="item.kode">
+                                    <input type="hidden" :name="`saham_pembanding[${index}][nama]`"
+                                        :value="item.nama">
+                                    <input type="hidden" :name="`saham_pembanding[${index}][sektor]`"
+                                        :value="item.sektor">
                                     <div class="flex-1">
-                                        <div class="font-semibold text-sm"
-                                            x-text="item.kode + ' - ' + item.nama"></div>
+                                        <div class="font-semibold text-sm" x-text="item.kode + ' - ' + item.nama"></div>
                                         <div class="text-xs text-muted" x-text="item.sektor"></div>
                                     </div>
                                     <button type="button" @click="removeStock(index)"
@@ -710,14 +868,14 @@
                     class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">{{ old('catatan') }}</textarea>
             </div>
 
-                <div class="flex items-center justify-end gap-3">
-                    <a href="{{ $cancelRoute }}"
-                        class="px-4 py-2 text-sm text-muted border border-line rounded-lg hover:bg-[#f1f5f9] transition">Batal</a>
-                    <button type="submit"
-                        class="px-6 py-2 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 transition">
-                        Submit & Analisa
-                    </button>
-                </div>
+            <div class="flex items-center justify-end gap-3">
+                <a href="{{ $cancelRoute }}"
+                    class="px-4 py-2 text-sm text-muted border border-line rounded-lg hover:bg-[#f1f5f9] transition">Batal</a>
+                <button type="submit"
+                    class="px-6 py-2 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 transition">
+                    Submit & Analisa
+                </button>
+            </div>
         </form>
     </div>
 
@@ -738,13 +896,13 @@
                 $lapkeuData['q4_saham'] = old('q4_saham', '');
                 $lapkeuData['kapitalisasi_pasar'] = old('kapitalisasi_pasar', '');
 
-                $portofolioFields = ['kode_efek','nama_efek','sektor','bobot','nilai_pasar','harga_perolehan','persen_nab','ihsg_contribution','return_1m','return_3m','return_6m','return_1y','top_10'];
+                $portofolioFields = ['kode_efek', 'nama_efek', 'sektor', 'bobot', 'nilai_pasar', 'harga_perolehan', 'persen_nab', 'ihsg_contribution', 'return_1m', 'return_3m', 'return_6m', 'return_1y', 'top_10'];
                 $portofolioArray = collect(old('portofolio', $rdPortofolio->map(fn($p) => array_merge(array_fill_keys($portofolioFields, ''), ['top_10' => false], collect($p)->only($portofolioFields)->toArray()))->toArray()))->values();
 
-                $likuiditasFields = ['kode_efek','nama_efek','rata_volume_transaksi_harian','volume_terendah','volume_saham','skenario_20_persen_reds','skenario_reds_closing_10','rasio_likuiditas_harian','rasio_likuiditas'];
+                $likuiditasFields = ['kode_efek', 'nama_efek', 'rata_volume_transaksi_harian', 'volume_terendah', 'volume_saham', 'skenario_20_persen_reds', 'skenario_reds_closing_10', 'rasio_likuiditas_harian', 'rasio_likuiditas'];
                 $likuiditasArray = collect(old('likuiditas', $rdLikuiditas->map(fn($l) => array_merge(array_fill_keys($likuiditasFields, ''), collect($l)->only($likuiditasFields)->toArray()))->toArray()))->values();
 
-                $keuanganFields = ['kode_efek','nama_efek','per','pbv','roe','roa','npm','ev_ebitda','der','current_ratio','aktivitas_lancar','gross_profit_margin','operating_profit_margin'];
+                $keuanganFields = ['kode_efek', 'nama_efek', 'per', 'pbv', 'roe', 'roa', 'npm', 'ev_ebitda', 'der', 'current_ratio', 'aktivitas_lancar', 'gross_profit_margin', 'operating_profit_margin'];
                 $keuanganArray = collect(old('keuangan', $rdKeuangan->map(fn($k) => array_merge(array_fill_keys($keuanganFields, ''), collect($k)->only($keuanganFields)->toArray()))->toArray()))->values();
             @endphp
 
@@ -1236,12 +1394,19 @@
                     results: [],
                     list: Array.isArray(initialData) && initialData.length ? initialData : [],
                     searchStock() {
-                        if (this.search.length < 1) { this.results = []; return; }
+                        if (this.search.length < 1) {
+                            this.results = [];
+                            return;
+                        }
                         window.lookupStock(this.search).then(r => this.results = r);
                     },
                     addStock(stock) {
                         if (!this.list.find(s => s.kode === stock.kode)) {
-                            this.list.push({ kode: stock.kode, nama: stock.nama, sektor: stock.sektor });
+                            this.list.push({
+                                kode: stock.kode,
+                                nama: stock.nama,
+                                sektor: stock.sektor
+                            });
                         }
                         this.search = '';
                         this.results = [];
@@ -1301,7 +1466,8 @@
                 if (stock.market_capital) set('kapitalisasi_pasar', stock.market_capital);
 
                 // Sync Alpine x-model bindings after direct DOM updates
-                ['kode_saham', 'nama_perusahaan', 'nama_saham', 'harga_saham', 'jumlah_lembar_saham', 'kapitalisasi_pasar'].forEach(name => {
+                ['kode_saham', 'nama_perusahaan', 'nama_saham', 'harga_saham', 'jumlah_lembar_saham', 'kapitalisasi_pasar']
+                .forEach(name => {
                     const el = document.querySelector(`[name="${name}"]`);
                     if (el) el.dispatchEvent(new Event('input', {
                         bubbles: true

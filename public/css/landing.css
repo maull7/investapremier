@@ -23,7 +23,7 @@
   --glow:        0 0 20px rgba(39,181,86,.3);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:hidden}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 body{
   font-family:'IBM Plex Sans','Segoe UI',sans-serif;
   background:var(--bg);

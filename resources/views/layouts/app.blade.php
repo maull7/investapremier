@@ -305,6 +305,74 @@
             margin-bottom: 18px
         }
 
+        /* ── Sidebar Dark (User) ── */
+        .sidebar-dark {
+            background: #ffffff;
+            border-right-color: rgba(23, 212, 105, .15) !important;
+        }
+
+        .nav-item {
+            color: rgb(0, 0, 0);
+            transition: all .15s ease;
+            text-decoration: none;
+        }
+
+        .nav-item:hover {
+            background: #035863;
+            color: #F3F6F7;
+        }
+
+        .nav-item-active {
+            background: #F3F6F7;
+            color: #035863;
+            font-weight: 600;
+            border: 1px solid rgba(3, 88, 99, 0.08);
+            box-shadow:
+                0 1px 2px rgba(0, 0, 0, 0.04),
+                0 6px 16px rgba(3, 88, 99, 0.10);
+        }
+
+        .nav-item-active:hover {
+            background: #035863;
+            color: #F3F6F7;
+        }
+
+        /* ── Header ── */
+        .header-top {
+            position: relative;
+        }
+
+        .header-top::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #17D469, #14b8a6);
+            z-index: 1;
+        }
+
+        /* ── Sidebar Utility ── */
+        .sidebar-label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, .1);
+            border-radius: 999px;
+        }
+
         /* ── Sidebar ── */
         .sidebar-item {
             display: flex;
