@@ -474,8 +474,8 @@
 new Chart(document.getElementById('chartSektor'), {
     type: 'doughnut',
     data: {
-        labels: {!! $analisa->sektor->pluck('nama_sektor') !!},
-        datasets: [{ data: {!! $analisa->sektor->pluck('bobot') !!}, backgroundColor: ['#1e3a5f','#2563eb','#3b82f6','#60a5fa','#93c5fd'] }]
+        labels: @json($analisa->sektor->pluck('nama_sektor')),
+        datasets: [{ data: @json($analisa->sektor->pluck('bobot')), backgroundColor: ['#1e3a5f','#2563eb','#3b82f6','#60a5fa','#93c5fd'] }]
     },
     options: { plugins: { legend: { position: 'right' } }, cutout: '60%' }
 });
@@ -484,8 +484,8 @@ new Chart(document.getElementById('chartSektor'), {
 new Chart(document.getElementById('chartKinerja'), {
     type: 'bar',
     data: {
-        labels: {!! $analisa->kinerja->sortBy('periode')->map(fn($k) => $k->periode->format('M Y')) !!},
-        datasets: [{ label: 'Return (%)', data: {!! $analisa->kinerja->sortBy('periode')->pluck('return_pct') !!}, backgroundColor: (ctx) => ctx.raw >= 0 ? '#22c55e' : '#ef4444' }]
+        labels: @json($analisa->kinerja->sortBy('periode')->map(fn($k) => $k->periode->format('M Y'))->values()),
+        datasets: [{ label: 'Return (%)', data: @json($analisa->kinerja->sortBy('periode')->pluck('return_pct')), backgroundColor: (ctx) => ctx.raw >= 0 ? '#22c55e' : '#ef4444' }]
     },
     options: { plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => v + '%' } } } }
 });

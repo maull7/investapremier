@@ -39,7 +39,7 @@
                             :class="msg.role === 'user' ?
                                 'bg-green-600 text-white rounded-br-md' :
                                 'bg-gray-100 text-gray-800 rounded-bl-md'">
-                            <p x-html="msg.content.replace(/\n/g, '<br>')"></p>
+                            <p class="whitespace-pre-line" x-text="msg.content"></p>
                         </div>
                     </div>
                 </template>

@@ -2762,7 +2762,7 @@
                         </div>
                         <div x-show="importExcelMessage" x-cloak
                             :class="{'text-green-600': importExcelOk, 'text-red-600': !importExcelOk}"
-                            class="mt-2 text-sm" x-html="importExcelMessage"></div>
+                            class="mt-2 text-sm" x-text="importExcelMessage"></div>
                         <x-input-error :messages="$errors->get('file_excel')" class="mt-1" />
                         <p class="text-xs text-muted mt-1">Format: .xlsx atau .xls, maks 5MB. Sheet: Sektor, Efek,
                             Kinerja, Obligasi, Sukuk, Bank.</p>
@@ -3015,7 +3015,7 @@
                             <div class="px-3 py-2 rounded-lg"
                                 :class="pdfSuccess ? 'bg-green-50 border border-green-200 text-green-700' :
                                     'bg-red-50 border border-red-200 text-red-700'">
-                                <span x-html="pdfResult"></span>
+                                <span x-text="pdfResult"></span>
                             </div>
                             <div x-show="pdfSuccess && pdfData" class="pt-1">
                                 <button type="button" @click="parseToForms()"
@@ -3024,7 +3024,7 @@
                                 </button>
                             </div>
                             <div x-show="importSummary" class="text-xs p-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-700"
-                                x-html="importSummary"></div>
+                                x-text="importSummary"></div>
                         </div>
 
                         {{-- Hasil Ekstraksi — tabel pratinjau --}}
@@ -3153,7 +3153,7 @@
                                 </button>
                             </div>
                             <div x-show="importSummary" class="text-xs p-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-700"
-                                x-html="importSummary"></div>
+                                x-text="importSummary"></div>
                         </div>
                     </div>
 
@@ -3329,7 +3329,7 @@
                         <div x-show="partitionResult" class="text-sm p-3 rounded-lg border"
                             :class="partitionSuccess ? 'bg-green-50 border-green-200 text-green-700' :
                                 'bg-amber-50 border-amber-200 text-amber-700'">
-                            <span x-html="partitionResult"></span>
+                            <span x-text="partitionResult"></span>
                             <div x-show="partitionSuccess" class="mt-2">
                                 <button type="button" @click="parseToForms()"
                                     class="px-3 py-1 text-xs font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 transition">
@@ -3337,7 +3337,7 @@
                                 </button>
                             </div>
                             <div x-show="importSummary" class="text-xs p-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-700"
-                                x-html="importSummary"></div>
+                                x-text="importSummary"></div>
                         </div>
 
                         {{-- Preview Tables — Card per Section --}}
@@ -3626,7 +3626,7 @@
                         <div
                             :class="pdfSuccess ? 'p-3 bg-green-50 border border-green-200 rounded-lg text-green-700' :
                                 'p-3 bg-red-50 border border-red-200 rounded-lg text-red-700'">
-                            <span x-html="pdfResult"></span>
+                            <span x-text="pdfResult"></span>
                         </div>
                         <div x-show="pdfSuccess && pdfData">
                             <button type="button" @click="parseToForms()"
@@ -3635,7 +3635,7 @@
                             </button>
                         </div>
                         <div x-show="importSummary" class="text-xs p-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-700"
-                            x-html="importSummary"></div>
+                            x-text="importSummary"></div>
 
                         {{-- Hasil Ekstraksi — tabel pratinjau --}}
                         <div x-show="pdfSuccess && pdfData" class="mt-4 space-y-4">
@@ -6099,7 +6099,7 @@
                         if (!data) { this.importSummary = 'Tidak ada data hasil ekstraksi.'; return; }
                         this.applyExtractedData(data);
                         const mapped = this.countMappedFields(data);
-                        this.importSummary = '✓ ' + mapped.mapped + ' field berhasil dipetakan ke Input Manual &amp; Input Lengkap.' +
+                        this.importSummary = '✓ ' + mapped.mapped + ' field berhasil dipetakan ke Input Manual & Input Lengkap.' +
                             (mapped.skipped > 0 ? ' (' + mapped.skipped + ' field tidak dikenal).' : '');
                     },
 
