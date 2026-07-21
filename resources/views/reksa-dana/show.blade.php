@@ -868,12 +868,12 @@
         new Chart(document.getElementById('chartAaTimeline'), {
             type: 'bar',
             data: {
-                labels: {!! json_encode($aaLabels) !!},
+                labels: @json($aaLabels),
                 datasets: [
-                    { label: 'Saham', data: {!! json_encode($aaTimeline->pluck('equity_percent')) !!}, backgroundColor: '#2563eb' },
-                    { label: 'Obligasi', data: {!! json_encode($aaTimeline->pluck('bond_percent')) !!}, backgroundColor: '#059669' },
-                    { label: 'Pasar Uang', data: {!! json_encode($aaTimeline->pluck('money_market_percent')) !!}, backgroundColor: '#d97706' },
-                    { label: 'Kas', data: {!! json_encode($aaTimeline->pluck('cash_percent')) !!}, backgroundColor: '#6b7280' },
+                    { label: 'Saham', data: @json($aaTimeline->pluck('equity_percent')), backgroundColor: '#2563eb' },
+                    { label: 'Obligasi', data: @json($aaTimeline->pluck('bond_percent')), backgroundColor: '#059669' },
+                    { label: 'Pasar Uang', data: @json($aaTimeline->pluck('money_market_percent')), backgroundColor: '#d97706' },
+                    { label: 'Kas', data: @json($aaTimeline->pluck('cash_percent')), backgroundColor: '#6b7280' },
                 ]
             },
             options: {

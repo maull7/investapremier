@@ -306,9 +306,9 @@
 new Chart(document.getElementById('chartSektor'), {
     type: 'doughnut',
     data: {
-        labels: {!! $analisa->sektor->pluck('nama_sektor') !!},
+        labels: @json($analisa->sektor->pluck('nama_sektor')),
         datasets: [{
-            data: {!! $analisa->sektor->pluck('bobot') !!},
+            data: @json($analisa->sektor->pluck('bobot')),
             backgroundColor: ['#1e3a5f','#2563eb','#3b82f6','#60a5fa','#93c5fd','#bfdbfe','#dbeafe','#eff6ff','#f0f9ff','#e0f2fe'],
         }]
     },
@@ -320,10 +320,10 @@ new Chart(document.getElementById('chartSektor'), {
 new Chart(document.getElementById('chartKinerja'), {
     type: 'bar',
     data: {
-        labels: {!! $analisa->kinerja->sortBy('periode')->map(fn($k) => $k->periode->format('M Y')) !!},
+        labels: @json($analisa->kinerja->sortBy('periode')->map(fn($k) => $k->periode->format('M Y'))->values()),
         datasets: [{
             label: 'Return (%)',
-            data: {!! $analisa->kinerja->sortBy('periode')->pluck('return_pct') !!},
+            data: @json($analisa->kinerja->sortBy('periode')->pluck('return_pct')),
             backgroundColor: (ctx) => ctx.raw >= 0 ? '#22c55e' : '#ef4444',
         }]
     },

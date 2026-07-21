@@ -269,35 +269,145 @@
                 </div>
 
                 {{-- Financial Highlights dari Yahoo Finance --}}
-                <div x-show="summary && summary.highlights" class="border border-line rounded-xl p-4 text-sm">
-                    <h3 class="font-semibold text-primary mb-3">Financial Highlights</h3>
-                    <div class="grid md:grid-cols-3 gap-4">
+                <div x-show="summary && summary.highlights"
+                    class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+
+                    <div class="mb-6 flex items-center justify-between">
                         <div>
-                            <p class="font-semibold mb-2 text-xs uppercase text-muted">Profitabilitas</p>
-                            <p>Gross Margin: <span class="font-medium" x-text="summary?.highlights?.grossMargins ? (Number(summary.highlights.grossMargins)*100).toFixed(2)+'%' : '-'"></span></p>
-                            <p>Operating Margin: <span class="font-medium" x-text="summary?.highlights?.operatingMargins ? (Number(summary.highlights.operatingMargins)*100).toFixed(2)+'%' : '-'"></span></p>
-                            <p>EBITDA Margin: <span class="font-medium" x-text="summary?.highlights?.ebitdaMargins ? (Number(summary.highlights.ebitdaMargins)*100).toFixed(2)+'%' : '-'"></span></p>
-                            <p>ROE: <span class="font-medium" x-text="summary?.highlights?.returnOnEquity ? (Number(summary.highlights.returnOnEquity)*100).toFixed(2)+'%' : '-'"></span></p>
-                            <p>ROA: <span class="font-medium" x-text="summary?.highlights?.returnOnAssets ? (Number(summary.highlights.returnOnAssets)*100).toFixed(2)+'%' : '-'"></span></p>
-                        </div>
-                        <div>
-                            <p class="font-semibold mb-2 text-xs uppercase text-muted">Pertumbuhan & Valuasi</p>
-                            <p>Revenue Growth: <span class="font-medium" x-text="summary?.highlights?.revenueGrowth ? (Number(summary.highlights.revenueGrowth)*100).toFixed(2)+'%' : '-'"></span></p>
-                            <p>Earnings Growth: <span class="font-medium" x-text="summary?.highlights?.earningsGrowth ? (Number(summary.highlights.earningsGrowth)*100).toFixed(2)+'%' : '-'"></span></p>
-                            <p>Earnings Growth (Q): <span class="font-medium" x-text="summary?.highlights?.earningsQuarterlyGrowth ? (Number(summary.highlights.earningsQuarterlyGrowth)*100).toFixed(2)+'%' : '-'"></span></p>
-                            <p>Harga: <span class="font-medium" x-text="summary?.highlights?.currentPrice ? fmt(summary.highlights.currentPrice) : '-'"></span></p>
-                            <p>Target Harga: <span class="font-medium" x-text="summary?.highlights?.targetMeanPrice ? fmt(summary.highlights.targetMeanPrice) : '-'"></span></p>
-                        </div>
-                        <div>
-                            <p class="font-semibold mb-2 text-xs uppercase text-muted">Kesehatan Keuangan</p>
-                            <p>D/E Ratio: <span class="font-medium" x-text="summary?.highlights?.debtToEquity ? Number(summary.highlights.debtToEquity).toFixed(2) : '-'"></span></p>
-                            <p>Total Revenue: <span class="font-medium" x-text="summary?.highlights?.totalRevenue ? fmt(summary.highlights.totalRevenue) : '-'"></span></p>
-                            <p>Free Cash Flow: <span class="font-medium" x-text="summary?.highlights?.freeCashflow ? fmt(summary.highlights.freeCashflow) : '-'"></span></p>
-                            <p>Operating Cash Flow: <span class="font-medium" x-text="summary?.highlights?.operatingCashflow ? fmt(summary.highlights.operatingCashflow) : '-'"></span></p>
+                            <h3 class="text-lg font-semibold text-slate-800">
+                                Financial Highlights
+                            </h3>
+                            <p class="text-sm text-slate-500">
+                                Ringkasan performa dan kesehatan keuangan perusahaan.
+                            </p>
                         </div>
                     </div>
-                </div>
 
+                    <div class="grid gap-5 lg:grid-cols-3">
+
+                        <!-- Profitabilitas -->
+                        <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
+                            <h4 class="mb-4 text-xs font-semibold uppercase tracking-wider text-black">
+                                Profitabilitas
+                            </h4>
+
+                            <div class="space-y-3 text-sm">
+
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Gross Margin</span>
+                                    <span class="font-semibold text-slate-800"
+                                        x-text="summary?.highlights?.grossMargins ? (Number(summary.highlights.grossMargins)*100).toFixed(2)+'%' : '-'"></span>
+                                </div>
+
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Operating Margin</span>
+                                    <span class="font-semibold text-slate-800"
+                                        x-text="summary?.highlights?.operatingMargins ? (Number(summary.highlights.operatingMargins)*100).toFixed(2)+'%' : '-'"></span>
+                                </div>
+
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">EBITDA Margin</span>
+                                    <span class="font-semibold text-slate-800"
+                                        x-text="summary?.highlights?.ebitdaMargins ? (Number(summary.highlights.ebitdaMargins)*100).toFixed(2)+'%' : '-'"></span>
+                                </div>
+
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">ROE</span>
+                                    <span class="font-semibold text-slate-800"
+                                        x-text="summary?.highlights?.returnOnEquity ? (Number(summary.highlights.returnOnEquity)*100).toFixed(2)+'%' : '-'"></span>
+                                </div>
+
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">ROA</span>
+                                    <span class="font-semibold text-slate-800"
+                                        x-text="summary?.highlights?.returnOnAssets ? (Number(summary.highlights.returnOnAssets)*100).toFixed(2)+'%' : '-'"></span>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- Pertumbuhan -->
+                        <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
+
+                            <h4 class="mb-4 text-xs font-semibold uppercase tracking-wider text-black">
+                                Pertumbuhan & Valuasi
+                            </h4>
+
+                            <div class="space-y-3 text-sm">
+
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Revenue Growth</span>
+                                    <span class="font-semibold text-slate-800"
+                                        x-text="summary?.highlights?.revenueGrowth ? (Number(summary.highlights.revenueGrowth)*100).toFixed(2)+'%' : '-'"></span>
+                                </div>
+
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Earnings Growth</span>
+                                    <span class="font-semibold text-slate-800"
+                                        x-text="summary?.highlights?.earningsGrowth ? (Number(summary.highlights.earningsGrowth)*100).toFixed(2)+'%' : '-'"></span>
+                                </div>
+
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Quarter Growth</span>
+                                    <span class="font-semibold text-slate-800"
+                                        x-text="summary?.highlights?.earningsQuarterlyGrowth ? (Number(summary.highlights.earningsQuarterlyGrowth)*100).toFixed(2)+'%' : '-'"></span>
+                                </div>
+
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Current Price</span>
+                                    <span class="font-semibold text-slate-800"
+                                        x-text="summary?.highlights?.currentPrice ? fmt(summary.highlights.currentPrice) : '-'"></span>
+                                </div>
+
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Target Price</span>
+                                    <span class="font-semibold text-slate-800"
+                                        x-text="summary?.highlights?.targetMeanPrice ? fmt(summary.highlights.targetMeanPrice) : '-'"></span>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <!-- Kesehatan -->
+                        <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
+
+                            <h4 class="mb-4 text-xs font-semibold uppercase tracking-wider text-black">
+                                Kesehatan Keuangan
+                            </h4>
+
+                            <div class="space-y-3 text-sm">
+
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Debt / Equity</span>
+                                    <span class="font-semibold text-slate-800"
+                                        x-text="summary?.highlights?.debtToEquity ? Number(summary.highlights.debtToEquity).toFixed(2) : '-'"></span>
+                                </div>
+
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Total Revenue</span>
+                                    <span class="font-semibold text-slate-800"
+                                        x-text="summary?.highlights?.totalRevenue ? fmt(summary.highlights.totalRevenue) : '-'"></span>
+                                </div>
+
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Free Cash Flow</span>
+                                    <span class="font-semibold text-slate-800"
+                                        x-text="summary?.highlights?.freeCashflow ? fmt(summary.highlights.freeCashflow) : '-'"></span>
+                                </div>
+
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Operating Cash Flow</span>
+                                    <span class="font-semibold text-slate-800"
+                                        x-text="summary?.highlights?.operatingCashflow ? fmt(summary.highlights.operatingCashflow) : '-'"></span>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
                 {{-- Data Laporan Keuangan untuk Analisa FFS --}}
                 @if ($stock->financialReports->isNotEmpty())
                     <div>
@@ -535,7 +645,8 @@
                 <div x-show="indicatorModal" class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center"
                     @click.self="indicatorModal = null">
                     <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
-                        <h4 class="font-semibold text-primary mb-4" x-text="(indicatorModal || '').toUpperCase() + ' Settings'"></h4>
+                        <h4 class="font-semibold text-primary mb-4"
+                            x-text="(indicatorModal || '').toUpperCase() + ' Settings'"></h4>
 
                         {{-- RSI specific form --}}
                         <template x-if="indicatorModal === 'rsi'">
@@ -567,12 +678,14 @@
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
                                         <label class="block text-xs text-muted mb-1">Overbought</label>
-                                        <input type="number" x-model="indicatorSettings.rsi.overbought" min="1" max="100"
+                                        <input type="number" x-model="indicatorSettings.rsi.overbought" min="1"
+                                            max="100"
                                             class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20" />
                                     </div>
                                     <div>
                                         <label class="block text-xs text-muted mb-1">Oversold</label>
-                                        <input type="number" x-model="indicatorSettings.rsi.oversold" min="1" max="100"
+                                        <input type="number" x-model="indicatorSettings.rsi.oversold" min="1"
+                                            max="100"
                                             class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20" />
                                     </div>
                                 </div>
@@ -608,10 +721,13 @@
                         {{-- Generic form for other indicators --}}
                         <template x-if="indicatorModal !== 'rsi'">
                             <div class="space-y-3 text-sm">
-                                <template x-for="(val, key) in (indicatorSettings[indicatorModal] || {})" :key="key">
+                                <template x-for="(val, key) in (indicatorSettings[indicatorModal] || {})"
+                                    :key="key">
                                     <div>
-                                        <label class="block text-xs text-muted mb-1" x-text="key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())"></label>
-                                        <input type="number" x-model="indicatorSettings[indicatorModal][key]" min="1"
+                                        <label class="block text-xs text-muted mb-1"
+                                            x-text="key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())"></label>
+                                        <input type="number" x-model="indicatorSettings[indicatorModal][key]"
+                                            min="1"
                                             class="w-full border border-line rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring focus:ring-primary/20" />
                                     </div>
                                 </template>
@@ -1213,11 +1329,33 @@
                     macd: false
                 },
                 indicatorSettings: {
-                    sma: { period1: 20, period2: 50 },
-                    ema: { period1: 20, period2: 50 },
-                    bb: { period: 20, stddev: 2 },
-                    rsi: { period: 14, field: 'close', showZone: true, overbought: 70, oversold: 30, panel: 'separate', underlay: false, yAxis: 'right' },
-                    macd: { fast: 12, slow: 26, signal: 9 },
+                    sma: {
+                        period1: 20,
+                        period2: 50
+                    },
+                    ema: {
+                        period1: 20,
+                        period2: 50
+                    },
+                    bb: {
+                        period: 20,
+                        stddev: 2
+                    },
+                    rsi: {
+                        period: 14,
+                        field: 'close',
+                        showZone: true,
+                        overbought: 70,
+                        oversold: 30,
+                        panel: 'separate',
+                        underlay: false,
+                        yAxis: 'right'
+                    },
+                    macd: {
+                        fast: 12,
+                        slow: 26,
+                        signal: 9
+                    },
                 },
                 indicatorModal: null,
                 indicatorSeries: {},
@@ -1634,12 +1772,16 @@
                     if (this.indicators.rsi) {
                         const s = this.indicatorSettings.rsi;
                         const scaleId = s.panel === 'main' ? 'right' : 'rsi';
-                        const rsiData = this.calcRSI(data, s.period, s.field).filter(v => v.value != null && v.time != null);
+                        const rsiData = this.calcRSI(data, s.period, s.field).filter(v => v.value != null && v.time !=
+                            null);
 
                         if (s.panel === 'separate') {
                             const rsiScale = inst.chart.priceScale('rsi');
                             rsiScale.applyOptions({
-                                scaleMargins: { top: 0.52, bottom: 0.35 },
+                                scaleMargins: {
+                                    top: 0.52,
+                                    bottom: 0.35
+                                },
                                 visible: true,
                             });
                         }
@@ -1670,7 +1812,8 @@
                                 time: d.time,
                                 value: d.value >= obLevel ? obLevel : (d.value <= osLevel ? osLevel : d.value),
                                 lineColor: 'transparent',
-                                color: d.value >= obLevel ? 'rgba(239,68,68,0.12)' : (d.value <= osLevel ? 'rgba(34,197,94,0.12)' : 'transparent'),
+                                color: d.value >= obLevel ? 'rgba(239,68,68,0.12)' : (d.value <= osLevel ?
+                                    'rgba(34,197,94,0.12)' : 'transparent'),
                             }));
                             zone.setData(zoneData);
                             series.push(zone);
@@ -1685,7 +1828,10 @@
                             priceLineVisible: false,
                             lastValueVisible: false,
                         });
-                        obLine.setData(rsiData.map(d => ({ time: d.time, value: obLevel })));
+                        obLine.setData(rsiData.map(d => ({
+                            time: d.time,
+                            value: obLevel
+                        })));
                         series.push(obLine);
 
                         // Oversold line
@@ -1697,13 +1843,18 @@
                             priceLineVisible: false,
                             lastValueVisible: false,
                         });
-                        osLine.setData(rsiData.map(d => ({ time: d.time, value: osLevel })));
+                        osLine.setData(rsiData.map(d => ({
+                            time: d.time,
+                            value: osLevel
+                        })));
                         series.push(osLine);
 
                         // Underlay: move series before candle series (z-order)
                         if (s.underlay) {
                             series.forEach(sr => {
-                                try { inst.chart.chart && inst.chart.chart.removeSeries(sr); } catch(e) {}
+                                try {
+                                    inst.chart.chart && inst.chart.chart.removeSeries(sr);
+                                } catch (e) {}
                             });
                             // Re-add all series in order: underlays first, then candles, then overlays
                             // Since lightweight-charts doesn't support z-order, we just note it
@@ -1713,17 +1864,26 @@
                         if (s.panel === 'separate') {
                             const rsiScale = inst.chart.priceScale('rsi');
                             const visible = s.yAxis !== 'hidden';
-                            rsiScale.applyOptions({ visible });
+                            rsiScale.applyOptions({
+                                visible
+                            });
                             if (visible) {
                                 rsiScale.applyOptions({
-                                    scaleMargins: { top: 0.52, bottom: 0.35 },
+                                    scaleMargins: {
+                                        top: 0.52,
+                                        bottom: 0.35
+                                    },
                                 });
                             }
                         }
 
                         this.indicatorSeries.rsi = series;
                     } else {
-                        try { inst.chart.priceScale('rsi').applyOptions({ visible: false }); } catch(e) {}
+                        try {
+                            inst.chart.priceScale('rsi').applyOptions({
+                                visible: false
+                            });
+                        } catch (e) {}
                     }
 
                     if (this.indicators.macd) {

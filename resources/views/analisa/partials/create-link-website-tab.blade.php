@@ -136,7 +136,7 @@
             <span x-show="!webLoading">Isi Form Otomatis</span>
             <span x-show="webLoading">Memproses...</span>
         </button>
-        <p x-show="webMessage" x-html="webMessage" class="text-sm rounded-lg px-4 py-3"
+        <p x-show="webMessage" x-text="webMessage" class="text-sm rounded-lg px-4 py-3 whitespace-pre-line"
            :class="webOk ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-800 border border-amber-200'"></p>
     </div>
 </div>

@@ -116,7 +116,6 @@
         .auth-title {
             font-size: 26px;
             font-weight: 800;
-            color: #0f172a;
             letter-spacing: -.02em;
             margin-bottom: 4px
         }
@@ -153,10 +152,7 @@
             transition: border-color .2s, box-shadow .2s;
         }
 
-        .field input:focus {
-            border-color: #16a34a;
-            box-shadow: 0 0 0 3px rgba(22, 163, 74, .12)
-        }
+        .field input:focus {}
 
         .field input::placeholder {
             color: #94a3b8
@@ -230,7 +226,6 @@
 
         .forgot {
             font-size: 13px;
-            color: #16a34a;
             font-weight: 600;
             text-decoration: none
         }
@@ -245,7 +240,6 @@
             width: 100%;
             padding: 12px;
             border-radius: 8px;
-            background: linear-gradient(135deg, #16a34a, #22c55e);
             color: #fff;
             font-family: 'Poppins', sans-serif;
             font-weight: 700;
@@ -253,14 +247,15 @@
             border: none;
             cursor: pointer;
             transition: all .2s;
-            box-shadow: 0 4px 14px rgba(22, 163, 74, .3);
+            box-shadow: 0 4px 14px rgba(84, 208, 130, 0.3);
         }
 
         .btn-submit:hover {
-            background: linear-gradient(135deg, #15803d, #16a34a);
+            background: linear-gradient(135deg, #158077, #16a38b);
             box-shadow: 0 6px 20px rgba(22, 163, 74, .4);
             transform: translateY(-1px)
         }
+
 
         /* ── Divider ── */
         .divider {
@@ -424,7 +419,6 @@
 
         .auth-right h2 em {
             font-style: normal;
-            color: #4ade80
         }
 
         .auth-right p {
@@ -525,7 +519,7 @@
                     <div class="auth-logo-name">InvestaPremier <small>WealthOS</small></div>
                 </a>
 
-                <h1 class="auth-title">Selamat Datang</h1>
+                <h1 class="auth-title text-black">Selamat Datang</h1>
                 <p class="auth-sub">Masuk ke dashboard InvestaPremier Anda</p>
 
                 @if (session('status'))
@@ -541,7 +535,8 @@
 
                     <div class="field">
                         <label for="email">Email</label>
-                        <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus
+                        <input class="focus:border-spacing-2 focus:outline-none focus:ring-0  focus:border-accent-teal"
+                            id="email" type="email" name="email" value="{{ old('email') }}" required autofocus
                             autocomplete="username" placeholder="you@example.com" />
                         @error('email')
                             <div class="field-error">{{ $message }}</div>
@@ -551,7 +546,8 @@
                     <div class="field">
                         <label for="password">Password</label>
                         <div class="field-pw">
-                            <input id="password" type="password" name="password" required autocomplete="current-password"
+                            <input class="focus:border-spacing-2 focus:outline-none focus:ring-0  focus:border-accent-teal"
+                                id="password" type="password" name="password" required autocomplete="current-password"
                                 placeholder="••••••••" />
                             <button type="button" class="pw-toggle" onclick="togglePw('password','eye1','eyeoff1')">
                                 <svg id="eye1" viewBox="0 0 24 24">
@@ -577,7 +573,7 @@
                             Ingat saya
                         </label>
                         @if (Route::has('password.request'))
-                            <a class="forgot" href="{{ route('password.request') }}">Lupa password?</a>
+                            <a class="forgot text-accent-teal" href="{{ route('password.request') }}">Lupa password?</a>
                         @endif
                     </div>
 
@@ -588,7 +584,7 @@
                         @enderror
                     </div>
 
-                    <button type="submit" class="btn-submit">Masuk</button>
+                    <button type="submit" class="btn-submit bg-secondary-teal">Masuk</button>
 
                     <div class="divider"><span>atau lanjutkan dengan</span></div>
 
@@ -618,7 +614,7 @@
                     <img src="{{ asset('favicon.png') }}" class="w-full h-full object-contain" alt="Logo InvestaPremier"
                         loading="lazy" />
                 </div>
-                <h2>One Family,<br><em>One Financial</em><br>Cockpit.</h2>
+                <h2><span class="text-primary-green">One Family,</span> <br><em>One Financial</em><br>Cockpit.</h2>
                 <p>Kelola portofolio, proteksi, pendidikan, legacy, dan review advisor dalam satu platform yang elegan dan
                     terstruktur.</p>
                 <div class="auth-right-features">

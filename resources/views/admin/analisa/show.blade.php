@@ -743,9 +743,9 @@
 new Chart(document.getElementById('chartSektorAdmin'), {
     type: 'doughnut',
     data: {
-        labels: {!! $analisa->sektor->pluck('nama_sektor') !!},
+        labels: @json($analisa->sektor->pluck('nama_sektor')),
         datasets: [{
-            data: {!! $analisa->sektor->pluck('bobot') !!},
+            data: @json($analisa->sektor->pluck('bobot')),
             backgroundColor: ['#1e3a5f','#2563eb','#3b82f6','#60a5fa','#93c5fd','#bfdbfe','#dbeafe','#eff6ff','#f0f9ff','#e0f2fe'],
         }]
     },
@@ -757,10 +757,10 @@ new Chart(document.getElementById('chartSektorAdmin'), {
 new Chart(document.getElementById('chartKinerjaAdmin'), {
     type: 'bar',
     data: {
-        labels: {!! $analisa->kinerja->sortBy('periode')->map(fn($k) => $k->periode->format('M Y')) !!},
+        labels: @json($analisa->kinerja->sortBy('periode')->map(fn($k) => $k->periode->format('M Y'))->values()),
         datasets: [{
             label: 'Return (%)',
-            data: {!! $analisa->kinerja->sortBy('periode')->pluck('return_pct') !!},
+            data: @json($analisa->kinerja->sortBy('periode')->pluck('return_pct')),
             backgroundColor: (ctx) => ctx.raw >= 0 ? '#22c55e' : '#ef4444',
         }]
     },
@@ -783,32 +783,32 @@ new Chart(document.getElementById('chartKinerjaAdmin'), {
 new Chart(document.getElementById('chartSukukKomposisi'), {
     type: 'doughnut',
     data: {
-        labels: {!! $sukukLabels !!},
-        datasets: [{ data: {!! $sukukBobot !!}, backgroundColor: {!! $sukukColors !!} }]
+        labels: @json($sukukLabels),
+        datasets: [{ data: @json($sukukBobot), backgroundColor: @json($sukukColors) }]
     },
     options: { plugins: { legend: { position: 'right' } }, cutout: '60%' }
 });
 new Chart(document.getElementById('chartSukukJenis'), {
     type: 'doughnut',
     data: {
-        labels: {!! $jenisCounts->keys() !!},
-        datasets: [{ data: {!! $jenisCounts->values() !!}, backgroundColor: ['#2563eb','#60a5fa'] }]
+        labels: @json($jenisCounts->keys()),
+        datasets: [{ data: @json($jenisCounts->values()), backgroundColor: ['#2563eb','#60a5fa'] }]
     },
     options: { plugins: { legend: { position: 'right' } }, cutout: '60%' }
 });
 new Chart(document.getElementById('chartSukukRating'), {
     type: 'bar',
     data: {
-        labels: {!! $ratingCounts->keys() !!},
-        datasets: [{ label: 'Jumlah', data: {!! $ratingCounts->values() !!}, backgroundColor: '#3b82f6' }]
+        labels: @json($ratingCounts->keys()),
+        datasets: [{ label: 'Jumlah', data: @json($ratingCounts->values()), backgroundColor: '#3b82f6' }]
     },
     options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
 });
 new Chart(document.getElementById('chartSukukJatuhTempo'), {
     type: 'bar',
     data: {
-        labels: {!! $jatuhTempoLabels !!},
-        datasets: [{ label: 'Yield (%)', data: {!! $analisa->sukuk->whereNotNull('jatuh_tempo')->pluck('yield') !!}, backgroundColor: '#1e3a5f' }]
+        labels: @json($jatuhTempoLabels),
+        datasets: [{ label: 'Yield (%)', data: @json($analisa->sukuk->whereNotNull('jatuh_tempo')->pluck('yield')), backgroundColor: '#1e3a5f' }]
     },
     options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => v + '%' } } } }
 });
