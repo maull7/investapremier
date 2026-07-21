@@ -23,7 +23,7 @@
   --glow:        0 0 20px rgba(39,181,86,.3);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:hidden}
 body{
   font-family:'IBM Plex Sans','Segoe UI',sans-serif;
   background:var(--bg);
@@ -479,6 +479,7 @@ a{text-decoration:none;color:inherit}
 .sec-green-soft{
   background:linear-gradient(180deg,#F0FDF4 0%,#fff 100%);
   position:relative;
+  overflow:hidden;
 }
 .sec-green-soft::before{
   content:'';position:absolute;
@@ -902,7 +903,7 @@ footer{
   .ham{display:flex}
   .nav-actions,.nav-links{display:none}
   .nav-links{
-    position:absolute;top:calc(100% + 10px);left:20px;right:20px;
+    position:absolute;top:calc(100% + 10px);left:0;right:0;
     background:rgba(255,255,255,.98);
     backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
     border:1px solid var(--border);border-radius:16px;
@@ -948,6 +949,11 @@ footer{
   .container{padding:0 20px}
   .nav-inner{height:64px}
   .hero-sub{font-size:15px}
+}
+
+/* override inline style in .two-col .feat-grid for mobile */
+@media(max-width:640px){
+  .two-col .feat-grid{grid-template-columns:1fr!important}
 }
 
 /* ═══════════ REDUCED MOTION ═══════════ */

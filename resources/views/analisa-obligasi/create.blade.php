@@ -17,7 +17,7 @@
             </div>
         @endif
 
-        <form id="lapkeu-form" method="POST" action="{{ $storeRoute }}" enctype="multipart/form-data" class="space-y-6">
+        <form id="lapkeu-form" method="POST" action="{{ $storeRoute }}" enctype="multipart/form-data" class="space-y-6" novalidate>
             @csrf
             <input type="hidden" name="input_mode" :value="(mode === 'ai' || mode === 'ai-plus' || mode === 'lengkap' || mode === 'pdf') ? 'manual' : mode">
             <input type="hidden" name="ai_narasi" :value="aiResult?.raw || ''">
@@ -36,12 +36,14 @@
                 <h3 class="font-semibold text-primary">Informasi Obligasi</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="relative">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Obligasi <span class="text-red-500">*</span></label>
-                        <input type="text" name="nama_obligasi" id="nama_obligasi" x-model="namaObligasiSearch" required
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Obligasi</label>
+                        <input type="text" name="nama_obligasi" id="nama_obligasi" x-model="namaObligasiSearch"
                             @input.debounce.300ms="if (namaObligasiSearch.length > 0) { lookupObligasi(namaObligasiSearch).then(r => nameResults = r) } else { nameResults = [] }"
                             @blur="if (namaObligasiSearch.length > 0) { lookupObligasi(namaObligasiSearch).then(list => { if (list.length > 0) { selectObligasi(list[0]); nameResults = [] } }) }"
-                            value="{{ old('nama_obligasi') }}"
                             class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
+                        @error('nama_obligasi')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                         <div x-show="nameResults.length > 0" @click.outside="nameResults = []"
                             class="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                             <template x-for="b in nameResults" :key="b.id">
@@ -625,11 +627,62 @@
                     jenisAnalisa: @json(old('jenis_analisa', 'periode')),
                     kodeObligasi: @json(old('kode_obligasi')),
                     namaEmiten: @json(old('nama_emiten')),
-                    namaObligasiSearch: @json(old('nama_obligasi')),
+                    namaObligasiSearch: @json(old('nama_obligasi', '')),
                     nameResults: [],
                     codeResults: [],
+                    formSubmitted: @json($errors->any()),
                     periodeAnalisa: @json(old('periode')),
                     tahunAnalisa: @json(old('tahun', now()->year)),
+                    info_nama_obligasi: @json(old('info_nama_obligasi', '')),
+                    info_ytm: @json(old('info_ytm', '')),
+                    harga_obligasi: @json(old('harga_obligasi', '')),
+                    q1_obligasi: @json(old('q1_obligasi', '')),
+                    q2_obligasi: @json(old('q2_obligasi', '')),
+                    q3_obligasi: @json(old('q3_obligasi', '')),
+                    q4_obligasi: @json(old('q4_obligasi', '')),
+                    info_nominal_penerbitan: @json(old('info_nominal_penerbitan', '')),
+                    current_asset: @json(old('current_asset', '')),
+                    cash_equivalents: @json(old('cash_equivalents', '')),
+                    account_receivable: @json(old('account_receivable', '')),
+                    inventories: @json(old('inventories', '')),
+                    other_current_asset: @json(old('other_current_asset', '')),
+                    fixed_asset: @json(old('fixed_asset', '')),
+                    other_non_current_asset: @json(old('other_non_current_asset', '')),
+                    total_asset: @json(old('total_asset', '')),
+                    current_liabilities: @json(old('current_liabilities', '')),
+                    account_payable: @json(old('account_payable', '')),
+                    accruals: @json(old('accruals', '')),
+                    short_term_loans: @json(old('short_term_loans', '')),
+                    current_maturities_of_long_term_loans: @json(old('current_maturities_of_long_term_loans', '')),
+                    other_current_liabilities: @json(old('other_current_liabilities', '')),
+                    long_term_loans: @json(old('long_term_loans', '')),
+                    other_non_current_liabilities: @json(old('other_non_current_liabilities', '')),
+                    total_non_current_liabilities: @json(old('total_non_current_liabilities', '')),
+                    total_liabilities: @json(old('total_liabilities', '')),
+                    share_capital: @json(old('share_capital', '')),
+                    additional_paid_in_capital: @json(old('additional_paid_in_capital', '')),
+                    retained_earning: @json(old('retained_earning', '')),
+                    others: @json(old('others', '')),
+                    non_controlling_interest: @json(old('non_controlling_interest', '')),
+                    total_equity_equity_to_parent_entity: @json(old('total_equity_equity_to_parent_entity', '')),
+                    equity: @json(old('equity', '')),
+                    net_revenue: @json(old('net_revenue', '')),
+                    cost_of_good_sold: @json(old('cost_of_good_sold', '')),
+                    gross_income: @json(old('gross_income', '')),
+                    operational_expense: @json(old('operational_expense', '')),
+                    laba_operasional: @json(old('laba_operasional', '')),
+                    other_income_expense: @json(old('other_income_expense', '')),
+                    interest_expense: @json(old('interest_expense', '')),
+                    income_before_tax: @json(old('income_before_tax', '')),
+                    taxes: @json(old('taxes', '')),
+                    ebit: @json(old('ebit', '')),
+                    ebitda: @json(old('ebitda', '')),
+                    net_income_attributable_to_non_controlling_interest: @json(old('net_income_attributable_to_non_controlling_interest', '')),
+                    net_income: @json(old('net_income', '')),
+                    eps: @json(old('eps', '')),
+                    cash_flows_operating_activities: @json(old('cash_flows_operating_activities', '')),
+                    cash_flows_investment: @json(old('cash_flows_investment', '')),
+                    cash_flows_financing: @json(old('cash_flows_financing', '')),
                     sourceLoading: false,
                     sourceMessage: '',
                     sourceOk: false,
@@ -751,6 +804,17 @@
                         set('nama_emiten', bond.nama_emiten);
                         setSelect('rating', bond.rating);
                         if (bond.kupon) set('kupon', bond.kupon);
+                        if (bond.ytm) set('ytm', bond.ytm);
+
+                        if (bond.nama_obligasi) set('info_nama_obligasi', bond.nama_obligasi);
+                        if (bond.ytm) set('info_ytm', bond.ytm);
+                        if (bond.harga_persen) set('harga_obligasi', bond.harga_persen);
+                        if (bond.outstanding_amount) set('info_nominal_penerbitan', bond.outstanding_amount);
+
+                        ['info_nama_obligasi', 'info_ytm', 'harga_obligasi', 'info_nominal_penerbitan'].forEach(name => {
+                            const el = document.querySelector(`[name="${name}"]`);
+                            if (el) el.dispatchEvent(new Event('input', { bubbles: true }));
+                        });
                     },
 
                     onPdfSelected(event) {

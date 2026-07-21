@@ -121,7 +121,7 @@ abstract class AnalisaLapkeuController extends Controller
         $stocks = \App\Models\Stock::where('kode', 'like', "%{$q}%")
             ->orWhere('nama', 'like', "%{$q}%")
             ->limit(10)
-            ->get(['id', 'kode', 'nama', 'sektor']);
+            ->get(['id', 'kode', 'nama', 'sektor', 'harga_terbaru', 'jumlah_saham', 'market_capital']);
         return response()->json($stocks);
     }
 
@@ -133,7 +133,7 @@ abstract class AnalisaLapkeuController extends Controller
         }
         $q = strtoupper(trim($q));
         
-        $bonds = \App\Models\ObligasiHargaReferensi::select('kode', 'nama as nama_obligasi', 'emiten as nama_emiten', 'kupon', 'rating')
+        $bonds = \App\Models\ObligasiHargaReferensi::select('kode', 'nama as nama_obligasi', 'emiten as nama_emiten', 'kupon', 'rating', 'ytm', 'harga_persen', 'outstanding_amount')
             ->where(function($query) use ($q) {
                 $query->where('kode', 'like', "%{$q}%")
                       ->orWhere('nama', 'like', "%{$q}%")

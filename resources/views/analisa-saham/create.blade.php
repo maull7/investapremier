@@ -17,7 +17,7 @@
             </div>
         @endif
 
-        <form id="lapkeu-form" method="POST" action="{{ $storeRoute }}" enctype="multipart/form-data" class="space-y-6">
+        <form id="lapkeu-form" method="POST" action="{{ $storeRoute }}" enctype="multipart/form-data" class="space-y-6" novalidate>
             @csrf
             <input type="hidden" name="input_mode"
                 :value="['ai', 'ai-plus', 'pdf', 'riset-broker'].includes(mode) ? 'manual' : mode">
@@ -35,7 +35,7 @@
                     <div class="relative" x-data="{ nameSearch: @json(old('nama_perusahaan', '')), nameResults: [] }" @click.outside="nameResults = []">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Nama Perusahaan <span
                                 class="text-red-500">*</span></label>
-                        <input type="text" name="nama_perusahaan" id="nama_perusahaan" x-model="nameSearch" required
+                        <input type="text" name="nama_perusahaan" id="nama_perusahaan" x-model="nameSearch" x-ref="namaPerusahaan"
                             @input.debounce.300ms="if (nameSearch.length > 0) { let d = $data; window.lookupStock(nameSearch).then(r => d.nameResults = r) } else { nameResults = [] }"
                             @blur="if (nameSearch.length > 0) { let d = $data; window.lookupStock(nameSearch).then(list => { if (list.length > 0) { window.selectStock(list[0]); nameSearch = list[0].nama; d.nameResults = []; } }) }"
                             class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
@@ -710,14 +710,14 @@
                     class="block w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">{{ old('catatan') }}</textarea>
             </div>
 
-            <div class="flex items-center justify-end gap-3">
-                <a href="{{ $cancelRoute }}"
-                    class="px-4 py-2 text-sm text-muted border border-line rounded-lg hover:bg-[#f1f5f9] transition">Batal</a>
-                <button type="submit"
-                    class="px-6 py-2 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 transition">
-                    Submit & Analisa
-                </button>
-            </div>
+                <div class="flex items-center justify-end gap-3">
+                    <a href="{{ $cancelRoute }}"
+                        class="px-4 py-2 text-sm text-muted border border-line rounded-lg hover:bg-[#f1f5f9] transition">Batal</a>
+                    <button type="submit"
+                        class="px-6 py-2 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 transition">
+                        Submit & Analisa
+                    </button>
+                </div>
         </form>
     </div>
 
@@ -727,8 +727,16 @@
                 $lapkeuFieldNames = ['current_asset', 'cash_equivalents', 'account_receivable', 'inventories', 'other_current_asset', 'fixed_asset', 'other_non_current_asset', 'total_asset', 'current_liabilities', 'account_payable', 'accruals', 'short_term_loans', 'current_maturities_of_long_term_loans', 'other_current_liabilities', 'long_term_loans', 'other_non_current_liabilities', 'total_non_current_liabilities', 'total_liabilities', 'share_capital', 'additional_paid_in_capital', 'retained_earning', 'others', 'non_controlling_interest', 'total_equity_equity_to_parent_entity', 'equity', 'net_revenue', 'cost_of_good_sold', 'gross_income', 'operational_expense', 'laba_operasional', 'other_income_expense', 'interest_expense', 'income_before_tax', 'taxes', 'ebit', 'ebitda', 'net_income_attributable_to_non_controlling_interest', 'net_income', 'eps', 'cash_flows_operating_activities', 'cash_flows_investment', 'cash_flows_financing'];
                 $lapkeuData = [];
                 foreach ($lapkeuFieldNames as $f) {
-                    $lapkeuData[$f] = '';
+                    $lapkeuData[$f] = old($f, '');
                 }
+                $lapkeuData['nama_saham'] = old('nama_saham', '');
+                $lapkeuData['jumlah_lembar_saham'] = old('jumlah_lembar_saham', '');
+                $lapkeuData['harga_saham'] = old('harga_saham', '');
+                $lapkeuData['q1_saham'] = old('q1_saham', '');
+                $lapkeuData['q2_saham'] = old('q2_saham', '');
+                $lapkeuData['q3_saham'] = old('q3_saham', '');
+                $lapkeuData['q4_saham'] = old('q4_saham', '');
+                $lapkeuData['kapitalisasi_pasar'] = old('kapitalisasi_pasar', '');
 
                 $portofolioFields = ['kode_efek','nama_efek','sektor','bobot','nilai_pasar','harga_perolehan','persen_nab','ihsg_contribution','return_1m','return_3m','return_6m','return_1y','top_10'];
                 $portofolioArray = collect(old('portofolio', $rdPortofolio->map(fn($p) => array_merge(array_fill_keys($portofolioFields, ''), ['top_10' => false], collect($p)->only($portofolioFields)->toArray()))->toArray()))->values();
@@ -756,6 +764,7 @@
                     portofolio: @json($portofolioArray),
                     likuiditas: @json($likuiditasArray),
                     keuangan: @json($keuanganArray),
+                    formSubmitted: @json($errors->any()),
                     aiLoading: false,
                     aiError: '',
                     aiResult: null,
@@ -1286,8 +1295,13 @@
                 setSelect('sektor', stock.sektor);
                 setSelect('mata_uang', 'IDR');
 
+                if (stock.nama) set('nama_saham', stock.nama);
+                if (stock.harga_terbaru) set('harga_saham', stock.harga_terbaru);
+                if (stock.jumlah_saham) set('jumlah_lembar_saham', stock.jumlah_saham);
+                if (stock.market_capital) set('kapitalisasi_pasar', stock.market_capital);
+
                 // Sync Alpine x-model bindings after direct DOM updates
-                ['kode_saham', 'nama_perusahaan'].forEach(name => {
+                ['kode_saham', 'nama_perusahaan', 'nama_saham', 'harga_saham', 'jumlah_lembar_saham', 'kapitalisasi_pasar'].forEach(name => {
                     const el = document.querySelector(`[name="${name}"]`);
                     if (el) el.dispatchEvent(new Event('input', {
                         bubbles: true

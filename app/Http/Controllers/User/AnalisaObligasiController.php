@@ -30,7 +30,7 @@ class AnalisaObligasiController extends AnalisaLapkeuController
     protected function validateBasicFields(Request $request): array
     {
         return [
-            'nama_obligasi' => 'required|string|max:255',
+            'nama_obligasi' => 'nullable|string|max:255',
             'kode_obligasi' => 'nullable|string|max:50',
             'nama_emiten' => 'nullable|string|max:255',
             'rating' => 'nullable|string|max:20',

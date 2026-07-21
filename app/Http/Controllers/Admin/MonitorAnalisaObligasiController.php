@@ -26,7 +26,7 @@ class MonitorAnalisaObligasiController extends AnalisaLapkeuController
     protected function validateBasicFields(Request $request): array
     {
         return [
-            'nama_obligasi' => 'required|string|max:255',
+            'nama_obligasi' => 'nullable|string|max:255',
         ];
     }
 
