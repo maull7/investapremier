@@ -16,7 +16,7 @@ class NotificationController extends Controller
 
         $notifications = $user->notifications()
             ->latest()
-            ->paginate(15);
+            ->paginate(10);
 
         $unreadCount = $user->unreadNotifications()->count();
 
@@ -38,11 +38,11 @@ class NotificationController extends Controller
             ->latest()
             ->limit(5)
             ->get()
-            ->map(fn ($n) => [
+            ->map(fn($n) => [
                 'id'        => $n->id,
                 'data'      => $n->data,
                 'read_at'   => optional($n->read_at)->toIso8601String(),
-                'created_at'=> $n->created_at->toIso8601String(),
+                'created_at' => $n->created_at->toIso8601String(),
                 'created_human' => $n->created_at->diffForHumans(),
             ]);
 

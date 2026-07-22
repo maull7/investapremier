@@ -7,10 +7,11 @@
 
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1 class="page-title">Perencanaan Investasi</h1>
+                <h1 class="text-2xl font-bold text-accent-teal/85">Perencanaan Investasi</h1>
                 <p class="page-sub">Rencanakan dan proyeksikan tujuan investasi Anda</p>
             </div>
-            <a href="{{ route('user.perencanaan-investasi.create') }}" class="btn-primary">
+            <a href="{{ route('user.perencanaan-investasi.create') }}"
+                class="px-4 py-2 bg-accent-teal text-white rounded-lg text-sm font-semibold hover:bg-accent-teal/90 transition flex items-center gap-1.5">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>

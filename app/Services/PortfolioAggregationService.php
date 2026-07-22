@@ -28,10 +28,14 @@ class PortfolioAggregationService
         $likuiditas = collect($alokasi)->where('label', 'Kas/Deposito')->sum('nilai');
         $asetInvestasi = $totalKekayaan - $likuiditas;
 
+        $portfolioGrowth = $this->getPortfolioGrowth($user);
+        $totalKekayaanGrowth = $this->calcGrowth($user, $totalKekayaan);
+        $wealthHealthScore = $this->calcWealthHealth($user, $alokasi, $goals['items'], $alerts, $quizResult, $advisor);
+
         return [
             'totalKekayaan' => $totalKekayaan,
             'totalKekayaanFormatted' => $this->formatRupiahShort($totalKekayaan),
-            'totalKekayaanGrowth' => 0,
+            'totalKekayaanGrowth' => $totalKekayaanGrowth,
             'asetInvestasi' => $asetInvestasi,
             'asetInvestasiFormatted' => $this->formatRupiahShort($asetInvestasi),
             'asetInvestasiPct' => $totalKekayaan > 0 ? round(($asetInvestasi / $totalKekayaan) * 100, 1) : 0,
@@ -44,6 +48,8 @@ class PortfolioAggregationService
             'goals' => $goals['items'],
             'alerts' => $alerts,
             'riskProfile' => $quizResult?->profile,
+            'portfolioGrowth' => $portfolioGrowth,
+            'wealthHealthScore' => $wealthHealthScore,
             'advisor' => $advisor ? [
                 'name' => $advisor->name,
                 'initial' => strtoupper(substr($advisor->name, 0, 2)),
@@ -86,6 +92,82 @@ class PortfolioAggregationService
             'clientAumList' => $clientAumList,
             'recentClients' => $recentClients,
         ];
+    }
+
+    private function getPortfolioGrowth(User $user): array
+    {
+        $snapshots = $user->portfolioSnapshots()
+            ->where('recorded_at', '>=', now()->subMonths(6))
+            ->orderBy('recorded_at')
+            ->get(['total_value', 'recorded_at']);
+
+        if ($snapshots->isEmpty()) {
+            return [];
+        }
+
+        $grouped = $snapshots->groupBy(function ($s) {
+            return $s->recorded_at->format('Y-m');
+        });
+
+        $months = collect();
+        foreach ($grouped as $key => $group) {
+            $months->push([
+                'month' => $key,
+                'value' => $group->last()->total_value,
+            ]);
+        }
+
+        return $months->pluck('value')->map(function ($v) {
+            return round($v / 1_000_000, 1);
+        })->values()->toArray();
+    }
+
+    private function calcGrowth(User $user, float $currentTotal): float
+    {
+        $lastSnapshot = $user->portfolioSnapshots()
+            ->where('recorded_at', '<', now()->subMonth())
+            ->latest('recorded_at')
+            ->first();
+
+        if (!$lastSnapshot || $lastSnapshot->total_value <= 0) {
+            return 0;
+        }
+
+        return round((($currentTotal - $lastSnapshot->total_value) / $lastSnapshot->total_value) * 100, 1);
+    }
+
+    private function calcWealthHealth(User $user, array $alokasi, array $goals, array $alerts, $quizResult, $advisor): int
+    {
+        $score = 0;
+
+        // 1. Diversifikasi (max 30)
+        $assetTypes = count($alokasi);
+        $diversifikasiScore = min($assetTypes * 6, 30);
+        $score += $diversifikasiScore;
+
+        // 2. Goal Progress (max 30)
+        if (count($goals) > 0) {
+            $avgProgress = collect($goals)->avg('pct');
+            $score += (int) round($avgProgress * 0.3);
+        } else {
+            $score += 15;
+        }
+
+        // 3. Advisor (max 15)
+        if ($advisor) {
+            $score += 15;
+        }
+
+        // 4. Risk Profile Known (max 10)
+        if ($quizResult?->profile) {
+            $score += 10;
+        }
+
+        // 5. Alert penalty (max -15)
+        $alertPenalty = min(count($alerts) * 5, 15);
+        $score -= $alertPenalty;
+
+        return max(0, min(100, $score));
     }
 
     private function getAlokasiAset(User $user): array
@@ -213,7 +295,7 @@ class PortfolioAggregationService
             ];
         }
 
-        return $alerts ?? [];
+        return $alerts;
     }
 
     private function formatRupiahShort(float $amount): string

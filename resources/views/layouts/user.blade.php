@@ -443,53 +443,247 @@
                     <div class="text-[11px] text-white/40">{{ Auth::user()->role }}</div>
                 </div>
             </div>
-            <nav class="flex-1 py-3 px-3 space-y-1 overflow-y-auto text-sm">
+            <nav class="flex-1 py-3 px-3 space-y-1 overflow-y-auto overflow-x-hidden text-sm">
                 @php
                     $mobNav = [
                         [
                             'route' => 'user.dashboard',
                             'label' => 'Dashboard',
-                            'icon' =>
-                                'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
+                            'icon' => 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
                             'match' => 'user.dashboard',
+                            'advisor' => false,
+                        ],
+                        [
+                            'route' => 'user.advisor.dashboard',
+                            'label' => 'Advisor Dashboard',
+                            'icon' => 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10',
+                            'match' => 'user.advisor.dashboard',
+                            'advisor' => true,
+                        ],
+                    ];
+                @endphp
+                @foreach ($mobNav as $item)
+                    @if (($item['advisor'] && auth()->user()->isAdvisor()) || (!$item['advisor'] && !auth()->user()->isAdvisor()))
+                        <a href="{{ route($item['route']) }}" @@click="sidebarOpen = false"
+                            class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 {{ request()->routeIs($item['match']) ? 'nav-item-active' : 'nav-item' }}">
+                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $item['icon'] }}" />
+                            </svg>
+                            {{ $item['label'] }}
+                        </a>
+                    @endif
+                @endforeach
+
+                {{-- Layanan --}}
+                <div>
+                    <button type="button" @click="layananOpen = !layananOpen"
+                        class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 {{ request()->routeIs('quiz.*') || request()->routeIs('member.*') ? 'nav-item-active' : 'nav-item' }}">
+                        <span class="flex items-center gap-3 min-w-0">
+                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                            </svg>
+                            Layanan
+                        </span>
+                        <svg class="w-4 h-4 transition-transform shrink-0" :class="{ 'rotate-180': layananOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div x-show="layananOpen" x-transition class="space-y-0.5 pl-9 mt-0.5">
+                        <a href="{{ route('quiz.index') }}" @@click="sidebarOpen = false"
+                            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('quiz.*') ? 'nav-item-active' : 'nav-item' }}">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                            </svg>
+                            Profil Investasi
+                        </a>
+                        <a href="{{ route('member.create') }}" @@click="sidebarOpen = false"
+                            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 {{ request()->routeIs('member.*') ? 'nav-item-active' : 'nav-item' }}">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                            </svg>
+                            Daftar Member
+                        </a>
+                    </div>
+                </div>
+
+                {{-- Reksa Dana --}}
+                <div>
+                    <button type="button" @click="reksaDanaOpen = !reksaDanaOpen"
+                        class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 {{ request()->routeIs('user.reksa-dana.*') || request()->routeIs('user.analisa.*') ? 'nav-item-active' : 'nav-item' }}">
+                        <span class="flex items-center gap-3 min-w-0">
+                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                            </svg>
+                            Reksa Dana
+                        </span>
+                        <svg class="w-4 h-4 transition-transform shrink-0" :class="{ 'rotate-180': reksaDanaOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div x-show="reksaDanaOpen" x-transition class="space-y-0.5 pl-9 mt-0.5">
+                        <a href="{{ route('user.reksa-dana.index') }}" @@click="sidebarOpen = false"
+                            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('user.reksa-dana.index') ? 'nav-item-active' : 'nav-item' }}">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                            Daftar Reksa Dana
+                        </a>
+                        <a href="{{ route('user.analisa.index') }}" @@click="sidebarOpen = false"
+                            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('user.analisa.*') ? 'nav-item-active' : 'nav-item' }}">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                            Monitor Reksa Dana
+                        </a>
+                    </div>
+                </div>
+
+                {{-- Unit Link --}}
+                <div>
+                    <button type="button" @click="unitLinkOpen = !unitLinkOpen"
+                        class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 {{ request()->routeIs('user.unit-link.*') || request()->routeIs('user.unit-link-analisa.*') ? 'nav-item-active' : 'nav-item' }}">
+                        <span class="flex items-center gap-3 min-w-0">
+                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                            </svg>
+                            Unit Link
+                        </span>
+                        <svg class="w-4 h-4 transition-transform shrink-0" :class="{ 'rotate-180': unitLinkOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div x-show="unitLinkOpen" x-transition class="space-y-0.5 pl-9 mt-0.5">
+                        <a href="{{ route('user.unit-link.index') }}" @@click="sidebarOpen = false"
+                            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('user.unit-link.index') ? 'nav-item-active' : 'nav-item' }}">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                            Daftar Unit Link
+                        </a>
+                        <a href="{{ route('user.unit-link-analisa.index') }}" @@click="sidebarOpen = false"
+                            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('user.unit-link-analisa.*') ? 'nav-item-active' : 'nav-item' }}">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                            Analisa Unit Link
+                        </a>
+                    </div>
+                </div>
+
+                {{-- Saham --}}
+                <div>
+                    <button type="button" @click="sahamOpen = !sahamOpen"
+                        class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 {{ request()->routeIs('user.saham.*') || request()->routeIs('user.analisa-saham.*') ? 'nav-item-active' : 'nav-item' }}">
+                        <span class="flex items-center gap-3 min-w-0">
+                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                            Saham
+                        </span>
+                        <svg class="w-4 h-4 transition-transform shrink-0" :class="{ 'rotate-180': sahamOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div x-show="sahamOpen" x-transition class="space-y-0.5 pl-9 mt-0.5">
+                        <a href="{{ route('user.saham.index') }}" @@click="sidebarOpen = false"
+                            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('user.saham.*') ? 'nav-item-active' : 'nav-item' }}">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                            Daftar Saham
+                        </a>
+                        <a href="{{ route('user.analisa-saham.index') }}" @@click="sidebarOpen = false"
+                            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('user.analisa-saham.*') ? 'nav-item-active' : 'nav-item' }}">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                            Analisa Saham
+                        </a>
+                        <a href="{{ route('user.price-alerts.index') }}" @@click="sidebarOpen = false"
+                            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('user.price-alerts.*') ? 'nav-item-active' : 'nav-item' }}">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                            Alert Harga
+                        </a>
+                    </div>
+                </div>
+
+                {{-- Obligasi --}}
+                <div>
+                    <button type="button" @click="obligasiOpen = !obligasiOpen"
+                        class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 {{ request()->routeIs('user.obligasi.*') || request()->routeIs('user.analisa-obligasi.*') ? 'nav-item-active' : 'nav-item' }}">
+                        <span class="flex items-center gap-3 min-w-0">
+                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Obligasi
+                        </span>
+                        <svg class="w-4 h-4 transition-transform shrink-0" :class="{ 'rotate-180': obligasiOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div x-show="obligasiOpen" x-transition class="space-y-0.5 pl-9 mt-0.5">
+                        <a href="{{ route('user.obligasi.index') }}" @@click="sidebarOpen = false"
+                            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('user.obligasi.*') ? 'nav-item-active' : 'nav-item' }}">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                            Daftar Obligasi
+                        </a>
+                        <a href="{{ route('user.analisa-obligasi.index') }}" @@click="sidebarOpen = false"
+                            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('user.analisa-obligasi.*') ? 'nav-item-active' : 'nav-item' }}">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                            Analisa Obligasi
+                        </a>
+                    </div>
+                </div>
+
+                {{-- Single menu items --}}
+                @php
+                    $mobSingles = [
+                        [
+                            'route' => 'user.investment-managers.index',
+                            'label' => 'Manajer Investasi',
+                            'icon' => 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z',
+                            'match' => 'user.investment-managers.*',
                         ],
                         [
                             'route' => 'user.perencanaan-investasi.index',
                             'label' => 'Perencanaan Investasi',
-                            'icon' =>
-                                'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+                            'icon' => 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
                             'match' => 'user.perencanaan-investasi.*',
                         ],
                         [
                             'route' => 'user.chatbot.index',
                             'label' => 'AI Chatbot',
-                            'icon' =>
-                                'M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z',
+                            'icon' => 'M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z',
                             'match' => 'user.chatbot.*',
                         ],
-                        [
-                            'route' => 'user.notifications.index',
-                            'label' => 'Notifikasi',
-                            'icon' =>
-                                'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
-                            'match' => 'user.notifications.*',
-                        ],
-                        [
-                            'route' => 'profile.edit',
-                            'label' => 'Profile',
-                            'icon' => 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
-                            'match' => 'profile.*',
-                        ],
+                    ];
+                    if (auth()->user()->isAdvisor()) {
+                        $mobSingles[] = [
+                            'route' => 'user.clients.index',
+                            'label' => 'Daftar Klien',
+                            'icon' => 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z',
+                            'match' => 'user.clients.*',
+                        ];
+                    } else {
+                        $mobSingles[] = [
+                            'route' => 'user.clients.requests.index',
+                            'label' => 'Koneksi Advisor',
+                            'icon' => 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z',
+                            'match' => 'user.clients.requests.*',
+                        ];
+                    }
+                    $mobSingles[] = [
+                        'route' => 'user.notifications.index',
+                        'label' => 'Notifikasi',
+                        'icon' => 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
+                        'match' => 'user.notifications.*',
+                        'badge' => auth()->user()->unreadNotifications()->count(),
+                    ];
+                    $mobSingles[] = [
+                        'route' => 'profile.edit',
+                        'label' => 'Profile',
+                        'icon' => 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
+                        'match' => 'profile.*',
                     ];
                 @endphp
-                @foreach ($mobNav as $item)
+                @foreach ($mobSingles as $item)
                     <a href="{{ route($item['route']) }}" @@click="sidebarOpen = false"
-                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs($item['match']) ? 'nav-item-active' : 'nav-item' }}">
+                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 {{ request()->routeIs($item['match'] ?? $item['route']) ? 'nav-item-active' : 'nav-item' }}">
                         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="{{ $item['icon'] }}" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $item['icon'] }}" />
                         </svg>
-                        {{ $item['label'] }}
+                        <span class="flex-1">{{ $item['label'] }}</span>
+                        @if (!empty($item['badge']) && $item['badge'] > 0)
+                            <span class="ml-auto text-[10px] font-bold text-white bg-red-500 px-2 py-0.5 rounded-full">{{ $item['badge'] > 99 ? '99+' : $item['badge'] }}</span>
+                        @endif
                     </a>
                 @endforeach
                 <hr class="border-white/10 my-2">
@@ -497,8 +691,7 @@
                     @csrf
                     <button type="submit" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg nav-item">
                         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
                         Logout
                     </button>

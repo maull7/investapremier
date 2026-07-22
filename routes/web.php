@@ -403,9 +403,8 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::put('ai-prompts/{key}/value', [App\Http\Controllers\Admin\AiPromptController::class, 'updateValue'])->name('ai-prompts.update-value');
     Route::delete('ai-prompts/{key}', [App\Http\Controllers\Admin\AiPromptController::class, 'destroy'])->name('ai-prompts.destroy');
 
-    // Activity Logs (admin only)
-    Route::get('activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index')
-        ->middleware('role:admin');
+    // Activity Logs (admin & sub-admin with permission)
+    Route::get('activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
 
     // Sub Admin Management (admin utama only)
     Route::resource('sub-admins', \App\Http\Controllers\Admin\SubAdminController::class)

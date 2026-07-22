@@ -46,6 +46,8 @@ class CheckAdminRoutePermission
             'admin.score-classifications.*' => 'manajemen.score-classifications',
             'admin.questions.*' => 'manajemen.questions',
             'admin.members.*' => 'manajemen.members',
+            'admin.users.*' => 'manajemen.pengguna',
+            'admin.activity-logs.*' => 'manajemen.activity-logs',
 
             'admin.reksa-dana.*' => 'reksa-dana.monitor-ffs',
             'admin.analisa-rd.*' => 'reksa-dana.analisa-rd',
