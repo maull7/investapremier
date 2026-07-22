@@ -13,6 +13,7 @@ use App\Models\MutualFundRiskMetric;
 use App\Models\MutualFundFeeMetric;
 use App\Models\ReksaDana;
 use App\Models\ReksaDanaDocument;
+use App\Models\HargaReksaDana;
 use App\Models\SyncRun;
 use App\Services\KodeReksaDanaParser;
 use App\Services\InvestmentPersonService;
@@ -718,15 +719,15 @@ class DaftarReksaDanaController extends Controller
         ]);
 
         if (!empty($validated['kode_reksa_dana'])) {
-            $parser = app(KodeReksaDanaParser::class);
-
-            if (!$parser->isValidKode($validated['kode_reksa_dana'])) {
-                unset($validated['kode_reksa_dana']);
-            } else {
-                $parsedFromKode = $parser->databaseAttributes($validated['kode_reksa_dana']);
-                foreach ($parsedFromKode as $key => $value) {
-                    if (empty($validated[$key])) {
-                        $validated[$key] = $value;
+            $exists = ReksaDana::where('kode_reksa_dana', $validated['kode_reksa_dana'])->exists();
+            if (!$exists) {
+                $parser = app(KodeReksaDanaParser::class);
+                if ($parser->isValidKode($validated['kode_reksa_dana'])) {
+                    $parsedFromKode = $parser->databaseAttributes($validated['kode_reksa_dana']);
+                    foreach ($parsedFromKode as $key => $value) {
+                        if (empty($validated[$key])) {
+                            $validated[$key] = $value;
+                        }
                     }
                 }
             }
@@ -734,6 +735,10 @@ class DaftarReksaDanaController extends Controller
 
         $validated['kategori'] = $validated['kategori'] ?? [];
         $validated['mata_uang'] = $validated['mata_uang'] ?? 'IDR';
+        $validated['nama_manajer_investasi'] = $validated['nama_manajer_investasi'] ?? '';
+        $validated['jenis'] = $validated['jenis'] ?? '';
+        $validated['kategori_produk'] = $validated['kategori_produk'] ?? '';
+        $validated['kelas'] = $validated['kelas'] ?? '';
 
         $reksaDana = ReksaDana::create($validated);
 
@@ -785,22 +790,25 @@ class DaftarReksaDanaController extends Controller
         ]);
 
         if (!empty($validated['kode_reksa_dana'])) {
-            $parser = app(KodeReksaDanaParser::class);
-
-            if (!$parser->isValidKode($validated['kode_reksa_dana'])) {
-                // Kode tidak valid → jangan simpan, nanti di-regenerate
-                unset($validated['kode_reksa_dana']);
-            } else {
-                $parsedFromKode = $parser->databaseAttributes($validated['kode_reksa_dana']);
-                foreach ($parsedFromKode as $key => $value) {
-                    if (empty($validated[$key])) {
-                        $validated[$key] = $value;
+            $exists = ReksaDana::where('kode_reksa_dana', $validated['kode_reksa_dana'])->exists();
+            if (!$exists) {
+                $parser = app(KodeReksaDanaParser::class);
+                if ($parser->isValidKode($validated['kode_reksa_dana'])) {
+                    $parsedFromKode = $parser->databaseAttributes($validated['kode_reksa_dana']);
+                    foreach ($parsedFromKode as $key => $value) {
+                        if (empty($validated[$key])) {
+                            $validated[$key] = $value;
+                        }
                     }
                 }
             }
         }
 
         $validated['kategori'] = $validated['kategori'] ?? [];
+        $validated['nama_manajer_investasi'] = $validated['nama_manajer_investasi'] ?? '';
+        $validated['jenis'] = $validated['jenis'] ?? '';
+        $validated['kategori_produk'] = $validated['kategori_produk'] ?? '';
+        $validated['kelas'] = $validated['kelas'] ?? '';
 
         $reksaDana->update($validated);
 
@@ -965,21 +973,57 @@ class DaftarReksaDanaController extends Controller
             return response()->json(['error' => 'Kode tidak boleh kosong'], 422);
         }
 
+        $existing = ReksaDana::where('kode_reksa_dana', $kode)->first();
+        if ($existing) {
+            return response()->json($this->formatExistingResponse($existing));
+        }
+
+        if (strlen($kode) >= 3) {
+            $fuzzy = ReksaDana::where('kode_reksa_dana', 'like', $kode . '%')->first();
+            if ($fuzzy) {
+                return response()->json($this->formatExistingResponse($fuzzy));
+            }
+        }
+
+        if (strlen($kode) < 17) {
+            return response()->json(['error' => 'Kode tidak dikenal. Coba masukkan kode KSEI 17 digit.'], 404);
+        }
+
         $parsed = app(KodeReksaDanaParser::class)->parse($kode);
 
         if (empty($parsed['is_valid_length']) || empty($parsed['jenis'])) {
-            $msg = 'Kode Reksa Dana tidak valid. ';
-            if (strlen($kode) < 16) {
-                $msg .= 'Panjang kode minimal 16 karakter.';
-            } elseif (empty($parsed['nama_manajer_investasi'])) {
-                $msg .= 'Kode Manajer Investasi tidak ditemukan.';
-            } else {
-                $msg .= 'Format kode tidak sesuai.';
-            }
-            return response()->json(['error' => $msg], 422);
+            return response()->json([
+                'error' => 'Kode Reksa Dana tidak valid. ' . (
+                    empty($parsed['nama_manajer_investasi'])
+                        ? 'Kode Manajer Investasi tidak ditemukan.'
+                        : 'Format kode tidak sesuai.'
+                )
+            ], 422);
         }
 
         return response()->json($parsed);
+    }
+
+    private function formatExistingResponse(ReksaDana $rd): array
+    {
+        return [
+            'existing' => true,
+            'id' => $rd->id,
+            'kode_reksa_dana' => $rd->kode_reksa_dana,
+            'nama_reksa_dana' => $rd->nama_reksa_dana,
+            'nama_manajer_investasi' => $rd->nama_manajer_investasi,
+            'jenis' => $rd->jenis,
+            'kategori_produk' => $rd->kategori_produk,
+            'kategori' => $rd->kategori ?? [],
+            'kelas' => $rd->kelas,
+            'class_name' => $rd->kelas,
+            'mata_uang' => $rd->mata_uang,
+            'currency_name' => $rd->mata_uang,
+            'benchmark' => $rd->benchmark,
+            'tujuan_investasi' => $rd->tujuan_investasi,
+            'kebijakan_investasi' => $rd->kebijakan_investasi,
+            'investment_manager_id' => $rd->investment_manager_id,
+        ];
     }
 
     public function syncFromPasardana(Request $request)
@@ -1772,14 +1816,15 @@ class DaftarReksaDanaController extends Controller
         ]);
 
         if (!empty($validated['kode_reksa_dana'])) {
-            $parser = app(KodeReksaDanaParser::class);
-            if (!$parser->isValidKode($validated['kode_reksa_dana'])) {
-                unset($validated['kode_reksa_dana']);
-            } else {
-                $parsedFromKode = $parser->databaseAttributes($validated['kode_reksa_dana']);
-                foreach ($parsedFromKode as $key => $value) {
-                    if (empty($validated[$key])) {
-                        $validated[$key] = $value;
+            $exists = ReksaDana::where('kode_reksa_dana', $validated['kode_reksa_dana'])->exists();
+            if (!$exists) {
+                $parser = app(KodeReksaDanaParser::class);
+                if ($parser->isValidKode($validated['kode_reksa_dana'])) {
+                    $parsedFromKode = $parser->databaseAttributes($validated['kode_reksa_dana']);
+                    foreach ($parsedFromKode as $key => $value) {
+                        if (empty($validated[$key])) {
+                            $validated[$key] = $value;
+                        }
                     }
                 }
             }
