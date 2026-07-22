@@ -1113,6 +1113,52 @@
                 openModal('modal-document-edit');
             }
 
+            let fillDebounceTimer;
+            function fillFromKode(kode, prefix) {
+                clearTimeout(fillDebounceTimer);
+                const errorEl = document.getElementById(prefix + '-harga-kode-error');
+                const namaEl = document.getElementById(prefix + '-harga-nama');
+
+                if (!kode || kode.length < 3) {
+                    errorEl.classList.add('hidden');
+                    return;
+                }
+
+                fillDebounceTimer = setTimeout(() => {
+                    fetch('{{ route('admin.daftar-reksa-dana.parse-kode') }}?kode=' + encodeURIComponent(kode))
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.error) {
+                                errorEl.textContent = data.error;
+                                errorEl.classList.remove('hidden');
+                                return;
+                            }
+                            errorEl.classList.add('hidden');
+
+                            if (data.existing && data.nama_reksa_dana) {
+                                namaEl.value = data.nama_reksa_dana;
+                            }
+                            document.getElementById(prefix + '-harga-mi').value = data.nama_manajer_investasi || '';
+                            document.getElementById(prefix + '-harga-jenis').value = data.jenis || '';
+                            document.getElementById(prefix + '-harga-kp').value = data.kategori_produk || '';
+
+                            if (data.class_name && data.class_name !== '-' && data.class_name !== '—') {
+                                document.getElementById(prefix + '-harga-kelas').value = data.class_name;
+                            }
+                            if (data.currency_name && data.currency_name !== '-' && data.currency_name !== '—') {
+                                document.getElementById(prefix + '-harga-matauang').value = data.currency_name;
+                            }
+
+                            const kategori = Array.isArray(data.kategori) ? data.kategori : [];
+                            document.getElementById(prefix + '-harga-kategori-display').textContent = kategori
+                                .length ? kategori
+                                .join(', ') : '—';
+                            document.getElementById(prefix + '-harga-kategori').value = JSON.stringify(kategori);
+                        })
+                        .catch(() => {});
+                }, 300);
+            }
+
             document.addEventListener('DOMContentLoaded', function() {
 
                 // --- Auto-open edit modal from ?edit_doc= ---
@@ -1298,54 +1344,6 @@
                             btn.innerHTML = originalHtml[index] || 'Parse';
                         });
                     }
-                }
-
-                function fillFromKode(kode, prefix) {
-                    const errorEl = document.getElementById(prefix + '-harga-kode-error');
-                    if (!kode || kode.length < 16) {
-                        errorEl.classList.add('hidden');
-                        return;
-                    }
-
-                    fetch('{{ route('admin.daftar-reksa-dana.parse-kode') }}?kode=' + encodeURIComponent(kode))
-                        .then(r => r.json())
-                        .then(data => {
-                            if (data.error) {
-                                errorEl.textContent = data.error;
-                                errorEl.classList.remove('hidden');
-                                // Create: clear fields. Edit: biarkan fallback dari data
-                                if (prefix === 'create') {
-                                    document.getElementById(prefix + '-harga-mi').value = '';
-                                    document.getElementById(prefix + '-harga-jenis').value = '';
-                                    document.getElementById(prefix + '-harga-kp').value = '';
-                                    document.getElementById(prefix + '-harga-kelas').value = '';
-                                    document.getElementById(prefix + '-harga-matauang').value = 'IDR';
-                                    document.getElementById(prefix + '-harga-kategori-display').textContent = '—';
-                                    document.getElementById(prefix + '-harga-kategori').value = '[]';
-                                }
-                                return;
-                            }
-                            errorEl.classList.add('hidden');
-
-                            document.getElementById(prefix + '-harga-mi').value = data.nama_manajer_investasi || '';
-                            document.getElementById(prefix + '-harga-jenis').value = data.jenis || '';
-                            document.getElementById(prefix + '-harga-kp').value = data.kategori_produk || '';
-
-                            // Hanya timpa kelas/mata_uang jika hasil parse valid (bukan default '-')
-                            if (data.class_name && data.class_name !== '-' && data.class_name !== '—') {
-                                document.getElementById(prefix + '-harga-kelas').value = data.class_name;
-                            }
-                            if (data.currency_name && data.currency_name !== '-' && data.currency_name !== '—') {
-                                document.getElementById(prefix + '-harga-matauang').value = data.currency_name;
-                            }
-
-                            const kategori = Array.isArray(data.kategori) ? data.kategori : [];
-                            document.getElementById(prefix + '-harga-kategori-display').textContent = kategori
-                                .length ? kategori
-                                .join(', ') : '—';
-                            document.getElementById(prefix + '-harga-kategori').value = JSON.stringify(kategori);
-                        })
-                        .catch(() => {});
                 }
 
                 function openEditHarga(data) {
