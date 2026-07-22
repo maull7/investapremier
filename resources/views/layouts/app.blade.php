@@ -72,7 +72,6 @@
         .table-head .th-title svg {
             width: 17px;
             height: 17px;
-            stroke: #4ade80;
             fill: none;
             stroke-width: 2;
             stroke-linecap: round;

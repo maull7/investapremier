@@ -7,7 +7,7 @@
 
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1 class="page-title">Daftar Saham</h1>
+                <h1 class="text-2xl font-bold text-accent-teal/85">Daftar Saham</h1>
                 <p class="page-sub">Informasi saham yang tercatat di bursa</p>
             </div>
             {{-- <div class="flex items-center gap-2">
@@ -30,8 +30,7 @@
         </div>
 
         @if (session('success'))
-            <div
-                class="alert-success">
+            <div class="alert-success">
                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -55,7 +54,7 @@
                             placeholder="Cari kode, nama, atau sektor...">
                     </div>
                     <button type="submit"
-                        class="px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition">Cari</button>
+                        class="px-4 py-2.5 bg-accent-teal text-white rounded-xl text-sm font-semibold hover:bg-accent-teal/90 transition">Cari</button>
                     @if (request('search'))
                         <a href="{{ route('user.saham.index') }}"
                             class="px-4 py-2.5 border border-line text-muted rounded-xl text-sm font-semibold hover:text-primary transition">Reset</a>
@@ -65,8 +64,7 @@
         </div>
 
         <div class="table-card">
-            <div
-                class="table-head">
+            <div class="table-head">
                 <h2 class="th-title">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -232,7 +230,7 @@
                             @foreach ($stocks->getUrlRange($start, $end) as $page => $url)
                                 <a href="{{ $url }}"
                                     class="w-8 h-8 rounded-lg grid place-items-center text-xs font-semibold transition
-                      {{ $page == $current ? 'bg-primary text-white' : 'text-muted hover:text-primary hover:bg-[#f1f5f9]' }}">
+                      {{ $page == $current ? 'bg-accent-teal text-white' : 'text-muted hover:text-primary hover:bg-[#f1f5f9]' }}">
                                     {{ $page }}
                                 </a>
                             @endforeach

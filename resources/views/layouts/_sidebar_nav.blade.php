@@ -5,8 +5,10 @@
         Auth::user()->hasAnyPermission([
             'manajemen.dashboard',
             'manajemen.score-classifications',
+            'manajemen.pengguna',
             'manajemen.questions',
             'manajemen.members',
+            'manajemen.activity-logs',
         ]))
     <div>
         <button type="button" @click="menuMasterOpen = !menuMasterOpen"
@@ -44,7 +46,7 @@
                 <span class="sidebar-label">Klasifikasi Skor</span>
             </a>
             @endcanAccess
-            @if (Auth::user()->isAdmin())
+            @canAccess('manajemen.pengguna')
             <a href="{{ route('admin.users.index') }}"
                 @if ($mobile) x-on:click="sidebarOpen = false" @endif
                 class="sidebar-item sidebar-sub {{ request()->routeIs('admin.users.*') ? 'sidebar-item-active' : '' }}">
@@ -53,7 +55,7 @@
                 </svg>
                 <span class="sidebar-label">Pengguna</span>
             </a>
-            @endif
+            @endcanAccess
             @canAccess('manajemen.questions')
             <a href="{{ route('admin.questions.index') }}"
                 @if ($mobile) x-on:click="sidebarOpen = false" @endif
@@ -75,7 +77,7 @@
                 <span class="sidebar-label">Pendaftaran Member</span>
             </a>
             @endcanAccess
-            @if (Auth::user()->isAdmin())
+            @canAccess('manajemen.activity-logs')
                 <a href="{{ route('admin.activity-logs.index') }}"
                     @if ($mobile) x-on:click="sidebarOpen = false" @endif
                     class="sidebar-item sidebar-sub {{ request()->routeIs('admin.activity-logs.*') ? 'sidebar-item-active' : '' }}">
@@ -85,7 +87,7 @@
                     </svg>
                     <span class="sidebar-label">Activity Logs</span>
                 </a>
-            @endif
+            @endcanAccess
         </div>
     </div>
 @endif

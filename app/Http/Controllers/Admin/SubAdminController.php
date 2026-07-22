@@ -19,9 +19,11 @@ class SubAdminController extends Controller
                 'label' => 'Manajemen',
                 'children' => [
                     'dashboard' => ['label' => 'Dashboard'],
-                    'members' => ['label' => 'Pendaftaran Member'],
-                    'questions' => ['label' => 'Soal Kuis'],
                     'score-classifications' => ['label' => 'Klasifikasi Skor'],
+                    'pengguna' => ['label' => 'Pengguna'],
+                    'questions' => ['label' => 'Soal Kuis'],
+                    'members' => ['label' => 'Pendaftaran Member'],
+                    'activity-logs' => ['label' => 'Activity Logs'],
                 ],
             ],
             'reksa-dana' => [

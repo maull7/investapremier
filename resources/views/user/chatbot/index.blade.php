@@ -6,7 +6,7 @@
     <div class="max-w-4xl mx-auto" x-data="chatbot()">
         <div class="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
             {{-- Header --}}
-            <div class="px-6 py-4 bg-gradient-to-r from-green-600 to-green-500 flex items-center gap-3">
+            <div class="px-6 py-4 bg-gradient-to-r from-accent-teal/85 to-accent-teal/95 flex items-center gap-3">
                 <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -37,8 +37,8 @@
                     <div class="flex" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
                         <div class="max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed"
                             :class="msg.role === 'user' ?
-                                'bg-green-600 text-white rounded-br-md' :
-                                'bg-gray-100 text-gray-800 rounded-bl-md'">
+                                'bg-accent-teal text-white rounded-br-md' :
+                                'bg-cardBg-bg text-gray-800 rounded-bl-md'">
                             <p class="whitespace-pre-line" x-text="msg.content"></p>
                         </div>
                     </div>
@@ -52,7 +52,7 @@
                         class="flex-1 px-4 py-2.5 rounded-xl border border-line focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-sm"
                         :disabled="loading">
                     <button type="submit" :disabled="!message.trim() || loading"
-                        class="px-6 py-2.5 bg-green-600 text-white rounded-xl font-medium text-sm hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                        class="px-6 py-2.5 bg-accent-teal text-white rounded-xl font-medium text-sm hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                         <span x-show="!loading">Kirim</span>
                         <span x-show="loading" class="flex items-center gap-2">
                             <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
@@ -72,41 +72,55 @@
 @endsection
 
 @push('scripts')
-        <script>
-            function chatbot() {
-                return {
-                    message: '',
-                    loading: false,
-                    messages: @json($messages),
-                    sendMessage() {
-                        if (!this.message.trim() || this.loading) return;
-                        const msg = this.message;
-                        this.message = '';
-                        this.loading = true;
+    <script>
+        function chatbot() {
+            return {
+                message: '',
+                loading: false,
+                messages: @json($messages),
+                sendMessage() {
+                    if (!this.message.trim() || this.loading) return;
+                    const msg = this.message;
+                    this.message = '';
+                    this.loading = true;
 
-                        fetch('{{ route('user.chatbot.ask') }}', {
+                    fetch('{{ route('user.chatbot.ask') }}', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
                             },
-                            body: JSON.stringify({ message: msg })
+                            body: JSON.stringify({
+                                message: msg
+                            })
                         })
                         .then(r => r.json())
                         .then(data => {
-                            this.messages = [...this.messages, { role: 'user', content: msg }, { role: 'assistant', content: data.reply }];
+                            this.messages = [...this.messages, {
+                                role: 'user',
+                                content: msg
+                            }, {
+                                role: 'assistant',
+                                content: data.reply
+                            }];
                             this.$nextTick(() => {
                                 this.$refs.chatbox.scrollTop = this.$refs.chatbox.scrollHeight;
                             });
                         })
                         .catch(() => {
-                            this.messages = [...this.messages, { role: 'user', content: msg }, { role: 'assistant', content: 'Maaf, terjadi kesalahan. Silakan coba lagi.' }];
+                            this.messages = [...this.messages, {
+                                role: 'user',
+                                content: msg
+                            }, {
+                                role: 'assistant',
+                                content: 'Maaf, terjadi kesalahan. Silakan coba lagi.'
+                            }];
                         })
                         .finally(() => {
                             this.loading = false;
                         });
-                    }
                 }
             }
-        </script>
-    @endpush
+        }
+    </script>
+@endpush

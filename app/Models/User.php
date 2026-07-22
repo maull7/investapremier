@@ -86,7 +86,12 @@ class User extends Authenticatable
 
     public function portofolioItems(): HasMany
     {
-        return $this->hasMany(PortofolioItem::class, 'user_id');
+        return $this->hasMany(PortofolioItem::class);
+    }
+
+    public function portfolioSnapshots(): HasMany
+    {
+        return $this->hasMany(PortfolioSnapshot::class);
     }
 
     /**

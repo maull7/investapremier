@@ -11,6 +11,9 @@ Artisan::command('inspire', function () {
 // Horizon metrics snapshot setiap 5 menit
 Schedule::command('horizon:snapshot')->everyFiveMinutes();
 
+// Snapshot portfolio user setiap hari jam 23:00 WIB
+Schedule::command('snapshot:portfolio')->dailyAt('23:00')->withoutOverlapping();
+
 // Cek alert harga saham member setiap 5 menit pada jam pasar (Senin-Jumat 08:30-16:30 WIB)
 // Skip akhir pekan untuk hemat resource. Tetap jalan tiap 30 menit di luar jam pasar
 // agar alert tetap masuk ketika data harga di-update di luar jam.

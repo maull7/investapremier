@@ -4,7 +4,7 @@
     <div class="space-y-6">
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="page-title">{{ $pageTitle ?? 'Monitor Reksa Dana' }}</h1>
+                <h1 class="font-bold text-2xl text-accent-teal/85">{{ $pageTitle ?? 'Monitor Reksa Dana' }}</h1>
                 <p class="page-sub">{{ $pageSub ?? 'Hasil analisa reksa dana yang telah dipublikasikan' }}</p>
             </div>
 

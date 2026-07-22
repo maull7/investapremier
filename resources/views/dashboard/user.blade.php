@@ -266,16 +266,7 @@
         </a>
     </div>
 
-    {{-- Market Ticker --}}
-    <div class="widget-card mb-6 overflow-hidden py-3 px-0">
-        <div class="ticker-track">
-            @php $tickers = [['IHSG','7.284','+0,82%',true],['ANTM','1.545','+2,13%',true],['BBCA','9.225','-0,54%',false],['TLKM','3.180','+1,26%',true],['GOTO','68','+4,62%',true],['BMRI','6.075','+0,91%',true],['ASII','4.890','-0,20%',false],['UNVR','2.610','+1,56%',true],['FR0100','97,55','-0,18%',false],['SBR013','100,12','+0,03%',true]]; @endphp
-            @foreach (array_merge($tickers, $tickers) as $t)
-                <span class="ticker-item">{{ $t[0] }} <span class="tv">{{ $t[1] }}</span><span
-                        class="{{ $t[3] ? 'tu' : 'td' }}">{{ $t[2] }}</span></span>
-            @endforeach
-        </div>
-    </div>
+
 
     {{-- Stat Cards --}}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -399,7 +390,7 @@
             </div>
             <div class="flex flex-col items-center">
                 <div class="wealth-meter" x-data="{
-                    score: {{ min(($totalKekayaanGrowth ?? 0) * 10 + 65, 100) }},
+                    score: {{ $wealthHealthScore ?? 65 }},
                     circumference: 2 * Math.PI * 55,
                     init() {
                         setTimeout(() => {
@@ -622,7 +613,7 @@
                         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
                         datasets: [{
                             label: 'Portfolio Value',
-                            data: {{ json_encode($portfolioGrowth ?? [12.5, 13.2, 12.8, 14.1, 15.0, 15.8]) }},
+                            data: {{ json_encode($portfolioGrowth ?? []) }},
                             borderColor: '#16a34a',
                             backgroundColor: 'rgba(22,163,74,.08)',
                             fill: true,
@@ -672,16 +663,13 @@
             const aCtx = document.getElementById('allocationChart');
             if (aCtx && typeof Chart !== 'undefined') {
                 const allocData = @json($alokasiAset ?? []);
+                if (allocData.length) {
                 new Chart(aCtx, {
                     type: 'doughnut',
                     data: {
-                        labels: allocData.length ? allocData.map(a => a.label) : ['Saham', 'Obligasi',
-                            'Reksa Dana', 'Unit Link', 'Kas'
-                        ],
+                        labels: allocData.map(a => a.label),
                         datasets: [{
-                            data: allocData.length ? allocData.map(a => a.pct) : [30, 25, 20, 15,
-                                10
-                            ],
+                            data: allocData.map(a => a.pct),
                             backgroundColor: ['#16a34a', '#0f766e', '#0891b2', '#7c3aed',
                                 '#f59e0b'
                             ],
@@ -707,6 +695,7 @@
                         }
                     }
                 });
+                }
             }
         });
     </script>
