@@ -55,7 +55,7 @@
                 @foreach (['', 'original', 'submitted', 'reviewed', 'input_manual'] as $s)
                     <a href="{{ route('admin.analisa.index', array_filter(['tab' => 'analisa', 'status' => $s ?: null, 'search' => request('search'), 'jenis_dokumen' => request('jenis_dokumen'), 'kategori' => request('kategori'), 'ffs_bulan' => request('ffs_bulan'), 'ffs_tahun' => request('ffs_tahun')])) }}"
                         class="px-3 py-1.5 rounded-lg border transition {{ request('status') === $s || (!request('status') && $s === '') ? 'bg-primary text-white border-primary' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
-                        {{ match ($s) {'' => 'Semua','original' => 'Original','submitted' => 'Menunggu Review','reviewed' => 'Sudah Direview','input_manual' => 'Input Manual'} }}
+                        {{ match ($s) {'' => 'Semua','original' => 'Belum Dianalisa','submitted' => 'Menunggu Review','reviewed' => 'Sudah Direview','input_manual' => 'Input Manual'} }}
                     </a>
                 @endforeach
 
@@ -87,7 +87,7 @@
                     <select name="status" onchange="this.form.submit()"
                         class="text-xs border-gray-300 rounded-lg px-3 py-1.5 focus:border-primary focus:ring focus:ring-primary/20">
                         <option value="">Pilih Status...</option>
-                        <option value="original" {{ request('status') === 'original' ? 'selected' : '' }}>Original</option>
+                        <option value="original" {{ request('status') === 'original' ? 'selected' : '' }}>Belum Dianalisa</option>
                         <option value="submitted" {{ request('status') === 'submitted' ? 'selected' : '' }}>Menunggu Review
                         </option>
                         <option value="reviewed" {{ request('status') === 'reviewed' ? 'selected' : '' }}>Sudah Direview
@@ -278,6 +278,8 @@
                                         @endif
                                     </a>
                                 </th>
+                                <th class="text-left px-5 py-3 font-semibold text-primary">Jenis Dokumen</th>
+                                <th class="text-left px-5 py-3 font-semibold text-primary">Periode</th>
                                 <th class="text-left px-5 py-3 font-semibold text-primary">Kategori</th>
 
                                 <th class="text-left px-5 py-3 font-semibold text-primary">Status</th>
@@ -293,8 +295,21 @@
                                     $status = $analisa ? $analisa->status : 'original';
                                     $ffsBulan = $analisa->ffs_bulan ?? null;
                                     $ffsTahun = $analisa->ffs_tahun ?? null;
+                                    $jenisLaporan = $analisa->jenis_laporan ?? null;
                                 @endphp
-                                <tr class="hover:bg-[#f8fafc] transition" x-data="{ showAllFfs: false }">
+                                @php
+                                    $_analisaList = $rd->analisa->map(fn($a) => [
+                                        'id' => $a->id,
+                                        'jenis_laporan' => $a->jenis_laporan,
+                                        'ffs_bulan' => $a->ffs_bulan,
+                                        'ffs_tahun' => $a->ffs_tahun,
+                                        'tahun_laporan' => $a->tahun_laporan,
+                                        'status' => $a->status,
+                                        'is_published' => $a->is_published,
+                                        'user' => $a->user?->name,
+                                    ])->values();
+                                @endphp
+                                <tr class="hover:bg-[#f8fafc] transition" x-data="{ showAllFfs: false, analisaList: @js($_analisaList) }">
                                     <td class="px-5 py-3.5 font-medium">
                                         <div class="font-medium text-primary">{{ $rd->nama_reksa_dana }}</div>
                                         @if ($rd->kode_reksa_dana)
@@ -303,6 +318,34 @@
                                     </td>
                                     <td class="px-5 py-3.5 text-muted">
                                         {{ $analisa->jenis_reksa_dana ?? ($rd->jenis ?? '-') }}</td>
+                                    <td class="px-5 py-3.5">
+                                        @if ($analisa)
+                                            @php
+                                                $docType = match ($jenisLaporan) {
+                                                    'kalender_ffs' => 'FFS',
+                                                    'laporan_tahunan' => 'Laporan Tahunan',
+                                                    default => $jenisLaporan ? ucfirst($jenisLaporan) : ($analisa->document_type ?? '—'),
+                                                };
+                                            @endphp
+                                            <span class="px-2 py-0.5 rounded text-xs font-medium {{ $jenisLaporan === 'kalender_ffs' ? 'bg-purple-100 text-purple-700' : ($jenisLaporan === 'laporan_tahunan' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600') }}">{{ $docType }}</span>
+                                        @else
+                                            <span class="text-muted text-xs">—</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-5 py-3.5">
+                                        @if ($analisa)
+                                            @php
+                                                $periode = match (true) {
+                                                    $jenisLaporan === 'kalender_ffs' && $ffsBulan && $ffsTahun => $bulanIndonesia[$ffsBulan - 1] . ' ' . $ffsTahun,
+                                                    $jenisLaporan === 'laporan_tahunan' && $analisa->tahun_laporan => 'Tahun ' . $analisa->tahun_laporan,
+                                                    default => $ffsTahun ? 'Tahun ' . $ffsTahun : '—',
+                                                };
+                                            @endphp
+                                            <span class="text-xs">{{ $periode }}</span>
+                                        @else
+                                            <span class="text-muted text-xs">—</span>
+                                        @endif
+                                    </td>
                                     <td class="px-5 py-3.5">
                                         @php
                                             $kategori = $analisa->kategori ?? $rd->kategori;
@@ -323,7 +366,7 @@
                                         @php
                                             if ($status === 'original') {
                                                 $badge = 'bg-slate-100 text-slate-600';
-                                                $label = 'Original';
+                                                $label = 'Belum Dianalisa';
                                             } else {
                                                 $badge = match ($status) {
                                                     'input_manual' => 'bg-gray-100 text-gray-600',
@@ -381,10 +424,17 @@
                                                     class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition">
                                                     Analisa RD
                                                 </a>
-                                                <a href="{{ route('admin.analisa.show', $analisa) }}"
-                                                    class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-primary border border-line rounded-lg hover:bg-[#f1f5f9] transition">
-                                                    Detail
-                                                </a>
+                                                @if ($_analisaList->count() > 1)
+                                                    <button @click="window.dispatchEvent(new CustomEvent('open-analisa-modal', { detail: { list: analisaList, fund: '{{ $rd->nama_reksa_dana }}' } }))"
+                                                        class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-primary border border-line rounded-lg hover:bg-[#f1f5f9] transition">
+                                                        Detail
+                                                    </button>
+                                                @else
+                                                    <a href="{{ route('admin.analisa.show', $analisa) }}"
+                                                        class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-primary border border-line rounded-lg hover:bg-[#f1f5f9] transition">
+                                                        Detail
+                                                    </a>
+                                                @endif
                                                 <form method="POST"
                                                     action="{{ route('admin.analisa.destroy', $analisa) }}"
                                                     class="inline-flex"
@@ -555,6 +605,50 @@
             <div class="px-5 py-3 border-t border-line">
                 {{ $reksaDanas->appends(request()->query())->links() }}
             </div>
+    </div>
+
+    {{-- Modal Daftar Analisa --}}
+    @php $blnIndo = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']; @endphp
+    <div x-data="{ show: false, list: [], fund: '', bulanIndonesia: @js($blnIndo) }"
+         x-on:open-analisa-modal.window="show = true; list = $event.detail.list; fund = $event.detail.fund"
+         x-show="show" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+        <div class="absolute inset-0 bg-black/40" @click="show = false"></div>
+        <div class="relative bg-white rounded-2xl shadow-xl border border-line w-full max-w-lg max-h-[85vh] overflow-y-auto">
+            <div class="px-6 py-4 border-b border-line flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-muted">Daftar Analisa</p>
+                    <h3 class="font-bold text-primary" x-text="fund"></h3>
+                </div>
+                <button @click="show = false" class="text-muted hover:text-primary text-xl leading-none">&times;</button>
+            </div>
+            <div class="p-6">
+                <template x-if="list.length === 0">
+                    <p class="text-sm text-muted text-center py-4">Tidak ada data analisa.</p>
+                </template>
+                <div class="space-y-2" x-show="list.length > 0">
+                    <template x-for="(item, idx) in list" :key="idx">
+                        <a :href="'/admin/analisa/' + item.id"
+                           class="flex items-center justify-between px-4 py-3 bg-[#f8fafc] rounded-lg border border-line hover:border-accent transition">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-semibold text-primary" x-text="item.jenis_laporan === 'kalender_ffs' ? 'FFS' : (item.jenis_laporan === 'laporan_tahunan' ? 'Laporan Tahunan' : item.jenis_laporan || '—')"></span>
+                                    <span class="text-xs text-muted" x-text="item.jenis_laporan === 'kalender_ffs' && item.ffs_bulan && item.ffs_tahun ? (bulanIndonesia[item.ffs_bulan - 1] + ' ' + item.ffs_tahun) : (item.jenis_laporan === 'laporan_tahunan' && item.tahun_laporan ? 'Tahun ' + item.tahun_laporan : '')"></span>
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                                          :class="item.status === 'reviewed' ? 'bg-green-100 text-green-700' : (item.status === 'submitted' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600')"
+                                          x-text="item.status === 'original' ? 'Belum Dianalisa' : (item.status === 'submitted' ? 'Menunggu Review' : (item.status === 'reviewed' ? 'Sudah Direview' : (item.status === 'input_manual' ? 'Input Manual' : item.status)))"></span>
+                                    <span x-show="item.is_published" class="text-[10px] px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded font-medium">Published</span>
+                                    <span x-show="item.user" class="text-[10px] text-muted" x-text="item.user"></span>
+                                </div>
+                            </div>
+                            <svg class="w-4 h-4 text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </a>
+                    </template>
+                </div>
+            </div>
         </div>
     </div>
+</div>
 @endsection

@@ -40,7 +40,7 @@ class DaftarReksaDanaController extends Controller
 
         $hargaSort = $request->get('sort', 'nama_reksa_dana');
         $hargaDir = $request->get('direction', 'asc');
-        $hargaQuery = ReksaDana::orderBy($hargaSort, $hargaDir);
+        $hargaQuery = ReksaDana::with(['analisa' => fn($q) => $q->where('product_type', 'reksa_dana')->latest()])->orderBy($hargaSort, $hargaDir);
         if ($request->jenis) $hargaQuery->where('jenis', $request->jenis);
         if ($request->search) {
             $hargaQuery->where(function ($q) use ($request) {
