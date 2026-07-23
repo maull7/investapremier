@@ -31,11 +31,29 @@
         @endif
 
         @if ($tab === 'analisa')
+            {{-- Search --}}
+            <form method="GET" action="{{ route('admin.analisa.index') }}"
+                class="flex flex-wrap items-end gap-3">
+                <input type="hidden" name="tab" value="analisa">
+                <div class="flex-1 min-w-56">
+                    <label class="block text-xs font-semibold text-muted mb-1">Cari Nama/Kode Reksa Dana</label>
+                    <input type="text" name="search" value="{{ request('search') }}"
+                        placeholder="Nama atau kode reksa dana..."
+                        class="w-full text-sm border border-line rounded-lg px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20">
+                </div>
+                <button type="submit"
+                    class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition">Cari</button>
+                @if (request('search') || request('jenis_dokumen') || request('status') || request('kategori') || request('ffs_bulan') || request('ffs_tahun') || request('mode') || request('is_published'))
+                    <a href="{{ route('admin.analisa.index', ['tab' => 'analisa']) }}"
+                        class="px-4 py-2 border border-line text-muted rounded-lg text-sm font-semibold hover:text-primary transition">Reset</a>
+                @endif
+            </form>
+
             {{-- Filter Status --}}
             <div class="flex gap-2 text-sm flex-wrap items-center">
                 <span class="text-xs font-semibold text-muted">Status:</span>
                 @foreach (['', 'original', 'submitted', 'reviewed', 'input_manual'] as $s)
-                    <a href="{{ route('admin.analisa.index', array_filter(['tab' => 'analisa', 'status' => $s ?: null, 'kategori' => request('kategori'), 'ffs_bulan' => request('ffs_bulan'), 'ffs_tahun' => request('ffs_tahun')])) }}"
+                    <a href="{{ route('admin.analisa.index', array_filter(['tab' => 'analisa', 'status' => $s ?: null, 'search' => request('search'), 'jenis_dokumen' => request('jenis_dokumen'), 'kategori' => request('kategori'), 'ffs_bulan' => request('ffs_bulan'), 'ffs_tahun' => request('ffs_tahun')])) }}"
                         class="px-3 py-1.5 rounded-lg border transition {{ request('status') === $s || (!request('status') && $s === '') ? 'bg-primary text-white border-primary' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
                         {{ match ($s) {'' => 'Semua','original' => 'Original','submitted' => 'Menunggu Review','reviewed' => 'Sudah Direview','input_manual' => 'Input Manual'} }}
                     </a>
@@ -45,6 +63,12 @@
                 <form method="GET" action="{{ route('admin.analisa.index') }}"
                     class="inline-flex items-center gap-2 ml-4">
                     <input type="hidden" name="tab" value="analisa">
+                    @if (request('search'))
+                        <input type="hidden" name="search" value="{{ request('search') }}">
+                    @endif
+                    @if (request('jenis_dokumen'))
+                        <input type="hidden" name="jenis_dokumen" value="{{ request('jenis_dokumen') }}">
+                    @endif
                     @if (request('kategori'))
                         <input type="hidden" name="kategori" value="{{ request('kategori') }}">
                     @endif
@@ -74,15 +98,44 @@
                 </form>
             </div>
 
+            {{-- Jenis Dokumen --}}
+            <div class="flex gap-2 text-sm flex-wrap items-center">
+                <span class="text-xs font-semibold text-muted">Jenis Dokumen:</span>
+                @php
+                    $baseParams = array_filter([
+                        'tab' => 'analisa',
+                        'search' => request('search'),
+                        'status' => request('status'),
+                        'kategori' => request('kategori'),
+                        'ffs_bulan' => request('ffs_bulan'),
+                        'ffs_tahun' => request('ffs_tahun'),
+                        'mode' => request('mode'),
+                        'is_published' => request('is_published'),
+                    ]);
+                @endphp
+                <a href="{{ route('admin.analisa.index', $baseParams) }}"
+                    class="px-3 py-1.5 rounded-lg border transition {{ !request('jenis_dokumen') ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
+                    Semua
+                </a>
+                <a href="{{ route('admin.analisa.index', array_merge($baseParams, ['jenis_dokumen' => 'prospektus'])) }}"
+                    class="px-3 py-1.5 rounded-lg border transition {{ request('jenis_dokumen') === 'prospektus' ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
+                    Prospektus
+                </a>
+                <a href="{{ route('admin.analisa.index', array_merge($baseParams, ['jenis_dokumen' => 'ffs'])) }}"
+                    class="px-3 py-1.5 rounded-lg border transition {{ request('jenis_dokumen') === 'ffs' ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
+                    FFS
+                </a>
+            </div>
+
             {{-- Filter Kategori + Kalender FFS --}}
             <div class="flex flex-wrap items-center gap-3">
                 <div class="flex gap-2 text-xs flex-wrap">
-                    <a href="{{ route('admin.analisa.index', array_filter(['tab' => 'analisa', 'status' => request('status'), 'ffs_bulan' => request('ffs_bulan'), 'ffs_tahun' => request('ffs_tahun'), 'mode' => request('mode'), 'is_published' => request('is_published')])) }}"
+                    <a href="{{ route('admin.analisa.index', array_filter(['tab' => 'analisa', 'search' => request('search'), 'jenis_dokumen' => request('jenis_dokumen'), 'status' => request('status'), 'ffs_bulan' => request('ffs_bulan'), 'ffs_tahun' => request('ffs_tahun'), 'mode' => request('mode'), 'is_published' => request('is_published')])) }}"
                         class="px-3 py-1.5 rounded-lg border transition {{ !request('kategori') ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
                         Semua Kategori
                     </a>
                     @foreach (['Konvensional', 'Syariah', 'index', 'ETF'] as $k)
-                        <a href="{{ route('admin.analisa.index', array_filter(['tab' => 'analisa', 'status' => request('status'), 'kategori' => $k, 'ffs_bulan' => request('ffs_bulan'), 'ffs_tahun' => request('ffs_tahun'), 'mode' => request('mode'), 'is_published' => request('is_published')])) }}"
+                        <a href="{{ route('admin.analisa.index', array_filter(['tab' => 'analisa', 'search' => request('search'), 'jenis_dokumen' => request('jenis_dokumen'), 'status' => request('status'), 'kategori' => $k, 'ffs_bulan' => request('ffs_bulan'), 'ffs_tahun' => request('ffs_tahun'), 'mode' => request('mode'), 'is_published' => request('is_published')])) }}"
                             class="px-3 py-1.5 rounded-lg border transition {{ request('kategori') === $k ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
                             {{ $k }}
                         </a>
@@ -93,6 +146,12 @@
                     <form method="GET" action="{{ route('admin.analisa.index') }}" class="flex items-center gap-2"
                         id="ffs-filter-form">
                         <input type="hidden" name="tab" value="analisa">
+                        @if (request('search'))
+                            <input type="hidden" name="search" value="{{ request('search') }}">
+                        @endif
+                        @if (request('jenis_dokumen'))
+                            <input type="hidden" name="jenis_dokumen" value="{{ request('jenis_dokumen') }}">
+                        @endif
                         @if (request('status'))
                             <input type="hidden" name="status" value="{{ request('status') }}">
                         @endif

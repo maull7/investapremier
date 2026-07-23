@@ -269,6 +269,7 @@
                 </div>
 
                 {{-- Financial Highlights dari Yahoo Finance --}}
+
                 <div x-show="summary && summary.highlights"
                     class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
 
@@ -300,7 +301,7 @@
                                 </div>
 
                                 <div class="flex justify-between">
-                                    <span class="text-slate-500">Operating Margin</span>
+                                    <span class="text-slate-500">Operating Margin (ttm)</span>
                                     <span class="font-semibold text-slate-800"
                                         x-text="summary?.highlights?.operatingMargins ? (Number(summary.highlights.operatingMargins)*100).toFixed(2)+'%' : '-'"></span>
                                 </div>
@@ -312,13 +313,13 @@
                                 </div>
 
                                 <div class="flex justify-between">
-                                    <span class="text-slate-500">ROE</span>
+                                    <span class="text-slate-500">ROE (ttm)</span>
                                     <span class="font-semibold text-slate-800"
                                         x-text="summary?.highlights?.returnOnEquity ? (Number(summary.highlights.returnOnEquity)*100).toFixed(2)+'%' : '-'"></span>
                                 </div>
 
                                 <div class="flex justify-between">
-                                    <span class="text-slate-500">ROA</span>
+                                    <span class="text-slate-500">ROA (ttm)</span>
                                     <span class="font-semibold text-slate-800"
                                         x-text="summary?.highlights?.returnOnAssets ? (Number(summary.highlights.returnOnAssets)*100).toFixed(2)+'%' : '-'"></span>
                                 </div>
@@ -336,13 +337,13 @@
                             <div class="space-y-3 text-sm">
 
                                 <div class="flex justify-between">
-                                    <span class="text-slate-500">Revenue Growth</span>
+                                    <span class="text-slate-500">Revenue Growth (ttm)</span>
                                     <span class="font-semibold text-slate-800"
                                         x-text="summary?.highlights?.revenueGrowth ? (Number(summary.highlights.revenueGrowth)*100).toFixed(2)+'%' : '-'"></span>
                                 </div>
 
                                 <div class="flex justify-between">
-                                    <span class="text-slate-500">Earnings Growth</span>
+                                    <span class="text-slate-500">Earnings Growth (yoy)</span>
                                     <span class="font-semibold text-slate-800"
                                         x-text="summary?.highlights?.earningsGrowth ? (Number(summary.highlights.earningsGrowth)*100).toFixed(2)+'%' : '-'"></span>
                                 </div>
@@ -408,6 +409,56 @@
 
                     </div>
                 </div>
+
+
+
+                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-800">
+                            Abbreviation Guide
+                        </h3>
+                        <p class="text-sm text-slate-500">
+                            Guide Of Abbreviation Used In Financial Highlights
+                        </p>
+                    </div>
+                    <div class="my-6">
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <h4 class="mb-4 text-sm font-semibold text-slate-800">
+                                Abbreviation Guide
+                            </h4>
+
+                            <div class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+                                <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                                    <span class="font-medium uppercase text-slate-500">MRQ</span>
+                                    <span class="text-slate-700 font-semibold">Most Recent Quarter</span>
+                                </div>
+
+                                <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                                    <span class="font-medium uppercase text-slate-500">TTM</span>
+                                    <span class="text-slate-700 font-semibold">Trailing Twelve Months</span>
+                                </div>
+
+                                <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                                    <span class="font-medium uppercase text-slate-500">YOY</span>
+                                    <span class="text-slate-700 font-semibold">Year-over-Year</span>
+                                </div>
+
+                                <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                                    <span class="font-medium uppercase text-slate-500">LFY</span>
+                                    <span class="text-slate-700 font-semibold">Last Fiscal Year</span>
+                                </div>
+
+                                <div class="flex items-center justify-between">
+                                    <span class="font-medium uppercase text-slate-500">FYE</span>
+                                    <span class="text-slate-700 font-semibold">Fiscal Year End</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
                 {{-- Data Laporan Keuangan untuk Analisa FFS --}}
                 @if ($stock->financialReports->isNotEmpty())
                     <div>
