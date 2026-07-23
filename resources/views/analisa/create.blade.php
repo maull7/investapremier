@@ -40,7 +40,7 @@
             @endif
         @endif
 
-        <form id="analisa-form" method="POST"
+        <form id="analisa-form" method="POST" novalidate
             action="{{ !empty($isEditMode) ? $formRoutes['update'] : $formRoutes['store'] }}" enctype="multipart/form-data"
             class="space-y-6"
             @submit="if (mode === 'link-website') { $event.preventDefault(); webMessage = 'Selesaikan langkah di tab Link Website: unduh file lalu klik Isi Form Otomatis. Setelah itu submit dari tab Input Manual.'; webOk = false; }">
@@ -4350,7 +4350,12 @@
                     },
 
                     tanggalDataValue() {
-                        return this.tanggalData || this.ffsDateValue();
+                        const d = this.tanggalData || this.ffsDateValue();
+                        if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
+                            const [dd, mm, yyyy] = d.split('/');
+                            return `${yyyy}-${mm}-${dd}`;
+                        }
+                        return d;
                     },
 
                     hitungNilaiPasarEfek(i) {

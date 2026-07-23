@@ -109,8 +109,45 @@ class AnalisaController extends Controller
         ]);
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $tab = $request->get('tab', 'analisa');
+        $bulanIndonesia = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+        if ($tab === 'prospektus') {
+            $query = ReksaDana::with(['documents' => fn($q) => $q->where('document_type', 'prospektus')
+                ->when($request->filled('prospektus_year'), fn($qq) => $qq->where('ffs_year', $request->prospektus_year))
+                ->orderBy('ffs_year', 'desc')->orderBy('ffs_month', 'desc')])
+                ->whereHas('documents', fn($q) => $q->where('document_type', 'prospektus')
+                    ->when($request->filled('prospektus_year'), fn($qq) => $qq->where('ffs_year', $request->prospektus_year)));
+
+            $reksaDanas = $query->orderBy('nama_reksa_dana')->paginate(20);
+
+            $tahunList = ReksaDanaDocument::where('document_type', 'prospektus')
+                ->whereNotNull('ffs_year')->distinct()->orderBy('ffs_year', 'desc')->pluck('ffs_year');
+
+            return view('analisa.index', compact('reksaDanas', 'tahunList', 'bulanIndonesia') + ['tab' => 'prospektus', 'pageTitle' => 'Monitor Reksa Dana', 'pageSub' => 'Daftar reksa dana dengan dokumen Prospektus']);
+        }
+
+        if ($tab === 'ffs') {
+            $query = ReksaDana::with(['documents' => fn($q) => $q->where('document_type', 'ffs')
+                ->when($request->filled('ffs_bulan'), fn($qq) => $qq->where('ffs_month', $request->ffs_bulan))
+                ->when($request->filled('ffs_tahun'), fn($qq) => $qq->where('ffs_year', $request->ffs_tahun))
+                ->orderBy('ffs_year', 'desc')->orderBy('ffs_month', 'desc')])
+                ->whereHas('documents', fn($q) => $q->where('document_type', 'ffs')
+                    ->when($request->filled('ffs_bulan'), fn($qq) => $qq->where('ffs_month', $request->ffs_bulan))
+                    ->when($request->filled('ffs_tahun'), fn($qq) => $qq->where('ffs_year', $request->ffs_tahun)));
+
+            $reksaDanas = $query->orderBy('nama_reksa_dana')->paginate(20);
+
+            $reksaDanas = $query->orderBy('nama_reksa_dana')->paginate(20);
+
+            $tahunList = ReksaDanaDocument::where('document_type', 'ffs')
+                ->whereNotNull('ffs_year')->distinct()->orderBy('ffs_year', 'desc')->pluck('ffs_year');
+
+            return view('analisa.index', compact('reksaDanas', 'tahunList', 'bulanIndonesia') + ['tab' => 'ffs', 'pageTitle' => 'Monitor Reksa Dana', 'pageSub' => 'Daftar reksa dana dengan dokumen FFS']);
+        }
+
         $publishedAnalisas = AnalisaReksaDana::where('is_published', true)
             ->where('product_type', $this->productType)
             ->with('user')
@@ -127,9 +164,10 @@ class AnalisaController extends Controller
         $pageTitle = 'Monitor Reksa Dana';
         $pageSub = 'Hasil analisa reksa dana yang telah dipublikasikan';
 
-        return view('analisa.index', compact('publishedAnalisas', 'analisas', 'pageTitle', 'pageSub'))
+        return view('analisa.index', compact('publishedAnalisas', 'analisas', 'pageTitle', 'pageSub', 'bulanIndonesia'))
             ->with('productLabel', $this->productLabel)
-            ->with('createRoute', $createRoute);
+            ->with('createRoute', $createRoute)
+            ->with('tab', 'analisa');
     }
 
     protected function linkRoutes(): array
@@ -1307,6 +1345,7 @@ class AnalisaController extends Controller
         $request->merge([
             'jenis_laporan' => $request->jenis_laporan ?: 'laporan_tahunan',
             'tahun_laporan' => $request->tahun_laporan ?: now()->year,
+            'tanggal_data' => $request->filled('tanggal_data') ? $request->tanggal_data : null,
         ]);
 
         $request->validate([
@@ -1673,7 +1712,10 @@ class AnalisaController extends Controller
             $pasarUang = collect($request->pasar_uang ?? [])->filter(fn($r) => !empty($r['nama_instrumen']))->values()->all();
             $piutangBungaDetail = collect($request->piutang_bunga_detail ?? [])->filter(fn($r) => !empty($r['jenis_instrumen']) && !empty($r['jumlah']))->values()->all();
             $likuiditas = collect($request->likuiditas ?? [])->filter(fn($r) => !empty($r['kode_efek']))->values()->all();
-            $keuangan   = collect($request->keuangan ?? [])->filter(fn($r) => !empty($r['kode_efek']))->values()->all();
+            $keuangan   = collect($request->keuangan ?? [])
+                ->filter(fn($r) => !empty($r['kode_efek']))
+                ->map(fn($r) => array_merge($r, ['nama_efek' => $r['nama_efek'] ?? $r['kode_efek']]))
+                ->values()->all();
 
             if ($sektor)   $analisa->sektor()->createMany($sektor);
             if ($efek)     $analisa->efek()->createMany($efek);
@@ -2287,6 +2329,7 @@ class AnalisaController extends Controller
         $request->merge([
             'jenis_laporan' => $request->jenis_laporan ?: 'laporan_tahunan',
             'tahun_laporan' => $request->tahun_laporan ?: now()->year,
+            'tanggal_data' => $request->filled('tanggal_data') ? $request->tanggal_data : null,
         ]);
 
         $request->validate([
@@ -2534,7 +2577,10 @@ class AnalisaController extends Controller
             $pasarUang = collect($request->pasar_uang ?? [])->filter(fn($r) => !empty($r['nama_instrumen']))->values()->all();
             $piutangBungaDetail = collect($request->piutang_bunga_detail ?? [])->filter(fn($r) => !empty($r['jenis_instrumen']) && !empty($r['jumlah']))->values()->all();
             $likuiditas = collect($request->likuiditas ?? [])->filter(fn($r) => !empty($r['kode_efek']))->values()->all();
-            $keuangan   = collect($request->keuangan ?? [])->filter(fn($r) => !empty($r['kode_efek']))->values()->all();
+            $keuangan   = collect($request->keuangan ?? [])
+                ->filter(fn($r) => !empty($r['kode_efek']))
+                ->map(fn($r) => array_merge($r, ['nama_efek' => $r['nama_efek'] ?? $r['kode_efek']]))
+                ->values()->all();
 
             $analisa->sektor()->delete();
             $analisa->efek()->delete();

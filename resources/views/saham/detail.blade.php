@@ -269,6 +269,7 @@
                 </div>
 
                 {{-- Financial Highlights dari Yahoo Finance --}}
+
                 <div x-show="summary && summary.highlights"
                     class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
 
@@ -300,7 +301,7 @@
                                 </div>
 
                                 <div class="flex justify-between">
-                                    <span class="text-slate-500">Operating Margin</span>
+                                    <span class="text-slate-500">Operating Margin (ttm)</span>
                                     <span class="font-semibold text-slate-800"
                                         x-text="summary?.highlights?.operatingMargins ? (Number(summary.highlights.operatingMargins)*100).toFixed(2)+'%' : '-'"></span>
                                 </div>
@@ -312,13 +313,13 @@
                                 </div>
 
                                 <div class="flex justify-between">
-                                    <span class="text-slate-500">ROE</span>
+                                    <span class="text-slate-500">ROE (ttm)</span>
                                     <span class="font-semibold text-slate-800"
                                         x-text="summary?.highlights?.returnOnEquity ? (Number(summary.highlights.returnOnEquity)*100).toFixed(2)+'%' : '-'"></span>
                                 </div>
 
                                 <div class="flex justify-between">
-                                    <span class="text-slate-500">ROA</span>
+                                    <span class="text-slate-500">ROA (ttm)</span>
                                     <span class="font-semibold text-slate-800"
                                         x-text="summary?.highlights?.returnOnAssets ? (Number(summary.highlights.returnOnAssets)*100).toFixed(2)+'%' : '-'"></span>
                                 </div>
@@ -336,13 +337,13 @@
                             <div class="space-y-3 text-sm">
 
                                 <div class="flex justify-between">
-                                    <span class="text-slate-500">Revenue Growth</span>
+                                    <span class="text-slate-500">Revenue Growth (ttm)</span>
                                     <span class="font-semibold text-slate-800"
                                         x-text="summary?.highlights?.revenueGrowth ? (Number(summary.highlights.revenueGrowth)*100).toFixed(2)+'%' : '-'"></span>
                                 </div>
 
                                 <div class="flex justify-between">
-                                    <span class="text-slate-500">Earnings Growth</span>
+                                    <span class="text-slate-500">Earnings Growth (yoy)</span>
                                     <span class="font-semibold text-slate-800"
                                         x-text="summary?.highlights?.earningsGrowth ? (Number(summary.highlights.earningsGrowth)*100).toFixed(2)+'%' : '-'"></span>
                                 </div>
@@ -408,6 +409,56 @@
 
                     </div>
                 </div>
+
+
+
+                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-800">
+                            Abbreviation Guide
+                        </h3>
+                        <p class="text-sm text-slate-500">
+                            Guide Of Abbreviation Used In Financial Highlights
+                        </p>
+                    </div>
+                    <div class="my-6">
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <h4 class="mb-4 text-sm font-semibold text-slate-800">
+                                Abbreviation Guide
+                            </h4>
+
+                            <div class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+                                <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                                    <span class="font-medium uppercase text-slate-500">MRQ</span>
+                                    <span class="text-slate-700 font-semibold">Most Recent Quarter</span>
+                                </div>
+
+                                <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                                    <span class="font-medium uppercase text-slate-500">TTM</span>
+                                    <span class="text-slate-700 font-semibold">Trailing Twelve Months</span>
+                                </div>
+
+                                <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                                    <span class="font-medium uppercase text-slate-500">YOY</span>
+                                    <span class="text-slate-700 font-semibold">Year-over-Year</span>
+                                </div>
+
+                                <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                                    <span class="font-medium uppercase text-slate-500">LFY</span>
+                                    <span class="text-slate-700 font-semibold">Last Fiscal Year</span>
+                                </div>
+
+                                <div class="flex items-center justify-between">
+                                    <span class="font-medium uppercase text-slate-500">FYE</span>
+                                    <span class="text-slate-700 font-semibold">Fiscal Year End</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
                 {{-- Data Laporan Keuangan untuk Analisa FFS --}}
                 @if ($stock->financialReports->isNotEmpty())
                     <div>
@@ -1576,16 +1627,10 @@
                 calcSMA(data, period) {
                     const result = [];
                     for (let i = 0; i < data.length; i++) {
-                        if (i < period - 1) {
-                            result.push(null);
-                            continue;
-                        }
+                        if (i < period - 1) continue;
                         let sum = 0;
                         for (let j = i - period + 1; j <= i; j++) sum += data[j].close;
-                        result.push({
-                            time: data[i].time,
-                            value: sum / period
-                        });
+                        result.push({ time: data[i].time, value: sum / period });
                     }
                     return result;
                 },
@@ -1633,26 +1678,28 @@
 
                 calcRSI(data, period, field) {
                     field = field || 'close';
+                    if (data.length < period + 1) return [];
                     const result = [];
-                    for (let i = 0; i < data.length; i++) {
-                        if (i < period) {
-                            result.push(null);
-                            continue;
-                        }
-                        let gain = 0,
-                            loss = 0;
-                        for (let j = i - period + 1; j <= i; j++) {
-                            const diff = data[j][field] - data[j - 1][field];
-                            if (diff >= 0) gain += diff;
-                            else loss -= diff;
-                        }
-                        const avgGain = gain / period;
-                        const avgLoss = loss / period;
-                        const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
-                        result.push({
-                            time: data[i].time,
-                            value: 100 - 100 / (1 + rs)
-                        });
+                    // First RSI: simple average gain/loss over initial period
+                    let avgGain = 0, avgLoss = 0;
+                    for (let i = 1; i <= period; i++) {
+                        const diff = data[i][field] - data[i - 1][field];
+                        if (diff >= 0) avgGain += diff;
+                        else avgLoss -= diff;
+                    }
+                    avgGain /= period;
+                    avgLoss /= period;
+                    let rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+                    result.push({ time: data[period].time, value: 100 - 100 / (1 + rs) });
+                    // Subsequent: Wilder's smoothed averages
+                    for (let i = period + 1; i < data.length; i++) {
+                        const diff = data[i][field] - data[i - 1][field];
+                        const gain = diff >= 0 ? diff : 0;
+                        const loss = diff >= 0 ? 0 : -diff;
+                        avgGain = (avgGain * (period - 1) + gain) / period;
+                        avgLoss = (avgLoss * (period - 1) + loss) / period;
+                        rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+                        result.push({ time: data[i].time, value: 100 - 100 / (1 + rs) });
                     }
                     return result;
                 },
@@ -1686,256 +1733,137 @@
                     const inst = this.chartInstance;
                     if (!inst) return;
                     const data = inst._chartData;
+                    if (!data || data.length === 0) return;
 
                     // Clean old indicator series
                     Object.values(this.indicatorSeries).forEach(s => {
-                        if (Array.isArray(s)) s.forEach(x => inst.chart.removeSeries(x));
-                        else if (s) inst.chart.removeSeries(s);
+                        if (Array.isArray(s)) s.forEach(x => { try { inst.chart.removeSeries(x); } catch (e) {} });
+                        else if (s) { try { inst.chart.removeSeries(s); } catch (e) {} }
                     });
                     this.indicatorSeries = {};
 
-                    if (this.indicators.sma) {
-                        const s = this.indicatorSettings.sma;
-                        const sma1 = inst.chart.addLineSeries({
-                            color: '#f59e0b',
-                            lineWidth: 1.5,
-                            priceLineVisible: false,
-                            lastValueVisible: false
-                        });
-                        sma1.setData(this.calcSMA(data, s.period1).filter(v => v.value != null));
-                        const sma2 = inst.chart.addLineSeries({
-                            color: '#ef4444',
-                            lineWidth: 1.5,
-                            priceLineVisible: false,
-                            lastValueVisible: false
-                        });
-                        sma2.setData(this.calcSMA(data, s.period2).filter(v => v.value != null));
-                        this.indicatorSeries.sma = [sma1, sma2];
-                    }
+                    try { if (this.indicators.sma) { this._renderSMA(inst, data); } } catch (e) { console.warn('SMA:', e); }
+                    try { if (this.indicators.ema) { this._renderEMA(inst, data); } } catch (e) { console.warn('EMA:', e); }
+                    try { if (this.indicators.bb) { this._renderBB(inst, data); } } catch (e) { console.warn('BB:', e); }
+                    try { if (this.indicators.rsi) { this._renderRSI(inst, data); } } catch (e) { console.warn('RSI:', e); }
+                    try { if (this.indicators.macd) { this._renderMACD(inst, data); } } catch (e) { console.warn('MACD:', e); }
+                },
 
-                    if (this.indicators.ema) {
-                        const s = this.indicatorSettings.ema;
-                        const ema1 = inst.chart.addLineSeries({
-                            color: '#8b5cf6',
-                            lineWidth: 1.5,
-                            priceLineVisible: false,
-                            lastValueVisible: false
-                        });
-                        ema1.setData(this.calcEMA(data, s.period1).filter(v => v.value != null));
-                        const ema2 = inst.chart.addLineSeries({
-                            color: '#ec4899',
-                            lineWidth: 1.5,
-                            priceLineVisible: false,
-                            lastValueVisible: false
-                        });
-                        ema2.setData(this.calcEMA(data, s.period2).filter(v => v.value != null));
-                        this.indicatorSeries.ema = [ema1, ema2];
-                    }
+                _renderSMA(inst, data) {
+                    const s = this.indicatorSettings.sma;
+                    const d1 = this.calcSMA(data, s.period1).filter(v => v && v.value != null);
+                    const d2 = this.calcSMA(data, s.period2).filter(v => v && v.value != null);
+                    if (d1.length === 0 && d2.length === 0) return;
+                    const sma1 = inst.chart.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
+                    if (d1.length) sma1.setData(d1);
+                    const sma2 = inst.chart.addLineSeries({ color: '#ef4444', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
+                    if (d2.length) sma2.setData(d2);
+                    this.indicatorSeries.sma = [sma1, sma2];
+                },
 
-                    if (this.indicators.bb) {
-                        const s = this.indicatorSettings.bb;
-                        const bb = this.calcBB(data, s.period, s.stddev);
-                        const valid = bb.filter(v => v != null);
-                        const upper = inst.chart.addLineSeries({
-                            color: '#14b8a6',
-                            lineWidth: 1,
-                            priceLineVisible: false,
-                            lastValueVisible: false
-                        });
-                        upper.setData(valid.map(v => ({
-                            time: v.time,
-                            value: v.upper
-                        })));
-                        const middle = inst.chart.addLineSeries({
-                            color: '#14b8a6',
-                            lineWidth: 1,
-                            priceLineVisible: false,
-                            lastValueVisible: false
-                        });
-                        middle.setData(valid.map(v => ({
-                            time: v.time,
-                            value: v.middle
-                        })));
-                        const lower = inst.chart.addLineSeries({
-                            color: '#14b8a6',
-                            lineWidth: 1,
-                            priceLineVisible: false,
-                            lastValueVisible: false
-                        });
-                        lower.setData(valid.map(v => ({
-                            time: v.time,
-                            value: v.lower
-                        })));
-                        this.indicatorSeries.bb = [upper, middle, lower];
-                    }
+                _renderEMA(inst, data) {
+                    const s = this.indicatorSettings.ema;
+                    const d1 = this.calcEMA(data, s.period1).filter(v => v && v.value != null);
+                    const d2 = this.calcEMA(data, s.period2).filter(v => v && v.value != null);
+                    if (d1.length === 0 && d2.length === 0) return;
+                    const ema1 = inst.chart.addLineSeries({ color: '#8b5cf6', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
+                    if (d1.length) ema1.setData(d1);
+                    const ema2 = inst.chart.addLineSeries({ color: '#ec4899', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
+                    if (d2.length) ema2.setData(d2);
+                    this.indicatorSeries.ema = [ema1, ema2];
+                },
 
-                    if (this.indicators.rsi) {
-                        const s = this.indicatorSettings.rsi;
-                        const scaleId = s.panel === 'main' ? 'right' : 'rsi';
-                        const rsiData = this.calcRSI(data, s.period, s.field).filter(v => v.value != null && v.time !=
-                            null);
+                _renderBB(inst, data) {
+                    const s = this.indicatorSettings.bb;
+                    const bb = this.calcBB(data, s.period, s.stddev).filter(v => v != null);
+                    if (bb.length === 0) return;
+                    const upper = inst.chart.addLineSeries({ color: '#14b8a6', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+                    upper.setData(bb.map(v => ({ time: v.time, value: v.upper })));
+                    const middle = inst.chart.addLineSeries({ color: '#14b8a6', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+                    middle.setData(bb.map(v => ({ time: v.time, value: v.middle })));
+                    const lower = inst.chart.addLineSeries({ color: '#14b8a6', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+                    lower.setData(bb.map(v => ({ time: v.time, value: v.lower })));
+                    this.indicatorSeries.bb = [upper, middle, lower];
+                },
 
-                        if (s.panel === 'separate') {
-                            const rsiScale = inst.chart.priceScale('rsi');
-                            rsiScale.applyOptions({
-                                scaleMargins: {
-                                    top: 0.52,
-                                    bottom: 0.35
-                                },
-                                visible: true,
-                            });
+                _renderRSI(inst, data) {
+                    const s = this.indicatorSettings.rsi;
+                    const scaleId = s.panel === 'main' ? 'right' : 'rsi';
+                    const rsiData = this.calcRSI(data, s.period, s.field).filter(v => v && v.value != null && v.time != null);
+                    if (rsiData.length === 0) return;
+
+                    // Create line series FIRST to auto-register the price scale
+                    const rsiLine = inst.chart.addLineSeries({
+                        priceScaleId: scaleId, color: '#f97316', lineWidth: 2,
+                        priceLineVisible: false, lastValueVisible: true,
+                    });
+                    rsiLine.setData(rsiData);
+
+                    const obLevel = Number(s.overbought) || 70;
+                    const osLevel = Number(s.oversold) || 30;
+                    const series = [rsiLine];
+
+                    // Now configure the price scale (scale exists because the series was added)
+                    if (s.panel === 'separate') {
+                        const rsiScale = inst.chart.priceScale(scaleId);
+                        if (rsiScale) {
+                            rsiScale.applyOptions({ visible: true, scaleMargins: { top: 0.52, bottom: 0.35 } });
                         }
+                    }
 
-                        const rsiLine = inst.chart.addLineSeries({
-                            priceScaleId: scaleId,
-                            color: '#f97316',
-                            lineWidth: 2,
-                            priceLineVisible: false,
-                            lastValueVisible: true,
+                    if (s.showZone) {
+                        const zone = inst.chart.addAreaSeries({
+                            priceScaleId: scaleId, lineColor: 'transparent',
+                            topColor: 'rgba(239, 68, 68, 0.08)', bottomColor: 'rgba(34, 197, 94, 0.08)',
+                            priceLineVisible: false, lastValueVisible: false,
                         });
-                        rsiLine.setData(rsiData);
-
-                        const obLevel = Number(s.overbought) || 70;
-                        const osLevel = Number(s.oversold) || 30;
-                        const series = [rsiLine];
-
-                        if (s.showZone) {
-                            const zone = inst.chart.addAreaSeries({
-                                priceScaleId: scaleId,
-                                lineColor: 'transparent',
-                                topColor: 'rgba(239, 68, 68, 0.08)',
-                                bottomColor: 'rgba(34, 197, 94, 0.08)',
-                                priceLineVisible: false,
-                                lastValueVisible: false,
-                            });
-                            const zoneData = rsiData.map(d => ({
-                                time: d.time,
-                                value: d.value >= obLevel ? obLevel : (d.value <= osLevel ? osLevel : d.value),
-                                lineColor: 'transparent',
-                                color: d.value >= obLevel ? 'rgba(239,68,68,0.12)' : (d.value <= osLevel ?
-                                    'rgba(34,197,94,0.12)' : 'transparent'),
-                            }));
-                            zone.setData(zoneData);
-                            series.push(zone);
-                        }
-
-                        // Overbought line
-                        const obLine = inst.chart.addLineSeries({
-                            priceScaleId: scaleId,
-                            color: '#ef4444',
-                            lineWidth: 1,
-                            lineStyle: 2,
-                            priceLineVisible: false,
-                            lastValueVisible: false,
-                        });
-                        obLine.setData(rsiData.map(d => ({
+                        const zoneData = rsiData.map(d => ({
                             time: d.time,
-                            value: obLevel
-                        })));
-                        series.push(obLine);
-
-                        // Oversold line
-                        const osLine = inst.chart.addLineSeries({
-                            priceScaleId: scaleId,
-                            color: '#22c55e',
-                            lineWidth: 1,
-                            lineStyle: 2,
-                            priceLineVisible: false,
-                            lastValueVisible: false,
-                        });
-                        osLine.setData(rsiData.map(d => ({
-                            time: d.time,
-                            value: osLevel
-                        })));
-                        series.push(osLine);
-
-                        // Underlay: move series before candle series (z-order)
-                        if (s.underlay) {
-                            series.forEach(sr => {
-                                try {
-                                    inst.chart.chart && inst.chart.chart.removeSeries(sr);
-                                } catch (e) {}
-                            });
-                            // Re-add all series in order: underlays first, then candles, then overlays
-                            // Since lightweight-charts doesn't support z-order, we just note it
-                        }
-
-                        // Y-Axis visibility
-                        if (s.panel === 'separate') {
-                            const rsiScale = inst.chart.priceScale('rsi');
-                            const visible = s.yAxis !== 'hidden';
-                            rsiScale.applyOptions({
-                                visible
-                            });
-                            if (visible) {
-                                rsiScale.applyOptions({
-                                    scaleMargins: {
-                                        top: 0.52,
-                                        bottom: 0.35
-                                    },
-                                });
-                            }
-                        }
-
-                        this.indicatorSeries.rsi = series;
-                    } else {
-                        try {
-                            inst.chart.priceScale('rsi').applyOptions({
-                                visible: false
-                            });
-                        } catch (e) {}
+                            value: d.value >= obLevel ? obLevel : (d.value <= osLevel ? osLevel : d.value),
+                            lineColor: 'transparent',
+                            color: d.value >= obLevel ? 'rgba(239,68,68,0.12)' : (d.value <= osLevel ? 'rgba(34,197,94,0.12)' : 'transparent'),
+                        }));
+                        zone.setData(zoneData);
+                        series.push(zone);
                     }
 
-                    if (this.indicators.macd) {
-                        const s = this.indicatorSettings.macd;
-                        const macdScale = inst.chart.priceScale('macd');
-                        macdScale.applyOptions({
-                            scaleMargins: {
-                                top: 0.70,
-                                bottom: 0
-                            },
-                            visible: true,
-                        });
-                        const {
-                            macdLine,
-                            signalLine,
-                            histogram
+                    const obLine = inst.chart.addLineSeries({
+                        priceScaleId: scaleId, color: '#ef4444', lineWidth: 1, lineStyle: 2,
+                        priceLineVisible: false, lastValueVisible: false,
+                    });
+                    obLine.setData(rsiData.map(d => ({ time: d.time, value: obLevel })));
+                    series.push(obLine);
 
-                        } = this.calcMACD(data, s.fast, s.slow, s.signal);
-                        const macdSeries = inst.chart.addLineSeries({
-                            priceScaleId: 'macd',
-                            color: '#2563eb',
-                            lineWidth: 2,
-                            priceLineVisible: false,
-                            lastValueVisible: true,
-                        });
-                        macdSeries.setData(macdLine.filter(v => v.value != null));
-                        const signal = inst.chart.addLineSeries({
-                            priceScaleId: 'macd',
-                            color: '#f59e0b',
-                            lineWidth: 1.5,
-                            priceLineVisible: false,
-                            lastValueVisible: false,
-                        });
-                        signal.setData(signalLine.filter(v => v.value != null));
-                        const hist = inst.chart.addHistogramSeries({
-                            priceScaleId: 'macd',
-                            priceFormat: {
-                                type: 'volume'
-                            },
-                        });
-                        const histData = histogram.filter(v => v.value != null);
-                        hist.setData(histData.map(d => ({
-                            time: d.time,
-                            value: d.value,
-                            color: d.value >= 0 ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)',
-                        })));
-                        this.indicatorSeries.macd = [macdSeries, signal, hist];
-                    } else {
-                        inst.chart.priceScale('macd').applyOptions({
-                            visible: false
-                        });
-                    }
+                    const osLine = inst.chart.addLineSeries({
+                        priceScaleId: scaleId, color: '#22c55e', lineWidth: 1, lineStyle: 2,
+                        priceLineVisible: false, lastValueVisible: false,
+                    });
+                    osLine.setData(rsiData.map(d => ({ time: d.time, value: osLevel })));
+                    series.push(osLine);
+
+                    this.indicatorSeries.rsi = series;
+                },
+
+                _renderMACD(inst, data) {
+                    const s = this.indicatorSettings.macd;
+                    const { macdLine: macdRaw, signalLine: signalRaw, histogram: histRaw } = this.calcMACD(data, s.fast, s.slow, s.signal);
+                    const macdData = macdRaw.filter(v => v && v.value != null);
+                    const signalData = signalRaw.filter(v => v && v.value != null);
+                    const histData = histRaw.filter(v => v && v.value != null);
+                    if (macdData.length === 0) return;
+                    const macdSeries = inst.chart.addLineSeries({ color: '#3b82f6', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
+                    macdSeries.setData(macdData);
+                    const signalSeries = inst.chart.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
+                    signalSeries.setData(signalData);
+                    const histSeries = inst.chart.addHistogramSeries({
+                        priceFormat: { type: 'volume' },
+                        priceLineVisible: false, lastValueVisible: false,
+                    });
+                    histSeries.setData(histData.map(d => ({
+                        time: d.time, value: d.value,
+                        color: d.value >= 0 ? 'rgba(59, 130, 246, 0.4)' : 'rgba(239, 68, 68, 0.4)',
+                    })));
+                    this.indicatorSeries.macd = [macdSeries, signalSeries, histSeries];
                 },
 
                 // ─── Corporate Events ────────────────────────────────

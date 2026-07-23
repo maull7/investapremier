@@ -126,6 +126,8 @@
             class="px-5 py-3 text-sm font-semibold border-b-2 transition whitespace-nowrap">PDF Prospektus</button>
     <button @click="setTab('pdf-ffs')" :class="tab === 'pdf-ffs' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'"
             class="px-5 py-3 text-sm font-semibold border-b-2 transition whitespace-nowrap">PDF FFS</button>
+    <button @click="setTab('ekstrak-dokumen')" :class="tab === 'ekstrak-dokumen' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'"
+            class="px-5 py-3 text-sm font-semibold border-b-2 transition whitespace-nowrap">Daftar Ekstrak Dokumen</button>
 </div>
 
 {{-- TAB: SNAPSHOT --}}
@@ -174,6 +176,7 @@
                 @if($fund->is_index !== null)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Index Fund</span><span class="text-sm">{{ $fund->is_index ? 'Ya' : 'Tidak' }}</span></div>@endif
                 @if($fund->conservative_category)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Kategori Konservatif</span><span class="text-sm">{{ $fund->conservative_category }}</span></div>@endif
                 @if($fund->dividend !== null)<div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Dividen</span><span class="text-sm">{{ $fund->dividend ? 'Ya' : 'Tidak' }}</span></div>@endif
+                <div class="px-6 py-3.5 flex items-start gap-4"><span class="text-xs font-semibold text-muted w-36 shrink-0">Maks. Unit Penyertaan</span><span class="text-sm font-bold text-primary">{{ $maxUnit ? number_format($maxUnit, 0, ',', '.') : '—' }}</span></div>
             </div>
         </div>
 
@@ -755,11 +758,15 @@
         @if($portfolioTimeline->isNotEmpty())
         @php
             $ptLabels = $portfolioTimeline->keys()->map(fn($d) => \Carbon\Carbon::parse($d)->format('d M Y'));
-            $allSecurities = $portfolioTimeline->flatMap(fn($items) => $items->pluck('security_name'))->unique();
+            $allSecurities = $portfolioTimeline->flatMap(fn($items) => $items->pluck('security_name'))->unique()->values();
+            $currentSecurities = $showTopHoldings->pluck('security_name')->values();
             $ptColors = ['#2563eb','#059669','#d97706','#dc2626','#7c3aed','#0891b2','#db2777','#65a30d','#ca8a04','#ea580c','#4f46e5','#0d9488'];
         @endphp
         <div class="bg-white rounded-2xl border border-line shadow-sm p-5">
-            <h3 class="font-bold text-primary text-sm mb-4">Timeline Portfolio Composition</h3>
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-primary text-sm">Timeline Portfolio Composition</h3>
+                <button @click="openPortfolioLegendModal()" class="px-3 py-1.5 bg-accent/10 text-accent rounded-lg text-xs font-semibold hover:bg-accent/20 transition">Detail</button>
+            </div>
             <div style="height: 300px;"><canvas id="chartPtTimeline"></canvas></div>
         </div>
         @endif
@@ -811,9 +818,11 @@
         {{-- Timeline Portfolio Composition --}}
         @if($portfolioTimeline->isNotEmpty())
         const datasets = [];
-        const securities = {!! json_encode($allSecurities->values()) !!};
+        const securities = {!! json_encode($allSecurities) !!};
         const ptLabels = {!! json_encode($ptLabels) !!};
         const ptRaw = {!! json_encode($portfolioTimeline->map(fn($items) => $items->keyBy('security_name')->map(fn($i) => $i->weight_percent))) !!};
+        const currentSecurities = {!! json_encode($currentSecurities) !!};
+        const ptColors = @json($ptColors);
 
         securities.forEach((sec, i) => {
             datasets.push({
@@ -822,7 +831,7 @@
                     const periodKey = Object.keys(ptRaw)[idx];
                     return ptRaw[periodKey] && ptRaw[periodKey][sec] ? ptRaw[periodKey][sec] : 0;
                 }),
-                backgroundColor: '{!! json_encode($ptColors) !!}'[i % 12] || '#94a3b8',
+                backgroundColor: ptColors[i % ptColors.length] || '#94a3b8',
             });
         });
 
@@ -831,7 +840,16 @@
             data: { labels: ptLabels, datasets: datasets },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            filter: function(item) {
+                                return currentSecurities.includes(item.text);
+                            }
+                        }
+                    }
+                },
                 scales: {
                     x: { stacked: true },
                     y: { stacked: true, ticks: { callback: val => val + '%' } }
@@ -866,158 +884,150 @@
     @include('admin.daftar-reksa-dana.partials.tab-pdf-document', ['fund' => $fund, 'docType' => 'prospektus'])
 </div>
 
-{{-- TAB: PDF FFS --}}
-<div x-show="tab === 'pdf-ffs'" x-cloak x-data="documentTabData('ffs')">
-    @if(!$periodActive)
-        <div class="py-12 text-center text-muted bg-white rounded-2xl border border-line">
-            <svg class="w-10 h-10 mx-auto mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            <p class="font-medium">Pilih Bulan dan Tahun pada "Data Portfolio" untuk menampilkan data FFS.</p>
+{{-- TAB: DAFTAR EKSTRAK DOKUMEN --}}
+<div x-show="tab === 'ekstrak-dokumen'" x-cloak>
+    <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light">
+            <h2 class="font-bold text-white text-sm">Daftar Ekstrak Dokumen</h2>
         </div>
-    @elseif(!$ffsDocument)
-        @php $monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']; @endphp
-        <div class="py-12 text-center text-muted bg-white rounded-2xl border border-line">
-            <svg class="w-10 h-10 mx-auto mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            <p class="font-medium">Belum ada dokumen FFS untuk periode {{ $monthNames[$periodMonth - 1] ?? '-' }} {{ $periodYear }}.</p>
-            <div class="mt-4 max-w-sm mx-auto">
-                <div class="bg-[#f8fafc] border border-line rounded-xl p-4 text-left space-y-3">
-                    <p class="text-xs font-semibold text-primary">Upload FFS Periode Ini</p>
-                    <input type="file" accept="application/pdf" @change="uploadFfsFile = $event.target.files[0]"
-                        class="w-full text-xs border border-line rounded-lg px-3 py-2 file:mr-2 file:rounded file:border-0 file:bg-emerald-50 file:px-2 file:py-1 file:text-emerald-700">
-                    <div class="grid grid-cols-2 gap-2">
-                        <select x-model="uploadFfsMonth" class="w-full text-xs border border-line rounded-lg px-3 py-2">
-                            <option value="">Bulan</option>
-                            @foreach (['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'] as $i => $m)
-                                <option value="{{ $i + 1 }}" {{ $periodMonth == ($i + 1) ? 'selected' : '' }}>{{ $m }}</option>
-                            @endforeach
-                        </select>
-                        <input type="number" x-model="uploadFfsYear" placeholder="Tahun" min="2000" max="2100" value="{{ $periodYear }}"
-                            class="w-full text-xs border border-line rounded-lg px-3 py-2">
-                    </div>
-                    <button @click="uploadFfs()" :disabled="uploadFfsLoading || !uploadFfsFile || !uploadFfsMonth || !uploadFfsYear"
-                        class="w-full px-3 py-2 bg-emerald-700 text-white rounded-lg text-xs font-semibold hover:bg-emerald-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
-                        <span x-show="uploadFfsLoading" class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                        <span x-text="uploadFfsLoading ? 'Mengupload...' : 'Upload FFS'"></span>
-                    </button>
-                    <div x-show="uploadFfsError" x-text="uploadFfsError" class="px-3 py-2 rounded-lg text-xs bg-red-50 border border-red-200 text-red-700"></div>
-                    <div x-show="uploadFfsSuccess" x-text="uploadFfsSuccess" class="px-3 py-2 rounded-lg text-xs bg-green-50 border border-green-200 text-green-700"></div>
-                </div>
-            </div>
+        @if($extractionResults->isNotEmpty())
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead><tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide"><th class="px-4 py-3 font-semibold">Tanggal Ekstrak</th><th class="px-4 py-3 font-semibold">Nama Dokumen</th><th class="px-4 py-3 font-semibold">Periode</th><th class="px-4 py-3 font-semibold text-center">Aksi</th></tr></thead>
+                <tbody class="divide-y divide-line">
+                    @foreach($extractionResults as $er)
+                    <tr class="hover:bg-[#f8fafc]">
+                        <td class="px-4 py-3 text-xs text-muted">{{ $er->created_at?->format('d M Y H:i') ?: '—' }}</td>
+                        <td class="px-4 py-3 text-xs font-semibold">{{ $er->document?->original_name ?: '—' }}</td>
+                        <td class="px-4 py-3 text-xs text-muted">{{ $er->ffs_month ? str_pad($er->ffs_month, 2, '0', STR_PAD_LEFT) . '/' . $er->ffs_year : '—' }}</td>
+                        <td class="px-4 py-3 text-xs text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <button @click="openExtractionDetail({{ $er->id }})"
+                                    class="px-3 py-1.5 bg-accent/10 text-accent rounded-lg text-xs font-semibold hover:bg-accent/20 transition">Lihat Data Ekstrak</button>
+                                <button @click="deleteExtraction({{ $er->id }})"
+                                    class="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold hover:bg-red-100 transition">Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
-    @else
-        @php
-            $doc = $ffsDocument;
-            $ffsMonths = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-        @endphp
-        <div class="bg-white rounded-2xl border border-line shadow-sm overflow-hidden">
-            <div class="px-6 py-4 border-b border-line bg-gradient-to-r from-primary to-primary-light flex items-center justify-between">
-                <h2 class="font-bold text-white text-sm">
-                    FFS {{ $ffsMonths[$doc->ffs_month - 1] ?? '-' }} {{ $doc->ffs_year }}
-                    @if ($doc->parsedPages->isNotEmpty())
-                        <span class="text-[10px] font-normal opacity-75 ml-2">({{ $doc->parsedPages->count() }} hlm diparse)</span>
-                    @endif
-                </h2>
-                <div class="flex items-center gap-2">
-                    <a target="_blank" href="{{ route('admin.daftar-reksa-dana.documents.view', $doc) }}"
-                        class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition">Preview PDF</a>
-                    <a href="{{ route('admin.daftar-reksa-dana.documents.download', $doc) }}"
-                        class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition">Download</a>
-                </div>
-            </div>
+        @else
+        <div class="py-12 text-center text-muted">
+            <svg class="w-10 h-10 mx-auto mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <p class="text-sm font-medium">Belum ada data ekstrak dokumen.</p>
+        </div>
+        @endif
+    </div>
+</div>
 
-            @if ($doc->parsedPages->isEmpty())
-                <div class="p-6 text-center text-muted">
-                    <p class="text-sm">Dokumen belum diparse.</p>
-                    <p class="text-xs mt-1">Gunakan tombol <strong>Parse FFS & Simpan</strong> untuk mengekstrak teks.</p>
+{{-- Modal Lihat Data Ekstrak --}}
+<div x-show="extractionModal.open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+    <div class="absolute inset-0 bg-black/40" @click="extractionModal.open = false"></div>
+    <div class="relative bg-white rounded-2xl shadow-xl border border-line w-full max-w-2xl max-h-[85vh] overflow-y-auto">
+        <div class="px-6 py-4 border-b border-line flex items-center justify-between">
+            <div>
+                <p class="text-xs text-muted">Detail Ekstrak</p>
+                <h2 class="font-bold text-primary" x-text="extractionModal.documentName || 'Data Ekstrak'"></h2>
+            </div>
+            <button type="button" @click="extractionModal.open = false" class="text-muted hover:text-primary text-xl leading-none">&times;</button>
+        </div>
+        <div class="p-6">
+            <template x-if="extractionModal.loading">
+                <div class="flex items-center justify-center py-8">
+                    <svg class="animate-spin h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 </div>
+            </template>
+            <template x-if="extractionModal.error">
+                <div class="px-4 py-3 rounded-xl text-sm bg-red-50 border border-red-200 text-red-700" x-text="extractionModal.error"></div>
+            </template>
+            <template x-if="!extractionModal.loading && !extractionModal.error">
+                <div>
+                    <div class="mb-3 flex items-center gap-2">
+                        <span class="text-xs text-muted">Tanggal Ekstrak:</span>
+                        <span class="text-xs font-semibold" x-text="extractionModal.createdAt || '-'"></span>
+                    </div>
+                    <div class="space-y-3" x-show="extractionModal.items.length > 0">
+                        <template x-for="(item, idx) in extractionModal.items" :key="idx">
+                            <div>
+                                <template x-if="item.type === 'simple'">
+                                    <div class="flex items-start gap-3 px-4 py-2.5 bg-[#f8fafc] rounded-lg border border-line">
+                                        <span class="text-xs font-semibold text-muted w-36 shrink-0" x-text="item.key"></span>
+                                        <span class="text-xs" x-text="item.value"></span>
+                                    </div>
+                                </template>
+                                <template x-if="item.type === 'list'">
+                                    <div class="bg-[#f8fafc] rounded-lg border border-line p-3">
+                                        <p class="text-xs font-semibold text-muted mb-2" x-text="item.key"></p>
+                                        <div class="flex flex-wrap gap-1">
+                                            <template x-for="(v, vi) in item.values" :key="vi">
+                                                <span class="px-2 py-0.5 bg-white rounded text-xs" x-text="v"></span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                                <template x-if="item.type === 'table'">
+                                    <div class="bg-[#f8fafc] rounded-lg border border-line p-3 overflow-x-auto">
+                                        <p class="text-xs font-semibold text-muted mb-2" x-text="item.key"></p>
+                                        <table class="w-full text-xs">
+                                            <thead><tr class="bg-white">
+                                                <template x-for="(h, hi) in item.headers" :key="hi">
+                                                    <th class="px-2 py-1.5 text-left font-semibold text-muted" x-text="h"></th>
+                                                </template>
+                                            </tr></thead>
+                                            <tbody>
+                                                <template x-for="(row, ri) in item.rows" :key="ri">
+                                                    <tr class="border-t border-line">
+                                                        <template x-for="(cell, ci) in row" :key="ci">
+                                                            <td class="px-2 py-1.5" x-text="cell ?? '—'"></td>
+                                                        </template>
+                                                    </tr>
+                                                </template>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                    <div x-show="extractionModal.items.length === 0" class="py-8 text-center text-muted text-sm">Tidak ada data ekstrak.</div>
+                </div>
+            </template>
+        </div>
+    </div>
+</div>
+
+{{-- Modal Portfolio Legend Detail --}}
+<div x-show="portfolioLegendModal.open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+    <div class="absolute inset-0 bg-black/40" @click="portfolioLegendModal.open = false"></div>
+    <div class="relative bg-white rounded-2xl shadow-xl border border-line w-full max-w-lg max-h-[85vh] overflow-y-auto">
+        <div class="px-6 py-4 border-b border-line flex items-center justify-between">
+            <h2 class="font-bold text-primary">Detail Portfolio Composition</h2>
+            <button type="button" @click="portfolioLegendModal.open = false" class="text-muted hover:text-primary text-xl leading-none">&times;</button>
+        </div>
+        <div class="p-6">
+            @if($showTopHoldings->isNotEmpty())
+            <table class="w-full text-sm">
+                <thead><tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide"><th class="px-3 py-2 font-semibold">Efek</th><th class="px-3 py-2 font-semibold">Jenis</th><th class="px-3 py-2 font-semibold text-right">Bobot</th></tr></thead>
+                <tbody class="divide-y divide-line">
+                    @foreach($showTopHoldings as $th)
+                    <tr class="hover:bg-[#f8fafc]">
+                        <td class="px-3 py-2 text-xs font-semibold flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full inline-block shrink-0" style="background-color: {{ $ptColors[$loop->index % count($ptColors)] }}"></span>
+                            {{ $th->security_name }}
+                        </td>
+                        <td class="px-3 py-2 text-xs text-muted">{{ $th->security_type ?? '—' }}</td>
+                        <td class="px-3 py-2 text-xs text-right font-semibold">{{ number_format($th->weight_percent, 2, ',', '.') }}%</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            @else
+            <p class="text-sm text-muted text-center py-8">Belum ada data portfolio terkini.</p>
             @endif
-
-            <div class="grid grid-cols-1 lg:grid-cols-4 gap-0 lg:gap-0 divide-y lg:divide-y-0 lg:divide-x divide-line">
-                <div class="p-4 lg:col-span-1">
-                    <div class="space-y-3">
-                        <button @click="uploadFfsOpen = !uploadFfsOpen"
-                            class="w-full px-3 py-2 border-2 border-dashed border-emerald-300 text-emerald-700 rounded-lg text-xs font-semibold hover:bg-emerald-50 transition flex items-center justify-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                            <span x-text="uploadFfsOpen ? 'Tutup' : 'Upload FFS Baru'"></span>
-                        </button>
-
-                        <div x-show="uploadFfsOpen" class="bg-[#f8fafc] border border-line rounded-xl p-4 space-y-3">
-                            <p class="text-xs font-semibold text-primary">Upload FFS Baru</p>
-                            <input type="file" accept="application/pdf" @change="uploadFfsFile = $event.target.files[0]"
-                                class="w-full text-xs border border-line rounded-lg px-3 py-2 file:mr-2 file:rounded file:border-0 file:bg-emerald-50 file:px-2 file:py-1 file:text-emerald-700">
-                            <div class="grid grid-cols-2 gap-2">
-                                <select x-model="uploadFfsMonth" class="w-full text-xs border border-line rounded-lg px-3 py-2">
-                                    <option value="">Bulan</option>
-                                    @foreach (['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'] as $i => $m)
-                                        <option value="{{ $i + 1 }}">{{ $m }}</option>
-                                    @endforeach
-                                </select>
-                                <input type="number" x-model="uploadFfsYear" placeholder="Tahun" min="2000" max="2100"
-                                    class="w-full text-xs border border-line rounded-lg px-3 py-2">
-                            </div>
-                            <button @click="uploadFfs()" :disabled="uploadFfsLoading || !uploadFfsFile || !uploadFfsMonth || !uploadFfsYear"
-                                class="w-full px-3 py-2 bg-emerald-700 text-white rounded-lg text-xs font-semibold hover:bg-emerald-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
-                                <span x-show="uploadFfsLoading" class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                                <span x-text="uploadFfsLoading ? 'Mengupload...' : 'Upload'"></span>
-                            </button>
-                            <div x-show="uploadFfsError" x-text="uploadFfsError" class="px-3 py-2 rounded-lg text-xs bg-red-50 border border-red-200 text-red-700"></div>
-                            <div x-show="uploadFfsSuccess" x-text="uploadFfsSuccess" class="px-3 py-2 rounded-lg text-xs bg-green-50 border border-green-200 text-green-700"></div>
-                        </div>
-
-                        <div>
-                            <h3 class="font-bold text-primary text-xs mb-1">Ekstrak Data FFS</h3>
-                            <p class="text-[10px] text-muted">Untuk dokumen FFS, data langsung diparse dari seluruh halaman tanpa perlu partisi.</p>
-                        </div>
-
-                        @php $latestFfs = $doc->ffsExtractionResults->first(); @endphp
-                        @if ($latestFfs)
-                            <div class="px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
-                                <p class="text-[10px] font-semibold text-emerald-700">Sudah diekstrak</p>
-                                <p class="text-[10px] text-muted mt-0.5">Periode: {{ $latestFfs->ffs_month ? str_pad($latestFfs->ffs_month, 2, '0', STR_PAD_LEFT) : '-' }}/{{ $latestFfs->ffs_year ?: '-' }}</p>
-                                <p class="text-[10px] text-muted">Tanggal data: {{ $latestFfs->tanggal_data?->format('d M Y') ?: '-' }}</p>
-                            </div>
-                        @endif
-
-                        <button @click='handleParseFfs({{ $doc->id }})'
-                            :disabled="loadingFfs[{{ $doc->id }}]"
-                            class="w-full px-3 py-2 bg-emerald-700 text-white rounded-lg text-xs font-semibold hover:bg-emerald-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
-                            <span x-show="loadingFfs[{{ $doc->id }}]" class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                            <span x-text="loadingFfs[{{ $doc->id }}] ? 'Memproses...' : 'Parse FFS & Simpan'"></span>
-                        </button>
-
-                        <div x-show="ffsSuccess[{{ $doc->id }}]" x-text="ffsSuccess[{{ $doc->id }}]" class="px-3 py-2 rounded-lg text-xs bg-green-50 border border-green-200 text-green-700"></div>
-                        <div x-show="ffsError[{{ $doc->id }}]" x-text="ffsError[{{ $doc->id }}]" class="px-3 py-2 rounded-lg text-xs bg-red-50 border border-red-200 text-red-700"></div>
-                    </div>
-                </div>
-
-                @if ($doc->parsedPages->isNotEmpty())
-                <div class="p-4 lg:col-span-1">
-                    <h3 class="font-bold text-primary text-xs mb-3">Halaman Hasil Parsing</h3>
-                    <p class="text-[10px] text-muted mb-2">Gunakan nomor <strong>Parsing</strong> (bukan PDF asli) saat membuat partisi.</p>
-                    <div class="space-y-1 max-h-96 overflow-y-auto">
-                        @foreach ($doc->parsedPages as $page)
-                            <div @click='showPageContent({{ $doc->id }}, {{ $page->id }})'
-                                :class="isPageInSelectedPartition({{ $doc->id }}, {{ $page->page_parse }}) ? 'bg-accent/10 border border-accent/30' : 'border border-line hover:border-accent/30 hover:bg-[#f8fafc]'"
-                                class="px-3 py-2 rounded-lg cursor-pointer transition text-xs flex items-center gap-2">
-                                <span class="text-[10px] text-muted font-mono w-10 shrink-0">PDF {{ $page->page_pdf }}</span>
-                                <span class="text-[10px] text-muted">&rarr; Parsing {{ $page->page_parse }}</span>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-
-                <div class="p-4 lg:col-span-2">
-                    <h3 class="font-bold text-primary text-xs mb-3">Isi Teks</h3>
-                    <div x-show="!selectedPageContent" class="text-xs text-muted italic py-8 text-center">
-                        Klik nomor halaman di sebelah kiri untuk melihat isi teks.
-                    </div>
-                    <div x-show="selectedPageContent" x-html="selectedPageContent"
-                        class="text-xs whitespace-pre-wrap bg-[#f8fafc] rounded-xl p-4 border border-line max-h-96 overflow-y-auto font-mono leading-relaxed">
-                    </div>
-                </div>
-                @endif
-            </div>
         </div>
-    @endif
+    </div>
 </div>
 
 <div x-show="personModal.open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
@@ -1627,6 +1637,77 @@ function reksaDanaShow() {
             if (value === null || value === undefined || value === '') return '';
             const formatted = typeof value === 'number' ? value.toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : value;
             return `<div><p class="text-xs text-muted">${label}</p><p class="font-semibold text-primary">${formatted}${suffix}</p></div>`;
+        },
+        portfolioLegendModal: { open: false },
+        openPortfolioLegendModal() { this.portfolioLegendModal.open = true; },
+        extractionModal: { open: false, loading: false, error: null, documentName: null, createdAt: null, items: [] },
+        async openExtractionDetail(id) {
+            this.extractionModal = { open: true, loading: true, error: null, documentName: null, createdAt: null, items: [] };
+            try {
+                const res = await fetch(`/admin/daftar-reksa-dana/extraction-results/${id}/view`, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || 'Gagal mengambil data.');
+                this.extractionModal.documentName = json.document_name;
+                this.extractionModal.createdAt = json.created_at;
+                const data = json.extracted_data || {};
+                const labelize = s => s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                const isEmpty = v => v === null || v === undefined || v === '' || (Array.isArray(v) && v.length === 0) || (typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0);
+                this.extractionModal.items = Object.entries(data)
+                    .filter(([, v]) => !isEmpty(v))
+                    .map(([key, val]) => {
+                        const label = labelize(key);
+                        if (Array.isArray(val)) {
+                            if (val.length === 0) return null;
+                            if (typeof val[0] === 'object' && val[0] !== null) {
+                                const headers = [...new Set(val.flatMap(Object.keys))];
+                                const rows = val.map(obj => headers.map(h => {
+                                    const v = obj[h];
+                                    if (v === null || v === undefined || v === '') return null;
+                                    if (typeof v === 'number') return Number(v).toLocaleString('id-ID');
+                                    if (typeof v === 'boolean') return v ? 'Ya' : 'Tidak';
+                                    if (typeof v === 'object') return JSON.stringify(v);
+                                    return String(v);
+                                }));
+                                return { type: 'table', key: label, headers, rows };
+                            }
+                            const values = val.map(v => v === null || v === undefined ? '—' : (typeof v === 'object' ? JSON.stringify(v) : String(v)));
+                            return { type: 'list', key: label, values };
+                        }
+                        if (typeof val === 'object' && val !== null) {
+                            const headers = Object.keys(val);
+                            const rows = [headers.map(h => {
+                                const v = val[h];
+                                if (v === null || v === undefined || v === '') return null;
+                                if (typeof v === 'object') return JSON.stringify(v);
+                                return typeof v === 'number' ? Number(v).toLocaleString('id-ID') : String(v);
+                            })];
+                            return { type: 'table', key: label, headers, rows };
+                        }
+                        const display = typeof val === 'number' ? Number(val).toLocaleString('id-ID') : String(val);
+                        return { type: 'simple', key: label, value: display };
+                    })
+                    .filter(Boolean);
+            } catch (e) {
+                this.extractionModal.error = e.message;
+            } finally {
+                this.extractionModal.loading = false;
+            }
+        },
+        async deleteExtraction(id) {
+            if (!confirm('Hapus data ekstrak ini?')) return;
+            try {
+                const res = await fetch(`/admin/daftar-reksa-dana/extraction-results/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': @js(csrf_token()) },
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || 'Gagal menghapus.');
+                window.location.reload();
+            } catch (e) {
+                alert(e.message);
+            }
         },
     };
 }

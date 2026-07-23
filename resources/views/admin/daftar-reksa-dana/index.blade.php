@@ -314,11 +314,15 @@
                                 <th class="px-4 py-3.5 font-semibold">Mata Uang</th>
                                 <th class="px-4 py-3.5 font-semibold text-right">NAB/UP</th>
                                 <th class="px-4 py-3.5 font-semibold">Tanggal NAB/UP</th>
+                                <th class="px-4 py-3.5 font-semibold text-center">Publish</th>
                                 <th class="px-4 py-3.5 font-semibold text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-line">
                             @forelse($reksaDanas as $rd)
+                                @php
+                                    $_analisa = $rd->analisa->first();
+                                @endphp
                                 <tr class="hover:bg-[#f8fafc] transition-colors">
                                     <td class="px-4 py-3.5 font-mono text-xs text-muted">{{ $rd->kode_reksa_dana ?? '—' }}
                                     </td>
@@ -377,6 +381,25 @@
                                         {{ $rd->tanggal_nab ? $rd->tanggal_nab->format('d M Y') : '—' }}
                                     </td>
                                     <td class="px-4 py-3.5 text-center">
+                                        @if ($_analisa && in_array($_analisa->status, ['reviewed', 'input_manual']))
+                                            <form method="POST" action="{{ route('admin.analisa.publish', $_analisa) }}">
+                                                @csrf
+                                                <button type="submit"
+                                                    class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg transition
+                                                    {{ $_analisa->is_published ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200' }}">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                    {{ $_analisa->is_published ? 'Published' : 'Draft' }}
+                                                </button>
+                                            </form>
+                                        @elseif ($_analisa)
+                                            <span class="text-xs text-muted">—</span>
+                                        @else
+                                            <span class="text-xs text-muted">—</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3.5 text-center">
                                         <div class="flex items-center justify-center gap-1">
                                             <button type="button" onclick='openEditHarga(@json($rd))'
                                                 class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
@@ -408,7 +431,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="11" class="px-6 py-12 text-center text-muted">
+                                    <td colspan="12" class="px-6 py-12 text-center text-muted">
                                         <p class="font-medium">Belum ada data</p>
                                         <p class="text-xs mt-1">Klik "Tambah Baru" untuk menambahkan reksa dana.</p>
                                     </td>
