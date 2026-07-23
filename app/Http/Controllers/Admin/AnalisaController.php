@@ -36,6 +36,18 @@ class AnalisaController extends Controller
         ])
             ->whereHas('documents');
 
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('nama_reksa_dana', 'like', "%{$s}%")
+                    ->orWhere('kode_reksa_dana', 'like', "%{$s}%");
+            });
+        }
+
+        if ($request->filled('jenis_dokumen')) {
+            $query->whereHas('documents', fn($q) => $q->where('document_type', $request->jenis_dokumen));
+        }
+
         if ($request->status) {
             if ($request->status === 'original') {
                 $query->whereDoesntHave('analisa', fn($q) => $q->where('product_type', 'reksa_dana'));

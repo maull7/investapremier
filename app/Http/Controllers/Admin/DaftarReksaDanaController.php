@@ -13,6 +13,7 @@ use App\Models\MutualFundRiskMetric;
 use App\Models\MutualFundFeeMetric;
 use App\Models\ReksaDana;
 use App\Models\ReksaDanaDocument;
+use App\Models\FfsExtractionResult;
 use App\Models\HargaReksaDana;
 use App\Models\SyncRun;
 use App\Services\KodeReksaDanaParser;
@@ -39,7 +40,7 @@ class DaftarReksaDanaController extends Controller
 
         $hargaSort = $request->get('sort', 'nama_reksa_dana');
         $hargaDir = $request->get('direction', 'asc');
-        $hargaQuery = ReksaDana::orderBy($hargaSort, $hargaDir);
+        $hargaQuery = ReksaDana::with(['analisa' => fn($q) => $q->where('product_type', 'reksa_dana')->latest()])->orderBy($hargaSort, $hargaDir);
         if ($request->jenis) $hargaQuery->where('jenis', $request->jenis);
         if ($request->search) {
             $hargaQuery->where(function ($q) use ($request) {
@@ -318,6 +319,29 @@ class DaftarReksaDanaController extends Controller
             ->with('success', 'Dokumen berhasil dihapus.');
     }
 
+    public function viewExtractionResult(FfsExtractionResult $extractionResult)
+    {
+        return response()->json([
+            'extracted_data' => $extractionResult->extracted_data,
+            'document_name' => $extractionResult->document?->original_name,
+            'created_at' => $extractionResult->created_at?->format('d M Y H:i'),
+        ]);
+    }
+
+    public function destroyExtractionResult(FfsExtractionResult $extractionResult)
+    {
+        $extractionResult->delete();
+
+        ActivityLogger::log(
+            'Menghapus Ekstrak Dokumen',
+            "Ekstrak dokumen ID {$extractionResult->id} berhasil dihapus",
+            'success',
+            $extractionResult,
+        );
+
+        return response()->json(['success' => true]);
+    }
+
     public function checkDocumentExists(Request $request)
     {
         $validated = $request->validate([
@@ -588,6 +612,11 @@ class DaftarReksaDanaController extends Controller
             ]);
         }
 
+        $extractionResults = \App\Models\FfsExtractionResult::with(['document', 'creator'])
+            ->where('reksa_dana_id', $fund->id)
+            ->latest()
+            ->get();
+
         return view('admin.daftar-reksa-dana.show', compact(
             'fund',
             'navHistory',
@@ -635,6 +664,7 @@ class DaftarReksaDanaController extends Controller
             'displayReturnYearly',
             'displayReturnYtd',
             'periodHasSnapshotData',
+            'extractionResults',
         ));
     }
 
