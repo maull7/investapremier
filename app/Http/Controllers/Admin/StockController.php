@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\SyncSahamFromIdxJob;
+use App\Models\AnalisaEfek;
+use App\Models\AnalisaReksaDana;
 use App\Models\Stock;
 use App\Models\SyncRun;
 use App\Models\ExtractionBatch;
@@ -18,6 +20,11 @@ class StockController extends Controller
     public function index(Request $request)
     {
         $tab = $request->get('tab', 'daftar');
+
+        if ($tab === 'efek-reksa-dana') {
+            return $this->indexEfekReksaDana($request);
+        }
+
         $perPage = in_array($request->per_page, [10, 25, 50]) ? $request->per_page : 10;
         $query = Stock::latest();
 
@@ -163,6 +170,49 @@ class StockController extends Controller
 
         return redirect()->route('admin.saham.index')
             ->with('success', "{$import->imported} data saham berhasil diimport dari Excel.");
+    }
+
+    protected function indexEfekReksaDana(Request $request)
+    {
+        $perPage = in_array($request->per_page, [10, 25, 50]) ? $request->per_page : 10;
+
+        $query = AnalisaEfek::select(
+            'analisa_efek.kode_efek',
+            'analisa_efek.nama_efek',
+            'analisa_efek.sektor',
+        )
+            ->selectRaw('COUNT(DISTINCT analisa_efek.analisa_reksa_dana_id) as total_reksa_dana')
+            ->selectRaw('COUNT(DISTINCT reksa_dana.nama_manajer_investasi) as total_mi')
+            ->selectRaw('SUM(analisa_efek.nilai_pasar) as total_nilai_pasar')
+            ->join('analisa_reksa_dana', 'analisa_efek.analisa_reksa_dana_id', '=', 'analisa_reksa_dana.id')
+            ->join('reksa_dana', 'analisa_reksa_dana.reksa_dana_id', '=', 'reksa_dana.id')
+            ->groupBy('analisa_efek.kode_efek', 'analisa_efek.nama_efek', 'analisa_efek.sektor');
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('analisa_efek.kode_efek', 'like', "%{$s}%")
+                    ->orWhere('analisa_efek.nama_efek', 'like', "%{$s}%");
+            });
+        }
+
+        if ($request->filled('ffs_bulan')) {
+            $query->where('analisa_reksa_dana.ffs_bulan', $request->ffs_bulan);
+        }
+
+        if ($request->filled('ffs_tahun')) {
+            $query->where('analisa_reksa_dana.ffs_tahun', $request->ffs_tahun);
+        }
+
+        $efeks = $query->orderBy('total_nilai_pasar', 'desc')->paginate($perPage)->withQueryString();
+
+        $tahunList = AnalisaReksaDana::where('product_type', 'reksa_dana')
+            ->whereNotNull('ffs_tahun')
+            ->distinct()->orderBy('ffs_tahun', 'desc')->pluck('ffs_tahun');
+
+        $bulanIndonesia = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+        return view('admin.stocks.index', compact('efeks', 'tahunList', 'bulanIndonesia', 'perPage') + ['tab' => 'efek-reksa-dana']);
     }
 
     private function buildRangeOptions(int $total, int $step = 20): array

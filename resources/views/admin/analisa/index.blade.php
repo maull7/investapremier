@@ -119,11 +119,11 @@
                 </a>
                 <a href="{{ route('admin.analisa.index', array_merge($baseParams, ['jenis_dokumen' => 'prospektus'])) }}"
                     class="px-3 py-1.5 rounded-lg border transition {{ request('jenis_dokumen') === 'prospektus' ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
-                    Prospektus
+                    Prospektus ({{ $totalProspektus ?? 0 }})
                 </a>
                 <a href="{{ route('admin.analisa.index', array_merge($baseParams, ['jenis_dokumen' => 'ffs'])) }}"
                     class="px-3 py-1.5 rounded-lg border transition {{ request('jenis_dokumen') === 'ffs' ? 'bg-accent text-white border-accent' : 'border-line text-muted hover:bg-[#f1f5f9]' }}">
-                    FFS
+                    FFS ({{ $totalFfs ?? 0 }})
                 </a>
             </div>
 
@@ -319,29 +319,37 @@
                                     <td class="px-5 py-3.5 text-muted">
                                         {{ $analisa->jenis_reksa_dana ?? ($rd->jenis ?? '-') }}</td>
                                     <td class="px-5 py-3.5">
-                                        @if ($analisa)
-                                            @php
-                                                $docType = match ($jenisLaporan) {
-                                                    'kalender_ffs' => 'FFS',
-                                                    'laporan_tahunan' => 'Laporan Tahunan',
-                                                    default => $jenisLaporan ? ucfirst($jenisLaporan) : ($analisa->document_type ?? '—'),
-                                                };
-                                            @endphp
-                                            <span class="px-2 py-0.5 rounded text-xs font-medium {{ $jenisLaporan === 'kalender_ffs' ? 'bg-purple-100 text-purple-700' : ($jenisLaporan === 'laporan_tahunan' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600') }}">{{ $docType }}</span>
+                                        @php
+                                            $filterJenis = request('jenis_dokumen');
+                                            $docTypes = $rd->documents->pluck('document_type')->unique();
+                                        @endphp
+                                        @if ($filterJenis)
+                                            <span class="px-2 py-0.5 rounded text-xs font-medium {{ $filterJenis === 'ffs' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700' }}">{{ ucfirst($filterJenis) }}</span>
                                         @else
-                                            <span class="text-muted text-xs">—</span>
+                                            @php
+                                                $hasFfs = $docTypes->contains('ffs');
+                                                $hasProspektus = $docTypes->contains('prospektus');
+                                            @endphp
+                                            @if ($hasFfs)
+                                                <span class="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">FFS</span>
+                                            @endif
+                                            @if ($hasProspektus)
+                                                <span class="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">Prospektus</span>
+                                            @endif
+                                            @if (!$hasFfs && !$hasProspektus)
+                                                <span class="text-muted text-xs">—</span>
+                                            @endif
                                         @endif
                                     </td>
                                     <td class="px-5 py-3.5">
-                                        @if ($analisa)
-                                            @php
-                                                $periode = match (true) {
-                                                    $jenisLaporan === 'kalender_ffs' && $ffsBulan && $ffsTahun => $bulanIndonesia[$ffsBulan - 1] . ' ' . $ffsTahun,
-                                                    $jenisLaporan === 'laporan_tahunan' && $analisa->tahun_laporan => 'Tahun ' . $analisa->tahun_laporan,
-                                                    default => $ffsTahun ? 'Tahun ' . $ffsTahun : '—',
-                                                };
-                                            @endphp
-                                            <span class="text-xs">{{ $periode }}</span>
+                                        @php
+                                            $ffsDocs = $rd->documents->where('document_type', 'ffs');
+                                            $latestDoc = $ffsDocs->first();
+                                        @endphp
+                                        @if ($latestDoc && $latestDoc->ffs_month && $latestDoc->ffs_year)
+                                            <span class="text-xs">{{ $bulanIndonesia[$latestDoc->ffs_month - 1] }} {{ $latestDoc->ffs_year }}</span>
+                                        @elseif ($latestDoc && $latestDoc->ffs_year)
+                                            <span class="text-xs">Tahun {{ $latestDoc->ffs_year }}</span>
                                         @else
                                             <span class="text-muted text-xs">—</span>
                                         @endif
