@@ -31,7 +31,7 @@ class AnalisaController extends Controller
     protected function indexAnalisa(Request $request)
     {
         $query = ReksaDana::with([
-            'documents' => fn($q) => $q->where('document_type', 'ffs')->orderBy('ffs_year', 'desc')->orderBy('ffs_month', 'desc'),
+            'documents' => fn($q) => $q->whereIn('document_type', ['ffs', 'prospektus'])->orderBy('ffs_year', 'desc')->orderBy('ffs_month', 'desc'),
             'analisa' => fn($q) => $q->where('product_type', 'reksa_dana')->with('user')->latest(),
         ])
             ->whereHas('documents');
@@ -64,11 +64,11 @@ class AnalisaController extends Controller
         }
 
         if ($request->filled('ffs_bulan')) {
-            $query->whereHas('analisa', fn($q) => $q->where('product_type', 'reksa_dana')->where('ffs_bulan', $request->ffs_bulan));
+            $query->whereHas('documents', fn($q) => $q->where('document_type', 'ffs')->where('ffs_month', $request->ffs_bulan));
         }
 
         if ($request->filled('ffs_tahun')) {
-            $query->whereHas('analisa', fn($q) => $q->where('product_type', 'reksa_dana')->where('ffs_tahun', $request->ffs_tahun));
+            $query->whereHas('documents', fn($q) => $q->where('document_type', 'ffs')->where('ffs_year', $request->ffs_tahun));
         }
 
         if ($request->filled('mode')) {
@@ -85,13 +85,16 @@ class AnalisaController extends Controller
 
         $reksaDanas = $query->orderBy($sort, $direction)->paginate(20);
 
-        $tahunList = AnalisaReksaDana::where('product_type', 'reksa_dana')
-            ->whereNotNull('ffs_tahun')
-            ->distinct()->orderBy('ffs_tahun', 'desc')->pluck('ffs_tahun');
+        $tahunList = ReksaDanaDocument::where('document_type', 'ffs')
+            ->whereNotNull('ffs_year')
+            ->distinct()->orderBy('ffs_year', 'desc')->pluck('ffs_year');
+
+        $totalProspektus = ReksaDanaDocument::where('document_type', 'prospektus')->count();
+        $totalFfs = ReksaDanaDocument::where('document_type', 'ffs')->count();
 
         $bulanIndonesia = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
-        return view('admin.analisa.index', compact('reksaDanas', 'tahunList', 'bulanIndonesia') + ['tab' => 'analisa']);
+        return view('admin.analisa.index', compact('reksaDanas', 'tahunList', 'bulanIndonesia', 'totalProspektus', 'totalFfs') + ['tab' => 'analisa']);
     }
 
     protected function indexProspektus(Request $request)
