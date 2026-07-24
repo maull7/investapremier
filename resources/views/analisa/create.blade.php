@@ -6387,10 +6387,13 @@
                                 this.setFieldValue('kebijakan_investasi', m.kebijakan_investasi);
                                 this.setFieldValue('manajer_investasi', m.manajer_investasi);
                                 this.setFieldValue('bank_kustodian', m.bank_kustodian);
+                                this.bankKustodian = m.bank_kustodian ?? this.bankKustodian;
                                 this.setFieldValue('tanggal_peluncuran', m.tanggal_peluncuran);
                                 this.setFieldValue('mata_uang', m.mata_uang);
                                 this.setFieldValue('management_fee', m.management_fee);
+                                this.managementFee = m.management_fee ?? this.managementFee;
                                 this.setFieldValue('custodian_fee', m.custodian_fee);
+                                this.custodianFee = m.custodian_fee ?? this.custodianFee;
                                 this.setFieldValue('total_aum', m.total_aum);
                                 this.totalAum = m.total_aum ?? this.totalAum;
                                 this.setFieldValue('nab_per_unit', m.nab_per_unit);
