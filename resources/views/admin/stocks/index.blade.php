@@ -180,6 +180,10 @@
                     class="px-4 py-2 rounded-lg text-sm font-semibold transition {{ $tab === 'riwayat-sync' ? 'bg-white text-primary shadow-sm' : 'text-muted hover:text-primary' }}">
                     Riwayat Sync
                 </a>
+                <a href="{{ route('admin.saham.index', ['tab' => 'efek-reksa-dana']) }}"
+                    class="px-4 py-2 rounded-lg text-sm font-semibold transition {{ $tab === 'efek-reksa-dana' ? 'bg-white text-primary shadow-sm' : 'text-muted hover:text-primary' }}">
+                    Daftar Saham di Reksa Dana
+                </a>
             </div>
         </div>
 
@@ -259,7 +263,6 @@
                         <p class="text-sm mt-1">Klik "Tambah Saham" atau import dari Excel untuk mulai mengisi data</p>
                     </div>
                 @else
-                    <div class="overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead>
                                 <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide">
@@ -609,6 +612,108 @@
                     @endif
                 </div>
             </div>
+        @elseif ($tab === 'efek-reksa-dana')
+            <div class="mb-5">
+                <form method="GET" action="{{ route('admin.saham.index') }}">
+                    <input type="hidden" name="tab" value="efek-reksa-dana">
+                    <div class="flex flex-wrap items-end gap-3">
+                        <div class="flex-1 min-w-56">
+                            <label class="block text-xs font-semibold text-muted mb-1">Cari Kode/Nama Saham</label>
+                            <input type="text" name="search" value="{{ request('search') }}"
+                                placeholder="Kode atau nama saham..."
+                                class="w-full text-sm border border-line rounded-lg px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-muted mb-1">Bulan</label>
+                            <select name="ffs_bulan"
+                                class="text-sm border border-line rounded-lg px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20">
+                                <option value="">Semua Bulan</option>
+                                @foreach (['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'] as $i => $bln)
+                                    <option value="{{ $i + 1 }}" {{ request('ffs_bulan') == $i + 1 ? 'selected' : '' }}>{{ $bln }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-muted mb-1">Tahun</label>
+                            <select name="ffs_tahun"
+                                class="text-sm border border-line rounded-lg px-3 py-2 focus:border-primary focus:ring focus:ring-primary/20">
+                                <option value="">Semua Tahun</option>
+                                @foreach ($tahunList ?? [] as $thn)
+                                    <option value="{{ $thn }}" {{ request('ffs_tahun') == $thn ? 'selected' : '' }}>{{ $thn }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <button type="submit"
+                            class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition">Filter</button>
+                        @if (request('search') || request('ffs_bulan') || request('ffs_tahun'))
+                            <a href="{{ route('admin.saham.index', ['tab' => 'efek-reksa-dana']) }}"
+                                class="px-4 py-2 border border-line text-muted rounded-lg text-sm font-semibold hover:text-primary transition">Reset</a>
+                        @endif
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-card">
+                <div class="table-head">
+                    <h2 class="th-title">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Daftar Saham di Reksa Dana
+                    </h2>
+                    <span class="th-meta">{{ $efeks->total() }} total</span>
+                </div>
+
+                @if ($efeks->isEmpty())
+                    <div class="py-16 text-center text-muted">
+                        <p class="font-medium">Belum ada data saham di reksa dana</p>
+                    </div>
+                @else
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="bg-[#f8fafc] text-left text-muted text-xs uppercase tracking-wide">
+                                    <th class="px-4 py-3.5 font-semibold">Kode Saham</th>
+                                    <th class="px-4 py-3.5 font-semibold">Nama Saham</th>
+                                    <th class="px-4 py-3.5 font-semibold">Sektor</th>
+                                    <th class="px-4 py-3.5 font-semibold text-right">Total MI</th>
+                                    <th class="px-4 py-3.5 font-semibold text-right">Total ReksaDana</th>
+                                    <th class="px-4 py-3.5 font-semibold text-right">Total Nilai Pasar</th>
+                                    <th class="px-4 py-3.5 font-semibold text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-line">
+                                @foreach ($efeks as $e)
+                                    <tr class="hover:bg-[#f8fafc] transition-colors">
+                                        <td class="px-4 py-3 font-bold text-primary font-mono">{{ $e->kode_efek }}</td>
+                                        <td class="px-4 py-3 font-semibold">{{ $e->nama_efek }}</td>
+                                        <td class="px-4 py-3 text-muted text-xs">{{ $e->sektor ?: '—' }}</td>
+                                        <td class="px-4 py-3 text-right">{{ number_format($e->total_mi) }}</td>
+                                        <td class="px-4 py-3 text-right">{{ number_format($e->total_reksa_dana) }}</td>
+                                        <td class="px-4 py-3 text-right font-semibold">Rp{{ number_format($e->total_nilai_pasar, 2, ',', '.') }}</td>
+                                        <td class="px-4 py-3 text-center">
+                                            <a href="{{ route('admin.sekuritas.efek', $e->kode_efek) }}"
+                                                class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition"
+                                                target="_blank">
+                                                Detail
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                </svg>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @if ($efeks->hasPages())
+                        <div class="px-6 py-4 border-t border-line">
+                            {{ $efeks->appends(request()->query())->links() }}
+                        </div>
+                    @endif
+                @endif
+            </div>
         @else
             <div class="grid lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.9fr)] gap-5">
                 <div class="table-card">
@@ -785,9 +890,9 @@
                         <select name="range"
                             class="w-full border border-line rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
                             required>
-                            @foreach ($extractionRanges as $range)
+                            @isset($extractionRanges) @foreach ($extractionRanges as $range)
                                 <option value="{{ $range['value'] }}">{{ $range['label'] }}</option>
-                            @endforeach
+                            @endforeach @endisset
                         </select>
                     </div>
 
