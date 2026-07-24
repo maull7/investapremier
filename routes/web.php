@@ -194,6 +194,7 @@ Route::middleware(['auth', 'verified', 'role:admin,sub_admin', 'admin.permission
     Route::post('analisa-rd/scrape-url', [AdminAnalisaRdController::class, 'scrapeUrl'])->name('analisa-rd.scrape-url');
     Route::get('analisa-rd/lookup-kode', [AdminAnalisaRdController::class, 'lookupKode'])->name('analisa-rd.lookup-kode');
     Route::get('analisa-rd/existing-documents', [AdminAnalisaRdController::class, 'getExistingDocuments'])->name('analisa-rd.existing-documents');
+    Route::get('analisa-rd/lookup-period-data', [AdminAnalisaRdController::class, 'lookupPeriodData'])->name('analisa-rd.lookup-period-data');
     Route::post('analisa-rd/parse-existing-document', [AdminAnalisaRdController::class, 'parseExistingDocument'])->name('analisa-rd.parse-existing-document');
     Route::post('analisa-rd/parse-existing-prospektus', [AdminAnalisaRdController::class, 'parseExistingProspektus'])->name('analisa-rd.parse-existing-prospektus');
     Route::post('analisa-rd/preview-ai', [AdminAnalisaRdController::class, 'previewAi'])->name('analisa-rd.preview-ai');

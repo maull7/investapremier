@@ -3840,6 +3840,7 @@
                     lookupNavHistoryUrl: @json($formRoutes['lookup_nav_history']),
                     parsePdfVisionUrl: @json($formRoutes['parse_pdf_vision']),
                     existingDocsUrl: @json($formRoutes['existing_documents']),
+                    lookupPeriodDataUrl: @json($formRoutes['lookup_period_data']),
                     parseExistingDocUrl: @json($formRoutes['parse_existing_document']),
                     existingDocs: [],
                     existingDocsLoading: false,
@@ -4065,9 +4066,9 @@
                             this.lookupReksaDana(this.kodeReksaDana);
                         }
                         this.debouncedFetchDocs();
-                        this.$watch('jenisLaporan', () => this.debouncedFetchDocs());
-                        this.$watch('ffsBulan', () => this.debouncedFetchDocs());
-                        this.$watch('ffsTahun', () => this.debouncedFetchDocs());
+                        this.$watch('jenisLaporan', () => { this.debouncedFetchDocs(); this.loadPeriodData(); });
+                        this.$watch('ffsBulan', () => { this.debouncedFetchDocs(); this.loadPeriodData(); });
+                        this.$watch('ffsTahun', () => { this.debouncedFetchDocs(); this.loadPeriodData(); });
                         this.$watch('ffsPembanding', (id) => this.applyPembanding(id));
                         this.$watch('tahunLaporan', () => this.debouncedFetchDocs());
 
@@ -6415,11 +6416,52 @@
                                 this.lookupMessage = data?.last_analisa ? 'Data dari analisa terakhir' : 'Kode reksa dana tidak ditemukan';
                                 this.lookupOk = data?.last_analisa ? true : false;
                             }
-                            this.debouncedFetchDocs();
+                        this.debouncedFetchDocs();
+                        this.loadPeriodData();
                         } catch (e) {
                             this.lookupMessage = 'Gagal lookup: ' + e.message;
                             this.lookupOk = false;
                         }
+                    },
+
+                    async loadPeriodData() {
+                        if (!this.kodeReksaDana || !this.ffsBulan || !this.ffsTahun) return;
+                        if (this.jenisLaporan !== 'kalender_ffs') return;
+                        if (!this.lookupPeriodDataUrl) return;
+                        try {
+                            const resp = await fetch(`${this.lookupPeriodDataUrl}?kode_reksa_dana=${encodeURIComponent(this.kodeReksaDana)}&ffs_bulan=${this.ffsBulan}&ffs_tahun=${this.ffsTahun}`, {
+                                headers: { Accept: 'application/json' }
+                            });
+                            const json = await resp.json();
+                            this.clearPeriodData();
+                            if (json.found && json.data) {
+                                const d = json.data;
+                                if (d.total_aum != null) this.totalAum = d.total_aum;
+                                if (d.unit_penyertaan != null) this.unitPenyertaan = d.unit_penyertaan;
+                                if (d.nab_per_unit != null) this.nabPerUnit = d.nab_per_unit;
+                                if (d.return_1m != null) this.return1m = d.return_1m;
+                                if (d.return_ytd != null) this.returnYtd = d.return_ytd;
+                                if (d.return_1y != null) this.return1y = d.return_1y;
+                                if (d.biaya_operasi != null) this.biayaOperasi = d.biaya_operasi;
+                                if (d.portfolio_turnover_ratio != null) this.portfolioTurnover = d.portfolio_turnover_ratio;
+                                if (d.management_fee != null) this.managementFee = d.management_fee;
+                                if (d.custodian_fee != null) this.custodianFee = d.custodian_fee;
+                                if (d.total_marcap_10_efek != null) this.totalMarcap10Efek = d.total_marcap_10_efek;
+                                if (d.sektor?.length) this.sektor = d.sektor;
+                                if (d.efek?.length) this.efek = d.efek;
+                                if (d.alokasi_aset?.length) this.alokasi_aset = d.alokasi_aset;
+                            }
+                        } catch (e) {
+                            console.warn('loadPeriodData error:', e);
+                            this.clearPeriodData();
+                        }
+                    },
+
+                    clearPeriodData() {
+                        this.sektor = [];
+                        this.efek = [];
+                        this.alokasi_aset = [];
+                        this.totalMarcap10Efek = null;
                     },
 
                     applyLookupData(data) {

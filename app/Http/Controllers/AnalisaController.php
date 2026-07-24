@@ -100,6 +100,7 @@ class AnalisaController extends Controller
             'lookup_bank_data' => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-bank-data") ? route("{$prefix}.lookup-bank-data") : null,
             'lookup_sukuk_return' => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-sukuk-return") ? route("{$prefix}.lookup-sukuk-return") : null,
             'lookup_kode_efek' => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-kode-efek") ? route("{$prefix}.lookup-kode-efek") : null,
+            'lookup_period_data' => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-period-data") ? route("{$prefix}.lookup-period-data") : null,
             'get_financial_data' => \Illuminate\Support\Facades\Route::has("{$prefix}.get-financial-data") ? route("{$prefix}.get-financial-data") : null,
             'lookup_nav_history' => \Illuminate\Support\Facades\Route::has("{$prefix}.lookup-nav-history") ? route("{$prefix}.lookup-nav-history") : null,
             'parse_web_file'      => route("{$prefix}.parse-web-file"),
@@ -791,6 +792,80 @@ class AnalisaController extends Controller
                 'documents' => [],
                 'error' => 'Gagal mengambil data dokumen.',
             ]);
+        }
+    }
+
+    public function lookupPeriodData(Request $request)
+    {
+        try {
+            $request->validate([
+                'kode_reksa_dana' => 'required|string|max:20',
+                'ffs_bulan' => 'required|integer|min:1|max:12',
+                'ffs_tahun' => 'required|integer|min:2000|max:2100',
+            ]);
+
+            $kode = strtoupper(trim($request->kode_reksa_dana));
+
+            $analisa = AnalisaReksaDana::with(['sektor', 'efek', 'alokasiAset'])
+                ->where('product_type', $this->productType)
+                ->whereRaw('UPPER(kode_reksa_dana) = ?', [$kode])
+                ->where('ffs_bulan', $request->ffs_bulan)
+                ->where('ffs_tahun', $request->ffs_tahun)
+                ->latest()
+                ->first();
+
+            if (!$analisa) {
+                return response()->json(['found' => false, 'data' => null]);
+            }
+
+            return response()->json([
+                'found' => true,
+                'data' => [
+                    'total_aum' => $analisa->total_aum,
+                    'unit_penyertaan' => $analisa->unit_penyertaan,
+                    'nab_per_unit' => $analisa->nab_per_unit,
+                    'return_1m' => $analisa->return_1m,
+                    'return_ytd' => $analisa->return_ytd,
+                    'return_1y' => $analisa->return_1y,
+                    'biaya_operasi' => $analisa->biaya_operasi,
+                    'portfolio_turnover_ratio' => $analisa->portfolio_turnover_ratio,
+                    'management_fee' => $analisa->management_fee,
+                    'custodian_fee' => $analisa->custodian_fee,
+                    'total_marcap_10_efek' => $analisa->total_marcap_10_efek,
+                    'sektor' => $analisa->sektor->map(fn($s) => ['nama_sektor' => $s->nama_sektor, 'bobot' => $s->bobot])->values(),
+                    'efek' => $analisa->efek->map(fn($e) => [
+                        'kode_efek' => $e->kode_efek,
+                        'nama_efek' => $e->nama_efek,
+                        'sektor' => $e->sektor,
+                        'bobot' => $e->bobot,
+                        'bobot_seharusnya' => $e->bobot_seharusnya,
+                        'nilai_pasar' => $e->nilai_pasar,
+                        'return_1m' => $e->return_1m,
+                        'return_3m' => $e->return_3m,
+                        'return_6m' => $e->return_6m,
+                        'return_1y' => $e->return_1y,
+                        'ihsg_contribution' => $e->ihsg_contribution,
+                        'kontribusi_return' => $e->kontribusi_return,
+                        'effect_type' => $e->effect_type,
+                        'top_10' => $e->top_10,
+                        'harga_perolehan' => $e->harga_perolehan,
+                        'persen_nab' => $e->persen_nab,
+                        'market_cap' => $e->market_cap,
+                        'jumlah_lembar' => $e->jumlah_lembar,
+                        'harga_perolehan_rata_rata' => $e->harga_perolehan_rata_rata,
+                        'kontribusi_kinerja' => $e->kontribusi_kinerja,
+                    ])->values(),
+                    'alokasi_aset' => $analisa->alokasiAset->map(fn($a) => ['nama_aset' => $a->nama_aset, 'persentase' => $a->persentase])->values(),
+                ],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['found' => false, 'data' => null, 'error' => 'Parameter tidak valid.'], 422);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Gagal mengambil data periode', [
+                'error' => $e->getMessage(),
+                'params' => $request->only(['kode_reksa_dana', 'ffs_bulan', 'ffs_tahun']),
+            ]);
+            return response()->json(['found' => false, 'data' => null, 'error' => 'Gagal mengambil data periode.']);
         }
     }
 
